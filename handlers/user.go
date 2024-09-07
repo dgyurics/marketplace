@@ -28,29 +28,52 @@ func RegisterUserHandler(userService services.UserService, router *mux.Router) {
 }
 
 func (h *userHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var user models.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	var credentials models.Credential
+	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	if err := h.userService.CreateUser(r.Context(), &user); err != nil {
+	if (credentials.Email == "" && credentials.Phone == "") || credentials.Password == "" {
+		http.Error(w, "Email or phone and password are required", http.StatusBadRequest)
+		return
+	}
+
+	usr := models.User{
+		Email:    credentials.Email,
+		Phone:    credentials.Phone,
+		Password: credentials.Password,
+	}
+	if err := h.userService.CreateUser(r.Context(), &usr); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+	// todo
+	// get jwt and refresh token from user service
+	// return jwt and refresh token in response
+	jwt := "jwt"
+	refreshToken := "refreshToken"
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(user)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"token":         jwt,
+		"refresh_token": refreshToken,
+	})
 }
 
 func (h *userHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var creds models.Credential
-	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+	var credentials models.Credential
+	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	err := h.userService.VerifyCredentials(r.Context(), creds.Username, creds.Password)
+	usr := models.User{
+		Email:    credentials.Email,
+		Phone:    credentials.Phone,
+		Password: credentials.Password,
+	}
+	err := h.userService.VerifyCredentials(r.Context(), &usr)
 	if err != nil {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -62,6 +85,7 @@ func (h *userHandler) Login(w http.ResponseWriter, r *http.Request) {
 	jwt := "jwt"
 	refreshToken := "refreshToken"
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
 		"token":         jwt,
 		"refresh_token": refreshToken,

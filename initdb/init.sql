@@ -58,12 +58,13 @@ INSERT INTO product_categories (product_id, category_id) VALUES
 
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    username VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) UNIQUE,
+    phone VARCHAR(255) UNIQUE,
     password_hash TEXT NOT NULL,
     admin BOOLEAN DEFAULT FALSE,
-    email VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CHECK (email IS NOT NULL OR phone IS NOT NULL)
 );
 
 CREATE TABLE refresh_tokens (

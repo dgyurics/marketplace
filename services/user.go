@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/repositories"
@@ -10,7 +11,7 @@ import (
 
 type UserService interface {
 	CreateUser(ctx context.Context, user *models.User) error
-	VerifyCredentials(ctx context.Context, username, password string) error
+	VerifyCredentials(ctx context.Context, credential *models.User) error
 	GetAllUsers(ctx context.Context) ([]models.User, error)
 }
 
@@ -23,7 +24,7 @@ func NewUserService(repo repositories.UserRepository) UserService {
 }
 
 func (s *userService) CreateUser(ctx context.Context, user *models.User) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
@@ -34,12 +35,30 @@ func (s *userService) CreateUser(ctx context.Context, user *models.User) error {
 	return nil
 }
 
-func (s *userService) VerifyCredentials(ctx context.Context, username, password string) error {
-	user, err := s.repo.GetUserByUsername(ctx, username)
+func (s *userService) VerifyCredentials(ctx context.Context, user *models.User) error {
+	if user.Email != "" {
+		return s.verifyEmail(ctx, user)
+	}
+	if user.Phone != "" {
+		return s.verifyPhone(ctx, user)
+	}
+	return errors.New("invalid credentials: email or phone required")
+}
+
+func (s *userService) verifyEmail(ctx context.Context, user *models.User) error {
+	dbUser, err := s.repo.GetUserByEmail(ctx, user.Email)
 	if err != nil {
 		return err
 	}
-	return bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	return bcrypt.CompareHashAndPassword([]byte(dbUser.PasswordHash), []byte(user.Password))
+}
+
+func (s *userService) verifyPhone(ctx context.Context, user *models.User) error {
+	dbUser, err := s.repo.GetUserByPhone(ctx, user.Phone)
+	if err != nil {
+		return err
+	}
+	return bcrypt.CompareHashAndPassword([]byte(dbUser.PasswordHash), []byte(user.Password))
 }
 
 func (s *userService) GetAllUsers(ctx context.Context) ([]models.User, error) {

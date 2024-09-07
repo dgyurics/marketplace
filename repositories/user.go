@@ -9,7 +9,8 @@ import (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *models.User) error
-	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
+	GetUserByPhone(ctx context.Context, phone string) (*models.User, error)
 	GetAllUsers(ctx context.Context) ([]models.User, error)
 }
 
@@ -23,34 +24,40 @@ func NewUserRepository(pool *pgxpool.Pool) UserRepository {
 
 func (r *userRepository) CreateUser(ctx context.Context, user *models.User) error {
 	query := `
-		INSERT INTO users (username, email, password_hash)
-		VALUES ($1, $2, $3)
-		RETURNING id, username, email, admin, created_at, updated_at
+		INSERT INTO users (email, phone, password_hash)
+		VALUES (NULLIF($1, ''), NULLIF($2, ''), $3)
+		RETURNING id, COALESCE(email, ''), COALESCE(phone, ''), admin, created_at, updated_at
 	`
-	err := r.pool.QueryRow(ctx, query, user.Username, user.Email, user.PasswordHash).
-		Scan(&user.ID, &user.Username, &user.Email, &user.Admin, &user.CreatedAt, &user.UpdatedAt)
+	err := r.pool.QueryRow(ctx, query, user.Email, user.Phone, user.PasswordHash).
+		Scan(&user.ID, &user.Email, &user.Phone, &user.Admin, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *userRepository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+func (r *userRepository) GetUserByPhone(ctx context.Context, phone string) (*models.User, error) {
 	var user models.User
-	err := r.pool.QueryRow(context.Background(), "SELECT id, username, email, password_hash, admin, created_at, updated_at FROM users WHERE username = $1", username).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Admin, &user.CreatedAt, &user.UpdatedAt)
+	err := r.pool.QueryRow(ctx, "SELECT id, COALESCE(email, ''), COALESCE(phone, ''), password_hash, admin, created_at, updated_at FROM users WHERE phone = $1", phone).Scan(&user.ID, &user.Email, &user.Phone, &user.PasswordHash, &user.Admin, &user.CreatedAt, &user.UpdatedAt)
+	return &user, err
+}
+
+func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	var user models.User
+	err := r.pool.QueryRow(ctx, "SELECT id, COALESCE(email, ''), COALESCE(phone, ''), password_hash, admin, created_at, updated_at FROM users WHERE email = $1", email).Scan(&user.ID, &user.Email, &user.Phone, &user.PasswordHash, &user.Admin, &user.CreatedAt, &user.UpdatedAt)
 	return &user, err
 }
 
 func (r *userRepository) GetAllUsers(ctx context.Context) ([]models.User, error) {
 	var users []models.User
-	rows, err := r.pool.Query(ctx, "SELECT id, username, email, admin, created_at, updated_at FROM users")
+	rows, err := r.pool.Query(ctx, "SELECT id, COALESCE(email, ''), COALESCE(phone, ''), admin, created_at, updated_at FROM users")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var user models.User
-		err = rows.Scan(&user.ID, &user.Username, &user.Email, &user.Admin, &user.CreatedAt, &user.UpdatedAt)
+		err = rows.Scan(&user.ID, &user.Email, &user.Phone, &user.Admin, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
