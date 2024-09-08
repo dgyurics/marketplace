@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/dgyurics/marketplace/db"
 	"github.com/dgyurics/marketplace/handlers"
@@ -12,7 +13,11 @@ import (
 )
 
 func main() {
-	conPool, err := db.Connect("postgres://postgres:postgres@localhost:5432/marketplace")
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("DATABASE_URL is required")
+	}
+	conPool, err := db.Connect(dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}

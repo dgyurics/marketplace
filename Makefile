@@ -1,6 +1,9 @@
 # Variables
 BINARY_NAME=marketplace
 SRC_DIR=./
+ENV_FILE=.env
+
+include $(ENV_FILE)
 
 # Default target
 all: run
@@ -19,4 +22,4 @@ clean:
 
 # Run the binary
 run: build
-	./$(BINARY_NAME)
+	DATABASE_URL=$(DATABASE_URL) ./$(BINARY_NAME)
