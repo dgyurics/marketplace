@@ -12,22 +12,22 @@ import (
 )
 
 func main() {
-	pool, err := db.NewConnectionPool("postgres://postgres:postgres@localhost:5432/marketplace")
+	conPool, err := db.Connect("postgres://postgres:postgres@localhost:5432/marketplace")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	router := mux.NewRouter()
 
-	userRepository := repositories.NewUserRepository(pool)
+	userRepository := repositories.NewUserRepository(conPool)
 	userService := services.NewUserService(userRepository)
 	handlers.RegisterUserHandler(userService, router)
 
-	categoryRepository := repositories.NewCategoryRepository(pool)
+	categoryRepository := repositories.NewCategoryRepository(conPool)
 	categoryService := services.NewCategoryService(categoryRepository)
 	handlers.RegisterCategoryHandler(categoryService, router)
 
-	productRepository := repositories.NewProductRepository(pool)
+	productRepository := repositories.NewProductRepository(conPool)
 	productService := services.NewProductService(productRepository)
 	handlers.RegisterProductHandler(productService, router)
 

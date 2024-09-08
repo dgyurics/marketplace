@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-func NewConnectionPool(databaseURL string) (*pgxpool.Pool, error) {
+func Connect(databaseURL string) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.Connect(context.Background(), databaseURL)
 	if err != nil {
 		return nil, err
