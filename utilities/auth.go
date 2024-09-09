@@ -14,8 +14,8 @@ type JWTUtility struct {
 	publicKey  []byte
 }
 
-func NewJWTUtility(privateKey, publicKey []byte) *JWTUtility {
-	return &JWTUtility{
+func NewJWTUtility(privateKey, publicKey []byte) JWTUtility {
+	return JWTUtility{
 		privateKey: privateKey,
 		publicKey:  publicKey,
 	}

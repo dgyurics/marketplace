@@ -12,6 +12,7 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUserByPhone(ctx context.Context, phone string) (*models.User, error)
 	GetAllUsers(ctx context.Context) ([]models.User, error)
+	StoreRefreshToken(ctx context.Context, refreshToken *models.RefreshToken) error
 }
 
 type userRepository struct {
@@ -64,4 +65,13 @@ func (r *userRepository) GetAllUsers(ctx context.Context) ([]models.User, error)
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func (r *userRepository) StoreRefreshToken(ctx context.Context, refreshToken *models.RefreshToken) error {
+	query := `
+		INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at, revoked, last_used)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`
+	_, err := r.pool.Exec(ctx, query, refreshToken.UserID, refreshToken.TokenHash, refreshToken.ExpiresAt, refreshToken.CreatedAt, refreshToken.Revoked, refreshToken.LastUsed)
+	return err
 }

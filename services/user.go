@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/repositories"
@@ -13,6 +14,7 @@ type UserService interface {
 	CreateUser(ctx context.Context, user *models.User) error
 	VerifyCredentials(ctx context.Context, credential *models.User) error
 	GetAllUsers(ctx context.Context) ([]models.User, error)
+	StoreRefreshToken(ctx context.Context, userID string, token string, expiresAt time.Time) error
 }
 
 type userService struct {
@@ -63,4 +65,18 @@ func (s *userService) verifyPhone(ctx context.Context, user *models.User) error 
 
 func (s *userService) GetAllUsers(ctx context.Context) ([]models.User, error) {
 	return s.repo.GetAllUsers(ctx)
+}
+
+func (s *userService) StoreRefreshToken(ctx context.Context, userID string, token string, expiresAt time.Time) error {
+	hashedToken, err := bcrypt.GenerateFromPassword([]byte(token), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	refreshToken := &models.RefreshToken{
+		UserID:    userID,
+		TokenHash: string(hashedToken),
+		ExpiresAt: expiresAt,
+		CreatedAt: time.Now(),
+	}
+	return s.repo.StoreRefreshToken(ctx, refreshToken)
 }

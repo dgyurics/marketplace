@@ -9,10 +9,12 @@ import (
 	"github.com/dgyurics/marketplace/handlers"
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
 
 func main() {
+	// establish connection to the database
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Fatal("DATABASE_URL is required")
@@ -22,18 +24,34 @@ func main() {
 		log.Fatal(err)
 	}
 
-	router := mux.NewRouter()
-
+	// create repositories
 	userRepository := repositories.NewUserRepository(conPool)
-	userService := services.NewUserService(userRepository)
-	handlers.RegisterUserHandler(userService, router)
-
 	categoryRepository := repositories.NewCategoryRepository(conPool)
-	categoryService := services.NewCategoryService(categoryRepository)
-	handlers.RegisterCategoryHandler(categoryService, router)
-
 	productRepository := repositories.NewProductRepository(conPool)
+
+	// create services
+	userService := services.NewUserService(userRepository)
+	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
+
+	// read private and public keys
+	privateKey, err := os.ReadFile("private.pem")
+	if err != nil {
+		log.Fatal("Error reading private key:", err)
+	}
+
+	publicKey, err := os.ReadFile("public.pem")
+	if err != nil {
+		log.Fatal("Error reading public key:", err)
+	}
+
+	// create JWT utility
+	jwtUtil := utilities.NewJWTUtility(privateKey, publicKey)
+
+	// register handlers
+	router := mux.NewRouter()
+	handlers.RegisterUserHandler(userService, jwtUtil, router)
+	handlers.RegisterCategoryHandler(categoryService, router)
 	handlers.RegisterProductHandler(productService, router)
 
 	log.Println("Server is running on port 8000")

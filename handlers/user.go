@@ -3,9 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
 
@@ -16,12 +18,14 @@ type UserHandler interface {
 
 type userHandler struct {
 	userService services.UserService
+	jwtUtility  utilities.JWTUtility
 	router      *mux.Router
 }
 
-func RegisterUserHandler(userService services.UserService, router *mux.Router) {
+func RegisterUserHandler(userService services.UserService, jwtUtility utilities.JWTUtility, router *mux.Router) {
 	handler := &userHandler{
 		userService: userService,
+		jwtUtility:  jwtUtility,
 		router:      router,
 	}
 	handler.registerRoutes()
@@ -48,16 +52,29 @@ func (h *userHandler) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// todo
-	// get jwt and refresh token from user service
-	// return jwt and refresh token in response
-	jwt := "jwt"
-	refreshToken := "refreshToken"
-	w.WriteHeader(http.StatusCreated)
+
+	jwt, err := h.jwtUtility.CreateToken(usr.ID, time.Duration(15)*time.Minute)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	token, err := h.jwtUtility.CreateRefreshToken()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.userService.StoreRefreshToken(r.Context(), usr.ID, token, time.Now().Add(time.Hour*24*7)); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
 		"token":         jwt,
-		"refresh_token": refreshToken,
+		"refresh_token": token,
 	})
 }
 
@@ -90,6 +107,19 @@ func (h *userHandler) Login(w http.ResponseWriter, r *http.Request) {
 		"token":         jwt,
 		"refresh_token": refreshToken,
 	})
+}
+
+func (h *userHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
+	// todo
+	// get refresh token from request
+	// get user id from refresh token
+	// return newly created jwt
+}
+
+func (h *userHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	// todo
+	// revoke refresh token from database
+	// add option to remove all refresh tokens
 }
 
 func (h *userHandler) registerRoutes() {
