@@ -21,6 +21,12 @@ CREATE TABLE IF NOT EXISTS products (
     description TEXT NOT NULL
 );
 
+CREATE TABLE inventory (
+    product_id UUID PRIMARY KEY,
+    quantity INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
 -- Insert products with hardcoded UUIDs
 INSERT INTO products (id, name, price, description) VALUES
 ('1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8', 'Product 1', 10.00, 'This is product 1'),
