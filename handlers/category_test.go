@@ -18,9 +18,9 @@ type MockCategoryService struct {
 	mock.Mock
 }
 
-func (m *MockCategoryService) CreateCategory(ctx context.Context, category models.Category) (int, error) {
+func (m *MockCategoryService) CreateCategory(ctx context.Context, category models.Category) (string, error) {
 	args := m.Called(ctx, category)
-	return args.Int(0), args.Error(1)
+	return args.String(0), args.Error(1)
 }
 
 func (m *MockCategoryService) GetAllCategories(ctx context.Context) ([]models.Category, error) {
@@ -28,7 +28,7 @@ func (m *MockCategoryService) GetAllCategories(ctx context.Context) ([]models.Ca
 	return args.Get(0).([]models.Category), args.Error(1)
 }
 
-func (m *MockCategoryService) GetCategoryByID(ctx context.Context, id int) (*models.Category, error) {
+func (m *MockCategoryService) GetCategoryByID(ctx context.Context, id string) (*models.Category, error) {
 	args := m.Called(ctx, id)
 	return args.Get(0).(*models.Category), args.Error(1)
 }
@@ -50,7 +50,7 @@ func TestCreateCategory(t *testing.T) {
 	}
 
 	// Set up the expected behavior of the mock service
-	mockService.On("CreateCategory", mock.Anything, mock.AnythingOfType("models.Category")).Return(1, nil)
+	mockService.On("CreateCategory", mock.Anything, mock.AnythingOfType("models.Category")).Return("1", nil)
 
 	// Create a new category as the request payload
 	category := models.Category{
@@ -148,7 +148,7 @@ func TestGetCategory(t *testing.T) {
 	}
 
 	// Set up the expected behavior of the mock service
-	mockService.On("GetCategoryByID", mock.Anything, 1).Return(&category, nil)
+	mockService.On("GetCategoryByID", mock.Anything, "1").Return(&category, nil)
 
 	// Create a new HTTP request
 	req, err := http.NewRequest(http.MethodGet, "/categories/1", nil)

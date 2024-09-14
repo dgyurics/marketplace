@@ -8,9 +8,9 @@ import (
 )
 
 type CategoryRepository interface {
-	CreateCategory(ctx context.Context, category models.Category) (int, error)
+	CreateCategory(ctx context.Context, category models.Category) (string, error)
 	GetAllCategories(ctx context.Context) ([]models.Category, error)
-	GetCategoryByID(ctx context.Context, id int) (*models.Category, error)
+	GetCategoryByID(ctx context.Context, id string) (*models.Category, error)
 	GetProductsByCategoryID(ctx context.Context, id string) ([]models.Product, error)
 }
 
@@ -22,12 +22,12 @@ func NewCategoryRepository(pool *pgxpool.Pool) CategoryRepository {
 	return &categoryRepository{pool: pool}
 }
 
-func (r *categoryRepository) CreateCategory(ctx context.Context, category models.Category) (int, error) {
-	var newID int
+func (r *categoryRepository) CreateCategory(ctx context.Context, category models.Category) (string, error) {
+	var newID string
 	query := `INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING id`
 	err := r.pool.QueryRow(ctx, query, category.Name, category.Description).Scan(&newID)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	return newID, nil
 }
@@ -49,7 +49,7 @@ func (r *categoryRepository) GetAllCategories(ctx context.Context) ([]models.Cat
 	return categories, nil
 }
 
-func (r *categoryRepository) GetCategoryByID(ctx context.Context, id int) (*models.Category, error) {
+func (r *categoryRepository) GetCategoryByID(ctx context.Context, id string) (*models.Category, error) {
 	var category models.Category
 	if err := r.pool.QueryRow(ctx, "SELECT id, name, description FROM categories WHERE id = $1", id).Scan(&category.ID, &category.Name, &category.Description); err != nil {
 		return nil, err

@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
@@ -42,7 +41,7 @@ func (h *categoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	category.ID = strconv.Itoa(categoryId)
+	category.ID = categoryId
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(category)
@@ -60,13 +59,12 @@ func (h *categoryHandler) GetCategories(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *categoryHandler) GetCategory(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idInt, err := strconv.Atoi(vars["id"])
-	if err != nil {
+	categoryId, ok := mux.Vars(r)["id"]
+	if !ok {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
-	category, err := h.categoryService.GetCategoryByID(r.Context(), idInt)
+	category, err := h.categoryService.GetCategoryByID(r.Context(), categoryId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -9,9 +9,9 @@ import (
 
 type ProductService interface {
 	CreateProduct(ctx context.Context, product *models.Product) error
-	CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID int) error
+	CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error
 	GetAllProducts(ctx context.Context) ([]models.Product, error)
-	GetProductByID(ctx context.Context, id int) (*models.Product, error)
+	GetProductByID(ctx context.Context, id string) (*models.Product, error)
 }
 
 type productService struct {
@@ -26,7 +26,7 @@ func (s *productService) CreateProduct(ctx context.Context, product *models.Prod
 	return s.repo.CreateProduct(ctx, product)
 }
 
-func (s *productService) CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID int) error {
+func (s *productService) CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error {
 	return s.repo.CreateProductWithCategory(ctx, product, categoryID)
 }
 
@@ -34,6 +34,6 @@ func (s *productService) GetAllProducts(ctx context.Context) ([]models.Product, 
 	return s.repo.GetAllProducts(ctx)
 }
 
-func (s *productService) GetProductByID(ctx context.Context, id int) (*models.Product, error) {
+func (s *productService) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
 	return s.repo.GetProductByID(ctx, id)
 }

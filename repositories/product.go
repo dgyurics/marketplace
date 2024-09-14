@@ -9,9 +9,9 @@ import (
 
 type ProductRepository interface {
 	CreateProduct(ctx context.Context, product *models.Product) error
-	CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID int) error
+	CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error
 	GetAllProducts(ctx context.Context) ([]models.Product, error)
-	GetProductByID(ctx context.Context, id int) (*models.Product, error)
+	GetProductByID(ctx context.Context, id string) (*models.Product, error)
 }
 
 type productRepository struct {
@@ -37,7 +37,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *models.P
 	return nil
 }
 
-func (r *productRepository) CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID int) error {
+func (r *productRepository) CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error {
 	// Begin a transaction
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -89,7 +89,7 @@ func (r *productRepository) GetAllProducts(ctx context.Context) ([]models.Produc
 	return products, nil
 }
 
-func (r *productRepository) GetProductByID(ctx context.Context, id int) (*models.Product, error) {
+func (r *productRepository) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
 	var product models.Product
 	if err := r.pool.QueryRow(ctx, `
 		SELECT p.id, p.name, p.price, p.description

@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
@@ -40,11 +39,6 @@ func (h *productHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	categoryId := r.URL.Query().Get("categoryId")
 
 	if categoryId != "" {
-		categoryId, err := strconv.Atoi(categoryId)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
 		if err := h.productService.CreateProductWithCategory(r.Context(), &product, categoryId); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -72,13 +66,12 @@ func (h *productHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *productHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idInt, err := strconv.Atoi(vars["id"])
-	if err != nil {
+	productId, ok := mux.Vars(r)["id"]
+	if !ok {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
-	product, err := h.productService.GetProductByID(r.Context(), idInt)
+	product, err := h.productService.GetProductByID(r.Context(), productId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

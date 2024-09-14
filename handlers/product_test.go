@@ -24,7 +24,7 @@ func (m *MockProductService) CreateProduct(ctx context.Context, product *models.
 	return args.Error(0)
 }
 
-func (m *MockProductService) CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID int) error {
+func (m *MockProductService) CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error {
 	args := m.Called(ctx, product, categoryID)
 	return args.Error(0)
 }
@@ -34,7 +34,7 @@ func (m *MockProductService) GetAllProducts(ctx context.Context) ([]models.Produ
 	return args.Get(0).([]models.Product), args.Error(1)
 }
 
-func (m *MockProductService) GetProductByID(ctx context.Context, id int) (*models.Product, error) {
+func (m *MockProductService) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
 	args := m.Called(ctx, id)
 	return args.Get(0).(*models.Product), args.Error(1)
 }
@@ -107,7 +107,7 @@ func TestGetProductByID(t *testing.T) {
 	}
 
 	// Set up the expected behavior of the mock service
-	mockService.On("GetProductByID", mock.Anything, 1).Return(product, nil)
+	mockService.On("GetProductByID", mock.Anything, "1").Return(product, nil)
 
 	// Create a new HTTP request with the product ID in the URL
 	req, err := http.NewRequest(http.MethodGet, "/products/1", nil)
