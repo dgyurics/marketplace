@@ -1,68 +1,33 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/dgyurics/marketplace/main/logo.webp" alt="marketplace">
 </p>
+<h1 align="center">Marketplace</h1>
+<p align="center">
+  An e-commerce backend API built with Go, designed to handle essential operations such as product management, user authentication, and shopping carts. The project follows a clean architecture approach, making it easy to extend and maintain. This backend aims to serve as a robust foundation for any e-commerce application.
+</p>
+<h2>Features</h2>
 <ul>
-  <li>
-    <strong>Product Endpoints</strong>
-    <ul>
-      <li><strong>GET /products</strong> - Fetch a list of all products</li>
-      <li><strong>GET /products/{id}</strong> - Fetch details of a single product by its ID</li>
-      <li><strong>POST /products</strong> - Create a new product (admin only)</li>
-      <li><strong>PUT /products/{id}</strong> - Update an existing product by its ID (admin only)</li>
-      <li><strong>DELETE /products/{id}</strong> - Delete a product by its ID (admin only)</li>
-      <li><strong>GET /products/search</strong> - Search for products by name, description, or other attributes</li>
-      <li><strong>PATCH /products/{id}</strong> - Partially update product details (admin only)</li>
-    </ul>
-  </li>
-  <li>
-    <strong>Category Endpoints</strong>
-    <ul>
-      <li><strong>GET /categories</strong> - Fetch a list of all product categories</li>
-      <li><strong>GET /categories/{id}</strong> - Fetch details of a single category by its ID</li>
-      <li><strong>POST /categories</strong> - Create a new category (admin only)</li>
-      <li><strong>PUT /categories/{id}</strong> - Update an existing category by its ID (admin only)</li>
-      <li><strong>DELETE /categories/{id}</strong> - Delete a category by its ID (admin only)</li>
-      <li><strong>GET /categories/{id}/products</strong> - Fetch all products in a specific category</li>
-    </ul>
-  </li>
-  <li>
-    <strong>Cart Endpoints</strong>
-    <ul>
-      <li><strong>GET /cart</strong> - Fetch the current user's cart</li>
-      <li><strong>POST /cart</strong> - Add an item to the cart</li>
-      <li><strong>PUT /cart/{itemId}</strong> - Update the quantity of a cart item</li>
-      <li><strong>DELETE /cart/{itemId}</strong> - Remove an item from the cart</li>
-      <li><strong>PATCH /cart/{itemId}</strong> - Partially update cart item details</li>
-      <li><strong>POST /cart/checkout</strong> - Initiate the checkout process</li>
-      <li><strong>GET /cart/total</strong> - Fetch the total price of the cart</li>
-      <li><strong>POST /cart/clear</strong> - Clear all items from the cart</li>
-    </ul>
-  </li>
-  <li>
-    <strong>Order Endpoints</strong>
-    <ul>
-      <li><strong>POST /orders</strong> - Place a new order</li>
-      <li><strong>GET /orders/{id}</strong> - Fetch details of a specific order</li>
-      <li><strong>GET /orders</strong> - Fetch all orders for the authenticated user</li>
-      <li><strong>GET /orders</strong> - Fetch all orders (admin only)</li>
-      <li><strong>PUT /orders/{id}</strong> - Update the status of an order (admin only)</li>
-      <li><strong>DELETE /orders/{id}</strong> - Cancel an order (admin only)</li>
-    </ul>
-  </li>
-  <li>
-    <strong>Authentication Endpoints</strong>
-    <ul>
-      <li><strong>POST auth/register</strong> - Create a new user account</li>
-      <li><strong>POST auth/login</strong> - Authenticate user and generate JWT</li>
-      <li><strong>POST auth/refresh-token</strong> - Generate new JWT using refresh token</li>
-      <li><strong>POST auth/logout</strong> - Invalidate refresh token</li>
-      <li><strong>GET auth/profile</strong> - Fetch authenticated user's profile</li>
-      <li><strong>POST auth/update-profile</strong> - Update the authenticated user's profile information</li>
-      <li><strong>POST auth/change-password</strong> - Change user's password</li>
-      <li><strong>POST auth/forgot-password</strong> - Initiate password reset process</li>
-      <li><strong>POST auth/reset-password</strong> - Reset user's password using a token</li>
-      <li><strong>GET auth/users</strong> (admin only) - Fetch a list of all users</li>
-      <li><strong>DELETE auth/users/{id}</strong> (admin only) - Delete a user account by ID</li>
-    </ul>    
-  </li>
+  <li><strong>Product Management:</strong> CRUD operations for products, including categorization and inventory management.</li>
+  <li><strong>Category Management:</strong> Organize products into categories to enhance discoverability.</li>
+  <li><strong>User Authentication:</strong> JWT-based user authentication, supporting registration and login functionalities.</li>
+  <li><strong>Shopping Cart:</strong> Manage user shopping carts, calculate totals, and track item quantities.</li>
+  <li><strong>Transaction Handling:</strong> Ensure data consistency with transaction support for complex operations.</li>
+  <li><strong>Repository Pattern:</strong> Abstraction layer for database operations, improving testability and flexibility.</li>
+</ul>
+
+<h2>Planned Enhancements</h2>
+<ul>
+  <li><strong>Order Management:</strong> Implement order creation, tracking, and status updates. Support for order history per user.</li>
+  <li><strong>Payment Integration:</strong> Integrate with popular payment gateways like Stripe to handle transactions securely.</li>
+  <li><strong>Shipping Management:</strong> Calculate shipping costs, manage shipping providers, and track shipments.</li>
+  <li><strong>Promotions and Discounts:</strong> Manage promotional codes, discounts, and sales events.</li>
+  <li><strong>Inventory Management:</strong> Advanced inventory management with alerts for low stock and support for multiple warehouses.</li>
+  <li><strong>Email Notifications:</strong> Send order confirmations, shipping updates, and marketing emails to users.</li>
+  <li><strong>Search and Filtering:</strong> Implement advanced search capabilities, including filtering and sorting options for products.</li>
+</ul>
+
+<h2>Prerequisites</h2>
+<ul>
+  <li>Go 1.20 or higher</li>
+  <li>Docker and Docker Compose</li>
 </ul>
