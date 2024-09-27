@@ -2,37 +2,11 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
-	"log"
-	"os"
 	"testing"
 
-	"github.com/dgyurics/marketplace/db"
 	"github.com/dgyurics/marketplace/models"
 	"github.com/stretchr/testify/assert"
 )
-
-var dbPool *sql.DB
-
-// Setup the PostgreSQL connection
-func TestMain(m *testing.M) {
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		log.Fatal("DATABASE_URL is required")
-	}
-
-	// Connect to the database
-	var err error
-	dbPool, err = db.Connect(dbURL)
-	if err != nil {
-		log.Fatalf("Could not connect to database: %s", err)
-	}
-
-	// Run tests
-	code := m.Run()
-	dbPool.Close()
-	os.Exit(code)
-}
 
 func TestCreateProduct(t *testing.T) {
 	repo := NewProductRepository(dbPool)
