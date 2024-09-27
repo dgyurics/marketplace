@@ -2,9 +2,9 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/dgyurics/marketplace/models"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type ProductRepository interface {
@@ -16,11 +16,11 @@ type ProductRepository interface {
 }
 
 type productRepository struct {
-	pool *pgxpool.Pool
+	db *sql.DB
 }
 
-func NewProductRepository(pool *pgxpool.Pool) ProductRepository {
-	return &productRepository{pool: pool}
+func NewProductRepository(db *sql.DB) ProductRepository {
+	return &productRepository{db: db}
 }
 
 func (r *productRepository) CreateProduct(ctx context.Context, product *models.Product) error {
@@ -30,7 +30,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *models.P
 		RETURNING id, name, price, description`
 
 	priceAsFloat := float64(product.Price.Amount) / 100
-	if err := r.pool.QueryRow(ctx, query, product.Name, priceAsFloat, product.Description).
+	if err := r.db.QueryRowContext(ctx, query, product.Name, priceAsFloat, product.Description).
 		Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
 		return err
 	}
@@ -40,11 +40,11 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *models.P
 
 func (r *productRepository) CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error {
 	// Begin a transaction
-	tx, err := r.pool.Begin(ctx)
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx) // Roll back the transaction in case of an error
+	defer tx.Rollback() // Roll back the transaction in case of an error
 
 	query := `
 		INSERT INTO products (name, price, description)
@@ -52,7 +52,7 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 		RETURNING id, name, price, description`
 
 	priceAsFloat := float64(product.Price.Amount) / 100
-	if err = tx.QueryRow(ctx, query, product.Name, priceAsFloat, product.Description).
+	if err = tx.QueryRowContext(ctx, query, product.Name, priceAsFloat, product.Description).
 		Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
 		return err
 	}
@@ -60,12 +60,12 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 	associationQuery := `
 		INSERT INTO product_categories (product_id, category_id)
 		VALUES ($1, $2)`
-	if _, err = tx.Exec(ctx, associationQuery, product.ID, categoryID); err != nil {
+	if _, err = tx.ExecContext(ctx, associationQuery, product.ID, categoryID); err != nil {
 		return err
 	}
 
 	// Commit the transaction
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		return err
 	}
 	return nil
@@ -73,7 +73,7 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 
 func (r *productRepository) GetAllProducts(ctx context.Context) ([]models.Product, error) {
 	var products []models.Product
-	rows, err := r.pool.Query(ctx, `
+	rows, err := r.db.QueryContext(ctx, `
 		SELECT p.id, p.name, p.price, p.description
 		FROM products p`)
 	if err != nil {
@@ -92,7 +92,7 @@ func (r *productRepository) GetAllProducts(ctx context.Context) ([]models.Produc
 
 func (r *productRepository) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
 	var product models.Product
-	if err := r.pool.QueryRow(ctx, `
+	if err := r.db.QueryRowContext(ctx, `
 		SELECT p.id, p.name, p.price, p.description
 		FROM products p
 		WHERE p.id = $1`, id).Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
@@ -103,6 +103,6 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*mod
 
 func (r *productRepository) DeleteProduct(ctx context.Context, id string) error {
 	query := `DELETE FROM products WHERE id = $1`
-	_, err := r.pool.Exec(ctx, query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }

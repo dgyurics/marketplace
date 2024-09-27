@@ -1,18 +1,23 @@
 package db
 
 import (
-	"context"
+	"database/sql"
 	"log"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	_ "github.com/lib/pq"
 )
 
-func Connect(databaseURL string) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.Connect(context.Background(), databaseURL)
+func Connect(databaseURL string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
 		return nil, err
 	}
 
+	// Verify the connection
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
 	log.Println("Connected to database")
-	return pool, nil
+	return db, nil
 }

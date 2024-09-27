@@ -2,17 +2,17 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"os"
 	"testing"
 
 	"github.com/dgyurics/marketplace/db"
 	"github.com/dgyurics/marketplace/models"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/stretchr/testify/assert"
 )
 
-var dbPool *pgxpool.Pool
+var dbPool *sql.DB
 
 // Setup the PostgreSQL connection
 func TestMain(m *testing.M) {

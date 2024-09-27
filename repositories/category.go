@@ -2,9 +2,9 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/dgyurics/marketplace/models"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type CategoryRepository interface {
@@ -15,17 +15,17 @@ type CategoryRepository interface {
 }
 
 type categoryRepository struct {
-	pool *pgxpool.Pool // TODO replace with *sql.DB
+	db *sql.DB
 }
 
-func NewCategoryRepository(pool *pgxpool.Pool) CategoryRepository {
-	return &categoryRepository{pool: pool}
+func NewCategoryRepository(db *sql.DB) CategoryRepository {
+	return &categoryRepository{db: db}
 }
 
 func (r *categoryRepository) CreateCategory(ctx context.Context, category models.Category) (string, error) {
 	var newID string
 	query := `INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING id`
-	err := r.pool.QueryRow(ctx, query, category.Name, category.Description).Scan(&newID)
+	err := r.db.QueryRowContext(ctx, query, category.Name, category.Description).Scan(&newID)
 	if err != nil {
 		return "", err
 	}
@@ -34,7 +34,7 @@ func (r *categoryRepository) CreateCategory(ctx context.Context, category models
 
 func (r *categoryRepository) GetAllCategories(ctx context.Context) ([]models.Category, error) {
 	var categories []models.Category
-	rows, err := r.pool.Query(ctx, "SELECT id, name, description FROM categories")
+	rows, err := r.db.QueryContext(ctx, "SELECT id, name, description FROM categories")
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,9 @@ func (r *categoryRepository) GetAllCategories(ctx context.Context) ([]models.Cat
 
 func (r *categoryRepository) GetCategoryByID(ctx context.Context, id string) (*models.Category, error) {
 	var category models.Category
-	if err := r.pool.QueryRow(ctx, "SELECT id, name, description FROM categories WHERE id = $1", id).Scan(&category.ID, &category.Name, &category.Description); err != nil {
+	err := r.db.QueryRowContext(ctx, "SELECT id, name, description FROM categories WHERE id = $1", id).
+		Scan(&category.ID, &category.Name, &category.Description)
+	if err != nil {
 		return nil, err
 	}
 	return &category, nil
@@ -59,7 +61,7 @@ func (r *categoryRepository) GetCategoryByID(ctx context.Context, id string) (*m
 
 func (r *categoryRepository) GetProductsByCategoryID(ctx context.Context, id string) ([]models.Product, error) {
 	var products []models.Product
-	rows, err := r.pool.Query(ctx, `
+	rows, err := r.db.QueryContext(ctx, `
 		SELECT p.id, p.name, p.description, p.price
 		FROM products p
 		JOIN product_categories pc ON p.id = pc.product_id

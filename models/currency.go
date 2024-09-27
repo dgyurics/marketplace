@@ -54,6 +54,13 @@ func (c *Currency) Scan(value interface{}) error {
 			return fmt.Errorf("Currency.Scan: cannot convert string to float64: %w", err)
 		}
 		c.Amount = int64(math.Round(parsedValue * 100))
+	case []byte:
+		strValue := string(v)
+		parsedValue, err := strconv.ParseFloat(strValue, 64)
+		if err != nil {
+			return fmt.Errorf("Currency.Scan: cannot convert []byte to float64: %w", err)
+		}
+		c.Amount = int64(math.Round(parsedValue * 100))
 	default:
 		return fmt.Errorf("Currency.Scan: expected float64 or string but got %T", value)
 	}

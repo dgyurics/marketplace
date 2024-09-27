@@ -2,9 +2,9 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/dgyurics/marketplace/models"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type CartRepository interface {
@@ -17,11 +17,11 @@ type CartRepository interface {
 }
 
 type cartRepository struct {
-	pool *pgxpool.Pool
+	db *sql.DB
 }
 
-func NewCartRepository(pool *pgxpool.Pool) CartRepository {
-	return &cartRepository{pool: pool}
+func NewCartRepository(db *sql.DB) CartRepository {
+	return &cartRepository{db: db}
 }
 
 func (r *cartRepository) CreateCart(ctx context.Context, cart *models.Cart) error {
@@ -29,7 +29,7 @@ func (r *cartRepository) CreateCart(ctx context.Context, cart *models.Cart) erro
 		INSERT INTO carts (user_id, total)
 		VALUES ($1, $2)
 		RETURNING id`
-	if err := r.pool.QueryRow(ctx, query, cart.UserID, cart.Total.Amount).Scan(&cart.ID); err != nil {
+	if err := r.db.QueryRowContext(ctx, query, cart.UserID, cart.Total.Amount).Scan(&cart.ID); err != nil {
 		return err
 	}
 	return nil
@@ -41,7 +41,7 @@ func (r *cartRepository) GetCartByID(ctx context.Context, id string) (*models.Ca
 		SELECT id, user_id, total
 		FROM carts
 		WHERE id = $1`
-	if err := r.pool.QueryRow(ctx, query, id).Scan(&cart.ID, &cart.UserID, &cart.Total.Amount); err != nil {
+	if err := r.db.QueryRowContext(ctx, query, id).Scan(&cart.ID, &cart.UserID, &cart.Total.Amount); err != nil {
 		return nil, err
 	}
 
@@ -50,7 +50,7 @@ func (r *cartRepository) GetCartByID(ctx context.Context, id string) (*models.Ca
 		SELECT product_id, quantity, unit_price, total_price
 		FROM cart_items
 		WHERE cart_id = $1`
-	rows, err := r.pool.Query(ctx, itemsQuery, id)
+	rows, err := r.db.QueryContext(ctx, itemsQuery, id)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, cartID string, item 
 	query := `
 		INSERT INTO cart_items (cart_id, product_id, quantity, unit_price, total_price)
 		VALUES ($1, $2, $3, $4, $5)`
-	_, err := r.pool.Exec(ctx, query, cartID, item.ProductID, item.Quantity, item.UnitPrice.Amount, item.TotalPrice.Amount)
+	_, err := r.db.ExecContext(ctx, query, cartID, item.ProductID, item.Quantity, item.UnitPrice.Amount, item.TotalPrice.Amount)
 	if err != nil {
 		return err
 	}
@@ -88,18 +88,17 @@ func (r *cartRepository) UpdateCartItem(ctx context.Context, cartID string, item
 		SELECT quantity, total_price
 		FROM cart_items
 		WHERE cart_id = $1 AND product_id = $2`
-	err := r.pool.QueryRow(ctx, query, cartID, item.ProductID).Scan(&oldItem.Quantity, &oldItem.TotalPrice.Amount)
+	err := r.db.QueryRowContext(ctx, query, cartID, item.ProductID).Scan(&oldItem.Quantity, &oldItem.TotalPrice.Amount)
 	if err != nil {
 		return err
 	}
 
 	// Update the cart item
-	totalPriceAsFloat := float64(item.TotalPrice.Amount) / 100
 	updateQuery := `
 		UPDATE cart_items
 		SET quantity = $3, total_price = $4
 		WHERE cart_id = $1 AND product_id = $2`
-	_, err = r.pool.Exec(ctx, updateQuery, cartID, item.ProductID, item.Quantity, totalPriceAsFloat)
+	_, err = r.db.ExecContext(ctx, updateQuery, cartID, item.ProductID, item.Quantity, item.TotalPrice.Amount)
 	if err != nil {
 		return err
 	}
@@ -111,12 +110,12 @@ func (r *cartRepository) UpdateCartItem(ctx context.Context, cartID string, item
 
 func (r *cartRepository) RemoveItemFromCart(ctx context.Context, cartID, productID string) error {
 	// Get total price of item to subtract from cart total
-	var itemTotalPrice float64
+	var itemTotalPrice int64
 	query := `
 		SELECT total_price
 		FROM cart_items
 		WHERE cart_id = $1 AND product_id = $2`
-	if err := r.pool.QueryRow(ctx, query, cartID, productID).Scan(&itemTotalPrice); err != nil {
+	if err := r.db.QueryRowContext(ctx, query, cartID, productID).Scan(&itemTotalPrice); err != nil {
 		return err
 	}
 
@@ -124,20 +123,20 @@ func (r *cartRepository) RemoveItemFromCart(ctx context.Context, cartID, product
 	deleteQuery := `
 		DELETE FROM cart_items
 		WHERE cart_id = $1 AND product_id = $2`
-	_, err := r.pool.Exec(ctx, deleteQuery, cartID, productID)
+	_, err := r.db.ExecContext(ctx, deleteQuery, cartID, productID)
 	if err != nil {
 		return err
 	}
 
 	// Update cart total
-	return r.updateCartTotal(ctx, cartID, models.Currency{Amount: -int64(itemTotalPrice)})
+	return r.updateCartTotal(ctx, cartID, models.Currency{Amount: -itemTotalPrice})
 }
 
 func (r *cartRepository) ClearCart(ctx context.Context, cartID string) error {
 	deleteQuery := `
 		DELETE FROM cart_items
 		WHERE cart_id = $1`
-	_, err := r.pool.Exec(ctx, deleteQuery, cartID)
+	_, err := r.db.ExecContext(ctx, deleteQuery, cartID)
 	if err != nil {
 		return err
 	}
@@ -150,8 +149,6 @@ func (r *cartRepository) updateCartTotal(ctx context.Context, cartID string, pri
 		UPDATE carts
 		SET total = total + $2
 		WHERE id = $1`
-
-	priceChangeAsFloat := float64(priceChange.Amount) / 100
-	_, err := r.pool.Exec(ctx, query, cartID, priceChangeAsFloat)
+	_, err := r.db.ExecContext(ctx, query, cartID, priceChange.Amount)
 	return err
 }

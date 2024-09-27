@@ -19,15 +19,15 @@ func main() {
 	if dbURL == "" {
 		log.Fatal("DATABASE_URL is required")
 	}
-	conPool, err := db.Connect(dbURL)
+	db, err := db.Connect(dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// create repositories
-	userRepository := repositories.NewUserRepository(conPool)
-	categoryRepository := repositories.NewCategoryRepository(conPool)
-	productRepository := repositories.NewProductRepository(conPool)
+	userRepository := repositories.NewUserRepository(db)
+	categoryRepository := repositories.NewCategoryRepository(db)
+	productRepository := repositories.NewProductRepository(db)
 
 	// create services
 	userService := services.NewUserService(userRepository)
