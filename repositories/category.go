@@ -15,7 +15,7 @@ type CategoryRepository interface {
 }
 
 type categoryRepository struct {
-	pool *pgxpool.Pool
+	pool *pgxpool.Pool // TODO replace with *sql.DB
 }
 
 func NewCategoryRepository(pool *pgxpool.Pool) CategoryRepository {

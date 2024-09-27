@@ -12,6 +12,7 @@ type ProductRepository interface {
 	CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error
 	GetAllProducts(ctx context.Context) ([]models.Product, error)
 	GetProductByID(ctx context.Context, id string) (*models.Product, error)
+	DeleteProduct(ctx context.Context, id string) error
 }
 
 type productRepository struct {
@@ -98,4 +99,10 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*mod
 		return nil, err
 	}
 	return &product, nil
+}
+
+func (r *productRepository) DeleteProduct(ctx context.Context, id string) error {
+	query := `DELETE FROM products WHERE id = $1`
+	_, err := r.pool.Exec(ctx, query, id)
+	return err
 }

@@ -25,7 +25,7 @@ clean:
 
 # Run tests
 test:
-	go test $(SRC_DIR)...
+	DATABASE_URL=$(DATABASE_URL) go test $(SRC_DIR)...
 
 # Build the binary
 build:
