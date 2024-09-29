@@ -21,11 +21,16 @@ CREATE TABLE IF NOT EXISTS products (
     description TEXT NOT NULL
 );
 
-CREATE TABLE inventory (
+CREATE TABLE IF NOT EXISTS inventory (
     product_id UUID PRIMARY KEY,
     quantity INT NOT NULL DEFAULT 0,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
+
+-- Add check constraint to ensure inventory quantity never goes below 0
+ALTER TABLE inventory
+ADD CONSTRAINT chk_quantity
+CHECK (quantity >= 0);
 
 -- Insert products with hardcoded UUIDs
 INSERT INTO products (id, name, price, description) VALUES
@@ -39,6 +44,18 @@ INSERT INTO products (id, name, price, description) VALUES
 ('8a1b2c4f-ad5f-4b4e-c9d0-b8f1a0f4d6e6', 'Product 8', 80.00, 'This is product 8'),
 ('9b2c3d56-be66-4c5f-da1e-c9e2f0f5e7f7', 'Product 9', 90.99, 'This is product 9'),
 ('af3d4e6a-ce7a-4d6b-eb2f-d0f3a1b6c8a8', 'Product 10', 100.00, 'This is product 10');
+
+INSERT INTO inventory (product_id, quantity) VALUES
+('1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8', 100),
+('2a5d7f08-4d2b-4b0a-b8b7-e1bc9f01d898', 200),
+('3f9b8b1a-9d7c-4b37-8d35-ffa7e00c2a54', 150),
+('4c6b7d2b-6f0a-4e1d-8a5c-7a4e6f0c9f1b', 120),
+('5d7a8c1c-7e2c-4f1b-9a6d-8b5f7d0c1a2e', 0),
+('6e8b9d2d-8f3d-4f2c-a7b8-9c6f8e1d2b3f', 0),
+('7f9a0e3e-9d4e-4f3d-b8c9-a7e0f9f3c4d5', 90),
+('8a1b2c4f-ad5f-4b4e-c9d0-b8f1a0f4d6e6', 70),
+('9b2c3d56-be66-4c5f-da1e-c9e2f0f5e7f7', 110),
+('af3d4e6a-ce7a-4d6b-eb2f-d0f3a1b6c8a8', 80);
 
 -- Create the product_categories table with UUIDs as foreign keys
 CREATE TABLE IF NOT EXISTS product_categories (
@@ -62,7 +79,7 @@ INSERT INTO product_categories (product_id, category_id) VALUES
 ('9b2c3d56-be66-4c5f-da1e-c9e2f0f5e7f7', '7ae54a1e-4a4e-40e8-bb0f-c3096d41891f'),
 ('af3d4e6a-ce7a-4d6b-eb2f-d0f3a1b6c8a8', '58c9aaf6-490f-49b6-8c89-64cb7c5e31e3');
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE,
     phone VARCHAR(255) UNIQUE,
@@ -73,7 +90,7 @@ CREATE TABLE users (
     CHECK (email IS NOT NULL OR phone IS NOT NULL)
 );
 
-CREATE TABLE refresh_tokens (
+CREATE TABLE IF NOT EXISTS refresh_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
     token_hash TEXT NOT NULL,
@@ -84,7 +101,7 @@ CREATE TABLE refresh_tokens (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
-CREATE TABLE carts (
+CREATE TABLE IF NOT EXISTS carts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
     total NUMERIC NOT NULL,
@@ -92,7 +109,7 @@ CREATE TABLE carts (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE cart_items (
+CREATE TABLE IF NOT EXISTS cart_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     cart_id UUID NOT NULL,
     product_id UUID NOT NULL,

@@ -30,8 +30,7 @@ func RegisterCartHandler(cartService services.CartService, router *mux.Router) {
 }
 
 func (h *cartHandler) AddProductToCart(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	cartID := vars["cart_id"]
+	cartID := mux.Vars(r)["cart_id"]
 
 	var item models.CartItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {

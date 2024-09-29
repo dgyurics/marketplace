@@ -12,6 +12,7 @@ type ProductService interface {
 	CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error
 	GetAllProducts(ctx context.Context) ([]models.Product, error)
 	GetProductByID(ctx context.Context, id string) (*models.Product, error)
+	UpdateInventory(ctx context.Context, productID string, quantity int) error
 }
 
 type productService struct {
@@ -36,4 +37,8 @@ func (s *productService) GetAllProducts(ctx context.Context) ([]models.Product, 
 
 func (s *productService) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
 	return s.repo.GetProductByID(ctx, id)
+}
+
+func (s *productService) UpdateInventory(ctx context.Context, productID string, quantity int) error {
+	return s.repo.UpdateInventory(ctx, productID, quantity)
 }

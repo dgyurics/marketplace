@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/dgyurics/marketplace/models"
 )
@@ -70,6 +71,16 @@ func (r *cartRepository) GetCartByID(ctx context.Context, id string) (*models.Ca
 }
 
 func (r *cartRepository) AddItemToCart(ctx context.Context, cartID string, item *models.CartItem) error {
+	// Check inventory availability
+	var availableQuantity int
+	if err := r.db.QueryRowContext(ctx, "SELECT quantity FROM inventory WHERE product_id = $1", item.ProductID).Scan(&availableQuantity); err != nil {
+		return err
+	}
+	if availableQuantity < item.Quantity {
+		return fmt.Errorf("insufficient inventory for product %s", item.ProductID)
+	}
+
+	// Add item to cart without changing inventory
 	query := `
 		INSERT INTO cart_items (cart_id, product_id, quantity, unit_price, total_price)
 		VALUES ($1, $2, $3, $4, $5)`
@@ -82,7 +93,13 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, cartID string, item 
 }
 
 func (r *cartRepository) UpdateCartItem(ctx context.Context, cartID string, item *models.CartItem) error {
-	// Get the current item in the cart to calculate the difference
+	// Check inventory availability
+	var availableQuantity int
+	if err := r.db.QueryRowContext(ctx, "SELECT quantity FROM inventory WHERE product_id = $1", item.ProductID).Scan(&availableQuantity); err != nil {
+		return err
+	}
+
+	// Calculate the quantity difference
 	var oldItem models.CartItem
 	query := `
 		SELECT quantity, total_price
@@ -91,6 +108,12 @@ func (r *cartRepository) UpdateCartItem(ctx context.Context, cartID string, item
 	err := r.db.QueryRowContext(ctx, query, cartID, item.ProductID).Scan(&oldItem.Quantity, &oldItem.TotalPrice.Amount)
 	if err != nil {
 		return err
+	}
+
+	// Check if the new quantity exceeds available inventory
+	quantityDifference := item.Quantity - oldItem.Quantity
+	if availableQuantity < quantityDifference {
+		return fmt.Errorf("insufficient inventory for product %s", item.ProductID)
 	}
 
 	// Update the cart item

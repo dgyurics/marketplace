@@ -13,6 +13,7 @@ type ProductHandler interface {
 	CreateProduct(w http.ResponseWriter, r *http.Request)
 	GetProducts(w http.ResponseWriter, r *http.Request)
 	GetProduct(w http.ResponseWriter, r *http.Request)
+	UpdateInventory(w http.ResponseWriter, r *http.Request)
 }
 
 type productHandler struct {
@@ -81,10 +82,30 @@ func (h *productHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(product)
 }
 
+func (h *productHandler) UpdateInventory(w http.ResponseWriter, r *http.Request) {
+	productID := mux.Vars(r)["id"]
+	var input struct {
+		Quantity int `json:"quantity"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
+
+	err := h.productService.UpdateInventory(r.Context(), productID, input.Quantity)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func (h *productHandler) RegisterRoutes() {
 	h.router.HandleFunc("/products", h.CreateProduct).Methods(http.MethodPost)
 	h.router.HandleFunc("/products", h.GetProducts).Methods(http.MethodGet)
 	h.router.HandleFunc("/products/{id}", h.GetProduct).Methods(http.MethodGet)
+	h.router.HandleFunc("/products/{id}/inventory", h.UpdateInventory).Methods(http.MethodPut)
 	// router.HandleFunc("/products/{id}", h.UpdateProduct).Methods("PUT")
 	// router.HandleFunc("/products/{id}", h.DeleteProduct).Methods("DELETE")
 }
