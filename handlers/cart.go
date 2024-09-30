@@ -10,8 +10,8 @@ import (
 )
 
 type CartHandler interface {
-	AddProductToCart(w http.ResponseWriter, r *http.Request)
-	RemoveProductFromCart(w http.ResponseWriter, r *http.Request)
+	AddItemToCart(w http.ResponseWriter, r *http.Request)
+	RemoveItemFromCart(w http.ResponseWriter, r *http.Request)
 	GetCart(w http.ResponseWriter, r *http.Request)
 	Checkout(w http.ResponseWriter, r *http.Request)
 }
@@ -29,7 +29,7 @@ func RegisterCartHandler(cartService services.CartService, router *mux.Router) {
 	handler.registerRoutes()
 }
 
-func (h *cartHandler) AddProductToCart(w http.ResponseWriter, r *http.Request) {
+func (h *cartHandler) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	cartID := mux.Vars(r)["cart_id"]
 
 	var item models.CartItem
@@ -46,7 +46,7 @@ func (h *cartHandler) AddProductToCart(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *cartHandler) RemoveProductFromCart(w http.ResponseWriter, r *http.Request) {
+func (h *cartHandler) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	cartID := vars["cart_id"]
 	productID := vars["product_id"]
@@ -94,8 +94,8 @@ func (h *cartHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *cartHandler) registerRoutes() {
-	h.router.HandleFunc("/carts/{cart_id}/items", h.AddProductToCart).Methods("POST")
-	h.router.HandleFunc("/carts/{cart_id}/items/{product_id}", h.RemoveProductFromCart).Methods("DELETE")
+	h.router.HandleFunc("/carts/{cart_id}/items", h.AddItemToCart).Methods("POST")
+	h.router.HandleFunc("/carts/{cart_id}/items/{product_id}", h.RemoveItemFromCart).Methods("DELETE")
 	h.router.HandleFunc("/carts/{cart_id}", h.GetCart).Methods("GET")
 	h.router.HandleFunc("/carts/{cart_id}/checkout", h.Checkout).Methods("POST")
 }
