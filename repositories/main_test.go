@@ -14,7 +14,7 @@ var dbPool *sql.DB
 func TestMain(m *testing.M) {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		log.Fatal("DATABASE_URL is required")
+		dbURL = "postgres://postgres:postgres@localhost:5432/marketplace?sslmode=disable"
 	}
 
 	var err error
