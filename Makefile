@@ -20,8 +20,7 @@ generate-keys:
 
 # Clean up generated files
 clean:
-	rm -f $(BINARY_NAME)
-	rm -f $(PRIVATE_KEY_FILE) $(PUBLIC_KEY_FILE)
+	rm -f $(BINARY_NAME) $(PRIVATE_KEY_FILE) $(PUBLIC_KEY_FILE)
 
 # Run tests
 test:
@@ -30,10 +29,6 @@ test:
 # Build the binary
 build:
 	go build -o $(BINARY_NAME) $(SRC_DIR)
-
-# Clean up generated files
-clean:
-	rm -f $(BINARY_NAME)
 
 # Run the binary
 run: build

@@ -9,26 +9,44 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Helper function to create a unique test user
+// func createUniqueTestUser(t *testing.T, repo UserRepository) *models.User {
+// 	ctx := context.Background()
+
+// 	// Generate a unique email and phone using random numbers and current timestamp
+// 	randomSuffix := rand.Intn(1000000)
+// 	email := fmt.Sprintf("testuser%d@example.com", randomSuffix)
+// 	phone := fmt.Sprintf("12345%06d", randomSuffix)
+
+// 	// Create a new user object
+// 	user := &models.User{
+// 		Email:        email,
+// 		Phone:        phone,
+// 		PasswordHash: "hashedpassword",
+// 	}
+
+// 	// Insert the user into the database
+// 	err := repo.CreateUser(ctx, user)
+// 	assert.NoError(t, err, "Expected no error on user creation")
+// 	assert.NotEmpty(t, user.ID, "Expected user ID to be set")
+
+// 	return user
+// }
+
 func TestCreateUser(t *testing.T) {
 	repo := NewUserRepository(dbPool)
 	ctx := context.Background()
 
-	// Create a test user
-	user := &models.User{
-		Email:        "testuser@example.com",
-		Phone:        "1234567890",
-		PasswordHash: "hashedpassword",
-	}
+	// Create a unique test user
+	user := createUniqueTestUser(t, repo)
 
-	// Create the user
-	err := repo.CreateUser(ctx, user)
-	assert.NoError(t, err, "Expected no error on user creation")
+	// Validate user creation
 	assert.NotEmpty(t, user.ID, "Expected user ID to be set")
-	assert.Equal(t, "testuser@example.com", user.Email, "Expected email to match")
-	assert.Equal(t, "1234567890", user.Phone, "Expected phone to match")
+	assert.NotEmpty(t, user.Email, "Expected email to be set")
+	assert.NotEmpty(t, user.Phone, "Expected phone to be set")
 
 	// Clean up
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
+	_, err := dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
 	assert.NoError(t, err, "Expected no error on user deletion")
 }
 
@@ -36,19 +54,11 @@ func TestGetUserByPhone(t *testing.T) {
 	repo := NewUserRepository(dbPool)
 	ctx := context.Background()
 
-	// Create a test user
-	user := &models.User{
-		Email:        "testuser@example.com",
-		Phone:        "1234567890",
-		PasswordHash: "hashedpassword",
-	}
-
-	// Insert the test user
-	err := repo.CreateUser(ctx, user)
-	assert.NoError(t, err, "Expected no error on user creation")
+	// Create a unique test user
+	user := createUniqueTestUser(t, repo)
 
 	// Retrieve the user by phone number
-	retrievedUser, err := repo.GetUserByPhone(ctx, "1234567890")
+	retrievedUser, err := repo.GetUserByPhone(ctx, user.Phone)
 	assert.NoError(t, err, "Expected no error on getting user by phone")
 	assert.NotNil(t, retrievedUser, "Expected retrieved user to not be nil")
 	assert.Equal(t, user.ID, retrievedUser.ID, "Expected user ID to match")
@@ -64,19 +74,11 @@ func TestGetUserByEmail(t *testing.T) {
 	repo := NewUserRepository(dbPool)
 	ctx := context.Background()
 
-	// Create a test user
-	user := &models.User{
-		Email:        "testuser@example.com",
-		Phone:        "1234567890",
-		PasswordHash: "hashedpassword",
-	}
-
-	// Insert the test user
-	err := repo.CreateUser(ctx, user)
-	assert.NoError(t, err, "Expected no error on user creation")
+	// Create a unique test user
+	user := createUniqueTestUser(t, repo)
 
 	// Retrieve the user by email
-	retrievedUser, err := repo.GetUserByEmail(ctx, "testuser@example.com")
+	retrievedUser, err := repo.GetUserByEmail(ctx, user.Email)
 	assert.NoError(t, err, "Expected no error on getting user by email")
 	assert.NotNil(t, retrievedUser, "Expected retrieved user to not be nil")
 	assert.Equal(t, user.ID, retrievedUser.ID, "Expected user ID to match")
@@ -92,23 +94,9 @@ func TestGetAllUsers(t *testing.T) {
 	repo := NewUserRepository(dbPool)
 	ctx := context.Background()
 
-	// Create two test users
-	user1 := &models.User{
-		Email:        "testuser1@example.com",
-		Phone:        "1234567891",
-		PasswordHash: "hashedpassword1",
-	}
-	user2 := &models.User{
-		Email:        "testuser2@example.com",
-		Phone:        "1234567892",
-		PasswordHash: "hashedpassword2",
-	}
-
-	// Insert the test users
-	err := repo.CreateUser(ctx, user1)
-	assert.NoError(t, err, "Expected no error on user1 creation")
-	err = repo.CreateUser(ctx, user2)
-	assert.NoError(t, err, "Expected no error on user2 creation")
+	// Create two unique test users
+	user1 := createUniqueTestUser(t, repo)
+	user2 := createUniqueTestUser(t, repo)
 
 	// Retrieve all users
 	users, err := repo.GetAllUsers(ctx)
@@ -137,16 +125,8 @@ func TestStoreRefreshToken(t *testing.T) {
 	repo := NewUserRepository(dbPool)
 	ctx := context.Background()
 
-	// Create a test user
-	user := &models.User{
-		Email:        "testuser@example.com",
-		Phone:        "1234567890",
-		PasswordHash: "hashedpassword",
-	}
-
-	// Insert the test user
-	err := repo.CreateUser(ctx, user)
-	assert.NoError(t, err, "Expected no error on user creation")
+	// Create a unique test user
+	user := createUniqueTestUser(t, repo)
 
 	// Create a refresh token
 	refreshToken := &models.RefreshToken{
@@ -159,7 +139,7 @@ func TestStoreRefreshToken(t *testing.T) {
 	}
 
 	// Store the refresh token
-	err = repo.StoreRefreshToken(ctx, refreshToken)
+	err := repo.StoreRefreshToken(ctx, refreshToken)
 	assert.NoError(t, err, "Expected no error on storing refresh token")
 
 	// Clean up
