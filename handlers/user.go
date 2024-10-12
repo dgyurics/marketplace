@@ -3,11 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
-	"github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
 
@@ -18,14 +16,14 @@ type UserHandler interface {
 
 type userHandler struct {
 	userService services.UserService
-	jwtUtility  utilities.JWTUtility
+	authService services.AuthService
 	router      *mux.Router
 }
 
-func RegisterUserHandler(userService services.UserService, jwtUtility utilities.JWTUtility, router *mux.Router) {
+func RegisterUserHandler(userService services.UserService, authService services.AuthService, router *mux.Router) {
 	handler := &userHandler{
 		userService: userService,
-		jwtUtility:  jwtUtility,
+		authService: authService,
 		router:      router,
 	}
 	handler.registerRoutes()
@@ -53,19 +51,19 @@ func (h *userHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwt, err := h.jwtUtility.CreateToken(usr.ID, time.Duration(15)*time.Minute)
+	accessToken, err := h.authService.GenerateAccessToken(usr.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	token, err := h.jwtUtility.CreateRefreshToken()
+	refreshToken, err := h.authService.GenerateRefreshToken()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := h.userService.StoreRefreshToken(r.Context(), usr.ID, token, time.Now().Add(time.Hour*24*7)); err != nil {
+	if err := h.authService.StoreRefreshToken(r.Context(), usr.ID, refreshToken); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -73,8 +71,8 @@ func (h *userHandler) Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
-		"token":         jwt,
-		"refresh_token": token,
+		"token":         accessToken,
+		"refresh_token": refreshToken,
 	})
 }
 

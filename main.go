@@ -9,51 +9,52 @@ import (
 	"github.com/dgyurics/marketplace/handlers"
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/services"
-	"github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
 
 func main() {
-	// establish connection to the database
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		log.Fatal("DATABASE_URL is required")
-	}
-	db, err := db.Connect(dbURL)
+	// connect to database
+	db, err := db.Connect(getEnv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// create repositories
+	authRepository := repositories.NewAuthRepository(db)
 	userRepository := repositories.NewUserRepository(db)
 	categoryRepository := repositories.NewCategoryRepository(db)
 	productRepository := repositories.NewProductRepository(db)
 
 	// create services
+	authService := services.NewAuthService(authRepository, getKey("public.pem"), getKey("private.pem"), getKey("HMAC_SECRET"))
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
 
-	// read private and public keys
-	privateKey, err := os.ReadFile("private.pem")
-	if err != nil {
-		log.Fatal("Error reading private key:", err)
-	}
-
-	publicKey, err := os.ReadFile("public.pem")
-	if err != nil {
-		log.Fatal("Error reading public key:", err)
-	}
-
-	// create JWT utility
-	jwtUtil := utilities.NewJWTUtility(privateKey, publicKey)
-
 	// register handlers
 	router := mux.NewRouter()
-	handlers.RegisterUserHandler(userService, jwtUtil, router)
+	handlers.RegisterUserHandler(userService, authService, router)
 	handlers.RegisterCategoryHandler(categoryService, router)
 	handlers.RegisterProductHandler(productService, router)
 
 	log.Println("Server is running on port 8000")
 	log.Fatal(http.ListenAndServe(":8000", router))
+}
+
+// helper for fetching public/private pem keys
+func getKey(filename string) []byte {
+	privateKey, err := os.ReadFile(filename)
+	if err != nil {
+		log.Fatalf("Error reading %s key: %v", filename, err)
+	}
+	return privateKey
+}
+
+// helper for fetching critical environment variables
+func getEnv(key string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	log.Fatalf("%s is required", key)
+	return ""
 }

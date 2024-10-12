@@ -3,9 +3,7 @@ package repositories
 import (
 	"context"
 	"testing"
-	"time"
 
-	"github.com/dgyurics/marketplace/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -118,33 +116,5 @@ func TestGetAllUsers(t *testing.T) {
 
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1 OR id = $2", user1.ID, user2.ID)
-	assert.NoError(t, err, "Expected no error on user deletion")
-}
-
-func TestStoreRefreshToken(t *testing.T) {
-	repo := NewUserRepository(dbPool)
-	ctx := context.Background()
-
-	// Create a unique test user
-	user := createUniqueTestUser(t, repo)
-
-	// Create a refresh token
-	refreshToken := &models.RefreshToken{
-		UserID:    user.ID,
-		TokenHash: "testtokenhash",
-		ExpiresAt: time.Now().Add(24 * time.Hour),
-		CreatedAt: time.Now(),
-		Revoked:   false,
-		LastUsed:  time.Now(),
-	}
-
-	// Store the refresh token
-	err := repo.StoreRefreshToken(ctx, refreshToken)
-	assert.NoError(t, err, "Expected no error on storing refresh token")
-
-	// Clean up
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM refresh_tokens WHERE user_id = $1", refreshToken.UserID)
-	assert.NoError(t, err, "Expected no error on refresh token deletion")
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
 	assert.NoError(t, err, "Expected no error on user deletion")
 }
