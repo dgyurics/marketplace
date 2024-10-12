@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">Marketplace</h1>
 <p align="center">
-  An e-commerce backend API built with Go, designed to handle essential operations such as product management, user authentication, and shopping carts. The project follows a clean architecture approach, making it easy to extend and maintain. This backend aims to serve as a robust foundation for any e-commerce application.
+  An e-commerce backend API built with Go, designed to handle essential operations such as product management, user authentication, and shopping carts. The project follows a clean architecture approach, making it easy to extend and maintain. This backend aims to serve as a robust foundation for any e-commerce application. Dependencies have been kept to a minimum.
 </p>
 <h2>Features</h2>
 <ul>
