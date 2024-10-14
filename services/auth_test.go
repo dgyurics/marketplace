@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/golang-jwt/jwt/v5"
@@ -54,7 +55,7 @@ type MockAuthRepository struct {
 	mock.Mock
 }
 
-func (m *MockAuthRepository) StoreRefreshToken(ctx context.Context, refreshToken *models.RefreshToken) error {
+func (m *MockAuthRepository) StoreRefreshToken(ctx context.Context, refreshToken models.RefreshToken) error {
 	args := m.Called(ctx, refreshToken)
 	return args.Error(0)
 }
@@ -113,56 +114,54 @@ func TestGenerateRefreshToken(t *testing.T) {
 	assert.Equal(t, 64, len(refreshToken), "expected refresh token to be 64 characters long")
 }
 
-// func TestValidateRefreshToken(t *testing.T) {
-// 	repo := new(MockAuthRepository)
-// 	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
+func TestValidateRefreshToken(t *testing.T) {
+	repo := new(MockAuthRepository)
+	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
 
-// 	// Mock the behavior of the repository
-// 	refreshToken := "test_refresh_token"
-// 	userID := "user123"
-// 	expiresAt := time.Now().Add(24 * time.Hour)
+	// Mock the behavior of the repository
+	refreshToken := "test_refresh_token"
+	userID := "user123"
+	expiresAt := time.Now().Add(24 * time.Hour)
 
-// 	repo.On("GetRefreshToken", mock.Anything, refreshToken).Return(&models.RefreshToken{
-// 		UserID:    userID,
-// 		TokenHash: refreshToken,
-// 		ExpiresAt: expiresAt,
-// 		Revoked:   false,
-// 	}, nil)
+	// Mock the repository to return a valid refresh token object
+	repo.On("GetRefreshToken", mock.Anything, refreshToken).Return(&models.RefreshToken{
+		UserID:    userID,
+		TokenHash: hashRefreshToken(refreshToken, []byte(hmacSecret)),
+		ExpiresAt: expiresAt,
+		Revoked:   false,
+		LastUsed:  time.Now(),
+	}, nil)
+	// Mock the repository to return no error when storing the refresh token (service will update the LastUsed field)
+	repo.On("StoreRefreshToken", mock.Anything, mock.AnythingOfType("models.RefreshToken")).Return(nil)
 
-// 	valid, err := authService.ValidateRefreshToken(context.Background(), refreshToken)
-// 	assert.NoError(t, err, "expected no error in validating refresh token")
-// 	assert.True(t, valid, "expected refresh token to be valid")
-// }
+	valid, err := authService.ValidateRefreshToken(context.Background(), refreshToken)
+	assert.NoError(t, err, "expected no error in validating refresh token")
+	assert.True(t, valid, "expected refresh token to be valid")
+}
 
-// func TestStoreRefreshToken(t *testing.T) {
-// 	repo := new(MockAuthRepository)
-// 	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
+func TestStoreRefreshToken(t *testing.T) {
+	repo := new(MockAuthRepository)
+	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
 
-// 	// Mock the behavior of the repository
-// 	refreshToken := "test_refresh_token"
-// 	userID := "user123"
+	// Mock the behavior of the repository
+	token := "test_refresh_token"
+	userID := "user123"
 
-// 	repo.On("StoreRefreshToken", mock.Anything, &models.RefreshToken{
-// 		UserID:    userID,
-// 		TokenHash: refreshToken,
-// 		ExpiresAt: mock.Anything,
-// 		CreatedAt: mock.Anything,
-// 		Revoked:   false,
-// 		LastUsed:  mock.Anything,
-// 	}).Return(nil)
+	// Expect that the StoreRefreshToken method will be called with any context and a RefreshToken struct
+	repo.On("StoreRefreshToken", mock.Anything, mock.AnythingOfType("models.RefreshToken")).Return(nil)
 
-// 	err := authService.StoreRefreshToken(context.Background(), userID, refreshToken)
-// 	assert.NoError(t, err, "expected no error in storing refresh token")
-// }
+	err := authService.StoreRefreshToken(context.Background(), userID, token)
+	assert.NoError(t, err, "expected no error in storing refresh token")
+}
 
-// func TestRevokeAllRefreshTokens(t *testing.T) {
-// 	repo := new(MockAuthRepository)
-// 	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
+func TestRevokeAllRefreshTokens(t *testing.T) {
+	repo := new(MockAuthRepository)
+	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
 
-// 	// Mock the behavior of the repository
-// 	refreshToken := "test_refresh_token"
-// 	repo.On("RevokeAllRefreshTokens", mock.Anything, refreshToken).Return(nil)
+	// Mock the behavior of the repository
+	refreshToken := "test_refresh_token"
+	repo.On("RevokeAllRefreshTokens", mock.Anything, refreshToken).Return(nil)
 
-// 	err := authService.RevokeAllRefreshTokens(context.Background(), refreshToken)
-// 	assert.NoError(t, err, "expected no error in revoking all refresh tokens")
-// }
+	err := authService.RevokeAllRefreshTokens(context.Background(), refreshToken)
+	assert.NoError(t, err, "expected no error in revoking all refresh tokens")
+}

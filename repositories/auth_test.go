@@ -17,7 +17,7 @@ func TestStoreRefreshToken(t *testing.T) {
 	user := createUniqueTestUser(t, NewUserRepository(dbPool))
 
 	// Create a refresh token
-	refreshToken := &models.RefreshToken{
+	refreshToken := models.RefreshToken{
 		UserID:    user.ID,
 		TokenHash: "testtokenhash",
 		ExpiresAt: time.Now().Add(24 * time.Hour),
@@ -45,7 +45,7 @@ func TestGetRefreshToken(t *testing.T) {
 	user := createUniqueTestUser(t, NewUserRepository(dbPool))
 
 	// Create a refresh token
-	refreshToken := &models.RefreshToken{
+	refreshToken := models.RefreshToken{
 		UserID:    user.ID,
 		TokenHash: "testtokenhash",
 		ExpiresAt: time.Now().Add(24 * time.Hour),
@@ -80,7 +80,7 @@ func TestRevokeAllRefreshTokens(t *testing.T) {
 	user := createUniqueTestUser(t, NewUserRepository(dbPool))
 
 	// Create two refresh tokens for the same user
-	refreshToken1 := &models.RefreshToken{
+	refreshToken1 := models.RefreshToken{
 		UserID:    user.ID,
 		TokenHash: "testtokenhash1",
 		ExpiresAt: time.Now().Add(24 * time.Hour),
@@ -88,7 +88,7 @@ func TestRevokeAllRefreshTokens(t *testing.T) {
 		Revoked:   false,
 		LastUsed:  time.Now(),
 	}
-	refreshToken2 := &models.RefreshToken{
+	refreshToken2 := models.RefreshToken{
 		UserID:    user.ID,
 		TokenHash: "testtokenhash2",
 		ExpiresAt: time.Now().Add(24 * time.Hour),
