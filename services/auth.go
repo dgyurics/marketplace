@@ -101,7 +101,7 @@ func (a *authService) ValidateRefreshToken(ctx context.Context, token string) (b
 
 	// Update the last used time
 	refreshToken.LastUsed = time.Now()
-	if err := a.repo.StoreRefreshToken(ctx, refreshToken); err != nil {
+	if err := a.repo.StoreRefreshToken(ctx, *refreshToken); err != nil {
 		return false, errors.New("failed to update refresh token usage")
 	}
 
@@ -109,7 +109,7 @@ func (a *authService) ValidateRefreshToken(ctx context.Context, token string) (b
 }
 
 func (a *authService) StoreRefreshToken(ctx context.Context, userID, token string) error {
-	return a.repo.StoreRefreshToken(ctx, &models.RefreshToken{
+	return a.repo.StoreRefreshToken(ctx, models.RefreshToken{
 		UserID:    userID,
 		TokenHash: hashRefreshToken(token, a.hmacSecret),
 		ExpiresAt: time.Now().Add(a.durationRefreshToken),

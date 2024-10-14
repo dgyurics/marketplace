@@ -9,7 +9,7 @@ import (
 )
 
 type AuthRepository interface {
-	StoreRefreshToken(ctx context.Context, refreshToken *models.RefreshToken) error
+	StoreRefreshToken(ctx context.Context, refreshToken models.RefreshToken) error
 	GetRefreshToken(ctx context.Context, tokenHash string) (*models.RefreshToken, error)
 	RevokeAllRefreshTokens(ctx context.Context, tokenHash string) error
 }
@@ -22,7 +22,7 @@ func NewAuthRepository(db *sql.DB) AuthRepository {
 	return &authRepository{db: db}
 }
 
-func (r *authRepository) StoreRefreshToken(ctx context.Context, refreshToken *models.RefreshToken) error {
+func (r *authRepository) StoreRefreshToken(ctx context.Context, refreshToken models.RefreshToken) error {
 	query := `
 		INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at, revoked, last_used)
 		VALUES ($1, $2, $3, $4, $5, $6)
