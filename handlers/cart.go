@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/dgyurics/marketplace/middleware"
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
 	"github.com/gorilla/mux"
@@ -21,12 +22,15 @@ type cartHandler struct {
 	router      *mux.Router
 }
 
-func RegisterCartHandler(cartService services.CartService, router *mux.Router) {
+func RegisterCartHandler(
+	cartService services.CartService,
+	router *mux.Router,
+	authMiddleware middleware.AuthMiddleware) {
 	handler := &cartHandler{
 		cartService: cartService,
 		router:      router,
 	}
-	handler.registerRoutes()
+	handler.RegisterRoutes(authMiddleware)
 }
 
 func (h *cartHandler) AddItemToCart(w http.ResponseWriter, r *http.Request) {
@@ -93,9 +97,9 @@ func (h *cartHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *cartHandler) registerRoutes() {
-	h.router.HandleFunc("/carts/{cart_id}/items", h.AddItemToCart).Methods("POST")
-	h.router.HandleFunc("/carts/{cart_id}/items/{product_id}", h.RemoveItemFromCart).Methods("DELETE")
-	h.router.HandleFunc("/carts/{cart_id}", h.GetCart).Methods("GET")
-	h.router.HandleFunc("/carts/{cart_id}/checkout", h.Checkout).Methods("POST")
+func (h *cartHandler) RegisterRoutes(authMiddleware middleware.AuthMiddleware) {
+	h.router.Handle("/carts/{cart_id}/items", authMiddleware.Middleware(http.HandlerFunc(h.AddItemToCart))).Methods("POST")
+	h.router.Handle("/carts/{cart_id}/items/{product_id}", authMiddleware.Middleware(http.HandlerFunc(h.RemoveItemFromCart))).Methods("DELETE")
+	h.router.Handle("/carts/{cart_id}", authMiddleware.Middleware(http.HandlerFunc(h.GetCart))).Methods("GET")
+	h.router.Handle("/carts/{cart_id}/checkout", authMiddleware.Middleware(http.HandlerFunc(h.Checkout))).Methods("POST")
 }
