@@ -23,28 +23,28 @@ func (m *MockCartService) CreateCart(ctx context.Context, cart *models.Cart) err
 	return args.Error(0)
 }
 
-func (m *MockCartService) AddItemToCart(ctx context.Context, cartID string, item *models.CartItem) error {
-	args := m.Called(ctx, cartID, item)
+func (m *MockCartService) AddItemToCart(ctx context.Context, item *models.CartItem) error {
+	args := m.Called(ctx, item)
 	return args.Error(0)
 }
 
-func (m *MockCartService) GetCartByID(ctx context.Context, cartID string) (*models.Cart, error) {
-	args := m.Called(ctx, cartID)
+func (m *MockCartService) GetCart(ctx context.Context) (*models.Cart, error) {
+	args := m.Called(ctx)
 	return args.Get(0).(*models.Cart), args.Error(1)
 }
 
-func (m *MockCartService) UpdateCartItem(ctx context.Context, cartID string, item *models.CartItem) error {
-	args := m.Called(ctx, cartID, item)
+func (m *MockCartService) UpdateCartItem(ctx context.Context, item *models.CartItem) error {
+	args := m.Called(ctx, item)
 	return args.Error(0)
 }
 
-func (m *MockCartService) RemoveItemFromCart(ctx context.Context, cartID, productID string) error {
-	args := m.Called(ctx, cartID, productID)
+func (m *MockCartService) RemoveItemFromCart(ctx context.Context, productID string) error {
+	args := m.Called(ctx, productID)
 	return args.Error(0)
 }
 
-func (m *MockCartService) ClearCart(ctx context.Context, cartID string) error {
-	args := m.Called(ctx, cartID)
+func (m *MockCartService) ClearCart(ctx context.Context) error {
+	args := m.Called(ctx)
 	return args.Error(0)
 }
 
@@ -60,20 +60,19 @@ func TestAddItemToCart(t *testing.T) {
 		ProductID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8",
 		Quantity:  2,
 	}
-	cartID := "test-cart-id"
 
-	mockCartService.On("AddItemToCart", mock.Anything, mock.Anything, &item).Return(nil)
+	mockCartService.On("AddItemToCart", mock.Anything, &item).Return(nil)
 
 	// Create a new HTTP POST request with the cart ID in the URL and the item as the payload
 	payload, _ := json.Marshal(item)
-	req, err := http.NewRequest(http.MethodPost, "/carts/"+cartID+"/items", bytes.NewBuffer(payload))
+	req, err := http.NewRequest(http.MethodPost, "/carts/items", bytes.NewBuffer(payload))
 	require.NoError(t, err)
 
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	handler.router.HandleFunc("/carts/{cart_id}/items", handler.AddItemToCart).Methods(http.MethodPost)
+	handler.router.HandleFunc("/carts/items", handler.AddItemToCart).Methods(http.MethodPost)
 
 	// Serve the request via the router
 	handler.router.ServeHTTP(rr, req)
@@ -93,20 +92,18 @@ func TestRemoveItemFromCart(t *testing.T) {
 		router:      router,
 	}
 
-	cartID := "test-cart-id"
 	productID := "test-product-id"
-
-	mockCartService.On("RemoveItemFromCart", mock.Anything, cartID, productID).Return(nil)
+	mockCartService.On("RemoveItemFromCart", mock.Anything, productID).Return(nil)
 
 	// Create a new HTTP DELETE request with cartID and productID in the URL
-	req, err := http.NewRequest(http.MethodDelete, "/carts/"+cartID+"/items/"+productID, nil)
+	req, err := http.NewRequest(http.MethodDelete, "/carts/items/"+productID, nil)
 	require.NoError(t, err)
 
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	handler.router.HandleFunc("/carts/{cart_id}/items/{product_id}", handler.RemoveItemFromCart).Methods(http.MethodDelete)
+	handler.router.HandleFunc("/carts/items/{product_id}", handler.RemoveItemFromCart).Methods(http.MethodDelete)
 
 	// Serve the request via the router
 	handler.router.ServeHTTP(rr, req)
@@ -126,24 +123,23 @@ func TestGetCart(t *testing.T) {
 		router:      router,
 	}
 
-	cartID := "test-cart-id"
 	expectedCart := &models.Cart{
-		ID:    cartID,
-		Items: []models.CartItem{{ProductID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8", Quantity: 2}},
-		Total: models.NewCurrency(20, 0),
+		UserID: "test-user-id",
+		Items:  []models.CartItem{{ProductID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8", Quantity: 2}},
+		Total:  models.NewCurrency(20, 0),
 	}
 
-	mockCartService.On("GetCartByID", mock.Anything, cartID).Return(expectedCart, nil)
+	mockCartService.On("GetCart", mock.Anything).Return(expectedCart, nil)
 
 	// Create a new HTTP GET request with cartID in the URL
-	req, err := http.NewRequest(http.MethodGet, "/carts/"+cartID, nil)
+	req, err := http.NewRequest(http.MethodGet, "/carts", nil)
 	require.NoError(t, err)
 
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	handler.router.HandleFunc("/carts/{cart_id}", handler.GetCart).Methods(http.MethodGet)
+	handler.router.HandleFunc("/carts", handler.GetCart).Methods(http.MethodGet)
 
 	// Serve the request via the router
 	handler.router.ServeHTTP(rr, req)
@@ -157,7 +153,7 @@ func TestGetCart(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the cart details
-	require.Equal(t, expectedCart.ID, responseCart.ID)
+	require.Equal(t, expectedCart.UserID, responseCart.UserID)
 	require.Equal(t, expectedCart.Total, responseCart.Total)
 
 	// Assert that the mock's expectations were met
@@ -172,19 +168,17 @@ func TestCheckout(t *testing.T) {
 		router:      router,
 	}
 
-	cartID := "test-cart-id"
-
-	mockCartService.On("ClearCart", mock.Anything, cartID).Return(nil)
+	mockCartService.On("ClearCart", mock.Anything).Return(nil)
 
 	// Create a new HTTP POST request with cartID in the URL
-	req, err := http.NewRequest(http.MethodPost, "/carts/"+cartID+"/checkout", nil)
+	req, err := http.NewRequest(http.MethodPost, "/carts/checkout", nil)
 	require.NoError(t, err)
 
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	handler.router.HandleFunc("/carts/{cart_id}/checkout", handler.Checkout).Methods(http.MethodPost)
+	handler.router.HandleFunc("/carts/checkout", handler.Checkout).Methods(http.MethodPost)
 
 	// Serve the request via the router
 	handler.router.ServeHTTP(rr, req)

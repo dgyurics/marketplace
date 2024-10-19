@@ -9,11 +9,11 @@ import (
 
 type CartService interface {
 	CreateCart(ctx context.Context, cart *models.Cart) error
-	AddItemToCart(ctx context.Context, cartID string, item *models.CartItem) error
-	GetCartByID(ctx context.Context, id string) (*models.Cart, error)
-	UpdateCartItem(ctx context.Context, cartID string, item *models.CartItem) error
-	RemoveItemFromCart(ctx context.Context, cartID, productID string) error
-	ClearCart(ctx context.Context, cartID string) error
+	AddItemToCart(ctx context.Context, item *models.CartItem) error
+	GetCart(ctx context.Context) (*models.Cart, error)
+	UpdateCartItem(ctx context.Context, item *models.CartItem) error
+	RemoveItemFromCart(ctx context.Context, productID string) error
+	ClearCart(ctx context.Context) error
 }
 
 type cartService struct {
@@ -25,25 +25,31 @@ func NewCartService(repo repositories.CartRepository) CartService {
 }
 
 func (s *cartService) CreateCart(ctx context.Context, cart *models.Cart) error {
-	return s.repo.CreateCart(ctx, cart)
+	userID := ctx.Value("userID").(string)
+	return s.repo.CreateCart(ctx, userID)
 }
 
-func (s *cartService) AddItemToCart(ctx context.Context, cartID string, item *models.CartItem) error {
-	return s.repo.AddItemToCart(ctx, cartID, item)
+func (s *cartService) AddItemToCart(ctx context.Context, item *models.CartItem) error {
+	userID := ctx.Value("userID").(string)
+	return s.repo.AddItemToCart(ctx, userID, item)
 }
 
-func (s *cartService) GetCartByID(ctx context.Context, id string) (*models.Cart, error) {
-	return s.repo.GetCartByID(ctx, id)
+func (s *cartService) GetCart(ctx context.Context) (*models.Cart, error) {
+	userID := ctx.Value("userID").(string)
+	return s.repo.GetCart(ctx, userID)
 }
 
-func (s *cartService) UpdateCartItem(ctx context.Context, cartID string, item *models.CartItem) error {
-	return s.repo.UpdateCartItem(ctx, cartID, item)
+func (s *cartService) UpdateCartItem(ctx context.Context, item *models.CartItem) error {
+	userID := ctx.Value("userID").(string)
+	return s.repo.UpdateCartItem(ctx, userID, item)
 }
 
-func (s *cartService) RemoveItemFromCart(ctx context.Context, cartID, productID string) error {
-	return s.repo.RemoveItemFromCart(ctx, cartID, productID)
+func (s *cartService) RemoveItemFromCart(ctx context.Context, productID string) error {
+	userID := ctx.Value("userID").(string)
+	return s.repo.RemoveItemFromCart(ctx, userID, productID)
 }
 
-func (s *cartService) ClearCart(ctx context.Context, cartID string) error {
-	return s.repo.ClearCart(ctx, cartID)
+func (s *cartService) ClearCart(ctx context.Context) error {
+	userID := ctx.Value("userID").(string)
+	return s.repo.ClearCart(ctx, userID)
 }

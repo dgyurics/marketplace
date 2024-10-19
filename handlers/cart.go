@@ -34,15 +34,13 @@ func RegisterCartHandler(
 }
 
 func (h *cartHandler) AddItemToCart(w http.ResponseWriter, r *http.Request) {
-	cartID := mux.Vars(r)["cart_id"]
-
 	var item models.CartItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	if err := h.cartService.AddItemToCart(r.Context(), cartID, &item); err != nil {
+	if err := h.cartService.AddItemToCart(r.Context(), &item); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -52,10 +50,9 @@ func (h *cartHandler) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 
 func (h *cartHandler) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	cartID := vars["cart_id"]
 	productID := vars["product_id"]
 
-	err := h.cartService.RemoveItemFromCart(r.Context(), cartID, productID)
+	err := h.cartService.RemoveItemFromCart(r.Context(), productID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -65,10 +62,7 @@ func (h *cartHandler) RemoveItemFromCart(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	cartID := vars["cart_id"]
-
-	cart, err := h.cartService.GetCartByID(r.Context(), cartID)
+	cart, err := h.cartService.GetCart(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -80,12 +74,9 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *cartHandler) Checkout(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	cartID := vars["cart_id"]
-
 	// Implement checkout logic, e.g., process payment, reduce inventory, etc.
 	// For now, just clear the cart.
-	err := h.cartService.ClearCart(r.Context(), cartID)
+	err := h.cartService.ClearCart(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -98,8 +89,8 @@ func (h *cartHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *cartHandler) RegisterRoutes(authMiddleware middleware.AuthMiddleware) {
-	h.router.Handle("/carts/{cart_id}/items", authMiddleware.Middleware(http.HandlerFunc(h.AddItemToCart))).Methods("POST")
-	h.router.Handle("/carts/{cart_id}/items/{product_id}", authMiddleware.Middleware(http.HandlerFunc(h.RemoveItemFromCart))).Methods("DELETE")
-	h.router.Handle("/carts/{cart_id}", authMiddleware.Middleware(http.HandlerFunc(h.GetCart))).Methods("GET")
-	h.router.Handle("/carts/{cart_id}/checkout", authMiddleware.Middleware(http.HandlerFunc(h.Checkout))).Methods("POST")
+	h.router.Handle("/carts/items", authMiddleware.Middleware(http.HandlerFunc(h.AddItemToCart))).Methods("POST")
+	h.router.Handle("/carts/items/{product_id}", authMiddleware.Middleware(http.HandlerFunc(h.RemoveItemFromCart))).Methods("DELETE")
+	h.router.Handle("/carts", authMiddleware.Middleware(http.HandlerFunc(h.GetCart))).Methods("GET")
+	h.router.Handle("/carts/checkout", authMiddleware.Middleware(http.HandlerFunc(h.Checkout))).Methods("POST")
 }
