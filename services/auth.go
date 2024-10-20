@@ -128,3 +128,12 @@ func hashRefreshToken(token string, secret []byte) string {
 	h.Write([]byte(token))
 	return hex.EncodeToString(h.Sum(nil)) // return the final HMAC hash as a hexadecimal string
 }
+
+// getUserID retrieves the user ID from the context
+func getUserID(ctx context.Context) string {
+	userID, ok := ctx.Value("userID").(string)
+	if !ok {
+		return ""
+	}
+	return userID
+}

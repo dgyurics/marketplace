@@ -31,10 +31,7 @@ func (s *userService) CreateUser(ctx context.Context, user *models.User) error {
 		return err
 	}
 	user.PasswordHash = string(hashedPassword)
-	if err := s.repo.CreateUser(ctx, user); err != nil {
-		return err
-	}
-	return nil
+	return s.repo.CreateUser(ctx, user)
 }
 
 func (s *userService) VerifyCredentials(ctx context.Context, user *models.User) error {

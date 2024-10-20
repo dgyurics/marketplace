@@ -25,31 +25,25 @@ func NewCartService(repo repositories.CartRepository) CartService {
 }
 
 func (s *cartService) CreateCart(ctx context.Context, cart *models.Cart) error {
-	userID := ctx.Value("userID").(string)
-	return s.repo.CreateCart(ctx, userID)
+	return s.repo.CreateCart(ctx, getUserID(ctx))
 }
 
 func (s *cartService) AddItemToCart(ctx context.Context, item *models.CartItem) error {
-	userID := ctx.Value("userID").(string)
-	return s.repo.AddItemToCart(ctx, userID, item)
+	return s.repo.AddItemToCart(ctx, getUserID(ctx), item)
 }
 
 func (s *cartService) GetCart(ctx context.Context) (*models.Cart, error) {
-	userID := ctx.Value("userID").(string)
-	return s.repo.GetCart(ctx, userID)
+	return s.repo.GetCart(ctx, getUserID(ctx))
 }
 
 func (s *cartService) UpdateCartItem(ctx context.Context, item *models.CartItem) error {
-	userID := ctx.Value("userID").(string)
-	return s.repo.UpdateCartItem(ctx, userID, item)
+	return s.repo.UpdateCartItem(ctx, getUserID(ctx), item)
 }
 
 func (s *cartService) RemoveItemFromCart(ctx context.Context, productID string) error {
-	userID := ctx.Value("userID").(string)
-	return s.repo.RemoveItemFromCart(ctx, userID, productID)
+	return s.repo.RemoveItemFromCart(ctx, getUserID(ctx), productID)
 }
 
 func (s *cartService) ClearCart(ctx context.Context) error {
-	userID := ctx.Value("userID").(string)
-	return s.repo.ClearCart(ctx, userID)
+	return s.repo.ClearCart(ctx, getUserID(ctx))
 }

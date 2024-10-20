@@ -29,12 +29,8 @@ func (r *userRepository) CreateUser(ctx context.Context, user *models.User) erro
 		VALUES (NULLIF($1, ''), NULLIF($2, ''), $3)
 		RETURNING id, COALESCE(email, ''), COALESCE(phone, ''), admin, created_at, updated_at
 	`
-	err := r.db.QueryRowContext(ctx, query, user.Email, user.Phone, user.PasswordHash).
+	return r.db.QueryRowContext(ctx, query, user.Email, user.Phone, user.PasswordHash).
 		Scan(&user.ID, &user.Email, &user.Phone, &user.Admin, &user.CreatedAt, &user.UpdatedAt)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (r *userRepository) GetUserByPhone(ctx context.Context, phone string) (*models.User, error) {
