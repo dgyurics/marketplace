@@ -75,7 +75,10 @@ func TestGenerateAccessToken(t *testing.T) {
 	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
 
 	userID := "user123"
-	token, err := authService.GenerateAccessToken(userID)
+	user := models.User{
+		ID: "user123",
+	}
+	token, err := authService.GenerateAccessToken(user)
 	assert.NoError(t, err, "expected no error in generating access token")
 	assert.NotEmpty(t, token, "expected a non-empty token string")
 
@@ -94,14 +97,16 @@ func TestValidateAccessToken(t *testing.T) {
 	repo := new(MockAuthRepository)
 	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
 
-	userID := "user123"
-	token, err := authService.GenerateAccessToken(userID)
+	user := models.User{
+		ID: "user123",
+	}
+	token, err := authService.GenerateAccessToken(user)
 	assert.NoError(t, err, "expected no error in generating access token")
 
 	// Validate the token
-	validatedUserID, err := authService.ValidateAccessToken(token)
+	validatedUser, err := authService.ValidateAccessToken(token)
 	assert.NoError(t, err, "expected no error in validating access token")
-	assert.Equal(t, userID, validatedUserID, "expected user ID to match")
+	assert.Equal(t, user, validatedUser, "expected user ID to match")
 }
 
 func TestGenerateRefreshToken(t *testing.T) {

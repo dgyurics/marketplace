@@ -14,9 +14,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+type contextKey string
+
+const UserKey contextKey = "user"
+
 type AuthService interface {
-	GenerateAccessToken(userID string) (token string, err error)
-	ValidateAccessToken(token string) (userID string, err error)
+	GenerateAccessToken(user models.User) (token string, err error)
+	ValidateAccessToken(token string) (user models.User, err error)
 	GenerateRefreshToken() (string, error)
 	ValidateRefreshToken(ctx context.Context, token string) (bool, error)
 	StoreRefreshToken(ctx context.Context, userID, token string) error
@@ -47,9 +51,12 @@ func NewAuthService(
 	}
 }
 
-func (a *authService) GenerateAccessToken(userID string) (token string, err error) {
+func (a *authService) GenerateAccessToken(user models.User) (token string, err error) {
 	claims := jwt.MapClaims{
-		"user_id": userID,
+		"user_id": user.ID,
+		"email":   user.Email,
+		"phone":   user.Phone,
+		"admin":   user.Admin,
 		"exp":     time.Now().Add(a.durationAccessToken).Unix(),
 		"iat":     time.Now().Unix(),
 	}
@@ -62,7 +69,7 @@ func (a *authService) GenerateAccessToken(userID string) (token string, err erro
 	return
 }
 
-func (a *authService) ValidateAccessToken(token string) (userID string, err error) {
+func (a *authService) ValidateAccessToken(token string) (user models.User, err error) {
 	tokenParsed, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -70,13 +77,18 @@ func (a *authService) ValidateAccessToken(token string) (userID string, err erro
 		return jwt.ParseRSAPublicKeyFromPEM(a.publicKey)
 	})
 	if err != nil {
-		return "", err
+		return models.User{}, err
 	}
 	if claims, ok := tokenParsed.Claims.(jwt.MapClaims); ok && tokenParsed.Valid {
-		userID = claims["user_id"].(string)
+		user = models.User{
+			ID:    claims["user_id"].(string),
+			Email: claims["email"].(string),
+			Phone: claims["phone"].(string),
+			Admin: claims["admin"].(bool),
+		}
 		return
 	}
-	return userID, errors.New("invalid token")
+	return models.User{}, errors.New("invalid token")
 }
 
 func (a *authService) GenerateRefreshToken() (string, error) {
@@ -129,11 +141,10 @@ func hashRefreshToken(token string, secret []byte) string {
 	return hex.EncodeToString(h.Sum(nil)) // return the final HMAC hash as a hexadecimal string
 }
 
-// getUserID retrieves the user ID from the context
 func getUserID(ctx context.Context) string {
-	userID, ok := ctx.Value("userID").(string)
+	user, ok := ctx.Value(UserKey).(*models.User)
 	if !ok {
 		return ""
 	}
-	return userID
+	return user.ID
 }

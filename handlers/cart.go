@@ -89,8 +89,8 @@ func (h *cartHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *cartHandler) RegisterRoutes(authMiddleware middleware.AuthMiddleware) {
-	h.router.Handle("/carts/items", authMiddleware.Middleware(http.HandlerFunc(h.AddItemToCart))).Methods("POST")
-	h.router.Handle("/carts/items/{product_id}", authMiddleware.Middleware(http.HandlerFunc(h.RemoveItemFromCart))).Methods("DELETE")
-	h.router.Handle("/carts", authMiddleware.Middleware(http.HandlerFunc(h.GetCart))).Methods("GET")
-	h.router.Handle("/carts/checkout", authMiddleware.Middleware(http.HandlerFunc(h.Checkout))).Methods("POST")
+	h.router.Handle("/carts/items", authMiddleware.Authenticate(http.HandlerFunc(h.AddItemToCart))).Methods("POST")
+	h.router.Handle("/carts/items/{product_id}", authMiddleware.Authenticate(http.HandlerFunc(h.RemoveItemFromCart))).Methods("DELETE")
+	h.router.Handle("/carts", authMiddleware.Authenticate(http.HandlerFunc(h.GetCart))).Methods("GET")
+	h.router.Handle("/carts/checkout", authMiddleware.Authenticate(http.HandlerFunc(h.Checkout))).Methods("POST")
 }

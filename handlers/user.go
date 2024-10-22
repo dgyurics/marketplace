@@ -51,7 +51,7 @@ func (h *userHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := h.authService.GenerateAccessToken(usr.ID)
+	accessToken, err := h.authService.GenerateAccessToken(usr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
