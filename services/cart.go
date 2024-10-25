@@ -33,7 +33,7 @@ func (s *cartService) AddItemToCart(ctx context.Context, item *models.CartItem) 
 }
 
 func (s *cartService) GetCart(ctx context.Context) (*models.Cart, error) {
-	return s.repo.GetCart(ctx, getUserID(ctx))
+	return s.repo.GetOrCreateCart(ctx, getUserID(ctx))
 }
 
 func (s *cartService) UpdateCartItem(ctx context.Context, item *models.CartItem) error {

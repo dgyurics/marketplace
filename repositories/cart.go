@@ -11,7 +11,7 @@ import (
 type CartRepository interface {
 	CreateCart(ctx context.Context, userID string) error
 	AddItemToCart(ctx context.Context, userID string, item *models.CartItem) error
-	GetCart(ctx context.Context, userID string) (*models.Cart, error)
+	GetOrCreateCart(ctx context.Context, userID string) (*models.Cart, error)
 	UpdateCartItem(ctx context.Context, userID string, item *models.CartItem) error
 	RemoveItemFromCart(ctx context.Context, userID, productID string) error
 	ClearCart(ctx context.Context, userID string) error
@@ -33,9 +33,21 @@ func (r *cartRepository) CreateCart(ctx context.Context, userID string) error {
 	return err
 }
 
-func (r *cartRepository) GetCart(ctx context.Context, userID string) (*models.Cart, error) {
+func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*models.Cart, error) {
 	cart := &models.Cart{}
+
+	// Use ON CONFLICT to insert a new cart if it doesn't already exist
 	query := `
+		INSERT INTO carts (user_id, total)
+		VALUES ($1, 0)
+		ON CONFLICT (user_id) DO NOTHING`
+	_, err := r.db.ExecContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch the cart after the potential insertion
+	query = `
 		SELECT user_id, total
 		FROM carts
 		WHERE user_id = $1`
@@ -54,7 +66,7 @@ func (r *cartRepository) GetCart(ctx context.Context, userID string) (*models.Ca
 	}
 	defer rows.Close()
 
-	var items []models.CartItem
+	items := make([]models.CartItem, 0)
 	for rows.Next() {
 		var item models.CartItem
 		if err := rows.Scan(&item.ProductID, &item.Quantity, &item.UnitPrice.Amount, &item.TotalPrice.Amount); err != nil {
