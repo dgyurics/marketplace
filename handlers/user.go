@@ -83,26 +83,43 @@ func (h *userHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usr := models.User{
-		Email:    credentials.Email,
-		Phone:    credentials.Phone,
-		Password: credentials.Password,
+	if (credentials.Email == "" && credentials.Phone == "") || credentials.Password == "" {
+		http.Error(w, "Email or phone and password are required", http.StatusBadRequest)
+		return
 	}
-	err := h.userService.VerifyCredentials(r.Context(), &usr)
+
+	// Verify user credentials
+	usr, err := h.userService.AuthenticateUser(r.Context(), &credentials)
 	if err != nil {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
-	// todo
-	// get jwt and refresh token from user service
-	// return jwt and refresh token in response
-	jwt := "jwt"
-	refreshToken := "refreshToken"
+	// Generate access token
+	accessToken, err := h.authService.GenerateAccessToken(*usr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Generate refresh token
+	refreshToken, err := h.authService.GenerateRefreshToken()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Store refresh token
+	if err := h.authService.StoreRefreshToken(r.Context(), usr.ID, refreshToken); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with tokens
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"token":         jwt,
+		"token":         accessToken,
 		"refresh_token": refreshToken,
 	})
 }

@@ -12,7 +12,7 @@ import (
 
 type UserService interface {
 	CreateUser(ctx context.Context, user *models.User) error
-	VerifyCredentials(ctx context.Context, credential *models.User) error
+	AuthenticateUser(ctx context.Context, credential *models.Credential) (*models.User, error)
 	GetAllUsers(ctx context.Context) ([]models.User, error)
 	StoreRefreshToken(ctx context.Context, userID string, token string, expiresAt time.Time) error
 }
@@ -34,30 +34,26 @@ func (s *userService) CreateUser(ctx context.Context, user *models.User) error {
 	return s.repo.CreateUser(ctx, user)
 }
 
-func (s *userService) VerifyCredentials(ctx context.Context, user *models.User) error {
-	if user.Email != "" {
-		return s.verifyEmail(ctx, user)
+func (s *userService) AuthenticateUser(ctx context.Context, credentials *models.Credential) (*models.User, error) {
+	if credentials.Email != "" {
+		return s.verifyEmail(ctx, credentials)
 	}
-	if user.Phone != "" {
-		return s.verifyPhone(ctx, user)
+	if credentials.Phone != "" {
+		return s.verifyPhone(ctx, credentials)
 	}
-	return errors.New("invalid credentials: email or phone required")
+	return nil, errors.New("invalid credentials: email or phone required")
 }
 
-func (s *userService) verifyEmail(ctx context.Context, user *models.User) error {
-	dbUser, err := s.repo.GetUserByEmail(ctx, user.Email)
-	if err != nil {
-		return err
-	}
-	return bcrypt.CompareHashAndPassword([]byte(dbUser.PasswordHash), []byte(user.Password))
+func (s *userService) verifyEmail(ctx context.Context, credentials *models.Credential) (*models.User, error) {
+	user, _ := s.repo.GetUserByEmail(ctx, credentials.Email)
+	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password))
+	return user, err
 }
 
-func (s *userService) verifyPhone(ctx context.Context, user *models.User) error {
-	dbUser, err := s.repo.GetUserByPhone(ctx, user.Phone)
-	if err != nil {
-		return err
-	}
-	return bcrypt.CompareHashAndPassword([]byte(dbUser.PasswordHash), []byte(user.Password))
+func (s *userService) verifyPhone(ctx context.Context, credentials *models.Credential) (*models.User, error) {
+	user, _ := s.repo.GetUserByPhone(ctx, credentials.Phone)
+	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password))
+	return user, err
 }
 
 func (s *userService) GetAllUsers(ctx context.Context) ([]models.User, error) {
