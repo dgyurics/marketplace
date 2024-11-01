@@ -25,7 +25,7 @@ type cartHandler struct {
 func RegisterCartHandler(
 	cartService services.CartService,
 	router *mux.Router,
-	authMiddleware middleware.AuthMiddleware) {
+	authMiddleware middleware.AccessControl) {
 	handler := &cartHandler{
 		cartService: cartService,
 		router:      router,
@@ -88,9 +88,9 @@ func (h *cartHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *cartHandler) RegisterRoutes(authMiddleware middleware.AuthMiddleware) {
-	h.router.Handle("/carts/items", authMiddleware.AuthenticateUser(http.HandlerFunc(h.AddItemToCart))).Methods(http.MethodPost)
-	h.router.Handle("/carts/items/{product_id}", authMiddleware.AuthenticateUser(http.HandlerFunc(h.RemoveItemFromCart))).Methods(http.MethodDelete)
-	h.router.Handle("/carts", authMiddleware.AuthenticateUser(http.HandlerFunc(h.GetCart))).Methods(http.MethodGet)
-	h.router.Handle("/carts/checkout", authMiddleware.AuthenticateUser(http.HandlerFunc(h.Checkout))).Methods(http.MethodPost)
+func (h *cartHandler) RegisterRoutes(authMiddleware middleware.AccessControl) {
+	h.router.Handle("/carts/items", authMiddleware.AuthenticateUser(h.AddItemToCart)).Methods(http.MethodPost)
+	h.router.Handle("/carts/items/{product_id}", authMiddleware.AuthenticateUser(h.RemoveItemFromCart)).Methods(http.MethodDelete)
+	h.router.Handle("/carts", authMiddleware.AuthenticateUser(h.GetCart)).Methods(http.MethodGet)
+	h.router.Handle("/carts/checkout", authMiddleware.AuthenticateUser(h.Checkout)).Methods(http.MethodPost)
 }

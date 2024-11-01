@@ -25,7 +25,7 @@ type categoryHandler struct {
 func RegisterCategoryHandler(
 	categoryService services.CategoryService,
 	router *mux.Router,
-	authMiddleware middleware.AuthMiddleware) {
+	authMiddleware middleware.AccessControl) {
 	handler := &categoryHandler{
 		categoryService: categoryService,
 		router:          router,
@@ -90,11 +90,11 @@ func (h *categoryHandler) GetProductsByCategory(w http.ResponseWriter, r *http.R
 	json.NewEncoder(w).Encode(products)
 }
 
-func (h *categoryHandler) RegisterRoutes(authMiddleware middleware.AuthMiddleware) {
+func (h *categoryHandler) RegisterRoutes(authMiddleware middleware.AccessControl) {
 	h.router.HandleFunc("/categories", h.GetCategories).Methods(http.MethodGet)
 	h.router.HandleFunc("/categories/{id}", h.GetCategory).Methods(http.MethodGet)
 	h.router.HandleFunc("/categories/{id}/products", h.GetProductsByCategory).Methods(http.MethodGet)
-	h.router.Handle("/categories", authMiddleware.AuthenticateAdmin(http.HandlerFunc(h.CreateCategory))).Methods(http.MethodPost)
+	h.router.Handle("/categories", authMiddleware.AuthenticateAdmin(h.CreateCategory)).Methods(http.MethodPost)
 	// router.HandleFunc("/categories/{id}", UpdateCategory).Methods("PUT")
 	// router.HandleFunc("/categories/{id}", DeleteCategory).Methods("DELETE")
 }

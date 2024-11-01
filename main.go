@@ -34,15 +34,15 @@ func main() {
 	productService := services.NewProductService(productRepository)
 	cartService := services.NewCartService(cartRepository)
 
-	// Create AuthMiddleware instance
-	authMiddleware := middleware.NewAuthMiddleware(authService)
+	// Create middleware
+	middleware := middleware.NewAccessControl(authService)
 
 	// register handlers
 	router := mux.NewRouter()
 	handlers.RegisterUserHandler(userService, authService, router)
-	handlers.RegisterCategoryHandler(categoryService, router, authMiddleware)
-	handlers.RegisterProductHandler(productService, router, authMiddleware)
-	handlers.RegisterCartHandler(cartService, router, authMiddleware)
+	handlers.RegisterCategoryHandler(categoryService, router, middleware)
+	handlers.RegisterProductHandler(productService, router, middleware)
+	handlers.RegisterCartHandler(cartService, router, middleware)
 
 	log.Println("Server is running on port 8000")
 	log.Fatal(http.ListenAndServe(":8000", router))

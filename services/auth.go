@@ -16,7 +16,11 @@ import (
 
 type contextKey string
 
-const UserKey contextKey = "user"
+const (
+	UserKey              contextKey = "user"
+	DurationAccessToken             = 15 * time.Minute    // 15 minutes
+	DurationRefreshToken            = 30 * 24 * time.Hour // 30 days
+)
 
 type AuthService interface {
 	GenerateAccessToken(user models.User) (token string, err error)
@@ -46,8 +50,8 @@ func NewAuthService(
 		publicKey:            publicKey,
 		hmacSecret:           hmacSecret,
 		repo:                 repo,
-		durationAccessToken:  time.Duration(15) * time.Minute,  // 15 minutes
-		durationRefreshToken: time.Duration(30*24) * time.Hour, // 30 days
+		durationAccessToken:  DurationAccessToken,
+		durationRefreshToken: DurationRefreshToken,
 	}
 }
 

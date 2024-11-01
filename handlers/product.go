@@ -25,7 +25,7 @@ type productHandler struct {
 func RegisterProductHandler(
 	productService services.ProductService,
 	router *mux.Router,
-	authMiddleware middleware.AuthMiddleware) {
+	authMiddleware middleware.AccessControl) {
 	handler := &productHandler{
 		productService: productService,
 		router:         router,
@@ -105,11 +105,11 @@ func (h *productHandler) UpdateInventory(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *productHandler) RegisterRoutes(authMiddleware middleware.AuthMiddleware) {
+func (h *productHandler) RegisterRoutes(authMiddleware middleware.AccessControl) {
 	h.router.HandleFunc("/products", h.GetProducts).Methods(http.MethodGet)
 	h.router.HandleFunc("/products/{id}", h.GetProduct).Methods(http.MethodGet)
-	h.router.Handle("/products", authMiddleware.AuthenticateAdmin(http.HandlerFunc(h.CreateProduct))).Methods(http.MethodPost)
-	h.router.Handle("/products/{id}/inventory", authMiddleware.AuthenticateAdmin(http.HandlerFunc(h.UpdateInventory))).Methods(http.MethodPut)
+	h.router.Handle("/products", authMiddleware.AuthenticateAdmin(h.CreateProduct)).Methods(http.MethodPost)
+	h.router.Handle("/products/{id}/inventory", authMiddleware.AuthenticateAdmin(h.UpdateInventory)).Methods(http.MethodPut)
 	// router.HandleFunc("/products/{id}", h.UpdateProduct).Methods("PUT")
 	// router.HandleFunc("/products/{id}", h.DeleteProduct).Methods("DELETE")
 }

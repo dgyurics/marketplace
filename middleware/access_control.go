@@ -10,25 +10,25 @@ import (
 	"github.com/dgyurics/marketplace/services"
 )
 
-type AuthMiddleware interface {
-	AuthenticateUser(next http.Handler) http.Handler
-	AuthenticateAdmin(next http.Handler) http.Handler
+type AccessControl interface {
+	AuthenticateUser(next http.HandlerFunc) http.Handler
+	AuthenticateAdmin(next http.HandlerFunc) http.Handler
 }
 
-type authMiddleware struct {
+type accessControl struct {
 	authService services.AuthService
 }
 
-func NewAuthMiddleware(authService services.AuthService) AuthMiddleware {
-	return &authMiddleware{authService}
+func NewAccessControl(authService services.AuthService) AccessControl {
+	return &accessControl{authService}
 }
 
 // verifies Authorization header token and allows access only for users.
-func (a *authMiddleware) AuthenticateUser(next http.Handler) http.Handler {
+func (a *accessControl) AuthenticateUser(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := a.authenticateToken(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		ctx := context.WithValue(r.Context(), services.UserKey, &user)
@@ -37,11 +37,11 @@ func (a *authMiddleware) AuthenticateUser(next http.Handler) http.Handler {
 }
 
 // verifies Authorization header token and allows access only for admin users.
-func (a *authMiddleware) AuthenticateAdmin(next http.Handler) http.Handler {
+func (a *accessControl) AuthenticateAdmin(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := a.authenticateToken(r)
 		if err != nil || !user.Admin {
-			http.Error(w, "Admin access required", http.StatusForbidden)
+			w.WriteHeader(http.StatusForbidden)
 			return
 		}
 		ctx := context.WithValue(r.Context(), services.UserKey, &user)
@@ -50,7 +50,7 @@ func (a *authMiddleware) AuthenticateAdmin(next http.Handler) http.Handler {
 }
 
 // extracts and validates the token, returning the user if valid.
-func (a *authMiddleware) authenticateToken(r *http.Request) (models.User, error) {
+func (a *accessControl) authenticateToken(r *http.Request) (models.User, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return models.User{}, errors.New("authorization header missing")
