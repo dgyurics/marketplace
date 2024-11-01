@@ -40,8 +40,8 @@ func main() {
 	// register handlers
 	router := mux.NewRouter()
 	handlers.RegisterUserHandler(userService, authService, router)
-	handlers.RegisterCategoryHandler(categoryService, router)
-	handlers.RegisterProductHandler(productService, router)
+	handlers.RegisterCategoryHandler(categoryService, router, authMiddleware)
+	handlers.RegisterProductHandler(productService, router, authMiddleware)
 	handlers.RegisterCartHandler(cartService, router, authMiddleware)
 
 	log.Println("Server is running on port 8000")

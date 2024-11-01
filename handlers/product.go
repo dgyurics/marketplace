@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/dgyurics/marketplace/middleware"
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
 	"github.com/gorilla/mux"
@@ -21,12 +22,15 @@ type productHandler struct {
 	router         *mux.Router
 }
 
-func RegisterProductHandler(productService services.ProductService, router *mux.Router) {
+func RegisterProductHandler(
+	productService services.ProductService,
+	router *mux.Router,
+	authMiddleware middleware.AuthMiddleware) {
 	handler := &productHandler{
 		productService: productService,
 		router:         router,
 	}
-	handler.RegisterRoutes()
+	handler.RegisterRoutes(authMiddleware)
 }
 
 func (h *productHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
@@ -101,11 +105,11 @@ func (h *productHandler) UpdateInventory(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *productHandler) RegisterRoutes() {
-	h.router.HandleFunc("/products", h.CreateProduct).Methods(http.MethodPost)
+func (h *productHandler) RegisterRoutes(authMiddleware middleware.AuthMiddleware) {
 	h.router.HandleFunc("/products", h.GetProducts).Methods(http.MethodGet)
 	h.router.HandleFunc("/products/{id}", h.GetProduct).Methods(http.MethodGet)
-	h.router.HandleFunc("/products/{id}/inventory", h.UpdateInventory).Methods(http.MethodPut)
+	h.router.Handle("/products", authMiddleware.AuthenticateAdmin(http.HandlerFunc(h.CreateProduct))).Methods(http.MethodPost)
+	h.router.Handle("/products/{id}/inventory", authMiddleware.AuthenticateAdmin(http.HandlerFunc(h.UpdateInventory))).Methods(http.MethodPut)
 	// router.HandleFunc("/products/{id}", h.UpdateProduct).Methods("PUT")
 	// router.HandleFunc("/products/{id}", h.DeleteProduct).Methods("DELETE")
 }

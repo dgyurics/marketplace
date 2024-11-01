@@ -138,8 +138,8 @@ func (h *userHandler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *userHandler) registerRoutes() {
-	h.router.HandleFunc("/users/register", h.Register).Methods("POST")
-	h.router.HandleFunc("/users/login", h.Login).Methods("POST")
+	h.router.HandleFunc("/users/register", h.Register).Methods(http.MethodPost)
+	h.router.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
 	// router.HandleFunc("/users/refresh-token", RefreshToken).Methods("POST")
 	// router.HandleFunc("/users/logout", Logout).Methods("POST")
 	// router.HandleFunc("/users/profile", GetProfile).Methods("GET")

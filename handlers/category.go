@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/dgyurics/marketplace/middleware"
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
 	"github.com/gorilla/mux"
@@ -21,12 +22,15 @@ type categoryHandler struct {
 	router          *mux.Router
 }
 
-func RegisterCategoryHandler(categoryService services.CategoryService, router *mux.Router) {
+func RegisterCategoryHandler(
+	categoryService services.CategoryService,
+	router *mux.Router,
+	authMiddleware middleware.AuthMiddleware) {
 	handler := &categoryHandler{
 		categoryService: categoryService,
 		router:          router,
 	}
-	handler.RegisterRoutes()
+	handler.RegisterRoutes(authMiddleware)
 }
 
 func (h *categoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
@@ -86,11 +90,11 @@ func (h *categoryHandler) GetProductsByCategory(w http.ResponseWriter, r *http.R
 	json.NewEncoder(w).Encode(products)
 }
 
-func (h *categoryHandler) RegisterRoutes() {
-	h.router.HandleFunc("/categories", h.GetCategories).Methods("GET")
-	h.router.HandleFunc("/categories/{id}", h.GetCategory).Methods("GET")
-	h.router.HandleFunc("/categories", h.CreateCategory).Methods("POST")
-	h.router.HandleFunc("/categories/{id}/products", h.GetProductsByCategory).Methods("GET")
+func (h *categoryHandler) RegisterRoutes(authMiddleware middleware.AuthMiddleware) {
+	h.router.HandleFunc("/categories", h.GetCategories).Methods(http.MethodGet)
+	h.router.HandleFunc("/categories/{id}", h.GetCategory).Methods(http.MethodGet)
+	h.router.HandleFunc("/categories/{id}/products", h.GetProductsByCategory).Methods(http.MethodGet)
+	h.router.Handle("/categories", authMiddleware.AuthenticateAdmin(http.HandlerFunc(h.CreateCategory))).Methods(http.MethodPost)
 	// router.HandleFunc("/categories/{id}", UpdateCategory).Methods("PUT")
 	// router.HandleFunc("/categories/{id}", DeleteCategory).Methods("DELETE")
 }
