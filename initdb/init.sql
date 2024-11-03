@@ -21,16 +21,24 @@ CREATE TABLE IF NOT EXISTS products (
     description TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS inventory (
-    product_id UUID PRIMARY KEY,
-    quantity INT NOT NULL DEFAULT 0,
+CREATE TYPE image_type_enum AS ENUM ('main', 'thumbnail', 'gallery');
+CREATE TABLE IF NOT EXISTS product_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL,
+    image_url TEXT NOT NULL,
+    image_type image_type_enum DEFAULT 'main',
+    display_order INT DEFAULT 0,
+    alt_text VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
--- Add check constraint to ensure inventory quantity never goes below 0
-ALTER TABLE inventory
-ADD CONSTRAINT chk_quantity
-CHECK (quantity >= 0);
+CREATE TABLE IF NOT EXISTS inventory (
+    product_id UUID PRIMARY KEY,
+    quantity INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    CHECK (quantity >= 0)
+);
 
 -- Insert products with hardcoded UUIDs
 INSERT INTO products (id, name, price, description) VALUES
@@ -90,6 +98,16 @@ CREATE TABLE IF NOT EXISTS users (
     CHECK (email IS NOT NULL OR phone IS NOT NULL)
 );
 
+CREATE TABLE IF NOT EXISTS inventory_reservations (
+    product_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    reserved_quantity INT NOT NULL,
+    reservation_expiration TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '15 minutes'),
+    FOREIGN KEY (product_id) REFERENCES inventory(product_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    PRIMARY KEY (product_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
@@ -117,4 +135,40 @@ CREATE TABLE IF NOT EXISTS cart_items (
     total_price NUMERIC NOT NULL,
     FOREIGN KEY (user_id) REFERENCES carts(user_id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS shipping_addresses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    recipient_name VARCHAR(255) NOT NULL,
+    address_line1 VARCHAR(255) NOT NULL,
+    address_line2 VARCHAR(255),
+    city VARCHAR(255) NOT NULL,
+    state_code CHAR(2) NOT NULL,
+    postal_code VARCHAR(20) NOT NULL,
+    phone VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TYPE order_status_enum AS ENUM ('created', 'processed', 'failed');
+CREATE TABLE IF NOT EXISTS orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID,
+    shipping_address_id UUID,
+    total_amount NUMERIC(10, 2) NOT NULL,
+    tax_amount NUMERIC(10, 2) DEFAULT 0,
+    order_status order_status_enum DEFAULT 'created',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (shipping_address_id) REFERENCES shipping_addresses(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL,
+    amount NUMERIC(10, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 );
