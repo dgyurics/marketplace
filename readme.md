@@ -8,7 +8,6 @@
 <h2>Features</h2>
 <ul>
   <li><strong>Product Management:</strong> CRUD operations for products, including categorization and inventory management.</li>
-  <li><strong>Category Management:</strong> Organize products into categories to enhance discoverability.</li>
   <li><strong>User Authentication:</strong> JWT-based user authentication, supporting registration and login functionalities.</li>
   <li><strong>Shopping Cart:</strong> Manage user shopping carts, calculate totals, and track item quantities.</li>
   <li><strong>Transaction Handling:</strong> Ensure data consistency with transaction support for complex operations.</li>
@@ -17,13 +16,19 @@
 
 <h2>Planned Enhancements</h2>
 <ul>
-  <li><strong>Order Management:</strong> Implement order creation, tracking, and status updates. Support for order history per user.</li>
-  <li><strong>Payment Integration:</strong> Integrate with popular payment gateways like Stripe to handle transactions securely.</li>
+  <li><strong>Order Management:</strong> Implement order creation and tracking, with status updates and order history.</li>
+  <li><strong>Payment Integration:</strong> Integrate with a single payment prover, Stripe.</li>
+  <li><strong>Email Notifications:</strong> Send order confirmations to users.</li>
+  <li><strong>Search and Filtering:</strong> Advanced search capabilities, allowing users to find products through keyword and fuzzy searches.</li>
+</ul>
+
+<h2>Future Considerations</h2>
+<ul>
   <li><strong>Shipping Management:</strong> Calculate shipping costs, manage shipping providers, and track shipments.</li>
   <li><strong>Promotions and Discounts:</strong> Manage promotional codes, discounts, and sales events.</li>
   <li><strong>Inventory Management:</strong> Advanced inventory management with alerts for low stock and support for multiple warehouses.</li>
-  <li><strong>Email Notifications:</strong> Send order confirmations, shipping updates, and marketing emails to users.</li>
-  <li><strong>Search and Filtering:</strong> Implement advanced search capabilities, including filtering and sorting options for products.</li>
+  <li><strong>Internationalization and Localization:</strong> Plan for potential support of multiple currencies, languages, and localized product information to accommodate different countries and regions.</li>
+  <li><strong>Multiple Payment Providers:</strong> Support multiple payment providers, such as PayPal and Apple Pay.</li>
 </ul>
 
 <h2>Prerequisites</h2>
