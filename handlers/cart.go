@@ -81,16 +81,18 @@ func (h *cartHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Checkout completed and cart cleared",
 	})
 }
 
+func (h *cartHandler) ConfirmPayment(w http.ResponseWriter, r *http.Request) {}
+
 func (h *cartHandler) RegisterRoutes(authMiddleware middleware.AccessControl) {
 	h.router.Handle("/carts/items", authMiddleware.AuthenticateUser(h.AddItemToCart)).Methods(http.MethodPost)
 	h.router.Handle("/carts/items/{product_id}", authMiddleware.AuthenticateUser(h.RemoveItemFromCart)).Methods(http.MethodDelete)
 	h.router.Handle("/carts", authMiddleware.AuthenticateUser(h.GetCart)).Methods(http.MethodGet)
 	h.router.Handle("/carts/checkout", authMiddleware.AuthenticateUser(h.Checkout)).Methods(http.MethodPost)
+	h.router.Handle("/carts/checkout/confirm-payment", authMiddleware.AuthenticateUser(h.ConfirmPayment)).Methods(http.MethodPost)
 }

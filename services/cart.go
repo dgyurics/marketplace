@@ -14,6 +14,7 @@ type CartService interface {
 	UpdateCartItem(ctx context.Context, item *models.CartItem) error
 	RemoveItemFromCart(ctx context.Context, productID string) error
 	ClearCart(ctx context.Context) error
+	CheckOut(ctx context.Context) error
 }
 
 type cartService struct {
@@ -46,4 +47,46 @@ func (s *cartService) RemoveItemFromCart(ctx context.Context, productID string) 
 
 func (s *cartService) ClearCart(ctx context.Context) error {
 	return s.repo.ClearCart(ctx, getUserID(ctx))
+}
+
+func (s *cartService) CheckOut(ctx context.Context) error {
+	// 1. Validate Cart
+	//    - Ensure the cart has items and that quantities are available.
+
+	// 2. Reserve Inventory
+	//    - Temporarily hold the inventory for items in the cart to prevent others from purchasing the same stock.
+	//    - Set a reservation timeout (e.g., 10-15 minutes) to automatically release the hold if payment isn’t completed.
+
+	// 3. Calculate Total
+	//    - Calculate the final total for the cart, including taxes, shipping, and any discounts.
+
+	// 4. Initiate Payment Intent
+	//    - Create a Payment Intent with a third-party payment processor (e.g., Stripe) for the calculated total.
+	//    - Return the Payment Intent’s client secret to the front end to allow the customer to complete payment.
+
+	// After payment intent is created, payment confirmation will call CompleteOrder
+	return nil
+}
+
+func (s *cartService) CompleteOrder(ctx context.Context, paymentStatus string) error {
+	// 5. Confirm Payment Status
+	//    - If the payment succeeds:
+	//       - Record the transaction details in a `payment_transactions` table (provider, transaction ID, amount, etc.).
+	//       - Proceed to order creation.
+	//    - If payment fails, release the reserved inventory and notify the user.
+
+	// 6. Create Order
+	//    - Create an order record in the `orders` table, linking it with the user, payment, and shipping details.
+	//    - Populate `order_items` with each cart item and its relevant pricing data.
+
+	// 7. Deduct Inventory
+	//    - Permanently reduce inventory for each item based on the final order quantities.
+
+	// 8. Clear Cart
+	//    - Clear or reset the cart for future purchases, ensuring it’s ready for the next session.
+
+	// 9. Return Success Response
+	//    - Notify the user that the order was successfully placed.
+
+	return nil
 }

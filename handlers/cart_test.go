@@ -48,6 +48,11 @@ func (m *MockCartService) ClearCart(ctx context.Context) error {
 	return args.Error(0)
 }
 
+func (m *MockCartService) CheckOut(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(0)
+}
+
 func TestAddItemToCart(t *testing.T) {
 	mockCartService := new(MockCartService)
 	router := mux.NewRouter()
