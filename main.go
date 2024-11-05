@@ -15,10 +15,7 @@ import (
 
 func main() {
 	// connect to database
-	db, err := db.Connect(getEnv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
+	db := db.Connect()
 
 	// create repositories
 	authRepository := repositories.NewAuthRepository(db)

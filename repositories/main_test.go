@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"database/sql"
-	"log"
 	"os"
 	"testing"
 
@@ -12,16 +11,11 @@ import (
 var dbPool *sql.DB
 
 func TestMain(m *testing.M) {
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		dbURL = "postgres://postgres:postgres@localhost:5432/marketplace?sslmode=disable"
-	}
+	dbURL := "postgres://postgres:postgres@localhost:5432/marketplace?sslmode=disable"
+	os.Setenv("DATABASE_URL", dbURL)
 
-	var err error
-	dbPool, err = db.Connect(dbURL)
-	if err != nil {
-		log.Fatalf("Could not connect to database: %s", err)
-	}
+	dbPool = db.Connect()
+	defer dbPool.Close()
 
 	// Run tests
 	code := m.Run()

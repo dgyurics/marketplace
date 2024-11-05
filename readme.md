@@ -27,8 +27,9 @@
   <li><strong>Shipping Management:</strong> Calculate shipping costs, manage shipping providers, and track shipments.</li>
   <li><strong>Promotions and Discounts:</strong> Manage promotional codes, discounts, and sales events.</li>
   <li><strong>Inventory Management:</strong> Advanced inventory management with alerts for low stock and support for multiple warehouses.</li>
-  <li><strong>Internationalization and Localization:</strong> Plan for potential support of multiple currencies, languages, and localized product information to accommodate different countries and regions.</li>
+  <li><strong>Internationalization and Localization:</strong> support multiple currencies, languages, and localized product information to accommodate different regions.</li>
   <li><strong>Multiple Payment Providers:</strong> Support multiple payment providers, such as PayPal and Apple Pay.</li>
+  <li><strong>Product Reviews:</strong> Allow users to leave reviews and ratings for products.</li>
 </ul>
 
 <h2>Prerequisites</h2>
