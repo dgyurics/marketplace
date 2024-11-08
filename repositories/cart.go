@@ -43,7 +43,7 @@ func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*m
 
 	// populate cart items
 	itemsQuery := `
-		SELECT product_id, quantity, unit_price, total_price
+		SELECT product_id, quantity, unit_price
 		FROM cart_items
 		WHERE user_id = $1`
 	rows, err := r.db.QueryContext(ctx, itemsQuery, userID)
@@ -55,7 +55,7 @@ func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*m
 	items := make([]models.CartItem, 0)
 	for rows.Next() {
 		var item models.CartItem
-		if err := rows.Scan(&item.ProductID, &item.Quantity, &item.UnitPrice.Amount, &item.TotalPrice.Amount); err != nil {
+		if err := rows.Scan(&item.ProductID, &item.Quantity, &item.UnitPrice.Amount); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -76,9 +76,9 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 
 	// Add item to cart without changing inventory
 	query := `
-		INSERT INTO cart_items (user_id, product_id, quantity, unit_price, total_price)
-		VALUES ($1, $2, $3, $4, $5)`
-	_, err := r.db.ExecContext(ctx, query, userID, item.ProductID, item.Quantity, item.UnitPrice.Amount, item.TotalPrice.Amount)
+		INSERT INTO cart_items (user_id, product_id, quantity, unit_price)
+		VALUES ($1, $2, $3, $4)`
+	_, err := r.db.ExecContext(ctx, query, userID, item.ProductID, item.Quantity, item.UnitPrice.Amount)
 	return err
 }
 
@@ -90,18 +90,18 @@ func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item
 	}
 
 	// Calculate the quantity difference
-	var oldItem models.CartItem
+	var oldQuantity int
 	query := `
-		SELECT quantity, total_price
+		SELECT quantity
 		FROM cart_items
 		WHERE user_id = $1 AND product_id = $2`
-	err := r.db.QueryRowContext(ctx, query, userID, item.ProductID).Scan(&oldItem.Quantity, &oldItem.TotalPrice.Amount)
+	err := r.db.QueryRowContext(ctx, query, userID, item.ProductID).Scan(&oldQuantity)
 	if err != nil {
 		return err
 	}
 
 	// Check if the new quantity exceeds available inventory
-	quantityDifference := item.Quantity - oldItem.Quantity
+	quantityDifference := item.Quantity - oldQuantity
 	if availableQuantity < quantityDifference {
 		return fmt.Errorf("insufficient inventory for product %s", item.ProductID)
 	}
@@ -109,9 +109,9 @@ func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item
 	// Update the cart item
 	updateQuery := `
 		UPDATE cart_items
-		SET quantity = $3, total_price = $4
+		SET quantity = $3
 		WHERE user_id = $1 AND product_id = $2`
-	_, err = r.db.ExecContext(ctx, updateQuery, userID, item.ProductID, item.Quantity, item.TotalPrice.Amount)
+	_, err = r.db.ExecContext(ctx, updateQuery, userID, item.ProductID, item.Quantity)
 	return err
 }
 
