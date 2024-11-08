@@ -440,3 +440,69 @@ func TestReserveCartItems_InsufficientInventory(t *testing.T) {
 	dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", productID)
 	dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
 }
+
+func TestFetchCartTotal(t *testing.T) {
+	repo := NewCartRepository(dbPool)
+	userRepo := NewUserRepository(dbPool)
+	ctx := context.Background()
+
+	// Create a unique test user
+	user := createUniqueTestUser(t, userRepo)
+
+	// Create a cart for the user
+	_, err := repo.GetOrCreateCart(ctx, user.ID)
+	assert.NoError(t, err, "Expected no error on cart creation")
+
+	// Set up test products with known prices and quantities
+	productID1, _ := generateUUID()
+	productID2, _ := generateUUID()
+
+	// Insert two products into the products table
+	_, _ = dbPool.ExecContext(ctx, `
+		INSERT INTO products (id, name, price, description)
+		VALUES ($1, 'Test Product 1', 1000, 'Description 1'),
+		       ($2, 'Test Product 2', 2000, 'Description 2')`,
+		productID1, productID2)
+
+	// Add inventory records for each product
+	_, _ = dbPool.ExecContext(ctx, `
+		INSERT INTO inventory (product_id, quantity)
+		VALUES ($1, 10),
+		       ($2, 10)`,
+		productID1, productID2)
+
+	// Add items to the user's cart
+	item1 := &models.CartItem{
+		ProductID:  productID1,
+		Quantity:   2,
+		UnitPrice:  models.Currency{Amount: 1000},
+		TotalPrice: models.Currency{Amount: 2000},
+	}
+	item2 := &models.CartItem{
+		ProductID:  productID2,
+		Quantity:   3,
+		UnitPrice:  models.Currency{Amount: 2000},
+		TotalPrice: models.Currency{Amount: 6000},
+	}
+
+	err = repo.AddItemToCart(ctx, user.ID, item1)
+	assert.NoError(t, err, "Expected no error on adding item1 to cart")
+
+	err = repo.AddItemToCart(ctx, user.ID, item2)
+	assert.NoError(t, err, "Expected no error on adding item2 to cart")
+
+	// Calculate the expected total
+	expectedTotal := item1.TotalPrice.Amount + item2.TotalPrice.Amount
+
+	// Fetch the cart total
+	total, err := repo.FetchCartTotal(ctx, user.ID)
+	assert.NoError(t, err, "Expected no error on fetching cart total")
+	assert.Equal(t, expectedTotal, total.Amount, "Expected the calculated total to match")
+
+	// Cleanup
+	dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
+	dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
+	dbPool.ExecContext(ctx, "DELETE FROM inventory WHERE product_id IN ($1, $2)", productID1, productID2)
+	dbPool.ExecContext(ctx, "DELETE FROM products WHERE id IN ($1, $2)", productID1, productID2)
+	dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
+}

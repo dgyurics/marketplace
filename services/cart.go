@@ -45,15 +45,17 @@ func (s *cartService) ClearCart(ctx context.Context) error {
 }
 
 func (s *cartService) CheckOut(ctx context.Context) error {
-	// Temporarily hold the inventory for items in the cart to prevent others
-	// from purchasing the same stock.
-	err := s.repo.ReserveCartItems(ctx, getUserID(ctx))
+	var userID = getUserID(ctx)
+	// Reserve cart items by moving them to inventory_reservations table
+	if err := s.repo.ReserveCartItems(ctx, userID); err != nil {
+		return err
+	}
 
 	// TODO schedule a job to release the reserved inventory after a certain time
 	// TODO prevent the user from reserving multiple times
 
-	// 2. Calculate Total
-	//    - Calculate the final total for the cart, including taxes, shipping, and any discounts.
+	_, err := s.repo.FetchCartTotal(ctx, userID)
+	// TODO include taxes and shipping
 
 	// 3. Initiate Payment Intent
 	//    - Create a Payment Intent with a third-party payment processor (e.g., Stripe) for the calculated total.

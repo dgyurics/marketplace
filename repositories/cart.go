@@ -12,6 +12,7 @@ import (
 type CartRepository interface {
 	AddItemToCart(ctx context.Context, userID string, item *models.CartItem) error
 	GetOrCreateCart(ctx context.Context, userID string) (*models.Cart, error)
+	FetchCartTotal(ctx context.Context, userID string) (models.Currency, error)
 	UpdateCartItem(ctx context.Context, userID string, item *models.CartItem) error
 	RemoveItemFromCart(ctx context.Context, userID, productID string) error
 	ReserveCartItems(ctx context.Context, userID string) error
@@ -199,4 +200,20 @@ func (r *cartRepository) ReserveCartItems(ctx context.Context, userID string) er
 	}
 
 	return nil
+}
+
+func (r *cartRepository) FetchCartTotal(ctx context.Context, userID string) (models.Currency, error) {
+	var total models.Currency
+
+	query := `
+		SELECT COALESCE(SUM(quantity * unit_price), 0)
+		FROM cart_items
+		WHERE user_id = $1`
+
+	err := r.db.QueryRowContext(ctx, query, userID).Scan(&total.Amount)
+	if err != nil {
+		return total, fmt.Errorf("failed to calculate cart total: %w", err)
+	}
+
+	return total, nil
 }
