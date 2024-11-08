@@ -3,7 +3,6 @@ package models
 type Cart struct {
 	UserID string     `json:"user_id"`
 	Items  []CartItem `json:"items"`
-	Total  Currency   `json:"total"`
 }
 
 type CartItem struct {

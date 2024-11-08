@@ -66,7 +66,6 @@ func TestGetOrCreateCart(t *testing.T) {
 	existingCart, err := repo.GetOrCreateCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on fetching existing cart")
 	assert.Equal(t, cart.UserID, existingCart.UserID, "Expected the same cart to be fetched")
-	assert.Equal(t, cart.Total.Amount, existingCart.Total.Amount, "Expected the total to remain the same")
 
 	// Clean up the cart
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)

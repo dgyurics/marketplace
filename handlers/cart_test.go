@@ -126,7 +126,6 @@ func TestGetCart(t *testing.T) {
 	expectedCart := &models.Cart{
 		UserID: "test-user-id",
 		Items:  []models.CartItem{{ProductID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8", Quantity: 2}},
-		Total:  models.NewCurrency(20, 0),
 	}
 
 	mockCartService.On("GetCart", mock.Anything).Return(expectedCart, nil)
@@ -154,7 +153,6 @@ func TestGetCart(t *testing.T) {
 
 	// Verify the cart details
 	require.Equal(t, expectedCart.UserID, responseCart.UserID)
-	require.Equal(t, expectedCart.Total, responseCart.Total)
 
 	// Assert that the mock's expectations were met
 	mockCartService.AssertExpectations(t)

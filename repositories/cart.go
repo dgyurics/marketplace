@@ -27,33 +27,17 @@ func NewCartRepository(db *sql.DB) CartRepository {
 	return &cartRepository{db: db}
 }
 
-func (r *cartRepository) CreateCart(ctx context.Context, userID string) error {
-	query := `
-		INSERT INTO carts (user_id)
-		VALUES ($1)`
-	_, err := r.db.ExecContext(ctx, query, userID)
-	return err
-}
-
 func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*models.Cart, error) {
-	cart := &models.Cart{}
+	cart := &models.Cart{
+		UserID: userID,
+	}
 
 	// Use ON CONFLICT to insert a new cart if it doesn't already exist
 	query := `
-		INSERT INTO carts (user_id, total)
-		VALUES ($1, 0)
+		INSERT INTO carts (user_id)
+		VALUES ($1)
 		ON CONFLICT (user_id) DO NOTHING`
-	_, err := r.db.ExecContext(ctx, query, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Fetch the cart after the potential insertion
-	query = `
-		SELECT user_id, total
-		FROM carts
-		WHERE user_id = $1`
-	if err := r.db.QueryRowContext(ctx, query, userID).Scan(&cart.UserID, &cart.Total.Amount); err != nil {
+	if _, err := r.db.ExecContext(ctx, query, userID); err != nil {
 		return nil, err
 	}
 
@@ -95,11 +79,7 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 		INSERT INTO cart_items (user_id, product_id, quantity, unit_price, total_price)
 		VALUES ($1, $2, $3, $4, $5)`
 	_, err := r.db.ExecContext(ctx, query, userID, item.ProductID, item.Quantity, item.UnitPrice.Amount, item.TotalPrice.Amount)
-	if err != nil {
-		return err
-	}
-
-	return r.updateCartTotal(ctx, userID, item.TotalPrice)
+	return err
 }
 
 func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item *models.CartItem) error {
@@ -132,37 +112,15 @@ func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item
 		SET quantity = $3, total_price = $4
 		WHERE user_id = $1 AND product_id = $2`
 	_, err = r.db.ExecContext(ctx, updateQuery, userID, item.ProductID, item.Quantity, item.TotalPrice.Amount)
-	if err != nil {
-		return err
-	}
-
-	// Update cart total
-	priceDifference := item.TotalPrice.Amount - oldItem.TotalPrice.Amount
-	return r.updateCartTotal(ctx, userID, models.NewCurrency(0, priceDifference))
+	return err
 }
 
 func (r *cartRepository) RemoveItemFromCart(ctx context.Context, userID string, productID string) error {
-	// Get total price of item to subtract from cart total
-	var itemTotalPrice int64
-	query := `
-		SELECT total_price
-		FROM cart_items
-		WHERE user_id = $1 AND product_id = $2`
-	if err := r.db.QueryRowContext(ctx, query, userID, productID).Scan(&itemTotalPrice); err != nil {
-		return err
-	}
-
-	// Delete item from cart
 	deleteQuery := `
 		DELETE FROM cart_items
 		WHERE user_id = $1 AND product_id = $2`
 	_, err := r.db.ExecContext(ctx, deleteQuery, userID, productID)
-	if err != nil {
-		return err
-	}
-
-	// Update cart total
-	return r.updateCartTotal(ctx, userID, models.Currency{Amount: -itemTotalPrice})
+	return err
 }
 
 func (r *cartRepository) ClearCart(ctx context.Context, userID string) error {
@@ -170,19 +128,6 @@ func (r *cartRepository) ClearCart(ctx context.Context, userID string) error {
 		DELETE FROM cart_items
 		WHERE user_id = $1`
 	_, err := r.db.ExecContext(ctx, deleteQuery, userID)
-	if err != nil {
-		return err
-	}
-
-	return r.updateCartTotal(ctx, userID, models.Currency{Amount: 0})
-}
-
-func (r *cartRepository) updateCartTotal(ctx context.Context, userID string, priceChange models.Currency) error {
-	query := `
-		UPDATE carts
-		SET total = total + $2
-		WHERE user_id = $1`
-	_, err := r.db.ExecContext(ctx, query, userID, priceChange.Amount)
 	return err
 }
 
@@ -204,16 +149,10 @@ func (r *cartRepository) ReserveCartItems(ctx context.Context, userID string) er
 
 func (r *cartRepository) FetchCartTotal(ctx context.Context, userID string) (models.Currency, error) {
 	var total models.Currency
-
 	query := `
 		SELECT COALESCE(SUM(quantity * unit_price), 0)
 		FROM cart_items
 		WHERE user_id = $1`
-
 	err := r.db.QueryRowContext(ctx, query, userID).Scan(&total.Amount)
-	if err != nil {
-		return total, fmt.Errorf("failed to calculate cart total: %w", err)
-	}
-
-	return total, nil
+	return total, err
 }
