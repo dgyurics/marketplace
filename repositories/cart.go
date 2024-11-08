@@ -10,7 +10,6 @@ import (
 )
 
 type CartRepository interface {
-	CreateCart(ctx context.Context, userID string) error
 	AddItemToCart(ctx context.Context, userID string, item *models.CartItem) error
 	GetOrCreateCart(ctx context.Context, userID string) (*models.Cart, error)
 	UpdateCartItem(ctx context.Context, userID string, item *models.CartItem) error

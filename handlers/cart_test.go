@@ -18,11 +18,6 @@ type MockCartService struct {
 	mock.Mock
 }
 
-func (m *MockCartService) CreateCart(ctx context.Context, cart *models.Cart) error {
-	args := m.Called(ctx, cart)
-	return args.Error(0)
-}
-
 func (m *MockCartService) AddItemToCart(ctx context.Context, item *models.CartItem) error {
 	args := m.Called(ctx, item)
 	return args.Error(0)

@@ -8,7 +8,6 @@ import (
 )
 
 type CartService interface {
-	CreateCart(ctx context.Context, cart *models.Cart) error
 	AddItemToCart(ctx context.Context, item *models.CartItem) error
 	GetCart(ctx context.Context) (*models.Cart, error)
 	UpdateCartItem(ctx context.Context, item *models.CartItem) error
@@ -23,10 +22,6 @@ type cartService struct {
 
 func NewCartService(repo repositories.CartRepository) CartService {
 	return &cartService{repo: repo}
-}
-
-func (s *cartService) CreateCart(ctx context.Context, cart *models.Cart) error {
-	return s.repo.CreateCart(ctx, getUserID(ctx))
 }
 
 func (s *cartService) AddItemToCart(ctx context.Context, item *models.CartItem) error {
