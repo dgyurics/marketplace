@@ -323,3 +323,120 @@ func TestClearCart(t *testing.T) {
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
 	assert.NoError(t, err, "Expected no error on deleting user")
 }
+
+func TestReserveCartItems_Success(t *testing.T) {
+	repo := NewCartRepository(dbPool)
+	userRepo := NewUserRepository(dbPool)
+	ctx := context.Background()
+
+	// Create a unique test user
+	user := createUniqueTestUser(t, userRepo)
+
+	// Set up product and inventory
+	productID, _ := generateUUID()
+	_, _ = dbPool.ExecContext(ctx, `
+			INSERT INTO products (id, name, price, description)
+			VALUES ($1, 'Test Product', 1000, 'Test product description')`,
+		productID)
+	_, _ = dbPool.ExecContext(ctx, `
+			INSERT INTO inventory (product_id, quantity)
+			VALUES ($1, 5)`,
+		productID)
+
+	// Create a cart for the user
+	_, err := repo.GetOrCreateCart(ctx, user.ID)
+	assert.NoError(t, err, "Expected no error on cart creation")
+
+	// Add item to the user's cart
+	item := &models.CartItem{
+		ProductID:  productID,
+		Quantity:   1,
+		UnitPrice:  models.Currency{Amount: 1000},
+		TotalPrice: models.Currency{Amount: 1000},
+	}
+	err = repo.AddItemToCart(ctx, user.ID, item)
+	assert.NoError(t, err, "Expected no error on adding item to cart")
+
+	// Test reserve_cart_items function
+	err = repo.ReserveCartItems(ctx, user.ID)
+	assert.NoError(t, err)
+
+	// Cleanup
+	dbPool.ExecContext(ctx, "DELETE FROM inventory_reservations WHERE user_id = $1", user.ID)
+	dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
+	dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", productID)
+	dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
+}
+
+func TestReserveCartItems_EmptyCart(t *testing.T) {
+	repo := NewCartRepository(dbPool)
+	userRepo := NewUserRepository(dbPool)
+	ctx := context.Background()
+
+	// Create a unique test user
+	user := createUniqueTestUser(t, userRepo)
+
+	// Create an empty cart for the user
+	_, err := repo.GetOrCreateCart(ctx, user.ID)
+	assert.NoError(t, err, "Expected no error on cart creation")
+
+	// Test reserve_cart_items function for empty cart
+	err = repo.ReserveCartItems(ctx, user.ID)
+	assert.Error(t, err, "Expected an error for an empty cart")
+	assert.Equal(t, "empty_cart", err.Error(), "Expected 'empty_cart' error message")
+
+	// Cleanup
+	dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
+	dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
+}
+
+func TestReserveCartItems_InsufficientInventory(t *testing.T) {
+	repo := NewCartRepository(dbPool)
+	userRepo := NewUserRepository(dbPool)
+	ctx := context.Background()
+
+	// Create a unique test user
+	user := createUniqueTestUser(t, userRepo)
+
+	// Set up product with a temporary inventory to allow adding to cart
+	productID, _ := generateUUID()
+	_, _ = dbPool.ExecContext(ctx, `
+		INSERT INTO products (id, name, price, description)
+		VALUES ($1, 'Test Product', 1000, 'Test product description')`,
+		productID)
+	_, _ = dbPool.ExecContext(ctx, `
+		INSERT INTO inventory (product_id, quantity)
+		VALUES ($1, 1)`, // Temporarily set quantity to 1 for adding to cart
+		productID)
+
+	// Create a cart for the user
+	_, err := repo.GetOrCreateCart(ctx, user.ID)
+	assert.NoError(t, err, "Expected no error on cart creation")
+
+	// Add item to the user's cart
+	item := &models.CartItem{
+		ProductID:  productID,
+		Quantity:   1,
+		UnitPrice:  models.Currency{Amount: 1000},
+		TotalPrice: models.Currency{Amount: 1000},
+	}
+	err = repo.AddItemToCart(ctx, user.ID, item)
+	assert.NoError(t, err, "Expected no error on adding item to cart")
+
+	// Now set inventory to 0 to simulate insufficient inventory for reservation
+	_, _ = dbPool.ExecContext(ctx, `
+		UPDATE inventory
+		SET quantity = 0
+		WHERE product_id = $1`, productID)
+
+	// Test reserve_cart_items function for insufficient inventory
+	err = repo.ReserveCartItems(ctx, user.ID)
+	assert.Error(t, err, "Expected an error due to insufficient inventory")
+	assert.Equal(t, "insufficient_inventory", err.Error(), "Expected 'insufficient_inventory' error message")
+
+	// Cleanup
+	dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
+	dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
+	dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", productID)
+	dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
+}

@@ -50,22 +50,22 @@ func (s *cartService) ClearCart(ctx context.Context) error {
 }
 
 func (s *cartService) CheckOut(ctx context.Context) error {
-	// 1. Validate Cart
-	//    - Ensure the cart has items and that quantities are available.
+	// Temporarily hold the inventory for items in the cart to prevent others
+	// from purchasing the same stock.
+	err := s.repo.ReserveCartItems(ctx, getUserID(ctx))
 
-	// 2. Reserve Inventory
-	//    - Temporarily hold the inventory for items in the cart to prevent others from purchasing the same stock.
-	//    - Set a reservation timeout (e.g., 10-15 minutes) to automatically release the hold if payment isn’t completed.
+	// TODO schedule a job to release the reserved inventory after a certain time
+	// TODO prevent the user from reserving multiple times
 
-	// 3. Calculate Total
+	// 2. Calculate Total
 	//    - Calculate the final total for the cart, including taxes, shipping, and any discounts.
 
-	// 4. Initiate Payment Intent
+	// 3. Initiate Payment Intent
 	//    - Create a Payment Intent with a third-party payment processor (e.g., Stripe) for the calculated total.
 	//    - Return the Payment Intent’s client secret to the front end to allow the customer to complete payment.
 
 	// After payment intent is created, payment confirmation will call CompleteOrder
-	return nil
+	return err
 }
 
 func (s *cartService) CompleteOrder(ctx context.Context, paymentStatus string) error {

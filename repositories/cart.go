@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/dgyurics/marketplace/models"
@@ -14,6 +15,7 @@ type CartRepository interface {
 	GetOrCreateCart(ctx context.Context, userID string) (*models.Cart, error)
 	UpdateCartItem(ctx context.Context, userID string, item *models.CartItem) error
 	RemoveItemFromCart(ctx context.Context, userID, productID string) error
+	ReserveCartItems(ctx context.Context, userID string) error
 	ClearCart(ctx context.Context, userID string) error
 }
 
@@ -182,4 +184,20 @@ func (r *cartRepository) updateCartTotal(ctx context.Context, userID string, pri
 		WHERE user_id = $1`
 	_, err := r.db.ExecContext(ctx, query, userID, priceChange.Amount)
 	return err
+}
+
+func (r *cartRepository) ReserveCartItems(ctx context.Context, userID string) error {
+	var result string
+
+	// reserve_cart_items returns "success", "empty_cart", "insufficient_inventory"
+	query := `SELECT reserve_cart_items($1);`
+	if err := r.db.QueryRowContext(ctx, query, userID).Scan(&result); err != nil {
+		return err
+	}
+
+	if result != "success" {
+		return errors.New(result)
+	}
+
+	return nil
 }

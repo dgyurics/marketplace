@@ -172,3 +172,60 @@ CREATE TABLE IF NOT EXISTS payments (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 );
+
+CREATE OR REPLACE FUNCTION reserve_cart_items(usrid UUID)
+RETURNS TEXT AS $$
+DECLARE
+    cart_item_count INT;
+    updated_row_count INT;
+BEGIN
+    -- Check if there are items in the user's cart
+    SELECT COUNT(*)
+    INTO cart_item_count
+    FROM cart_items
+    WHERE user_id = usrid;
+
+    -- Return 'empty_cart' if no items in the cart
+    IF cart_item_count = 0 THEN
+        RETURN 'empty_cart';
+    END IF;
+
+    -- Update inventory and attempt to reserve items
+    WITH updated_inventory AS (
+        UPDATE inventory
+        SET quantity = inventory.quantity - cart_items.quantity
+        FROM cart_items
+        WHERE inventory.product_id = cart_items.product_id
+          AND cart_items.user_id = usrid
+          AND inventory.quantity >= cart_items.quantity
+        RETURNING cart_items.product_id, cart_items.quantity
+    )
+    INSERT INTO inventory_reservations (product_id, user_id, reserved_quantity, reservation_expiration)
+    SELECT updated_inventory.product_id, usrid, updated_inventory.quantity, CURRENT_TIMESTAMP + INTERVAL '15 minutes'
+    FROM updated_inventory
+    ON CONFLICT (product_id, user_id)
+    DO UPDATE SET reserved_quantity = EXCLUDED.reserved_quantity,
+                  reservation_expiration = EXCLUDED.reservation_expiration;
+
+    -- Get the number of rows updated
+    GET DIAGNOSTICS updated_row_count = ROW_COUNT;
+
+    -- If no rows were updated, return 'insufficient_inventory'
+    IF updated_row_count = 0 THEN
+        RETURN 'insufficient_inventory';
+    END IF;
+
+    -- If the updated rows don't match the cart item count, rollback
+    IF updated_row_count <> cart_item_count THEN
+        RAISE EXCEPTION 'Insufficient inventory for some items in cart. Reservation failed.';
+    END IF;
+
+    -- Return 'success' if everything was reserved successfully
+    RETURN 'success';
+
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Catch any unexpected error and rollback
+        RAISE EXCEPTION 'An error occurred during reservation: %', SQLERRM;
+END;
+$$ LANGUAGE plpgsql;
