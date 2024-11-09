@@ -20,6 +20,8 @@
   <li><strong>Payment Integration:</strong> Integrate with a single payment prover, Stripe.</li>
   <li><strong>Email Notifications:</strong> Send order confirmations to users.</li>
   <li><strong>Search and Filtering:</strong> Advanced search capabilities, allowing users to find products through keyword and fuzzy searches.</li>
+  <li><strong>Performance Optimization:</strong> Implement caching and pagination to improve performance.</li>
+  <li><strong>Logging and Monitoring:</strong> Implement logging and monitoring to track application performance and errors.</li>
 </ul>
 
 <h2>Future Considerations</h2>
