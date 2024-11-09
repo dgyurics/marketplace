@@ -43,14 +43,20 @@ func (s *userService) AuthenticateUser(ctx context.Context, credentials *models.
 }
 
 func (s *userService) verifyEmail(ctx context.Context, credentials *models.Credential) (*models.User, error) {
-	user, _ := s.repo.GetUserByEmail(ctx, credentials.Email)
-	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password))
+	user, err := s.repo.GetUserByEmail(ctx, credentials.Email)
+	if err != nil {
+		return nil, err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password))
 	return user, err
 }
 
 func (s *userService) verifyPhone(ctx context.Context, credentials *models.Credential) (*models.User, error) {
-	user, _ := s.repo.GetUserByPhone(ctx, credentials.Phone)
-	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password))
+	user, err := s.repo.GetUserByPhone(ctx, credentials.Phone)
+	if err != nil {
+		return nil, err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password))
 	return user, err
 }
 

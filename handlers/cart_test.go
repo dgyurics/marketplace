@@ -43,9 +43,9 @@ func (m *MockCartService) ClearCart(ctx context.Context) error {
 	return args.Error(0)
 }
 
-func (m *MockCartService) CheckOut(ctx context.Context) error {
-	args := m.Called(ctx)
-	return args.Error(0)
+func (m *MockCartService) CheckOut(ctx context.Context, tokenID string) (models.PaymentIntentResponse, error) {
+	args := m.Called(ctx, tokenID)
+	return args.Get(0).(models.PaymentIntentResponse), args.Error(1)
 }
 
 func TestAddItemToCart(t *testing.T) {
@@ -166,13 +166,24 @@ func TestCheckout(t *testing.T) {
 		router:      router,
 	}
 
-	mockCartService.On("ClearCart", mock.Anything).Return(nil)
+	// Prepare mock data for the request and expected response
+	tokenID := "test-token-id"
+	expectedResponse := models.PaymentIntentResponse{
+		Status: "success",
+	}
 
-	// Create a new HTTP POST request with cartID in the URL
-	req, err := http.NewRequest(http.MethodPost, "/carts/checkout", nil)
+	// Mock the CheckOut method to return a successful PaymentIntentResponse
+	mockCartService.On("CheckOut", mock.Anything, tokenID).Return(expectedResponse, nil)
+
+	// Create a request payload
+	payload := map[string]string{"token_id": tokenID}
+	payloadBytes, _ := json.Marshal(payload)
+
+	// Create a new HTTP POST request for checkout
+	req, err := http.NewRequest(http.MethodPost, "/carts/checkout", bytes.NewBuffer(payloadBytes))
 	require.NoError(t, err)
 
-	// Create a response recorder to capture the response
+	// Set up a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
@@ -181,16 +192,16 @@ func TestCheckout(t *testing.T) {
 	// Serve the request via the router
 	handler.router.ServeHTTP(rr, req)
 
-	// Check the status code is what you expect
+	// Check that the status code is HTTP 200 OK
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	// Decode the response body
-	var response map[string]string
+	var response models.PaymentIntentResponse
 	err = json.NewDecoder(rr.Body).Decode(&response)
 	require.NoError(t, err)
 
-	// Verify the checkout message
-	require.Equal(t, "Checkout completed and cart cleared", response["message"])
+	// Verify that the response matches the expected response
+	require.Equal(t, expectedResponse.Status, response.Status)
 
 	// Assert that the mock's expectations were met
 	mockCartService.AssertExpectations(t)

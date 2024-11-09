@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS cart_items (
     user_id UUID NOT NULL,
     product_id UUID NOT NULL,
     quantity INT NOT NULL,
-    unit_price NUMERIC NOT NULL,
+    unit_price NUMERIC(10, 2) NOT NULL,
     PRIMARY KEY (user_id, product_id),
     FOREIGN KEY (user_id) REFERENCES carts(user_id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE

@@ -29,7 +29,8 @@ func main() {
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
-	cartService := services.NewCartService(cartRepository)
+	paymentService := services.NewPaymentService()
+	cartService := services.NewCartService(cartRepository, paymentService)
 
 	// Create middleware
 	middleware := middleware.NewAccessControl(authService)

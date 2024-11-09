@@ -74,17 +74,22 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *cartHandler) Checkout(w http.ResponseWriter, r *http.Request) {
-	// Implement checkout logic, e.g., process payment, reduce inventory, etc.
-	// For now, just clear the cart.
-	err := h.cartService.ClearCart(r.Context())
-	if err != nil {
+	var req struct {
+		TokenID string `json:"token_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+	res, err := h.cartService.CheckOut(r.Context(), req.TokenID)
+	if err != nil || res.Status != "success" {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Checkout completed and cart cleared",
-	})
+	json.NewEncoder(w).Encode(res)
 }
 
 func (h *cartHandler) ConfirmPayment(w http.ResponseWriter, r *http.Request) {}

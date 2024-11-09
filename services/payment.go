@@ -11,39 +11,23 @@ import (
 	"github.com/dgyurics/marketplace/models"
 )
 
-// Placeholder for actual payment provider
-
-type PaymentProvider string
-
-const (
-	Stripe PaymentProvider = "stripe"
-	PayPal PaymentProvider = "paypal"
-)
-
-type PaymentIntentRequest struct {
-	Provider PaymentProvider
-	Amount   models.Currency
-	Currency string
-	TokenID  string
+type PaymentService interface {
+	SendPaymentRequest(req models.PaymentIntentRequest) (models.PaymentIntentResponse, error)
+	RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (models.PaymentIntent, error)
 }
 
-type PaymentIntentResponse struct {
-	Status        string
-	TransactionID string
-	ErrorMessage  string
+type paymentService struct{}
+
+func NewPaymentService() PaymentService {
+	return &paymentService{}
 }
 
-type PaymentIntent struct {
-	Status         string
-	AmountReceived models.Currency
-}
-
-func SendPaymentRequest(req PaymentIntentRequest) (PaymentIntentResponse, error) {
+func (ps *paymentService) SendPaymentRequest(req models.PaymentIntentRequest) (models.PaymentIntentResponse, error) {
 	if req.TokenID == "" {
-		return PaymentIntentResponse{}, errors.New("missing token ID")
+		return models.PaymentIntentResponse{}, errors.New("missing token ID")
 	}
 	if req.Amount.Amount <= 0 {
-		return PaymentIntentResponse{}, errors.New("invalid amount")
+		return models.PaymentIntentResponse{}, errors.New("invalid amount")
 	}
 
 	// Simulate request processing time
@@ -55,24 +39,28 @@ func SendPaymentRequest(req PaymentIntentRequest) (PaymentIntentResponse, error)
 	// Simulate payment response with random success/failure
 	failure := mathrand.Intn(10) == 0 // 10% chance of failure
 	if failure {
-		return PaymentIntentResponse{
-			Status:        "failed",
-			TransactionID: "",
-			ErrorMessage:  "Payment failed",
+		return models.PaymentIntentResponse{
+			PaymentIntentID: "",
+			ClientSecret:    "",
+			Amount:          req.Amount,
+			Currency:        req.Currency,
+			Status:          "failed",
 		}, nil
 	}
 
-	return PaymentIntentResponse{
-		Status:        "success",
-		TransactionID: transactionID,
-		ErrorMessage:  "",
+	return models.PaymentIntentResponse{
+		PaymentIntentID: transactionID,
+		ClientSecret:    "client_secret_" + transactionID,
+		Amount:          req.Amount,
+		Currency:        req.Currency,
+		Status:          "success",
 	}, nil
 }
 
-func RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (PaymentIntent, error) {
+func (ps *paymentService) RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (models.PaymentIntent, error) {
 	// Placeholder for actual payment provider
 	if paymentIntentID == "" {
-		return PaymentIntent{}, errors.New("missing payment intent ID")
+		return models.PaymentIntent{}, errors.New("missing payment intent ID")
 	}
 
 	// Simulate network delay
@@ -81,7 +69,7 @@ func RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (Payment
 	// Simulate payment response with random success/failure
 	failure := mathrand.Intn(10) == 0 // 10% chance of failure
 	if failure {
-		return PaymentIntent{
+		return models.PaymentIntent{
 			Status:         "not paid",
 			AmountReceived: models.Currency{Amount: 0},
 		}, nil
@@ -91,7 +79,7 @@ func RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (Payment
 	// scenarios where amount paid does not match the expected amount
 	// or where the transaction ID is not found or does not match the expected ID
 
-	return PaymentIntent{
+	return models.PaymentIntent{
 		Status:         "paid",
 		AmountReceived: models.NewCurrency(50, 0),
 	}, nil

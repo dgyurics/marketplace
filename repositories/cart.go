@@ -74,11 +74,20 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 		return fmt.Errorf("insufficient inventory for product %s", item.ProductID)
 	}
 
-	// Add item to cart without changing inventory
+	// Fetch unit_price from the product table
+	var unitPrice float64
+	if err := r.db.QueryRowContext(ctx, "SELECT price FROM products WHERE id = $1", item.ProductID).Scan(&unitPrice); err != nil {
+		return err
+	}
+
+	// Add item to cart using the fetched unit_price
 	query := `
 		INSERT INTO cart_items (user_id, product_id, quantity, unit_price)
-		VALUES ($1, $2, $3, $4)`
-	_, err := r.db.ExecContext(ctx, query, userID, item.ProductID, item.Quantity, item.UnitPrice.Amount)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (user_id, product_id) DO UPDATE
+		SET quantity = EXCLUDED.quantity,
+		    unit_price = EXCLUDED.unit_price`
+	_, err := r.db.ExecContext(ctx, query, userID, item.ProductID, item.Quantity, unitPrice)
 	return err
 }
 
@@ -150,9 +159,9 @@ func (r *cartRepository) ReserveCartItems(ctx context.Context, userID string) er
 func (r *cartRepository) FetchCartTotal(ctx context.Context, userID string) (models.Currency, error) {
 	var total models.Currency
 	query := `
-		SELECT COALESCE(SUM(quantity * unit_price), 0)
+		SELECT COALESCE(CAST(SUM(quantity * unit_price) AS DECIMAL(10,2)), 0.00)
 		FROM cart_items
 		WHERE user_id = $1`
-	err := r.db.QueryRowContext(ctx, query, userID).Scan(&total.Amount)
+	err := r.db.QueryRowContext(ctx, query, userID).Scan(&total)
 	return total, err
 }
