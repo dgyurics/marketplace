@@ -55,7 +55,7 @@ func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*m
 	items := make([]models.CartItem, 0)
 	for rows.Next() {
 		var item models.CartItem
-		if err := rows.Scan(&item.ProductID, &item.Quantity, &item.UnitPrice.Amount); err != nil {
+		if err := rows.Scan(&item.ProductID, &item.Quantity, &item.UnitPrice); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -75,19 +75,19 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 	}
 
 	// Fetch unit_price from the product table
-	var unitPrice float64
-	if err := r.db.QueryRowContext(ctx, "SELECT price FROM products WHERE id = $1", item.ProductID).Scan(&unitPrice); err != nil {
+	if err := r.db.QueryRowContext(ctx, "SELECT price FROM products WHERE id = $1", item.ProductID).Scan(&item.UnitPrice); err != nil {
 		return err
 	}
 
 	// Add item to cart using the fetched unit_price
+	unitPriceAsFloat := float64(item.UnitPrice.Amount) / 100
 	query := `
 		INSERT INTO cart_items (user_id, product_id, quantity, unit_price)
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (user_id, product_id) DO UPDATE
 		SET quantity = EXCLUDED.quantity,
 		    unit_price = EXCLUDED.unit_price`
-	_, err := r.db.ExecContext(ctx, query, userID, item.ProductID, item.Quantity, unitPrice)
+	_, err := r.db.ExecContext(ctx, query, userID, item.ProductID, item.Quantity, unitPriceAsFloat)
 	return err
 }
 

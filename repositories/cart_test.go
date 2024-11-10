@@ -118,6 +118,8 @@ func TestAddItemToCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on fetching cart")
 	assert.Equal(t, 1, len(addedCart.Items), "Expected one item in the cart")
 	assert.Equal(t, item.ProductID, addedCart.Items[0].ProductID, "Expected the same product ID")
+	assert.Equal(t, item.Quantity, addedCart.Items[0].Quantity, "Expected the same quantity")
+	assert.Equal(t, item.UnitPrice.Amount, addedCart.Items[0].UnitPrice.Amount, "Expected the same unit price")
 
 	// Clean up the cart, product, and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
