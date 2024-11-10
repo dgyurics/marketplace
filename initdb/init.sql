@@ -188,6 +188,18 @@ BEGIN
         RETURN 'empty_cart';
     END IF;
 
+    -- Restore inventory from existing reservations, if any
+    WITH restored_inventory AS (
+        UPDATE inventory
+        SET quantity = inventory.quantity + inventory_reservations.reserved_quantity
+        FROM inventory_reservations
+        WHERE inventory.product_id = inventory_reservations.product_id
+          AND inventory_reservations.user_id = usrid
+        RETURNING inventory_reservations.product_id
+    )
+    -- Delete the old reservations after restoring inventory
+    DELETE FROM inventory_reservations WHERE user_id = usrid;
+
     -- Update inventory and attempt to reserve items
     WITH updated_inventory AS (
         UPDATE inventory
