@@ -22,6 +22,7 @@
   <li><strong>Search and Filtering:</strong> Advanced search capabilities, allowing users to find products through keyword and fuzzy searches.</li>
   <li><strong>Performance Optimization:</strong> Implement caching and pagination to improve performance.</li>
   <li><strong>Logging and Monitoring:</strong> Implement logging and monitoring to track application performance and errors.</li>
+  <li><strong>Cart Item Limits:</strong> Implement quantity thresholds for each product and number of items in a cart.</li>
 </ul>
 
 <h2>Future Considerations</h2>
