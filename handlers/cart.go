@@ -96,7 +96,22 @@ func (h *cartHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func (h *cartHandler) ConfirmPayment(w http.ResponseWriter, r *http.Request) {}
+func (h *cartHandler) ConfirmPayment(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		PaymentIntentID string `json:"payment_intent_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.cartService.ConfirmPayment(r.Context(), req.PaymentIntentID); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
 
 func (h *cartHandler) RegisterRoutes(authMiddleware middleware.AccessControl) {
 	h.router.Handle("/carts/items", authMiddleware.AuthenticateUser(h.AddItemToCart)).Methods(http.MethodPost)

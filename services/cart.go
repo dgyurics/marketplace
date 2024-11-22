@@ -15,6 +15,7 @@ type CartService interface {
 	RemoveItemFromCart(ctx context.Context, productID string) error
 	ClearCart(ctx context.Context) error
 	CheckOut(ctx context.Context, tokenID string) (models.PaymentIntentResponse, error)
+	ConfirmPayment(ctx context.Context, paymentIntentID string) error
 }
 
 type cartService struct {
@@ -57,6 +58,8 @@ func (s *cartService) CheckOut(ctx context.Context, tokenID string) (models.Paym
 	var cartTotal models.Currency
 	errChan := make(chan error, 2)
 
+	// TODO verify account has address information
+
 	// Reserve cart items
 	wg.Add(1)
 	go func() {
@@ -90,35 +93,44 @@ func (s *cartService) CheckOut(ctx context.Context, tokenID string) (models.Paym
 	}
 
 	// Create a Payment Intent with a third-party payment processor
-	tmp := models.PaymentIntentRequest{
+	paymentIntent := models.PaymentIntentRequest{
 		Provider: models.Stripe,
 		Amount:   cartTotal,
 		Currency: "usd",
 		TokenID:  tokenID,
 	}
-	// TODO save res details to payment_transactions table
-	return s.paymentService.SendPaymentRequest(tmp)
+
+	// TODO implement retry logic for network failures, timeouts, etc.
+	response, err := s.paymentService.SendPaymentRequest(ctx, paymentIntent)
+	if err != nil || response.Status != "success" {
+		return response, err
+	}
+
+	// Start the order
+	err = s.repo.StartOrder(ctx, userID, response.PaymentIntentID, response.Amount)
+	return response, err
 }
 
-func (s *cartService) CompleteOrder(ctx context.Context, paymentStatus string) error {
-	// 5. Confirm Payment Status
-	//    - If the payment succeeds:
-	//       - Record the transaction details in a `payment_transactions` table (provider, transaction ID, amount, etc.).
-	//       - Proceed to order creation.
-	//    - If payment fails, release the reserved inventory and notify the user.
+func (s *cartService) ConfirmPayment(ctx context.Context, paymentIntentID string) error {
+	// fetch payment intent details
+	payIntent, err := s.paymentService.RetrievePaymentIntent(ctx, paymentIntentID)
+	if err != nil {
+		return err
+	}
 
-	// 6. Create Order
-	//    - Create an order record in the `orders` table, linking it with the user, payment, and shipping details.
-	//    - Populate `order_items` with each cart item and its relevant pricing data.
+	// fetch expected cart total
+	cartTotal, err := s.repo.FetchCartTotal(ctx, getUserID(ctx))
+	if err != nil {
+		return err
+	}
 
-	// 7. Deduct Inventory
-	//    - Permanently reduce inventory for each item based on the final order quantities.
+	// compare payment amount with cart total
+	if payIntent.AmountReceived != cartTotal {
+		// TODO: refund the payment
+		// TODO: log the discrepancy and generate an alert
+		// return errors.New("payment amount does not match cart total")
+	}
 
-	// 8. Clear Cart
-	//    - Clear or reset the cart for future purchases, ensuring it’s ready for the next session.
-
-	// 9. Return Success Response
-	//    - Notify the user that the order was successfully placed.
-
-	return nil
+	// process the order
+	return s.repo.CompleteOrder(ctx, getUserID(ctx), paymentIntentID)
 }

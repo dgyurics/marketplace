@@ -149,11 +149,12 @@ CREATE TABLE IF NOT EXISTS shipping_addresses (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TYPE order_status_enum AS ENUM ('created', 'processed', 'failed');
+CREATE TYPE order_status_enum AS ENUM ('created', 'paid', 'fulfilled', 'cancelled');
 CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID,
     shipping_address_id UUID,
+    payment_intent_id VARCHAR(255),
     total_amount NUMERIC(10, 2) NOT NULL,
     tax_amount NUMERIC(10, 2) DEFAULT 0,
     order_status order_status_enum DEFAULT 'created',
@@ -162,6 +163,7 @@ CREATE TABLE IF NOT EXISTS orders (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (shipping_address_id) REFERENCES shipping_addresses(id) ON DELETE SET NULL
 );
+CREATE INDEX idx_payment_intent_id ON orders(payment_intent_id);
 
 CREATE TABLE IF NOT EXISTS payments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

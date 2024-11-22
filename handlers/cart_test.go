@@ -48,6 +48,11 @@ func (m *MockCartService) CheckOut(ctx context.Context, tokenID string) (models.
 	return args.Get(0).(models.PaymentIntentResponse), args.Error(1)
 }
 
+func (m *MockCartService) ConfirmPayment(ctx context.Context, paymentIntentID string) error {
+	args := m.Called(ctx, paymentIntentID)
+	return args.Error(0)
+}
+
 func TestAddItemToCart(t *testing.T) {
 	mockCartService := new(MockCartService)
 	router := mux.NewRouter()

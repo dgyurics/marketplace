@@ -12,7 +12,7 @@ import (
 )
 
 type PaymentService interface {
-	SendPaymentRequest(req models.PaymentIntentRequest) (models.PaymentIntentResponse, error)
+	SendPaymentRequest(ctx context.Context, req models.PaymentIntentRequest) (models.PaymentIntentResponse, error)
 	RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (models.PaymentIntent, error)
 }
 
@@ -22,7 +22,7 @@ func NewPaymentService() PaymentService {
 	return &paymentService{}
 }
 
-func (ps *paymentService) SendPaymentRequest(req models.PaymentIntentRequest) (models.PaymentIntentResponse, error) {
+func (ps *paymentService) SendPaymentRequest(ctx context.Context, req models.PaymentIntentRequest) (models.PaymentIntentResponse, error) {
 	if req.TokenID == "" {
 		return models.PaymentIntentResponse{}, errors.New("missing token ID")
 	}
@@ -30,8 +30,12 @@ func (ps *paymentService) SendPaymentRequest(req models.PaymentIntentRequest) (m
 		return models.PaymentIntentResponse{}, errors.New("invalid amount")
 	}
 
-	// Simulate request processing time
-	time.Sleep(2 * time.Second) // Mimic network delay
+	// Simulate network delay with context handling
+	select {
+	case <-ctx.Done():
+		return models.PaymentIntentResponse{}, ctx.Err()
+	case <-time.After(2 * time.Second):
+	}
 
 	// Mock transaction ID generation
 	transactionID := fmt.Sprintf("%s-%d", req.Provider, mathrand.Intn(1000000))
@@ -44,7 +48,7 @@ func (ps *paymentService) SendPaymentRequest(req models.PaymentIntentRequest) (m
 			ClientSecret:    "",
 			Amount:          req.Amount,
 			Currency:        req.Currency,
-			Status:          "failed",
+			Status:          "incorrect_payment_details",
 		}, nil
 	}
 
@@ -63,8 +67,12 @@ func (ps *paymentService) RetrievePaymentIntent(ctx context.Context, paymentInte
 		return models.PaymentIntent{}, errors.New("missing payment intent ID")
 	}
 
-	// Simulate network delay
-	time.Sleep(1 * time.Second)
+	// Simulate network delay with context handling
+	select {
+	case <-ctx.Done():
+		return models.PaymentIntent{}, ctx.Err()
+	case <-time.After(1 * time.Second):
+	}
 
 	// Simulate payment response with random success/failure
 	failure := mathrand.Intn(10) == 0 // 10% chance of failure
