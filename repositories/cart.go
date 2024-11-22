@@ -189,7 +189,7 @@ func (r *cartRepository) CompleteOrder(ctx context.Context, userID, paymentInten
 	updateOrderQuery := `
 		UPDATE orders
 		SET order_status = 'paid'
-		WHERE payment_intent_id = $1`
+		WHERE payment_intent_id = $1 AND order_status = 'created'`
 	res, err := tx.ExecContext(ctx, updateOrderQuery, paymentIntentID)
 	if err != nil {
 		return err

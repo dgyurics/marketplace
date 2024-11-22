@@ -165,14 +165,6 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 CREATE INDEX idx_payment_intent_id ON orders(payment_intent_id);
 
-CREATE TABLE IF NOT EXISTS payments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    order_id UUID NOT NULL,
-    amount NUMERIC(10, 2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-);
-
 CREATE OR REPLACE FUNCTION reserve_cart_items(usrid UUID)
 RETURNS TEXT AS $$
 DECLARE
