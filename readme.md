@@ -23,6 +23,7 @@
   <li><strong>Performance Optimization:</strong> Implement caching and pagination to improve performance.</li>
   <li><strong>Logging and Monitoring:</strong> Implement logging and monitoring to track application performance and errors.</li>
   <li><strong>Cart Item Limits:</strong> Implement quantity thresholds for each product and number of items in a cart.</li>
+  <li><strong>Event Logging:</strong> Log user actions and system events for auditing and debugging purposes.</li>
 </ul>
 
 <h2>Future Considerations</h2>
