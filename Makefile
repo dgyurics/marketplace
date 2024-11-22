@@ -13,8 +13,14 @@ all: run
 # Generate RSA keys (private and public PEM files)
 generate-keys:
 	@echo "Generating RSA private and public keys..."
-	openssl genpkey -algorithm RSA -out $(PRIVATE_KEY_FILE) -pkeyopt rsa_keygen_bits:2048
-	openssl rsa -pubout -in $(PRIVATE_KEY_FILE) -out $(PUBLIC_KEY_FILE)
+	@if ! openssl genpkey -algorithm RSA -out $(PRIVATE_KEY_FILE) -pkeyopt rsa_keygen_bits:2048; then \
+		echo "Failed to generate private key"; \
+		exit 1; \
+	fi
+	@if ! openssl rsa -pubout -in $(PRIVATE_KEY_FILE) -out $(PUBLIC_KEY_FILE); then \
+		echo "Failed to generate public key"; \
+		exit 1; \
+	fi
 	@echo "Private key: $(PRIVATE_KEY_FILE)"
 	@echo "Public key: $(PUBLIC_KEY_FILE)"
 
@@ -24,7 +30,7 @@ clean:
 
 # Run tests
 test:
-	go test $(SRC_DIR)...
+	go test ./...
 
 # Build the binary
 build:
