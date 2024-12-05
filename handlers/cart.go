@@ -74,20 +74,13 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *cartHandler) Checkout(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		TokenID string `json:"token_id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-	res, err := h.cartService.CheckOut(r.Context(), req.TokenID)
+	res, err := h.cartService.CheckOut(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if res.Status != "success" {
-		http.Error(w, res.Status, http.StatusInternalServerError)
+	if res.Error != "" {
+		http.Error(w, res.Error, http.StatusInternalServerError)
 		return
 	}
 

@@ -23,14 +23,16 @@ func main() {
 	categoryRepository := repositories.NewCategoryRepository(db)
 	productRepository := repositories.NewProductRepository(db)
 	cartRepository := repositories.NewCartRepository(db)
+	paymentRepository := repositories.NewPaymentRepository(db)
+	orderRepository := repositories.NewOrderRepository(db)
 
 	// create services
 	authService := services.NewAuthService(authRepository, getKey("private.pem"), getKey("public.pem"), []byte(getEnv("HMAC_SECRET")))
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
-	paymentService := services.NewPaymentService()
-	cartService := services.NewCartService(cartRepository, paymentService)
+	paymentService := services.NewPaymentService(paymentRepository, getEnv("ENVIRONMENT"), getEnv("STRIPE_BASE_URL"), getEnv("STRIPE_SECRET_KEY"))
+	cartService := services.NewCartService(cartRepository, orderRepository, paymentService)
 
 	// Create middleware
 	middleware := middleware.NewAccessControl(authService)

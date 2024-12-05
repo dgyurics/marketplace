@@ -17,8 +17,6 @@ type CartRepository interface {
 	RemoveItemFromCart(ctx context.Context, userID, productID string) error
 	ReserveCartItems(ctx context.Context, userID string) error
 	ClearCart(ctx context.Context, userID string) error
-	CompleteOrder(ctx context.Context, userID, paymentIntentID string) error
-	StartOrder(ctx context.Context, userID, paymentIntentID string, amount models.Currency) error
 }
 
 type cartRepository struct {
@@ -166,62 +164,4 @@ func (r *cartRepository) FetchCartTotal(ctx context.Context, userID string) (mod
 		WHERE user_id = $1`
 	err := r.db.QueryRowContext(ctx, query, userID).Scan(&total)
 	return total, err
-}
-
-func (r *cartRepository) StartOrder(ctx context.Context, userID, paymentIntentID string, amount models.Currency) error {
-	totalAsFloat := float64(amount.Amount) / 100
-	query := `
-		INSERT INTO orders (user_id, total_amount, order_status, payment_intent_id)
-		VALUES ($1, $2, $3, $4)`
-	_, err := r.db.ExecContext(ctx, query, userID, totalAsFloat, "created", paymentIntentID)
-	return err
-}
-
-func (r *cartRepository) CompleteOrder(ctx context.Context, userID, paymentIntentID string) error {
-	// Begin a transaction
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() // Roll back the transaction in case of an error
-
-	// Update the order status to "paid"
-	updateOrderQuery := `
-		UPDATE orders
-		SET order_status = 'paid'
-		WHERE payment_intent_id = $1 AND order_status = 'created'`
-	res, err := tx.ExecContext(ctx, updateOrderQuery, paymentIntentID)
-	if err != nil {
-		return err
-	}
-
-	// Check if exactly one row was affected
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to fetch rows affected: %w", err)
-	}
-	if rowsAffected == 0 {
-		return fmt.Errorf("no order found for payment intent ID %s", paymentIntentID)
-	}
-	if rowsAffected > 1 {
-		return fmt.Errorf("multiple orders found for payment intent ID %s", paymentIntentID)
-	}
-
-	// clear reserved inventory
-	clearInventoryQuery := `
-		DELETE FROM inventory_reservations
-		WHERE user_id = $1`
-	if _, err := tx.ExecContext(ctx, clearInventoryQuery, userID); err != nil {
-		return err
-	}
-
-	// clear cart
-	clearCartQuery := `
-		DELETE FROM cart_items
-		WHERE user_id = $1`
-	if _, err := tx.ExecContext(ctx, clearCartQuery, userID); err != nil {
-		return err
-	}
-
-	return tx.Commit()
 }

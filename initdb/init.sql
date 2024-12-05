@@ -154,7 +154,6 @@ CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID,
     shipping_address_id UUID,
-    payment_intent_id VARCHAR(255),
     total_amount NUMERIC(10, 2) NOT NULL,
     tax_amount NUMERIC(10, 2) DEFAULT 0,
     order_status order_status_enum DEFAULT 'created',
@@ -163,7 +162,19 @@ CREATE TABLE IF NOT EXISTS orders (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (shipping_address_id) REFERENCES shipping_addresses(id) ON DELETE SET NULL
 );
-CREATE INDEX idx_payment_intent_id ON orders(payment_intent_id);
+
+CREATE TYPE payment_status_enum AS ENUM ('pending', 'succeeded', 'failed');
+CREATE TABLE payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    payment_intent_id VARCHAR(255) NOT NULL, -- Stripe Payment Intent ID (e.g., pi_xxx)
+    client_secret VARCHAR(255) NOT NULL, -- ClientSecret for frontend confirmation
+    amount INTEGER NOT NULL,
+    currency VARCHAR(10) DEFAULT 'usd',
+    status payment_status_enum DEFAULT 'pending',
+    order_id UUID REFERENCES orders(id),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
 
 CREATE OR REPLACE FUNCTION reserve_cart_items(usrid UUID)
 RETURNS TEXT AS $$
