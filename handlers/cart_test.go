@@ -43,8 +43,8 @@ func (m *MockCartService) ClearCart(ctx context.Context) error {
 	return args.Error(0)
 }
 
-func (m *MockCartService) CheckOut(ctx context.Context, tokenID string) (models.PaymentIntentResponse, error) {
-	args := m.Called(ctx, tokenID)
+func (m *MockCartService) CheckOut(ctx context.Context) (models.PaymentIntentResponse, error) {
+	args := m.Called(ctx)
 	return args.Get(0).(models.PaymentIntentResponse), args.Error(1)
 }
 
@@ -172,20 +172,15 @@ func TestCheckout(t *testing.T) {
 	}
 
 	// Prepare mock data for the request and expected response
-	tokenID := "test-token-id"
 	expectedResponse := models.PaymentIntentResponse{
-		Status: "success",
+		Status: "pending",
 	}
 
 	// Mock the CheckOut method to return a successful PaymentIntentResponse
-	mockCartService.On("CheckOut", mock.Anything, tokenID).Return(expectedResponse, nil)
-
-	// Create a request payload
-	payload := map[string]string{"token_id": tokenID}
-	payloadBytes, _ := json.Marshal(payload)
+	mockCartService.On("CheckOut", mock.Anything).Return(expectedResponse, nil)
 
 	// Create a new HTTP POST request for checkout
-	req, err := http.NewRequest(http.MethodPost, "/carts/checkout", bytes.NewBuffer(payloadBytes))
+	req, err := http.NewRequest(http.MethodPost, "/carts/checkout", nil)
 	require.NoError(t, err)
 
 	// Set up a response recorder to capture the response

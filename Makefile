@@ -5,7 +5,11 @@ ENV_FILE=.env
 PRIVATE_KEY_FILE=private.pem
 PUBLIC_KEY_FILE=public.pem
 
-include $(ENV_FILE)
+# Include environment variables from .env
+ifneq (,$(wildcard $(ENV_FILE)))
+	include $(ENV_FILE)
+  export
+endif
 
 # Default target
 all: run
@@ -38,4 +42,4 @@ build:
 
 # Run the binary
 run: build
-	DATABASE_URL=$(DATABASE_URL) HMAC_SECRET=$(HMAC_SECRET) ./$(BINARY_NAME)
+	env $(shell cat $(ENV_FILE) | xargs) ./$(BINARY_NAME)

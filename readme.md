@@ -12,12 +12,12 @@
   <li><strong>Shopping Cart:</strong> Manage user shopping carts, calculate totals, and track item quantities.</li>
   <li><strong>Transaction Handling:</strong> Ensure data consistency with transaction support for complex operations.</li>
   <li><strong>Repository Pattern:</strong> Abstraction layer for database operations, improving testability and flexibility.</li>
+  <li><strong>Payments:</strong> Stripe integration for processing payments.</li>
 </ul>
 
 <h2>Planned Enhancements</h2>
 <ul>
   <li><strong>Order Management:</strong> Implement order creation and tracking, with status updates and order history.</li>
-  <li><strong>Payment Integration:</strong> Integrate with a single payment prover, Stripe.</li>
   <li><strong>Email Notifications:</strong> Send order confirmations to users.</li>
   <li><strong>Search and Filtering:</strong> Advanced search capabilities, allowing users to find products through keyword and fuzzy searches.</li>
   <li><strong>Performance Optimization:</strong> Implement caching and pagination to improve performance.</li>
