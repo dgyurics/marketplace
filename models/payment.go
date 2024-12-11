@@ -1,5 +1,7 @@
 package models
 
+// TODO refactor this with stripe.go models considering these
+// are specific to stripe http requests
 type PaymentIntentRequest struct {
 	Amount   Currency
 	Currency string

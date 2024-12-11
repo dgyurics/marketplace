@@ -184,6 +184,16 @@ CREATE TABLE payments (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Used for Stripe webhook events
+CREATE TABLE webhook_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    stripe_event_id VARCHAR(255) UNIQUE NOT NULL,
+    event_type VARCHAR(100) NOT NULL,
+    payload JSONB NOT NULL,
+    processed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE OR REPLACE FUNCTION reserve_cart_items(usrid UUID)
 RETURNS TEXT AS $$
 DECLARE

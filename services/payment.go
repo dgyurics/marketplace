@@ -3,10 +3,15 @@ package services
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	mathrand "math/rand"
@@ -15,30 +20,39 @@ import (
 	"github.com/dgyurics/marketplace/repositories"
 )
 
+const (
+	tolerance = time.Minute * 5 // Maximum allowed time difference between Stripe's timestamp and server time
+)
+
 type PaymentService interface {
 	SendPaymentRequest(ctx context.Context, req models.PaymentIntentRequest) (models.PaymentIntentResponse, error)
 	RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (models.PaymentIntent, error)
 	SavePayment(ctx context.Context, paymentResponse models.PaymentIntentResponse, orderID string) error
+	VerifyWebhookSignature(payload []byte, sigHeader string) error
+	ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent)
 }
 
 type paymentService struct {
-	repo            repositories.PaymentRepository
-	environment     string
-	stripeBaseURL   string
-	stripeSecretKey string
+	repo                       repositories.PaymentRepository
+	environment                string
+	stripeBaseURL              string
+	stripeSecretKey            string
+	stripeWebhookSigningSecret string
 }
 
 func NewPaymentService(
 	repo repositories.PaymentRepository,
 	environment,
 	stripeBaseURL,
-	stripeSecretKey string,
+	stripeSecretKey,
+	stripeWebhookSigningSecret string,
 ) PaymentService {
 	return &paymentService{
-		repo:            repo,
-		environment:     environment,
-		stripeBaseURL:   stripeBaseURL,
-		stripeSecretKey: stripeSecretKey,
+		repo:                       repo,
+		environment:                environment,
+		stripeBaseURL:              stripeBaseURL,
+		stripeSecretKey:            stripeSecretKey,
+		stripeWebhookSigningSecret: stripeWebhookSigningSecret,
 	}
 }
 
@@ -170,4 +184,73 @@ func (ps *paymentService) SavePayment(ctx context.Context, paymentResponse model
 	}
 
 	return ps.repo.SavePayment(ctx, &paymentResponse, orderID)
+}
+
+func (ps *paymentService) VerifyWebhookSignature(payload []byte, sigHeader string) error {
+	// Split the signature header into components (e.g. "t=timestamp,v1=signature,v0=signature")
+	parts := strings.Split(sigHeader, ",")
+	if len(parts) < 2 {
+		return errors.New("invalid signature header")
+	}
+
+	var timestamp string
+	var signatures [][]byte
+	for _, part := range parts {
+		if strings.HasPrefix(part, "t=") {
+			timestamp = part[2:]
+		} else if strings.HasPrefix(part, "v1=") {
+			decodedSignature, err := hex.DecodeString(part[3:])
+			if err == nil {
+				signatures = append(signatures, decodedSignature)
+			}
+		}
+	}
+
+	if timestamp == "" || len(signatures) == 0 {
+		return errors.New("missing timestamp or signature")
+	}
+
+	ts, err := unixTimestampToTime(timestamp)
+	if err != nil {
+		return errors.New("invalid timestamp")
+	} else if time.Since(ts) > tolerance {
+		return errors.New("timestamp is too old")
+	}
+
+	expectedSignature := ComputeSignature(ts, payload, ps.stripeWebhookSigningSecret)
+
+	for _, signature := range signatures {
+		// use a constant-time comparison function to mitigate timing attacks
+		if hmac.Equal(signature, expectedSignature) {
+			return nil
+		}
+	}
+
+	return errors.New("signature verification failed: no matching v1 signature found")
+}
+
+// process payment_intent.succeeded
+// process payment_intent.payment_failed
+func (ps *paymentService) ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) {
+	// Placeholder for actual webhook event verification
+}
+
+func unixTimestampToTime(timestamp string) (time.Time, error) {
+	seconds, err := strconv.ParseInt(timestamp, 10, 64)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(seconds, 0), nil
+}
+
+// ComputeSignature computes a webhook signature using Stripe's v1 signing
+// method.
+//
+// See https://stripe.com/docs/webhooks#signatures for more information.
+func ComputeSignature(t time.Time, payload []byte, secret string) []byte {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(fmt.Sprintf("%d", t.Unix())))
+	mac.Write([]byte("."))
+	mac.Write(payload)
+	return mac.Sum(nil)
 }

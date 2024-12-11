@@ -15,7 +15,6 @@ type CartService interface {
 	RemoveItemFromCart(ctx context.Context, productID string) error
 	ClearCart(ctx context.Context) error
 	CheckOut(ctx context.Context) (models.PaymentIntentResponse, error)
-	ConfirmPayment(ctx context.Context, paymentIntentID string) error
 }
 
 type cartService struct {
@@ -104,29 +103,4 @@ func (s *cartService) CheckOut(ctx context.Context) (models.PaymentIntentRespons
 	err = s.cartRepo.ClearCart(ctx, userID)
 
 	return paymentIntent, err
-}
-
-func (s *cartService) ConfirmPayment(ctx context.Context, paymentIntentID string) error {
-	// fetch payment intent details
-	payIntent, err := s.paymentService.RetrievePaymentIntent(ctx, paymentIntentID)
-	if err != nil {
-		return err
-	}
-
-	// fetch expected cart total
-	cartTotal, err := s.cartRepo.FetchCartTotal(ctx, getUserID(ctx))
-	if err != nil {
-		return err
-	}
-
-	// compare payment amount with cart total
-	if payIntent.AmountReceived != cartTotal {
-		// TODO: refund the payment
-		// TODO: log the discrepancy and generate an alert
-		// return errors.New("payment amount does not match cart total")
-	}
-
-	// process the order
-	// return s.cartRepo.CompleteOrder(ctx, getUserID(ctx), paymentIntentID)
-	return nil
 }

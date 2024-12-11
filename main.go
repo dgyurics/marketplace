@@ -31,7 +31,7 @@ func main() {
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
-	paymentService := services.NewPaymentService(paymentRepository, getEnv("ENVIRONMENT"), getEnv("STRIPE_BASE_URL"), getEnv("STRIPE_SECRET_KEY"))
+	paymentService := services.NewPaymentService(paymentRepository, getEnv("ENVIRONMENT"), getEnv("STRIPE_BASE_URL"), getEnv("STRIPE_SECRET_KEY"), getEnv("STRIPE_WEBHOOK_SIGNING_SECRET"))
 	cartService := services.NewCartService(cartRepository, orderRepository, paymentService)
 
 	// Create middleware
@@ -43,6 +43,7 @@ func main() {
 	handlers.RegisterCategoryHandler(categoryService, router, middleware)
 	handlers.RegisterProductHandler(productService, router, middleware)
 	handlers.RegisterCartHandler(cartService, router, middleware)
+	handlers.RegisterPaymentHandler(paymentService, router)
 
 	log.Println("Server is running on port 8000")
 	log.Fatal(http.ListenAndServe(":8000", router))
