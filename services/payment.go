@@ -27,13 +27,14 @@ const (
 type PaymentService interface {
 	SendPaymentRequest(ctx context.Context, req models.PaymentIntentRequest) (models.PaymentIntentResponse, error)
 	RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (models.PaymentIntent, error)
-	SavePayment(ctx context.Context, paymentResponse models.PaymentIntentResponse, orderID string) error
+	SavePayment(ctx context.Context, payment models.Payment) error
 	VerifyWebhookSignature(payload []byte, sigHeader string) error
-	ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent)
+	ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error
 }
 
 type paymentService struct {
-	repo                       repositories.PaymentRepository
+	paymentRepo                repositories.PaymentRepository
+	orderRepo                  repositories.OrderRepository
 	environment                string
 	stripeBaseURL              string
 	stripeSecretKey            string
@@ -41,14 +42,16 @@ type paymentService struct {
 }
 
 func NewPaymentService(
-	repo repositories.PaymentRepository,
+	paymentRepo repositories.PaymentRepository,
+	orderRepo repositories.OrderRepository,
 	environment,
 	stripeBaseURL,
 	stripeSecretKey,
 	stripeWebhookSigningSecret string,
 ) PaymentService {
 	return &paymentService{
-		repo:                       repo,
+		paymentRepo:                paymentRepo,
+		orderRepo:                  orderRepo,
 		environment:                environment,
 		stripeBaseURL:              stripeBaseURL,
 		stripeSecretKey:            stripeSecretKey,
@@ -158,32 +161,27 @@ func (ps *paymentService) RetrievePaymentIntent(ctx context.Context, paymentInte
 }
 
 var validStatuses = map[string]bool{
-	"requires_payment_method": true,
-	"requires_confirmation":   true,
-	"requires_action":         true,
-	"processing":              true,
-	"succeeded":               true,
-	"canceled":                true,
+	"pending":   true,
+	"paid":      true,
+	"cancelled": true,
+	"refunded":  true,
 }
 
 func isValidStatus(status string) bool {
 	return validStatuses[status]
 }
 
-func (ps *paymentService) SavePayment(ctx context.Context, paymentResponse models.PaymentIntentResponse, orderID string) error {
-	if paymentResponse.ID == "" {
-		return errors.New("payment response ID is required")
+func (ps *paymentService) SavePayment(ctx context.Context, payment models.Payment) error {
+	if payment.PaymentIntentID == "" {
+		return errors.New("payment intent ID is required")
 	}
-	if orderID == "" {
+	if payment.OrderID == "" {
 		return errors.New("order ID is required")
 	}
-
-	if !isValidStatus(paymentResponse.Status) {
-		// TODO log invalid status
-		paymentResponse.Status = "unknown"
+	if !isValidStatus(payment.Status) {
+		return errors.New("invalid payment status")
 	}
-
-	return ps.repo.SavePayment(ctx, &paymentResponse, orderID)
+	return ps.paymentRepo.SavePayment(ctx, payment)
 }
 
 func (ps *paymentService) VerifyWebhookSignature(payload []byte, sigHeader string) error {
@@ -229,12 +227,109 @@ func (ps *paymentService) VerifyWebhookSignature(payload []byte, sigHeader strin
 	return errors.New("signature verification failed: no matching v1 signature found")
 }
 
-// process payment_intent.succeeded
-// process payment_intent.payment_failed
-func (ps *paymentService) ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) {
-	// Placeholder for actual webhook event verification
+// Stripe events can be triggered out of order, as well as be duplicated. This function should be idempotent.
+func (ps *paymentService) ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error {
+	if event.Data == nil {
+		return errors.New("missing event data")
+	}
+	if event.Data.Object.ID == "" {
+		return errors.New("missing payment intent ID")
+	}
+	switch event.Type {
+	case "payment_intent.created":
+		return ps.PaymentIntentCreated(ctx, event)
+	case "payment_intent.succeeded":
+		return ps.PaymentIntentSucceeded(ctx, event)
+	case "payment_intent.payment_failed":
+		return ps.PaymentIntentPaymentFailed(ctx, event)
+	default:
+		// Placeholder for logging other events
+	}
+	return nil
 }
 
+// To be called when a webhook event is received from Stripe for a payment intent that has been created
+func (ps *paymentService) PaymentIntentCreated(ctx context.Context, event models.StripeWebhookEvent) error {
+	// save raw event
+	if err := ps.paymentRepo.SavePaymentEvent(ctx, event); err != nil {
+		return err
+	}
+	// verify event has matching entry in payment table
+	paymentIntent := event.Data.Object
+	payments, err := ps.paymentRepo.GetPaymentsByPaymentIntentID(ctx, paymentIntent.ID)
+	if err != nil {
+		return err
+	}
+	for _, payment := range payments {
+		if payment.Status == "pending" &&
+			payment.Amount == paymentIntent.Amount &&
+			payment.Currency == paymentIntent.Currency &&
+			payment.ClientSecret == paymentIntent.ClientSecret {
+			return nil
+		}
+	}
+	return fmt.Errorf("no pending payment found for intent %s", paymentIntent.ID)
+}
+
+// To be called when a webhook event is received from Stripe for a payment intent success
+func (ps *paymentService) PaymentIntentSucceeded(ctx context.Context, event models.StripeWebhookEvent) error {
+	// save raw event
+	if err := ps.paymentRepo.SavePaymentEvent(ctx, event); err != nil {
+		return err
+	}
+	paymentIntent := event.Data.Object
+	payments, err := ps.paymentRepo.GetPaymentsByPaymentIntentID(ctx, paymentIntent.ID)
+	if err != nil {
+		return err
+	}
+	paid := false
+	orderID := ""
+	// verify entry in payment table exists, with status pending
+	for _, payment := range payments {
+		if payment.Status == "paid" {
+			return nil // do nothing if order is already marked as paid
+		}
+		if payment.Status == "pending" {
+			if payment.Amount != paymentIntent.Amount {
+				return fmt.Errorf("payment intent amount does not match expected amount")
+			}
+			if payment.Currency != paymentIntent.Currency {
+				return fmt.Errorf("payment intent currency does not match expected currency")
+			}
+			if payment.ClientSecret != paymentIntent.ClientSecret {
+				return fmt.Errorf("payment intent client secret does not match expected client secret")
+			}
+			paid = true
+			orderID = payment.OrderID
+		}
+	}
+	// if no pending payment found, log and return error
+	if !paid {
+		return fmt.Errorf("no pending payment found for intent %s", paymentIntent.ID)
+	}
+	// update payment status to paid
+	if err := ps.paymentRepo.SavePayment(ctx, models.Payment{
+		PaymentIntentID: paymentIntent.ID,
+		ClientSecret:    paymentIntent.ClientSecret,
+		Amount:          paymentIntent.Amount,
+		Currency:        paymentIntent.Currency,
+		Status:          "paid",
+		OrderID:         orderID,
+	}); err != nil {
+		return err
+	}
+	// update order status to paid
+	return ps.orderRepo.UpdateOrder(ctx, orderID, "paid")
+}
+
+// To be called when a webhook event is received from Stripe for a payment intent failure
+func (ps *paymentService) PaymentIntentPaymentFailed(ctx context.Context, event models.StripeWebhookEvent) error {
+	// save raw event
+	return ps.paymentRepo.SavePaymentEvent(ctx, event)
+}
+
+// unixTimestampToTime converts a Unix timestamp string to a time.Time object.
+// TODO: move this to a common utility package
 func unixTimestampToTime(timestamp string) (time.Time, error) {
 	seconds, err := strconv.ParseInt(timestamp, 10, 64)
 	if err != nil {
@@ -254,3 +349,87 @@ func ComputeSignature(t time.Time, payload []byte, secret string) []byte {
 	mac.Write(payload)
 	return mac.Sum(nil)
 }
+
+// {
+//   "id": "evt_3QWuXnAyEBQV0eUX29XrGRsW",
+//   "object": "event",
+//   "api_version": "2024-11-20.acacia",
+//   "created": 1734417972,
+//   "data": {
+//     "object": {
+//       "id": "pi_3QWuXnAyEBQV0eUX2OHUOpug",
+//       "object": "payment_intent",
+//       "amount": 2000,
+//       "amount_capturable": 0,
+//       "amount_details": {
+//         "tip": {
+//         }
+//       },
+//       "amount_received": 2000,
+//       "application": null,
+//       "application_fee_amount": null,
+//       "automatic_payment_methods": null,
+//       "canceled_at": null,
+//       "cancellation_reason": null,
+//       "capture_method": "automatic_async",
+//       "client_secret": "pi_3QWuXnAyEBQV0eUX2OHUOpug_secret_DPHJ1Df0Ps9EG1MNgJj8K6OC8",
+//       "confirmation_method": "automatic",
+//       "created": 1734417971,
+//       "currency": "usd",
+//       "customer": null,
+//       "description": "(created by Stripe CLI)",
+//       "invoice": null,
+//       "last_payment_error": null,
+//       "latest_charge": "ch_3QWuXnAyEBQV0eUX2OwuNCYr",
+//       "livemode": false,
+//       "metadata": {
+//       },
+//       "next_action": null,
+//       "on_behalf_of": null,
+//       "payment_method": "pm_1QWuXnAyEBQV0eUX1Eeu6yu2",
+//       "payment_method_configuration_details": null,
+//       "payment_method_options": {
+//         "card": {
+//           "installments": null,
+//           "mandate_options": null,
+//           "network": null,
+//           "request_three_d_secure": "automatic"
+//         }
+//       },
+//       "payment_method_types": [
+//         "card"
+//       ],
+//       "processing": null,
+//       "receipt_email": null,
+//       "review": null,
+//       "setup_future_usage": null,
+//       "shipping": {
+//         "address": {
+//           "city": "San Francisco",
+//           "country": "US",
+//           "line1": "510 Townsend St",
+//           "line2": null,
+//           "postal_code": "94103",
+//           "state": "CA"
+//         },
+//         "carrier": null,
+//         "name": "Jenny Rosen",
+//         "phone": null,
+//         "tracking_number": null
+//       },
+//       "source": null,
+//       "statement_descriptor": null,
+//       "statement_descriptor_suffix": null,
+//       "status": "succeeded",
+//       "transfer_data": null,
+//       "transfer_group": null
+//     }
+//   },
+//   "livemode": false,
+//   "pending_webhooks": 2,
+//   "request": {
+//     "id": "req_WxCltYVDry7wPS",
+//     "idempotency_key": "f124f4f1-6cc4-4fb0-a934-3832e46f382f"
+//   },
+//   "type": "payment_intent.succeeded"
+// }

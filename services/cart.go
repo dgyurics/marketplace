@@ -86,6 +86,7 @@ func (s *cartService) CheckOut(ctx context.Context) (models.PaymentIntentRespons
 	}
 
 	// Send payment request
+	// On success, this will trigger a webhook event where type = payment_intent.created
 	paymentIntent, err := s.paymentService.SendPaymentRequest(ctx, models.PaymentIntentRequest{
 		Amount:   cartTotal,
 		Currency: "usd",
@@ -94,8 +95,15 @@ func (s *cartService) CheckOut(ctx context.Context) (models.PaymentIntentRespons
 		return models.PaymentIntentResponse{}, err
 	}
 
-	// Save payment intent details
-	if err := s.paymentService.SavePayment(ctx, paymentIntent, order.ID); err != nil {
+	// Save payment details
+	if err := s.paymentService.SavePayment(ctx, models.Payment{
+		PaymentIntentID: paymentIntent.ID,
+		ClientSecret:    paymentIntent.ClientSecret,
+		Amount:          paymentIntent.Amount,
+		Currency:        paymentIntent.Currency,
+		Status:          "pending",
+		OrderID:         order.ID,
+	}); err != nil {
 		return models.PaymentIntentResponse{}, err
 	}
 

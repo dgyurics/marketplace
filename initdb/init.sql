@@ -149,7 +149,15 @@ CREATE TABLE IF NOT EXISTS shipping_addresses (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TYPE order_status_enum AS ENUM ('created', 'paid', 'fulfilled', 'cancelled');
+CREATE TYPE order_status_enum AS ENUM (
+    'created',
+    'paid',
+    'fulfilled',
+    'shipped',
+    'cancelled'
+);
+
+-- FIXME order details needed to fulfill an order
 CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID,
@@ -164,35 +172,32 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 CREATE TYPE payment_status_enum AS ENUM (
-    'requires_payment_method',
-    'requires_confirmation',
-    'requires_action',
-    'processing',
-    'succeeded',
-    'canceled',
-    'unknown' -- Fallback for unrecognized statuses
+    'pending',
+    'paid',
+    'cancelled'
+    'refunded'
 );
 CREATE TABLE payments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    payment_intent_id VARCHAR(255) NOT NULL,
-    client_secret VARCHAR(255) NOT NULL, -- for frontend confirmation
+    payment_intent_id VARCHAR(255) NOT NULL, -- fixme move this to a separate table. payments table should be vendor agnostic
+    client_secret VARCHAR(255) NOT NULL, -- fixme move this to a separate table. payments table should be vendor agnostic  (for frontend confirmation)
     amount INTEGER NOT NULL,
     currency VARCHAR(10) DEFAULT 'usd',
-    status payment_status_enum DEFAULT 'requires_payment_method',
+    status payment_status_enum DEFAULT 'pending',
     order_id UUID REFERENCES orders(id),
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW()
 );
+REVOKE UPDATE, DELETE ON payments FROM PUBLIC; -- make payments insert only
 
 -- Used for Stripe webhook events
 CREATE TABLE webhook_events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    stripe_event_id VARCHAR(255) UNIQUE NOT NULL,
+    id VARCHAR(255) UNIQUE NOT NULL,
     event_type VARCHAR(100) NOT NULL,
     payload JSONB NOT NULL,
     processed_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW()
 );
+REVOKE UPDATE, DELETE ON webhook_events FROM PUBLIC; -- make webhook_events insert only
 
 CREATE OR REPLACE FUNCTION reserve_cart_items(usrid UUID)
 RETURNS TEXT AS $$

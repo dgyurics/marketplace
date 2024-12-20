@@ -9,6 +9,7 @@ import (
 
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, userID string, amount models.Currency) (*models.Order, error)
+	UpdateOrder(ctx context.Context, orderID string, status string) error
 	FetchPendingOrders(ctx context.Context, userID string) ([]*models.Order, error)
 }
 
@@ -48,6 +49,17 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID string, amount
 	order.TaxAmount = models.Currency{Amount: int64(taxAmount * 100)}
 
 	return &order, nil
+}
+
+// TODO change behavior of orders table to be event-driven architecture (insert only)
+func (r *orderRepository) UpdateOrder(ctx context.Context, orderID string, status string) error {
+	query := `
+		UPDATE orders
+		SET order_status = $1
+		WHERE id = $2
+	`
+	_, err := r.db.ExecContext(ctx, query, status, orderID)
+	return err
 }
 
 func (r *orderRepository) FetchPendingOrders(ctx context.Context, userID string) ([]*models.Order, error) {
