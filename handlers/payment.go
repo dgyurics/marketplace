@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -52,8 +53,11 @@ func (h *paymentHandler) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO store and process event
-	// h.paymentService.ProcessWebhookEvent(r.Context(), event)
+	// save and process event
+	if err := h.paymentService.ProcessWebhookEvent(r.Context(), event); err != nil {
+		// TODO log error
+		fmt.Printf("Error processing webhook event: %v\n", err)
+	}
 
 	w.WriteHeader(http.StatusOK)
 }

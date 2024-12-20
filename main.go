@@ -31,7 +31,7 @@ func main() {
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
-	paymentService := services.NewPaymentService(paymentRepository, getEnv("ENVIRONMENT"), getEnv("STRIPE_BASE_URL"), getEnv("STRIPE_SECRET_KEY"), getEnv("STRIPE_WEBHOOK_SIGNING_SECRET"))
+	paymentService := services.NewPaymentService(paymentRepository, orderRepository, getEnv("ENVIRONMENT"), getEnv("STRIPE_BASE_URL"), getEnv("STRIPE_SECRET_KEY"), getEnv("STRIPE_WEBHOOK_SIGNING_SECRET"))
 	cartService := services.NewCartService(cartRepository, orderRepository, paymentService)
 
 	// Create middleware
