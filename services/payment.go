@@ -63,7 +63,7 @@ func (ps *paymentService) SendPaymentRequest(ctx context.Context, req models.Pay
 	if req.Currency == "" {
 		return models.PaymentIntentResponse{}, errors.New("missing currency")
 	}
-	if req.Amount.Amount <= 0 {
+	if req.Amount <= 0 {
 		return models.PaymentIntentResponse{}, errors.New("missing or invalid amount")
 	}
 
@@ -72,7 +72,7 @@ func (ps *paymentService) SendPaymentRequest(ctx context.Context, req models.Pay
 	}
 
 	stripeURL := fmt.Sprintf("%s/payment_intents", ps.stripeBaseURL)
-	data := fmt.Sprintf("amount=%d&currency=%s", req.Amount.Amount, req.Currency)
+	data := fmt.Sprintf("amount=%d&currency=%s&payment_method_types[]=card", req.Amount, req.Currency)
 	reqBody := bytes.NewBufferString(data)
 	client := &http.Client{}
 	reqStripe, err := http.NewRequest("POST", stripeURL, reqBody)
@@ -110,7 +110,7 @@ func (ps *paymentService) MockPaymentRequest(ctx context.Context, req models.Pay
 	if failure {
 		return models.PaymentIntentResponse{
 			ID:           fmt.Sprintf("fake_payment_intent_%d", mathrand.Intn(1000000)),
-			Amount:       req.Amount.Amount,
+			Amount:       req.Amount,
 			Currency:     req.Currency,
 			Status:       "failed",
 			ClientSecret: "",
@@ -121,7 +121,7 @@ func (ps *paymentService) MockPaymentRequest(ctx context.Context, req models.Pay
 	// Simulate successful payment
 	return models.PaymentIntentResponse{
 		ID:           fmt.Sprintf("fake_payment_intent_%d", mathrand.Intn(1000000)),
-		Amount:       req.Amount.Amount,
+		Amount:       req.Amount,
 		Currency:     req.Currency,
 		Status:       "pending",
 		ClientSecret: fmt.Sprintf("%s-%d", "fake_secret", mathrand.Intn(1000000)),
@@ -146,7 +146,7 @@ func (ps *paymentService) RetrievePaymentIntent(ctx context.Context, paymentInte
 	if failure {
 		return models.PaymentIntent{
 			Status:         "not paid",
-			AmountReceived: models.Currency{Amount: 0},
+			AmountReceived: 0,
 		}, nil
 	}
 
@@ -156,7 +156,7 @@ func (ps *paymentService) RetrievePaymentIntent(ctx context.Context, paymentInte
 
 	return models.PaymentIntent{
 		Status:         "paid",
-		AmountReceived: models.NewCurrency(50, 0),
+		AmountReceived: 500,
 	}, nil
 }
 
@@ -349,87 +349,3 @@ func ComputeSignature(t time.Time, payload []byte, secret string) []byte {
 	mac.Write(payload)
 	return mac.Sum(nil)
 }
-
-// {
-//   "id": "evt_3QWuXnAyEBQV0eUX29XrGRsW",
-//   "object": "event",
-//   "api_version": "2024-11-20.acacia",
-//   "created": 1734417972,
-//   "data": {
-//     "object": {
-//       "id": "pi_3QWuXnAyEBQV0eUX2OHUOpug",
-//       "object": "payment_intent",
-//       "amount": 2000,
-//       "amount_capturable": 0,
-//       "amount_details": {
-//         "tip": {
-//         }
-//       },
-//       "amount_received": 2000,
-//       "application": null,
-//       "application_fee_amount": null,
-//       "automatic_payment_methods": null,
-//       "canceled_at": null,
-//       "cancellation_reason": null,
-//       "capture_method": "automatic_async",
-//       "client_secret": "pi_3QWuXnAyEBQV0eUX2OHUOpug_secret_DPHJ1Df0Ps9EG1MNgJj8K6OC8",
-//       "confirmation_method": "automatic",
-//       "created": 1734417971,
-//       "currency": "usd",
-//       "customer": null,
-//       "description": "(created by Stripe CLI)",
-//       "invoice": null,
-//       "last_payment_error": null,
-//       "latest_charge": "ch_3QWuXnAyEBQV0eUX2OwuNCYr",
-//       "livemode": false,
-//       "metadata": {
-//       },
-//       "next_action": null,
-//       "on_behalf_of": null,
-//       "payment_method": "pm_1QWuXnAyEBQV0eUX1Eeu6yu2",
-//       "payment_method_configuration_details": null,
-//       "payment_method_options": {
-//         "card": {
-//           "installments": null,
-//           "mandate_options": null,
-//           "network": null,
-//           "request_three_d_secure": "automatic"
-//         }
-//       },
-//       "payment_method_types": [
-//         "card"
-//       ],
-//       "processing": null,
-//       "receipt_email": null,
-//       "review": null,
-//       "setup_future_usage": null,
-//       "shipping": {
-//         "address": {
-//           "city": "San Francisco",
-//           "country": "US",
-//           "line1": "510 Townsend St",
-//           "line2": null,
-//           "postal_code": "94103",
-//           "state": "CA"
-//         },
-//         "carrier": null,
-//         "name": "Jenny Rosen",
-//         "phone": null,
-//         "tracking_number": null
-//       },
-//       "source": null,
-//       "statement_descriptor": null,
-//       "statement_descriptor_suffix": null,
-//       "status": "succeeded",
-//       "transfer_data": null,
-//       "transfer_group": null
-//     }
-//   },
-//   "livemode": false,
-//   "pending_webhooks": 2,
-//   "request": {
-//     "id": "req_WxCltYVDry7wPS",
-//     "idempotency_key": "f124f4f1-6cc4-4fb0-a934-3832e46f382f"
-//   },
-//   "type": "payment_intent.succeeded"
-// }

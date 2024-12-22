@@ -189,8 +189,8 @@ func TestGetProductsByCategory(t *testing.T) {
 
 	// Create a sample list of products that will be returned by the mock service
 	products := []models.Product{
-		{ID: "1", Name: "Product 1", Price: models.Currency{Amount: 1000}},
-		{ID: "2", Name: "Product 2", Price: models.Currency{Amount: 2000}},
+		{ID: "1", Name: "Product 1", Price: 100000},
+		{ID: "2", Name: "Product 2", Price: 200000},
 	}
 
 	// Set up the expected behavior of the mock service

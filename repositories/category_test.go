@@ -101,7 +101,7 @@ func TestGetProductsByCategoryID(t *testing.T) {
 	// Add a test product associated with the category
 	product := &models.Product{
 		Name:        "Test Product for Category",
-		Price:       models.Currency{Amount: 5000},
+		Price:       500000,
 		Description: "A test product for category",
 	}
 

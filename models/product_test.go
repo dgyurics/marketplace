@@ -5,7 +5,7 @@ import (
 )
 
 func TestProductInitialization(t *testing.T) {
-	price := NewCurrency(19, 99)
+	price := int64(1999)
 	product := Product{
 		ID:          "123",
 		Name:        "Test Product",
@@ -21,24 +21,12 @@ func TestProductInitialization(t *testing.T) {
 		t.Errorf("Expected Name to be 'Test Product', got '%s'", product.Name)
 	}
 
-	expectedPrice := NewCurrency(19, 99)
+	expectedPrice := int64(1999)
 	if product.Price != expectedPrice {
 		t.Errorf("Expected Price to be '%v', got '%v'", expectedPrice, product.Price)
 	}
 
 	if product.Description != "This is a test product" {
 		t.Errorf("Expected Description to be 'This is a test product', got '%s'", product.Description)
-	}
-}
-
-func TestProductStringRepresentation(t *testing.T) {
-	price := NewCurrency(19, 99)
-	product := Product{
-		Price: price,
-	}
-
-	expectedPriceString := "$19.99"
-	if product.Price.String() != expectedPriceString {
-		t.Errorf("Expected Price string to be '%s', got '%s'", expectedPriceString, product.Price.String())
 	}
 }

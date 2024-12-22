@@ -5,7 +5,7 @@ import "time"
 // TODO refactor this with stripe.go models considering these
 // are specific to stripe http requests
 type PaymentIntentRequest struct {
-	Amount   Currency
+	Amount   int64
 	Currency string
 }
 
@@ -20,7 +20,7 @@ type PaymentIntentResponse struct {
 
 type PaymentIntent struct {
 	Status         string
-	AmountReceived Currency
+	AmountReceived int64
 }
 
 type Payment struct {

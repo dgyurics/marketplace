@@ -108,7 +108,7 @@ func TestAddItemToCart(t *testing.T) {
 	item := &models.CartItem{
 		ProductID: productID, // Use the valid UUID
 		Quantity:  1,
-		UnitPrice: models.Currency{Amount: 1000},
+		UnitPrice: 100000,
 	}
 	err = repo.AddItemToCart(ctx, user.ID, item)
 	assert.NoError(t, err, "Expected no error on adding item to cart")
@@ -119,7 +119,7 @@ func TestAddItemToCart(t *testing.T) {
 	assert.Equal(t, 1, len(addedCart.Items), "Expected one item in the cart")
 	assert.Equal(t, item.ProductID, addedCart.Items[0].ProductID, "Expected the same product ID")
 	assert.Equal(t, item.Quantity, addedCart.Items[0].Quantity, "Expected the same quantity")
-	assert.Equal(t, item.UnitPrice.Amount, addedCart.Items[0].UnitPrice.Amount, "Expected the same unit price")
+	assert.Equal(t, item.UnitPrice, addedCart.Items[0].UnitPrice, "Expected the same unit price")
 
 	// Clean up the cart, product, and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
@@ -167,7 +167,7 @@ func TestUpdateCartItem(t *testing.T) {
 	item := &models.CartItem{
 		ProductID: productID,
 		Quantity:  1,
-		UnitPrice: models.Currency{Amount: 1000},
+		UnitPrice: 100000,
 	}
 	err = repo.AddItemToCart(ctx, user.ID, item)
 	assert.NoError(t, err, "Expected no error on adding item to cart")
@@ -229,7 +229,7 @@ func TestRemoveItemFromCart(t *testing.T) {
 	item := &models.CartItem{
 		ProductID: productID,
 		Quantity:  1,
-		UnitPrice: models.Currency{Amount: 1000},
+		UnitPrice: 100000,
 	}
 	err = repo.AddItemToCart(ctx, user.ID, item)
 	assert.NoError(t, err, "Expected no error on adding item to cart")
@@ -286,7 +286,7 @@ func TestClearCart(t *testing.T) {
 	item := &models.CartItem{
 		ProductID: productID,
 		Quantity:  1,
-		UnitPrice: models.Currency{Amount: 1000},
+		UnitPrice: 100000,
 	}
 	err = repo.AddItemToCart(ctx, user.ID, item)
 	assert.NoError(t, err, "Expected no error on adding item to cart")
@@ -338,7 +338,7 @@ func TestReserveCartItems_Success(t *testing.T) {
 	item := &models.CartItem{
 		ProductID: productID,
 		Quantity:  1,
-		UnitPrice: models.Currency{Amount: 1000},
+		UnitPrice: 100000,
 	}
 	err = repo.AddItemToCart(ctx, user.ID, item)
 	assert.NoError(t, err, "Expected no error on adding item to cart")
@@ -403,7 +403,7 @@ func TestReserveCartItems_InsufficientInventory(t *testing.T) {
 	item := &models.CartItem{
 		ProductID: productID,
 		Quantity:  1,
-		UnitPrice: models.Currency{Amount: 1000},
+		UnitPrice: 100000,
 	}
 	err = repo.AddItemToCart(ctx, user.ID, item)
 	assert.NoError(t, err, "Expected no error on adding item to cart")
@@ -460,12 +460,12 @@ func TestFetchCartTotal(t *testing.T) {
 	item1 := &models.CartItem{
 		ProductID: productID1,
 		Quantity:  2,
-		UnitPrice: models.Currency{Amount: 1000},
+		UnitPrice: 100000,
 	}
 	item2 := &models.CartItem{
 		ProductID: productID2,
 		Quantity:  3,
-		UnitPrice: models.Currency{Amount: 2000},
+		UnitPrice: 200000,
 	}
 
 	err = repo.AddItemToCart(ctx, user.ID, item1)
@@ -475,13 +475,13 @@ func TestFetchCartTotal(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on adding item2 to cart")
 
 	// Calculate the expected total
-	expectedTotal := item1.UnitPrice.Amount*int64(item1.Quantity) +
-		item2.UnitPrice.Amount*int64(item2.Quantity)
+	expectedTotal := item1.UnitPrice*int64(item1.Quantity) +
+		item2.UnitPrice*int64(item2.Quantity)
 
 	// Fetch the cart total
 	total, err := repo.FetchCartTotal(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on fetching cart total")
-	assert.Equal(t, expectedTotal, total.Amount, "Expected the calculated total to match")
+	assert.Equal(t, expectedTotal, total, "Expected the calculated total to match")
 
 	// Cleanup
 	dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)

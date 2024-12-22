@@ -61,7 +61,7 @@ func TestCreateProduct(t *testing.T) {
 	// Create a new product as the request payload
 	product := models.Product{
 		Name:        "Test Product",
-		Price:       models.Currency{Amount: 1000},
+		Price:       100000,
 		Description: "This is a test product",
 	}
 	payload, _ := json.Marshal(product)
@@ -107,7 +107,7 @@ func TestGetProductByID(t *testing.T) {
 	product := &models.Product{
 		ID:          "1",
 		Name:        "Test Product",
-		Price:       models.Currency{Amount: 1000},
+		Price:       100000,
 		Description: "This is a test product",
 	}
 
@@ -160,13 +160,13 @@ func TestGetProducts(t *testing.T) {
 		{
 			ID:          "1",
 			Name:        "Test Product 1",
-			Price:       models.Currency{Amount: 1000},
+			Price:       100000,
 			Description: "This is the first test product",
 		},
 		{
 			ID:          "2",
 			Name:        "Test Product 2",
-			Price:       models.Currency{Amount: 2000},
+			Price:       200000,
 			Description: "This is the second test product",
 		},
 	}

@@ -14,7 +14,7 @@ func TestCreateProduct(t *testing.T) {
 
 	product := &models.Product{
 		Name:        "Test Product",
-		Price:       models.Currency{Amount: 1000},
+		Price:       100000,
 		Description: "A test product description",
 	}
 
@@ -24,7 +24,7 @@ func TestCreateProduct(t *testing.T) {
 	assert.NotEmpty(t, product.ID, "Expected product ID to be set")
 	assert.Equal(t, "Test Product", product.Name, "Expected product name to match")
 	assert.Equal(t, "A test product description", product.Description, "Expected product description to match")
-	expectedPrice := models.Currency{Amount: 1000}
+	expectedPrice := int64(100000)
 	assert.Equal(t, expectedPrice, product.Price, "Expected product price to match")
 
 	// Clean up
@@ -38,7 +38,7 @@ func TestCreateProductWithCategory(t *testing.T) {
 
 	product := &models.Product{
 		Name:        "Test Product with Category",
-		Price:       models.Currency{Amount: 1500},
+		Price:       150000,
 		Description: "A test product with category description",
 	}
 
@@ -51,7 +51,7 @@ func TestCreateProductWithCategory(t *testing.T) {
 	assert.NotEmpty(t, product.ID, "Expected product ID to be set")
 	assert.Equal(t, "Test Product with Category", product.Name, "Expected product name to match")
 	assert.Equal(t, "A test product with category description", product.Description, "Expected product description to match")
-	expectedPrice := models.Currency{Amount: 1500}
+	expectedPrice := int64(150000)
 	assert.Equal(t, expectedPrice, product.Price, "Expected product price to match")
 
 	// Clean up
@@ -66,7 +66,7 @@ func TestGetAllProducts(t *testing.T) {
 	// Add a test product for retrieval
 	product := &models.Product{
 		Name:        "Test Product for GetAll",
-		Price:       models.Currency{Amount: 2000},
+		Price:       200000,
 		Description: "A test product for get all",
 	}
 
@@ -100,7 +100,7 @@ func TestGetProductByID(t *testing.T) {
 	// Add a test product for retrieval
 	product := &models.Product{
 		Name:        "Test Product for GetByID",
-		Price:       models.Currency{Amount: 2500},
+		Price:       250000,
 		Description: "A test product for get by ID",
 	}
 
@@ -128,7 +128,7 @@ func TestDeleteProduct(t *testing.T) {
 	// Add a test product for deletion
 	product := &models.Product{
 		Name:        "Test Product for Deletion",
-		Price:       models.Currency{Amount: 3000},
+		Price:       300000,
 		Description: "A test product for deletion",
 	}
 

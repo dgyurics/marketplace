@@ -30,8 +30,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *models.P
 		VALUES ($1, $2, $3)
 		RETURNING id, name, price, description`
 
-	priceAsFloat := float64(product.Price.Amount) / 100
-	if err := r.db.QueryRowContext(ctx, query, product.Name, priceAsFloat, product.Description).
+	if err := r.db.QueryRowContext(ctx, query, product.Name, product.Price, product.Description).
 		Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
 		return err
 	}
@@ -57,8 +56,7 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 		INSERT INTO products (name, price, description)
 		VALUES ($1, $2, $3)
 		RETURNING id, name, price, description`
-	priceAsFloat := float64(product.Price.Amount) / 100
-	if err = tx.QueryRowContext(ctx, query, product.Name, priceAsFloat, product.Description).
+	if err = tx.QueryRowContext(ctx, query, product.Name, product.Price, product.Description).
 		Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
 		return err
 	}

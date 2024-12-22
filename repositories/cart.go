@@ -12,7 +12,7 @@ import (
 type CartRepository interface {
 	AddItemToCart(ctx context.Context, userID string, item *models.CartItem) error
 	GetOrCreateCart(ctx context.Context, userID string) (*models.Cart, error)
-	FetchCartTotal(ctx context.Context, userID string) (models.Currency, error)
+	FetchCartTotal(ctx context.Context, userID string) (int64, error)
 	UpdateCartItem(ctx context.Context, userID string, item *models.CartItem) error
 	RemoveItemFromCart(ctx context.Context, userID, productID string) error
 	ReserveCartItems(ctx context.Context, userID string) error
@@ -80,14 +80,13 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 	}
 
 	// Add item to cart using the fetched unit_price
-	unitPriceAsFloat := float64(item.UnitPrice.Amount) / 100
 	query := `
 		INSERT INTO cart_items (user_id, product_id, quantity, unit_price)
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (user_id, product_id) DO UPDATE
 		SET quantity = EXCLUDED.quantity,
 		    unit_price = EXCLUDED.unit_price`
-	_, err := r.db.ExecContext(ctx, query, userID, item.ProductID, item.Quantity, unitPriceAsFloat)
+	_, err := r.db.ExecContext(ctx, query, userID, item.ProductID, item.Quantity, item.UnitPrice)
 	return err
 }
 
@@ -156,10 +155,10 @@ func (r *cartRepository) ReserveCartItems(ctx context.Context, userID string) er
 	return nil
 }
 
-func (r *cartRepository) FetchCartTotal(ctx context.Context, userID string) (models.Currency, error) {
-	var total models.Currency
+func (r *cartRepository) FetchCartTotal(ctx context.Context, userID string) (int64, error) {
+	var total int64
 	query := `
-		SELECT COALESCE(CAST(SUM(quantity * unit_price) AS DECIMAL(10,2)), 0.00)
+		SELECT SUM(quantity * unit_price)
 		FROM cart_items
 		WHERE user_id = $1`
 	err := r.db.QueryRowContext(ctx, query, userID).Scan(&total)
