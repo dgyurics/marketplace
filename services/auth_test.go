@@ -48,7 +48,9 @@ li61URMDPLtEiyzFLMQ8StVAqB494VwLhAK6Ump/Wa04R1LeoGm+WtMfVeymxQu0
 P1n+pUcLTP/HXICizcRvoms41FpjOjVIYatR/bfodjpUtTjmz+xfdw1GXR/0qXga
 sQIDAQAB
 -----END PUBLIC KEY-----`
-	hmacSecret = "big_secret"
+	hmacSecret           = "big_secret"
+	durationAccessToken  = 24 * time.Hour
+	durationRefreshToken = 30 * 24 * time.Hour
 )
 
 type MockAuthRepository struct {
@@ -70,9 +72,23 @@ func (m *MockAuthRepository) RevokeAllRefreshTokens(ctx context.Context, tokenHa
 	return args.Error(0)
 }
 
+// Helper function to create an AuthService with configuration
+func createAuthService(repo *MockAuthRepository) AuthService {
+	return NewAuthService(
+		repo,
+		models.AuthServiceConfig{
+			PrivateKey:           []byte(privateKeyPEM),
+			PublicKey:            []byte(publicKeyPEM),
+			HMACSecret:           []byte(hmacSecret),
+			DurationAccessToken:  durationAccessToken,
+			DurationRefreshToken: durationRefreshToken,
+		},
+	)
+}
+
 func TestGenerateAccessToken(t *testing.T) {
 	repo := new(MockAuthRepository)
-	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
+	authService := createAuthService(repo)
 
 	userID := "user123"
 	user := models.User{
@@ -95,7 +111,7 @@ func TestGenerateAccessToken(t *testing.T) {
 
 func TestValidateAccessToken(t *testing.T) {
 	repo := new(MockAuthRepository)
-	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
+	authService := createAuthService(repo)
 
 	user := models.User{
 		ID: "user123",
@@ -111,7 +127,7 @@ func TestValidateAccessToken(t *testing.T) {
 
 func TestGenerateRefreshToken(t *testing.T) {
 	repo := new(MockAuthRepository)
-	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
+	authService := createAuthService(repo)
 
 	refreshToken, err := authService.GenerateRefreshToken()
 	assert.NoError(t, err, "expected no error in generating refresh token")
@@ -121,7 +137,7 @@ func TestGenerateRefreshToken(t *testing.T) {
 
 func TestValidateRefreshToken(t *testing.T) {
 	repo := new(MockAuthRepository)
-	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
+	authService := createAuthService(repo)
 
 	// Mock the behavior of the repository
 	refreshToken := "test_refresh_token"
@@ -146,7 +162,7 @@ func TestValidateRefreshToken(t *testing.T) {
 
 func TestStoreRefreshToken(t *testing.T) {
 	repo := new(MockAuthRepository)
-	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
+	authService := createAuthService(repo)
 
 	// Mock the behavior of the repository
 	token := "test_refresh_token"
@@ -161,7 +177,7 @@ func TestStoreRefreshToken(t *testing.T) {
 
 func TestRevokeAllRefreshTokens(t *testing.T) {
 	repo := new(MockAuthRepository)
-	authService := NewAuthService(repo, []byte(privateKeyPEM), []byte(publicKeyPEM), []byte(hmacSecret))
+	authService := createAuthService(repo)
 
 	// Mock the behavior of the repository
 	refreshToken := "test_refresh_token"

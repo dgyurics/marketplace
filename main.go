@@ -4,10 +4,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/dgyurics/marketplace/db"
 	"github.com/dgyurics/marketplace/handlers"
 	"github.com/dgyurics/marketplace/middleware"
+	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/services"
 	"github.com/gorilla/mux"
@@ -27,7 +29,7 @@ func main() {
 	orderRepository := repositories.NewOrderRepository(db)
 
 	// create services
-	authService := services.NewAuthService(authRepository, getKey("private.pem"), getKey("public.pem"), []byte(getEnv("HMAC_SECRET")))
+	authService := services.NewAuthService(authRepository, loadAuthServiceConfig())
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
@@ -65,4 +67,24 @@ func getEnv(key string) string {
 	}
 	log.Fatalf("%s is required", key)
 	return ""
+}
+
+func loadAuthServiceConfig() models.AuthServiceConfig {
+	accessTokenDuration, err := time.ParseDuration(getEnv("DURATION_ACCESS_TOKEN"))
+	if err != nil {
+		log.Fatalf("Invalid access token duration: %v", err)
+	}
+
+	refreshTokenDuration, err := time.ParseDuration(getEnv("DURATION_REFRESH_TOKEN"))
+	if err != nil {
+		log.Fatalf("Invalid refresh token duration: %v", err)
+	}
+
+	return models.AuthServiceConfig{
+		PrivateKey:           getKey("private.pem"),
+		PublicKey:            getKey("public.pem"),
+		HMACSecret:           []byte(getEnv("HMAC_SECRET")),
+		DurationAccessToken:  accessTokenDuration,
+		DurationRefreshToken: refreshTokenDuration,
+	}
 }

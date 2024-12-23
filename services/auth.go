@@ -18,7 +18,7 @@ type contextKey string
 
 const (
 	UserKey              contextKey = "user"
-	DurationAccessToken             = 15 * time.Minute    // 15 minutes
+	DurationAccessToken             = 500 * time.Hour     //
 	DurationRefreshToken            = 30 * 24 * time.Hour // 30 days
 )
 
@@ -32,26 +32,24 @@ type AuthService interface {
 }
 
 type authService struct {
-	privateKey           []byte // asymmetric key pair for signing access tokens
-	publicKey            []byte // asymmetric key pair for verifying access tokens
-	hmacSecret           []byte // symmetric key for hashing refresh tokens
 	repo                 repositories.AuthRepository
-	durationAccessToken  time.Duration
-	durationRefreshToken time.Duration
+	privateKey           []byte        // asymmetric key pair for signing access tokens
+	publicKey            []byte        // asymmetric key pair for verifying access tokens
+	hmacSecret           []byte        // symmetric key for hashing refresh tokens
+	durationAccessToken  time.Duration // duration of jwt access token
+	durationRefreshToken time.Duration // duration of refresh token
 }
 
 func NewAuthService(
 	repo repositories.AuthRepository,
-	privateKey,
-	publicKey,
-	hmacSecret []byte) AuthService {
+	config models.AuthServiceConfig) AuthService {
 	return &authService{
-		privateKey:           privateKey,
-		publicKey:            publicKey,
-		hmacSecret:           hmacSecret,
 		repo:                 repo,
-		durationAccessToken:  DurationAccessToken,
-		durationRefreshToken: DurationRefreshToken,
+		privateKey:           config.PrivateKey,
+		publicKey:            config.PublicKey,
+		hmacSecret:           config.HMACSecret,
+		durationAccessToken:  config.DurationAccessToken,
+		durationRefreshToken: config.DurationRefreshToken,
 	}
 }
 
