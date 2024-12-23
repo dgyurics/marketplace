@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/dgyurics/marketplace/models"
@@ -12,10 +11,8 @@ import (
 type CartRepository interface {
 	AddItemToCart(ctx context.Context, userID string, item *models.CartItem) error
 	GetOrCreateCart(ctx context.Context, userID string) (*models.Cart, error)
-	FetchCartTotal(ctx context.Context, userID string) (int64, error)
 	UpdateCartItem(ctx context.Context, userID string, item *models.CartItem) error
 	RemoveItemFromCart(ctx context.Context, userID, productID string) error
-	ReserveCartItems(ctx context.Context, userID string) error
 	ClearCart(ctx context.Context, userID string) error
 }
 
@@ -137,30 +134,4 @@ func (r *cartRepository) ClearCart(ctx context.Context, userID string) error {
 		WHERE user_id = $1`
 	_, err := r.db.ExecContext(ctx, deleteQuery, userID)
 	return err
-}
-
-func (r *cartRepository) ReserveCartItems(ctx context.Context, userID string) error {
-	var result string
-
-	// reserve_cart_items returns "success", "empty_cart", "insufficient_inventory"
-	query := `SELECT reserve_cart_items($1);`
-	if err := r.db.QueryRowContext(ctx, query, userID).Scan(&result); err != nil {
-		return err
-	}
-
-	if result != "success" {
-		return errors.New(result)
-	}
-
-	return nil
-}
-
-func (r *cartRepository) FetchCartTotal(ctx context.Context, userID string) (int64, error) {
-	var total int64
-	query := `
-		SELECT SUM(quantity * unit_price)
-		FROM cart_items
-		WHERE user_id = $1`
-	err := r.db.QueryRowContext(ctx, query, userID).Scan(&total)
-	return total, err
 }

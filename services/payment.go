@@ -235,6 +235,7 @@ func (ps *paymentService) ProcessWebhookEvent(ctx context.Context, event models.
 	if event.Data.Object.ID == "" {
 		return errors.New("missing payment intent ID")
 	}
+	// TODO payment_intent.canceled
 	switch event.Type {
 	case "payment_intent.created":
 		return ps.PaymentIntentCreated(ctx, event)
@@ -318,8 +319,9 @@ func (ps *paymentService) PaymentIntentSucceeded(ctx context.Context, event mode
 	}); err != nil {
 		return err
 	}
-	// update order status to paid
-	return ps.orderRepo.UpdateOrder(ctx, orderID, "paid")
+
+	// mark order as paid and clear cart
+	return ps.orderRepo.MarkOrderAsPaid(ctx, orderID)
 }
 
 // To be called when a webhook event is received from Stripe for a payment intent failure

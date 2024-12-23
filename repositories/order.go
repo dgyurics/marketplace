@@ -8,9 +8,9 @@ import (
 )
 
 type OrderRepository interface {
-	CreateOrder(ctx context.Context, userID string, amount int64) (*models.Order, error)
-	UpdateOrder(ctx context.Context, orderID string, status string) error
+	CreateOrder(ctx context.Context, userID string) (order *models.Order, err error)
 	FetchPendingOrders(ctx context.Context, userID string) ([]*models.Order, error)
+	MarkOrderAsPaid(ctx context.Context, orderID string) error
 }
 
 type orderRepository struct {
@@ -21,37 +21,44 @@ func NewOrderRepository(db *sql.DB) OrderRepository {
 	return &orderRepository{db: db}
 }
 
-func (r *orderRepository) CreateOrder(ctx context.Context, userID string, amount int64) (*models.Order, error) {
-	query := `
-		INSERT INTO orders (user_id, total_amount, order_status)
-		VALUES ($1, $2, $3)
-		RETURNING id, user_id, total_amount, tax_amount, order_status, created_at, updated_at
+func (r *orderRepository) CreateOrder(ctx context.Context, userID string) (*models.Order, error) {
+	// 1) Call the stored procedure which creates an order from the cart
+	query := "SELECT create_order_from_cart($1)"
+	var orderID string
+	err := r.db.QueryRowContext(ctx, query, userID).Scan(&orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2) Retrieve the newly created order
+	query = `
+		SELECT id, user_id, total_amount, tax_amount, order_status, created_at, updated_at
+		FROM orders
+		WHERE id = $1
 	`
-	var order models.Order
-	err := r.db.QueryRowContext(ctx, query, userID, amount, "created").Scan(
+	order := &models.Order{}
+	err = r.db.QueryRowContext(ctx, query, orderID).Scan(
 		&order.ID,
 		&order.UserID,
-		&order.TotalAmount,
+		&order.TotalAmount, // does not include tax
 		&order.TaxAmount,
 		&order.OrderStatus,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
-	return &order, err
+	if err != nil {
+		return nil, err
+	}
+	return order, nil
 }
 
-// TODO change behavior of orders table to be event-driven architecture (insert only)
-func (r *orderRepository) UpdateOrder(ctx context.Context, orderID string, status string) error {
-	query := `
-		UPDATE orders
-		SET order_status = $1
-		WHERE id = $2
-	`
-	_, err := r.db.ExecContext(ctx, query, status, orderID)
+func (r *orderRepository) MarkOrderAsPaid(ctx context.Context, orderID string) error {
+	query := "SELECT mark_order_as_paid($1)"
+	_, err := r.db.ExecContext(ctx, query, orderID)
 	return err
 }
 
-func (r *orderRepository) FetchPendingOrders(ctx context.Context, userID string) ([]*models.Order, error) {
+func (r *orderRepository) FetchPendingOrders(ctx context.Context, userID string) (orders []*models.Order, err error) {
 	query := `
 		SELECT id, user_id, total_amount, tax_amount, order_status, created_at, updated_at
 		FROM orders
@@ -63,7 +70,6 @@ func (r *orderRepository) FetchPendingOrders(ctx context.Context, userID string)
 	}
 	defer rows.Close()
 
-	var orders []*models.Order
 	for rows.Next() {
 		var order models.Order
 		err := rows.Scan(
@@ -80,6 +86,5 @@ func (r *orderRepository) FetchPendingOrders(ctx context.Context, userID string)
 		}
 		orders = append(orders, &order)
 	}
-
-	return orders, nil
+	return
 }

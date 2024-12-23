@@ -98,16 +98,6 @@ CREATE TABLE IF NOT EXISTS users (
     CHECK (email IS NOT NULL OR phone IS NOT NULL)
 );
 
-CREATE TABLE IF NOT EXISTS inventory_reservations (
-    product_id UUID NOT NULL,
-    user_id UUID NOT NULL,
-    reserved_quantity INT NOT NULL,
-    reservation_expiration TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '15 minutes'),
-    FOREIGN KEY (product_id) REFERENCES inventory(product_id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    PRIMARY KEY (product_id, user_id)
-);
-
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
@@ -154,21 +144,31 @@ CREATE TYPE order_status_enum AS ENUM (
     'paid',
     'fulfilled',
     'shipped',
+    'delivered',
     'cancelled'
 );
-
--- FIXME order details needed to fulfill an order
 CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID,
     shipping_address_id UUID,
-    total_amount BIGINT NOT NULL,
+    total_amount BIGINT NOT NULL, -- total excluding tax
     tax_amount BIGINT DEFAULT 0,
     order_status order_status_enum DEFAULT 'created',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (shipping_address_id) REFERENCES shipping_addresses(id) ON DELETE SET NULL
+);
+
+-- store items tied to the order, whether the order is paid or unpaid
+CREATE TABLE IF NOT EXISTS order_items (
+    order_id UUID NOT NULL,
+    product_id UUID NOT NULL,
+    quantity INT NOT NULL,
+    unit_price BIGINT NOT NULL,
+    PRIMARY KEY (order_id, product_id),
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
 CREATE TYPE payment_status_enum AS ENUM (
@@ -199,71 +199,156 @@ CREATE TABLE webhook_events (
 );
 REVOKE UPDATE, DELETE ON webhook_events FROM PUBLIC; -- make webhook_events insert only
 
-CREATE OR REPLACE FUNCTION reserve_cart_items(usrid UUID)
-RETURNS TEXT AS $$
+CREATE OR REPLACE FUNCTION create_order_from_cart(in_user_id UUID)
+RETURNS UUID -- Return the new order's ID
+LANGUAGE plpgsql
+AS $$
 DECLARE
     cart_item_count INT;
-    updated_row_count INT;
+    existing_order_id UUID;
+    new_order_id UUID;
+    cart_rec RECORD;
 BEGIN
-    -- Check if there are items in the user's cart
+    -- 1) Check if user's cart is empty
     SELECT COUNT(*)
     INTO cart_item_count
     FROM cart_items
-    WHERE user_id = usrid;
+    WHERE user_id = in_user_id;
 
-    -- Return 'empty_cart' if no items in the cart
     IF cart_item_count = 0 THEN
-        RETURN 'empty_cart';
+        RAISE NOTICE 'User % has an empty cart. No order created.', in_user_id;
+        RETURN NULL;
     END IF;
 
-    -- Restore inventory from existing reservations, if any
-    WITH restored_inventory AS (
-        UPDATE inventory
-        SET quantity = inventory.quantity + inventory_reservations.reserved_quantity
-        FROM inventory_reservations
-        WHERE inventory.product_id = inventory_reservations.product_id
-          AND inventory_reservations.user_id = usrid
-        RETURNING inventory_reservations.product_id
-    )
-    -- Delete the old reservations after restoring inventory
-    DELETE FROM inventory_reservations WHERE user_id = usrid;
+    -- 2. Check if user has an existing open order
+    SELECT id
+    INTO existing_order_id
+    FROM orders
+    WHERE user_id = in_user_id
+    AND order_status = 'created'
+    LIMIT 1;
 
-    -- Update inventory and attempt to reserve items
-    WITH updated_inventory AS (
-        UPDATE inventory
-        SET quantity = inventory.quantity - cart_items.quantity
+    IF existing_order_id IS NOT NULL THEN
+        -- If an order already exists, restore inventory for each item in that order, then delete it
+        PERFORM restore_inventory_for_order(existing_order_id);
+
+        DELETE FROM order_items
+        WHERE order_id = existing_order_id;
+
+        UPDATE orders
+        SET order_status = 'cancelled'
+        WHERE id = existing_order_id;
+    END IF;
+
+    -- 3) Create a new order (FIXME add shipping address)
+    INSERT INTO orders (user_id, total_amount, order_status)
+    VALUES (in_user_id, 0, 'created')
+    RETURNING id INTO new_order_id;
+
+    -- 4. For each cart item, decrement inventory and insert into order_items
+    FOR cart_rec IN
+        SELECT product_id, quantity, unit_price
         FROM cart_items
-        WHERE inventory.product_id = cart_items.product_id
-          AND cart_items.user_id = usrid
-          AND inventory.quantity >= cart_items.quantity
-        RETURNING cart_items.product_id, cart_items.quantity
+        WHERE user_id = in_user_id
+    LOOP
+        DECLARE current_inventory INT;
+        BEGIN
+            SELECT quantity
+            INTO current_inventory
+            FROM inventory
+            WHERE product_id = cart_rec.product_id
+            FOR UPDATE; -- lock row
+
+            IF current_inventory IS NULL THEN
+                RAISE EXCEPTION 'Product % not found in inventory table', cart_rec.product_id;
+            END IF;
+
+            -- If insufficient inventory, throw an error (this will rollback)
+            IF current_inventory < cart_rec.quantity THEN
+                RAISE EXCEPTION 'Insufficient inventory for product %; needed %, have %',
+                    cart_rec.product_id, cart_rec.quantity, current_inventory;
+            END IF;
+
+            -- Subtract from inventory
+            UPDATE inventory
+               SET quantity = quantity - cart_rec.quantity
+             WHERE product_id = cart_rec.product_id;
+
+            -- Insert into order_items
+            INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+            VALUES (new_order_id, cart_rec.product_id, cart_rec.quantity, cart_rec.unit_price);
+        END;
+    END LOOP;
+
+    -- 5) Update the order total: sum of all order_items
+    UPDATE orders
+    SET total_amount = (
+        SELECT COALESCE(SUM(quantity * unit_price), 0)
+        FROM order_items
+        WHERE order_id = new_order_id
     )
-    INSERT INTO inventory_reservations (product_id, user_id, reserved_quantity, reservation_expiration)
-    SELECT updated_inventory.product_id, usrid, updated_inventory.quantity, CURRENT_TIMESTAMP + INTERVAL '15 minutes'
-    FROM updated_inventory
-    ON CONFLICT (product_id, user_id)
-    DO UPDATE SET reserved_quantity = EXCLUDED.reserved_quantity,
-                  reservation_expiration = EXCLUDED.reservation_expiration;
+    WHERE id = new_order_id;
 
-    -- Get the number of rows updated
-    GET DIAGNOSTICS updated_row_count = ROW_COUNT;
-
-    -- If no rows were updated, return 'insufficient_inventory'
-    IF updated_row_count = 0 THEN
-        RETURN 'insufficient_inventory';
-    END IF;
-
-    -- If the updated rows don't match the cart item count, rollback
-    IF updated_row_count <> cart_item_count THEN
-        RAISE EXCEPTION 'Insufficient inventory for some items in cart. Reservation failed.';
-    END IF;
-
-    -- Return 'success' if everything was reserved successfully
-    RETURN 'success';
+    -- 6) Return newly created order
+    RETURN new_order_id;
 
 EXCEPTION
     WHEN OTHERS THEN
-        -- Catch any unexpected error and rollback
-        RAISE EXCEPTION 'An error occurred during reservation: %', SQLERRM;
+        -- If there's an error, the transaction will be rolled back,
+        -- unless you catch and handle it differently here.
+        RAISE EXCEPTION 'Error creating order for user %: %', in_user_id, SQLERRM;
 END;
-$$ LANGUAGE plpgsql;
+$$;
+
+CREATE OR REPLACE FUNCTION restore_inventory_for_order(in_order_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- For each item in the order, add back its quantity to inventory
+    WITH order_data AS (
+        SELECT product_id, quantity
+        FROM order_items
+        WHERE order_id = in_order_id
+    )
+    UPDATE inventory i
+    SET quantity = i.quantity + order_data.quantity
+    FROM order_data
+    WHERE i.product_id = order_data.product_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION mark_order_as_paid(in_order_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    in_user_id UUID;
+BEGIN
+    -- 1) Fetch the user_id associated with the order
+    SELECT user_id
+    INTO in_user_id
+    FROM orders
+    WHERE id = in_order_id
+      AND order_status = 'created';
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'No matching "created" order found for order ID %, or order already finalized.', in_order_id;
+    END IF;
+
+    -- 2) Update the order status to 'paid'
+    UPDATE orders
+    SET order_status = 'paid',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = in_order_id;
+
+    -- 3) Clear the user's cart
+    DELETE FROM cart_items
+    WHERE user_id = in_user_id;
+
+    DELETE FROM carts
+    WHERE user_id = in_user_id;
+
+    RAISE NOTICE 'Order % for user % marked as paid. Cart cleared.', in_order_id, in_user_id;
+END;
+$$;
