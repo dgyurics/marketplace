@@ -76,6 +76,6 @@ func (r *userRepository) StoreRefreshToken(ctx context.Context, refreshToken *mo
 		INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at, revoked, last_used)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
-	_, err := r.db.ExecContext(ctx, query, refreshToken.UserID, refreshToken.TokenHash, refreshToken.ExpiresAt, refreshToken.CreatedAt, refreshToken.Revoked, refreshToken.LastUsed)
+	_, err := r.db.ExecContext(ctx, query, refreshToken.User.ID, refreshToken.TokenHash, refreshToken.ExpiresAt, refreshToken.CreatedAt, refreshToken.Revoked, refreshToken.LastUsed)
 	return err
 }

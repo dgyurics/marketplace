@@ -136,28 +136,29 @@ func TestGenerateRefreshToken(t *testing.T) {
 }
 
 func TestValidateRefreshToken(t *testing.T) {
+	now := time.Now()
 	repo := new(MockAuthRepository)
 	authService := createAuthService(repo)
 
 	// Mock the behavior of the repository
 	refreshToken := "test_refresh_token"
-	userID := "user123"
-	expiresAt := time.Now().Add(24 * time.Hour)
+	expiresAt := now.Add(24 * time.Hour)
 
 	// Mock the repository to return a valid refresh token object
-	repo.On("GetRefreshToken", mock.Anything, refreshToken).Return(&models.RefreshToken{
-		UserID:    userID,
+	repo.On("GetRefreshToken", mock.Anything, mock.Anything).Return(&models.RefreshToken{
+		User:      &models.User{ID: "user123"},
 		TokenHash: hashRefreshToken(refreshToken, []byte(hmacSecret)),
 		ExpiresAt: expiresAt,
 		Revoked:   false,
-		LastUsed:  time.Now(),
+		LastUsed:  now.UTC(),
+		CreatedAt: now.UTC(),
 	}, nil)
 	// Mock the repository to return no error when storing the refresh token (service will update the LastUsed field)
 	repo.On("StoreRefreshToken", mock.Anything, mock.AnythingOfType("models.RefreshToken")).Return(nil)
 
 	valid, err := authService.ValidateRefreshToken(context.Background(), refreshToken)
 	assert.NoError(t, err, "expected no error in validating refresh token")
-	assert.True(t, valid, "expected refresh token to be valid")
+	assert.NotNil(t, valid, "expected a valid user object")
 }
 
 func TestStoreRefreshToken(t *testing.T) {

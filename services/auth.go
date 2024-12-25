@@ -16,17 +16,13 @@ import (
 
 type contextKey string
 
-const (
-	UserKey              contextKey = "user"
-	DurationAccessToken             = 500 * time.Hour     //
-	DurationRefreshToken            = 30 * 24 * time.Hour // 30 days
-)
+const UserKey contextKey = "user"
 
 type AuthService interface {
 	GenerateAccessToken(user models.User) (token string, err error)
 	ValidateAccessToken(token string) (user models.User, err error)
 	GenerateRefreshToken() (string, error)
-	ValidateRefreshToken(ctx context.Context, token string) (bool, error)
+	ValidateRefreshToken(ctx context.Context, token string) (models.User, error)
 	StoreRefreshToken(ctx context.Context, userID, token string) error
 	RevokeAllRefreshTokens(ctx context.Context, token string) error
 }
@@ -54,13 +50,14 @@ func NewAuthService(
 }
 
 func (a *authService) GenerateAccessToken(user models.User) (token string, err error) {
+	now := time.Now()
 	claims := jwt.MapClaims{
 		"user_id": user.ID,
 		"email":   user.Email,
 		"phone":   user.Phone,
 		"admin":   user.Admin,
-		"exp":     time.Now().Add(a.durationAccessToken).Unix(),
-		"iat":     time.Now().Unix(),
+		"exp":     now.Add(a.durationAccessToken).Unix(),
+		"iat":     now.Unix(),
 	}
 	tokenUnsigned := jwt.NewWithClaims(jwt.SigningMethodRS256, claims) // create unsigned jwt object
 	signingKey, err := jwt.ParseRSAPrivateKeyFromPEM(a.privateKey)
@@ -101,35 +98,38 @@ func (a *authService) GenerateRefreshToken() (string, error) {
 	return hex.EncodeToString(token), nil
 }
 
-func (a *authService) ValidateRefreshToken(ctx context.Context, token string) (bool, error) {
+func (a *authService) ValidateRefreshToken(ctx context.Context, token string) (usr models.User, err error) {
+	now := time.Now()
 	// Retrieve the refresh token from the repository
-	refreshToken, err := a.repo.GetRefreshToken(ctx, token)
-	if err != nil {
-		return false, errors.New("invalid refresh token")
+	tokenHash := hashRefreshToken(token, a.hmacSecret)
+	refreshToken, err := a.repo.GetRefreshToken(ctx, tokenHash)
+	if err != nil || refreshToken == nil {
+		return usr, errors.New("invalid refresh token")
 	}
 
-	// Check if the token is revoked or expired
-	if refreshToken.Revoked || refreshToken.ExpiresAt.Before(time.Now()) {
-		return false, errors.New("refresh token is either revoked or expired")
+	if refreshToken.Revoked || refreshToken.ExpiresAt.Before(now) {
+		return usr, errors.New("refresh token is either revoked or expired")
 	}
 
 	// Update the last used time
-	refreshToken.LastUsed = time.Now()
+	refreshToken.LastUsed = now.UTC()
 	if err := a.repo.StoreRefreshToken(ctx, *refreshToken); err != nil {
-		return false, errors.New("failed to update refresh token usage")
+		return usr, errors.New("failed to update refresh token usage")
 	}
 
-	return true, nil
+	// Return the user associated with the refresh token
+	return *refreshToken.User, nil
 }
 
 func (a *authService) StoreRefreshToken(ctx context.Context, userID, token string) error {
+	now := time.Now().UTC()
 	return a.repo.StoreRefreshToken(ctx, models.RefreshToken{
-		UserID:    userID,
+		User:      &models.User{ID: userID},
 		TokenHash: hashRefreshToken(token, a.hmacSecret),
-		ExpiresAt: time.Now().Add(a.durationRefreshToken),
-		CreatedAt: time.Now(),
 		Revoked:   false,
-		LastUsed:  time.Now(),
+		ExpiresAt: now.Add(a.durationRefreshToken),
+		CreatedAt: now,
+		LastUsed:  now,
 	})
 }
 
@@ -139,7 +139,7 @@ func (a *authService) RevokeAllRefreshTokens(ctx context.Context, token string) 
 
 func hashRefreshToken(token string, secret []byte) string {
 	h := hmac.New(sha256.New, secret)
-	h.Write([]byte(token))
+	h.Write([]byte(token))                // FIXME check for error
 	return hex.EncodeToString(h.Sum(nil)) // return the final HMAC hash as a hexadecimal string
 }
 

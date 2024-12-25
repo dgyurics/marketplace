@@ -57,13 +57,14 @@ func (h *userHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, err := h.authService.GenerateRefreshToken()
+	var token string
+	token, err = h.authService.GenerateRefreshToken()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := h.authService.StoreRefreshToken(r.Context(), usr.ID, refreshToken); err != nil {
+	if err := h.authService.StoreRefreshToken(r.Context(), usr.ID, token); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -72,7 +73,7 @@ func (h *userHandler) Register(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
 		"token":         accessToken,
-		"refresh_token": refreshToken,
+		"refresh_token": token,
 	})
 }
 
@@ -124,11 +125,43 @@ func (h *userHandler) Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// RefreshToken generates a new access token using a valid refresh token
 func (h *userHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	// todo
-	// get refresh token from request
-	// get user id from refresh token
-	// return newly created jwt
+	var requestBody struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+	if requestBody.RefreshToken == "" {
+		http.Error(w, "Refresh token is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the refresh token
+	user, err := h.authService.ValidateRefreshToken(r.Context(), requestBody.RefreshToken)
+	if err != nil {
+		http.Error(w, "Invalid or expired refresh token", http.StatusUnauthorized)
+		return
+	}
+
+	// TODO cycle refresh tokens
+	// revoke the just validated refresh token and generate a new one
+
+	// Generate a new access token
+	accessToken, err := h.authService.GenerateAccessToken(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"token":         accessToken,
+		"refresh_token": requestBody.RefreshToken,
+	})
 }
 
 func (h *userHandler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -140,7 +173,7 @@ func (h *userHandler) Logout(w http.ResponseWriter, r *http.Request) {
 func (h *userHandler) registerRoutes() {
 	h.router.HandleFunc("/users/register", h.Register).Methods(http.MethodPost)
 	h.router.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
-	// router.HandleFunc("/users/refresh-token", RefreshToken).Methods("POST")
+	h.router.HandleFunc("/users/refresh-token", h.RefreshToken).Methods("POST")
 	// router.HandleFunc("/users/logout", Logout).Methods("POST")
 	// router.HandleFunc("/users/profile", GetProfile).Methods("GET")
 	// router.HandleFunc("/users/update-profile", UpdateProfile).Methods("POST")
