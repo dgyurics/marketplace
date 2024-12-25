@@ -1,3 +1,5 @@
+SET TIME ZONE 'UTC'; -- Important for consistent date handling
+
 -- Create the categories table with UUIDs
 CREATE TABLE IF NOT EXISTS categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
