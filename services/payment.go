@@ -35,7 +35,7 @@ type PaymentService interface {
 type paymentService struct {
 	paymentRepo                repositories.PaymentRepository
 	orderRepo                  repositories.OrderRepository
-	environment                string
+	environment                models.Environment
 	stripeBaseURL              string
 	stripeSecretKey            string
 	stripeWebhookSigningSecret string
@@ -44,18 +44,15 @@ type paymentService struct {
 func NewPaymentService(
 	paymentRepo repositories.PaymentRepository,
 	orderRepo repositories.OrderRepository,
-	environment,
-	stripeBaseURL,
-	stripeSecretKey,
-	stripeWebhookSigningSecret string,
+	config models.PaymentConfig,
 ) PaymentService {
 	return &paymentService{
 		paymentRepo:                paymentRepo,
 		orderRepo:                  orderRepo,
-		environment:                environment,
-		stripeBaseURL:              stripeBaseURL,
-		stripeSecretKey:            stripeSecretKey,
-		stripeWebhookSigningSecret: stripeWebhookSigningSecret,
+		environment:                config.Envirnment,
+		stripeBaseURL:              config.StripeBaseURL,
+		stripeSecretKey:            config.StripeSecretKey,
+		stripeWebhookSigningSecret: config.StripeWebhookSigningSecret,
 	}
 }
 

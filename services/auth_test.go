@@ -76,7 +76,7 @@ func (m *MockAuthRepository) RevokeAllRefreshTokens(ctx context.Context, tokenHa
 func createAuthService(repo *MockAuthRepository) AuthService {
 	return NewAuthService(
 		repo,
-		models.AuthServiceConfig{
+		models.AuthConfig{
 			PrivateKey:           []byte(privateKeyPEM),
 			PublicKey:            []byte(publicKeyPEM),
 			HMACSecret:           []byte(hmacSecret),

@@ -32,3 +32,17 @@ type Payment struct {
 	OrderID         string    `json:"order_id"`
 	CreatedAt       time.Time `json:"created_at"`
 }
+
+type Environment string
+
+const (
+	Development Environment = "development"
+	Production  Environment = "production"
+)
+
+type PaymentConfig struct {
+	Envirnment                 Environment
+	StripeBaseURL              string // https://api.stripe.com
+	StripeSecretKey            string // sk_test_xxxxxxxxxxxxxxxxxxxxxxxx
+	StripeWebhookSigningSecret string // whsec_xxxxxxxxxxxxxxxxxxxxxxxx
+}

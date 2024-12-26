@@ -38,7 +38,7 @@ type authService struct {
 
 func NewAuthService(
 	repo repositories.AuthRepository,
-	config models.AuthServiceConfig) AuthService {
+	config models.AuthConfig) AuthService {
 	return &authService{
 		repo:                 repo,
 		privateKey:           config.PrivateKey,
