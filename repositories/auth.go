@@ -40,16 +40,39 @@ func (r *authRepository) GetRefreshToken(ctx context.Context, tokenHash string) 
 	var user models.User
 
 	query := `
-		SELECT rt.id, rt.token_hash, rt.expires_at, rt.created_at, rt.revoked, rt.last_used,
-			u.id, COALESCE(u.email, '') as email, COALESCE(u.phone, '') as phone, u.password_hash, u.admin, u.created_at, u.updated_at
+		SELECT
+			rt.id,
+			rt.token_hash,
+			rt.expires_at,
+			rt.revoked,
+			rt.last_used,
+			rt.created_at,
+			rt.updated_at,
+			u.id, COALESCE(u.email, '') as email,
+			COALESCE(u.phone, '') as phone,
+			u.password_hash,
+			u.admin,
+			u.created_at,
+			u.updated_at
 		FROM refresh_tokens rt
 		JOIN users u ON rt.user_id = u.id
 		WHERE rt.token_hash = $1
 	`
 	if err := r.db.QueryRowContext(ctx, query, tokenHash).Scan(
-		&refreshToken.ID, &refreshToken.TokenHash, &refreshToken.ExpiresAt,
-		&refreshToken.CreatedAt, &refreshToken.Revoked, &refreshToken.LastUsed,
-		&user.ID, &user.Email, &user.Phone, &user.PasswordHash, &user.Admin, &user.CreatedAt, &user.UpdatedAt,
+		&refreshToken.ID,
+		&refreshToken.TokenHash,
+		&refreshToken.ExpiresAt,
+		&refreshToken.Revoked,
+		&refreshToken.LastUsed,
+		&refreshToken.CreatedAt,
+		&refreshToken.UpdatedAt,
+		&user.ID,
+		&user.Email,
+		&user.Phone,
+		&user.PasswordHash,
+		&user.Admin,
+		&user.CreatedAt,
+		&user.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
@@ -69,8 +92,17 @@ func (r *authRepository) RevokeAllRefreshTokens(ctx context.Context, tokenHash s
 	// Fetch the refresh token
 	var refreshToken models.RefreshToken
 	var user models.User
-	query := `SELECT id, user_id, token_hash, expires_at, created_at, revoked, last_used
-	          FROM refresh_tokens WHERE token_hash = $1`
+	query := `
+		SELECT
+			id,
+			user_id,
+			token_hash,
+			expires_at,
+			created_at,
+			revoked,
+			last_used
+		FROM refresh_tokens
+		WHERE token_hash = $1`
 	if err = tx.QueryRowContext(ctx, query, tokenHash).Scan(
 		&refreshToken.ID,
 		&user.ID,

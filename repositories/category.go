@@ -34,14 +34,28 @@ func (r *categoryRepository) CreateCategory(ctx context.Context, category models
 
 func (r *categoryRepository) GetAllCategories(ctx context.Context) ([]models.Category, error) {
 	var categories []models.Category
-	rows, err := r.db.QueryContext(ctx, "SELECT id, name, description FROM categories")
+	query := `
+		SELECT
+			id,
+			name,
+			description,
+			created_at,
+			updated_at
+		FROM categories`
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var category models.Category
-		if err = rows.Scan(&category.ID, &category.Name, &category.Description); err != nil {
+		if err = rows.Scan(
+			&category.ID,
+			&category.Name,
+			&category.Description,
+			&category.CreatedAt,
+			&category.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 		categories = append(categories, category)
@@ -51,8 +65,22 @@ func (r *categoryRepository) GetAllCategories(ctx context.Context) ([]models.Cat
 
 func (r *categoryRepository) GetCategoryByID(ctx context.Context, id string) (*models.Category, error) {
 	var category models.Category
-	err := r.db.QueryRowContext(ctx, "SELECT id, name, description FROM categories WHERE id = $1", id).
-		Scan(&category.ID, &category.Name, &category.Description)
+	query := `
+		SELECT
+			id,
+			name,
+			description,
+			created_at,
+			updated_at
+		FROM categories
+		WHERE id = $1`
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&category.ID,
+		&category.Name,
+		&category.Description,
+		&category.CreatedAt,
+		&category.UpdatedAt,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +90,13 @@ func (r *categoryRepository) GetCategoryByID(ctx context.Context, id string) (*m
 func (r *categoryRepository) GetProductsByCategoryID(ctx context.Context, id string) ([]models.Product, error) {
 	var products []models.Product
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT p.id, p.name, p.description, p.price
+		SELECT
+			p.id,
+			p.name,
+			p.description,
+			p.price,
+			p.created_at,
+			p.updated_at
 		FROM products p
 		JOIN product_categories pc ON p.id = pc.product_id
 		WHERE category_id = $1`, id)
@@ -72,7 +106,14 @@ func (r *categoryRepository) GetProductsByCategoryID(ctx context.Context, id str
 	defer rows.Close()
 	for rows.Next() {
 		var product models.Product
-		if err = rows.Scan(&product.ID, &product.Name, &product.Description, &product.Price); err != nil {
+		if err = rows.Scan(
+			&product.ID,
+			&product.Name,
+			&product.Description,
+			&product.Price,
+			&product.CreatedAt,
+			&product.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 		products = append(products, product)

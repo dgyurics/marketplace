@@ -83,7 +83,13 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 func (r *productRepository) GetAllProducts(ctx context.Context) ([]models.Product, error) {
 	var products []models.Product
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT p.id, p.name, p.price, p.description
+		SELECT
+			p.id,
+			p.name,
+			p.price,
+			p.description,
+			p.created_at,
+			p.updated_at
 		FROM products p`)
 	if err != nil {
 		return nil, err
@@ -91,7 +97,14 @@ func (r *productRepository) GetAllProducts(ctx context.Context) ([]models.Produc
 	defer rows.Close()
 	for rows.Next() {
 		var product models.Product
-		if err = rows.Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
+		if err = rows.Scan(
+			&product.ID,
+			&product.Name,
+			&product.Price,
+			&product.Description,
+			&product.CreatedAt,
+			&product.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 		products = append(products, product)
@@ -102,9 +115,22 @@ func (r *productRepository) GetAllProducts(ctx context.Context) ([]models.Produc
 func (r *productRepository) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
 	var product models.Product
 	if err := r.db.QueryRowContext(ctx, `
-		SELECT p.id, p.name, p.price, p.description
+		SELECT
+			p.id,
+			p.name,
+			p.price,
+			p.description,
+			p.created_at,
+			p.updated_at
 		FROM products p
-		WHERE p.id = $1`, id).Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
+		WHERE p.id = $1`, id).Scan(
+		&product.ID,
+		&product.Name,
+		&product.Price,
+		&product.Description,
+		&product.CreatedAt,
+		&product.UpdatedAt,
+	); err != nil {
 		return nil, err
 	}
 	return &product, nil

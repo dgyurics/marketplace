@@ -1,16 +1,58 @@
 SET TIME ZONE 'UTC'; -- Important for consistent timestamp handling
 
+-- Table_id_seq is used to generate 10-bit sequence numbers for IDs
+-- in the gen_id function. This is necessary to generate unique IDs
+-- when multiple IDs are generated at the same millisecond.
+CREATE SEQUENCE table_id_seq
+    START 1
+    INCREMENT 1
+    MINVALUE 1
+    CACHE 1;
+
+-- Generate 64-bit IDs with parts for timestamp, shard ID, and sequence number.
+-- Useful for distributed systems where multiple databases generate     IDs
+-- and need to avoid collisions.
+CREATE OR REPLACE FUNCTION gen_id()
+RETURNS BIGINT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    our_epoch bigint := 1672531200000; -- custom epoch, 2023-01-01T00:00:00Z in milliseconds
+    seq_id bigint; -- sequence ID
+    now_millis bigint; -- current time in milliseconds
+    shard_id int := 0; -- custom shard ID (when using multiple DBs, set this to a unique value per DB)
+    result bigint; -- final ID/result
+BEGIN
+    -- Get the next sequence value and modulo by 1024 to get a number between 0 and 1023
+    -- Necessary for events where multiple IDs are generated at the same millisecond
+    SELECT nextval('table_id_seq') % 1024 INTO seq_id;
+
+    -- Get the current time in milliseconds
+    SELECT FLOOR(EXTRACT(EPOCH FROM clock_timestamp()) * 1000) INTO now_millis;
+
+    -- Construct the ID
+    result := (now_millis - our_epoch) << 23; -- 41 bits for timestamp
+    result := result | (shard_id << 10); -- 13 bits for shard ID
+    result := result | (seq_id); -- 10 bits for sequence id
+    RETURN result;
+END;
+$$;
+
 CREATE TABLE IF NOT EXISTS categories (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id BIGINT PRIMARY KEY DEFAULT gen_id(),
     name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL
+    description TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS products (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id BIGINT PRIMARY KEY DEFAULT gen_id(),
     name VARCHAR(255) NOT NULL,
     price BIGINT NOT NULL,
-    description TEXT NOT NULL
+    description TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TYPE image_type_enum AS ENUM (
@@ -18,63 +60,65 @@ CREATE TYPE image_type_enum AS ENUM (
     'thumbnail',
     'gallery'
 );
-CREATE TABLE IF NOT EXISTS product_images (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_id UUID NOT NULL,
+CREATE TABLE IF NOT EXISTS images (
+    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    product_id BIGINT NOT NULL,
     image_url TEXT NOT NULL,
     image_type image_type_enum DEFAULT 'main',
     display_order INT DEFAULT 0,
     alt_text VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS inventory (
-    product_id UUID PRIMARY KEY,
+    product_id BIGINT PRIMARY KEY,
     quantity INT NOT NULL DEFAULT 0,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     CHECK (quantity >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS product_categories (
-    product_id UUID NOT NULL,
-    category_id UUID NOT NULL,
+    product_id BIGINT NOT NULL,
+    category_id BIGINT NOT NULL,
     PRIMARY KEY (product_id, category_id),
     FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id BIGINT PRIMARY KEY DEFAULT gen_id(),
     email VARCHAR(255) UNIQUE,
     phone VARCHAR(255) UNIQUE,
     password_hash TEXT NOT NULL,
     admin BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CHECK (email IS NOT NULL OR phone IS NOT NULL)
 );
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
+    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    user_id BIGINT NOT NULL,
     token_hash TEXT NOT NULL,
     expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     revoked BOOLEAN DEFAULT FALSE,
     last_used TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS carts (
-    user_id UUID PRIMARY KEY,
+    user_id BIGINT PRIMARY KEY,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS cart_items (
-    user_id UUID NOT NULL,
-    product_id UUID NOT NULL,
+    user_id BIGINT,
+    product_id BIGINT,
     quantity INT NOT NULL,
     unit_price BIGINT NOT NULL,
     PRIMARY KEY (user_id, product_id),
@@ -82,9 +126,9 @@ CREATE TABLE IF NOT EXISTS cart_items (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS shipping_addresses (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
+CREATE TABLE IF NOT EXISTS addresses (
+    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    user_id BIGINT NOT NULL,
     recipient_name VARCHAR(255) NOT NULL,
     address_line1 VARCHAR(255) NOT NULL,
     address_line2 VARCHAR(255),
@@ -92,7 +136,8 @@ CREATE TABLE IF NOT EXISTS shipping_addresses (
     state_code CHAR(2) NOT NULL,
     postal_code VARCHAR(20) NOT NULL,
     phone VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -105,23 +150,23 @@ CREATE TYPE order_status_enum AS ENUM (
     'cancelled'
 );
 CREATE TABLE IF NOT EXISTS orders (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID,
-    shipping_address_id UUID,
+    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    user_id BIGINT,
+    shipping_address_id BIGINT,
     total_amount BIGINT NOT NULL, -- total not including tax
     tax_amount BIGINT DEFAULT 0,
     order_status order_status_enum DEFAULT 'created',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (shipping_address_id) REFERENCES shipping_addresses(id) ON DELETE SET NULL
+    FOREIGN KEY (shipping_address_id) REFERENCES addresses(id) ON DELETE SET NULL
 );
 
 -- when checking out, create an order from the user's cart
 -- and move the cart items to order_items
 CREATE TABLE IF NOT EXISTS order_items (
-    order_id UUID NOT NULL,
-    product_id UUID NOT NULL,
+    order_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
     quantity INT NOT NULL,
     unit_price BIGINT NOT NULL,
     PRIMARY KEY (order_id, product_id),
@@ -136,13 +181,13 @@ CREATE TYPE payment_status_enum AS ENUM (
     'refunded'
 );
 CREATE TABLE payments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id BIGINT PRIMARY KEY DEFAULT gen_id(),
     payment_intent_id VARCHAR(255) NOT NULL, -- fixme move this to a separate table. payments table should be vendor agnostic
     client_secret VARCHAR(255) NOT NULL, -- fixme move this to a separate table. payments table should be vendor agnostic  (for frontend confirmation)
     amount INTEGER NOT NULL,
     currency VARCHAR(10) DEFAULT 'usd',
     status payment_status_enum DEFAULT 'pending',
-    order_id UUID REFERENCES orders(id),
+    order_id BIGINT REFERENCES orders(id),
     created_at TIMESTAMP DEFAULT NOW()
 );
 REVOKE UPDATE, DELETE ON payments FROM PUBLIC; -- make payments insert only
@@ -153,18 +198,18 @@ CREATE TABLE webhook_events (
     event_type VARCHAR(100) NOT NULL,
     payload JSONB NOT NULL,
     processed_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 REVOKE UPDATE, DELETE ON webhook_events FROM PUBLIC; -- make webhook_events insert only
 
-CREATE OR REPLACE FUNCTION create_order_from_cart(in_user_id UUID)
-RETURNS UUID -- Return the new order's ID
+CREATE OR REPLACE FUNCTION create_order_from_cart(in_user_id BIGINT)
+RETURNS BIGINT -- Return the new order's ID
 LANGUAGE plpgsql
 AS $$
 DECLARE
     cart_item_count INT;
-    existing_order_id UUID;
-    new_order_id UUID;
+    existing_order_id BIGINT;
+    new_order_id BIGINT;
     cart_rec RECORD;
 BEGIN
     -- 1) Check if user's cart is empty
@@ -258,7 +303,7 @@ EXCEPTION
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION restore_inventory_for_order(in_order_id UUID)
+CREATE OR REPLACE FUNCTION restore_inventory_for_order(in_order_id BIGINT)
 RETURNS VOID
 LANGUAGE plpgsql
 AS $$
@@ -276,12 +321,12 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION mark_order_as_paid(in_order_id UUID)
+CREATE OR REPLACE FUNCTION mark_order_as_paid(in_order_id BIGINT)
 RETURNS VOID
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    in_user_id UUID;
+    in_user_id BIGINT;
 BEGIN
     -- 1) Fetch the user_id associated with the order
     SELECT user_id

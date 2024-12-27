@@ -42,11 +42,15 @@ func TestCreateProductWithCategory(t *testing.T) {
 		Description: "A test product with category description",
 	}
 
-	// Reference category ID creating in init.sql
-	categoryID := "3d6f0c4a-75bf-4b9b-9f12-003d6f2f9a1f"
+	// create category
+	catRepo := NewCategoryRepository(dbPool)
+	categoryID, err := catRepo.CreateCategory(ctx, models.Category{
+		Name:        "Test Category",
+		Description: "A test category",
+	})
+	assert.NoError(t, err, "Expected no error on category creation")
 
-	err := repo.CreateProductWithCategory(ctx, product, categoryID)
-
+	err = repo.CreateProductWithCategory(ctx, product, categoryID)
 	assert.NoError(t, err, "Expected no error on product creation with category")
 	assert.NotEmpty(t, product.ID, "Expected product ID to be set")
 	assert.Equal(t, "Test Product with Category", product.Name, "Expected product name to match")

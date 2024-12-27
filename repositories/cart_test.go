@@ -2,26 +2,40 @@ package repositories
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
-	"io"
 	mathrand "math/rand"
+	"strconv"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/stretchr/testify/assert"
 )
 
-func generateUUID() (string, error) {
-	u := make([]byte, 16)
-	if _, err := io.ReadFull(rand.Reader, u); err != nil {
-		return "", err
-	}
+var (
+	ourEpoch   int64 = 1672531200000 // 2023-01-01T00:00:00Z in milliseconds
+	seqID      int64 = 0
+	seqIDMutex sync.Mutex
+	shardID    int64 = 0 // Customize if using multiple instances
+)
 
-	u[6] = (u[6] & 0x0f) | 0x40 // Set the version to 4
-	u[8] = (u[8] & 0x3f) | 0x80 // Set the variant to RFC 4122
+func genID() string {
+	seqIDMutex.Lock()
+	defer seqIDMutex.Unlock()
 
-	return fmt.Sprintf("%08x-%04x-%04x-%04x-%12x", u[0:4], u[4:6], u[6:8], u[8:10], u[10:]), nil
+	// Increment sequence ID and wrap around at 1024
+	seqID = (seqID + 1) % 1024
+
+	// Get current time in milliseconds
+	nowMillis := time.Now().UnixMilli()
+
+	// Construct the ID
+	result := (nowMillis - ourEpoch) << 23 // 41 bits for timestamp
+	result |= (shardID << 10)              // 13 bits for shard ID
+	result |= seqID                        // 10 bits for sequence ID
+
+	return strconv.FormatInt(result, 10)
 }
 
 // Helper function to create a unique test user
@@ -89,7 +103,7 @@ func TestAddItemToCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on cart creation")
 
 	// Step 2: Add a valid product to the inventory (simulate an existing product)
-	productID, err := generateUUID()
+	productID := genID()
 	assert.NoError(t, err, "Expected no error on generating UUID")
 
 	_, err = dbPool.ExecContext(ctx, `
@@ -148,7 +162,7 @@ func TestUpdateCartItem(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on cart creation")
 
 	// Step 2: Add a valid product to the inventory
-	productID, err := generateUUID()
+	productID := genID()
 	assert.NoError(t, err, "Expected no error on generating UUID")
 
 	_, err = dbPool.ExecContext(ctx, `
@@ -210,7 +224,7 @@ func TestRemoveItemFromCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on cart creation")
 
 	// Step 2: Add a valid product to the inventory
-	productID, err := generateUUID()
+	productID := genID()
 	assert.NoError(t, err, "Expected no error on generating UUID")
 
 	_, err = dbPool.ExecContext(ctx, `
@@ -267,7 +281,7 @@ func TestClearCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on cart creation")
 
 	// Step 2: Add a valid product to the inventory
-	productID, err := generateUUID()
+	productID := genID()
 	assert.NoError(t, err, "Expected no error on generating UUID")
 
 	_, err = dbPool.ExecContext(ctx, `

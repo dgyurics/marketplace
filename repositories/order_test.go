@@ -12,9 +12,9 @@ import (
 func createTestProductAndInventory(t *testing.T, db *sql.DB, quantity int) string {
 	ctx := context.Background()
 
-	productID, err := generateUUID()
-	assert.NoError(t, err)
+	productID := genID()
 
+	var err error
 	_, err = db.ExecContext(ctx, `
 		INSERT INTO products (id, name, price, description) 
 		VALUES ($1, 'Test Product', 1000, 'Test product description')`,
