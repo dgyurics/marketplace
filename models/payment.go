@@ -24,13 +24,14 @@ type PaymentIntent struct {
 }
 
 type Payment struct {
+	OrderID         string    `json:"order_id"`
 	PaymentIntentID string    `json:"payment_intent_id"`
 	ClientSecret    string    `json:"client_secret"`
 	Amount          int64     `json:"amount"`
 	Currency        string    `json:"currency"`
 	Status          string    `json:"status"`
-	OrderID         string    `json:"order_id"`
 	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type Environment string

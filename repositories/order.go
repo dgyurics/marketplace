@@ -53,9 +53,56 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID string) (*mode
 }
 
 func (r *orderRepository) MarkOrderAsPaid(ctx context.Context, orderID string) error {
-	query := "SELECT mark_order_as_paid($1)"
-	_, err := r.db.ExecContext(ctx, query, orderID)
-	return err
+	// Begin a transaction
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback() // Roll back the transaction in case of an error
+
+	// Mark payment status as paid
+	query := `
+		UPDATE payments
+		SET status = 'paid'
+		WHERE order_id = $1 AND status = 'pending'
+	`
+	if _, err = tx.ExecContext(ctx, query, orderID); err != nil {
+		return err
+	}
+
+	// Mark order as paid
+	query = `
+		UPDATE orders
+		SET order_status = 'paid',
+				updated_at = CURRENT_TIMESTAMP
+		WHERE id = $1 AND order_status = 'created'
+		RETURNING user_id
+	`
+	var userID string
+	if err = tx.QueryRowContext(ctx, query, orderID).Scan(&userID); err != nil {
+		return err
+	}
+
+	// Empty the cart
+	query = `
+		DELETE FROM cart_items
+		WHERE user_id = $1
+	`
+	if _, err = tx.ExecContext(ctx, query, userID); err != nil {
+		return err
+	}
+
+	// Delete the cart
+	query = `
+		DELETE FROM carts
+		WHERE user_id = $1
+	`
+	if _, err = tx.ExecContext(ctx, query, userID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (r *orderRepository) FetchPendingOrders(ctx context.Context, userID string) (orders []*models.Order, err error) {

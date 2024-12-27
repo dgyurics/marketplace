@@ -12,7 +12,7 @@ import (
 type PaymentRepository interface {
 	SavePayment(ctx context.Context, payment models.Payment) error
 	SavePaymentEvent(ctx context.Context, event models.StripeWebhookEvent) error
-	GetPaymentsByPaymentIntentID(ctx context.Context, paymentIntentID string) ([]models.Payment, error)
+	GetPayment(ctx context.Context, paymentIntentID string) (*models.Payment, error)
 }
 
 type paymentRepository struct {
@@ -69,8 +69,9 @@ func (r *paymentRepository) SavePayment(ctx context.Context, payment models.Paym
 	return err
 }
 
-func (r *paymentRepository) GetPaymentsByPaymentIntentID(ctx context.Context, paymentIntentID string) ([]models.Payment, error) {
-	query := `
+func (r *paymentRepository) GetPayment(ctx context.Context, paymentIntentID string) (*models.Payment, error) {
+	var payment models.Payment
+	if err := r.db.QueryRowContext(ctx, `
 		SELECT
 			payment_intent_id,
 			client_secret,
@@ -78,30 +79,21 @@ func (r *paymentRepository) GetPaymentsByPaymentIntentID(ctx context.Context, pa
 			currency,
 			status,
 			order_id,
-			created_at
+			created_at,
+			updated_at
 		FROM payments
 		WHERE payment_intent_id = $1
-	`
-	var payments []models.Payment
-	rows, err := r.db.QueryContext(ctx, query, paymentIntentID)
-	if err != nil {
+	`, paymentIntentID).Scan(
+		&payment.PaymentIntentID,
+		&payment.ClientSecret,
+		&payment.Amount,
+		&payment.Currency,
+		&payment.Status,
+		&payment.OrderID,
+		&payment.CreatedAt,
+		&payment.UpdatedAt,
+	); err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var payment models.Payment
-		if err = rows.Scan(
-			&payment.PaymentIntentID,
-			&payment.ClientSecret,
-			&payment.Amount,
-			&payment.Currency,
-			&payment.Status,
-			&payment.OrderID,
-			&payment.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		payments = append(payments, payment)
-	}
-	return payments, err
+	return &payment, nil
 }

@@ -181,16 +181,15 @@ CREATE TYPE payment_status_enum AS ENUM (
     'refunded'
 );
 CREATE TABLE payments (
-    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    order_id BIGINT PRIMARY KEY REFERENCES orders(id),
     payment_intent_id VARCHAR(255) NOT NULL, -- fixme move this to a separate table. payments table should be vendor agnostic
     client_secret VARCHAR(255) NOT NULL, -- fixme move this to a separate table. payments table should be vendor agnostic  (for frontend confirmation)
     amount INTEGER NOT NULL,
     currency VARCHAR(10) DEFAULT 'usd',
     status payment_status_enum DEFAULT 'pending',
-    order_id BIGINT REFERENCES orders(id),
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-REVOKE UPDATE, DELETE ON payments FROM PUBLIC; -- make payments insert only
 
 -- Used for Stripe webhook events
 CREATE TABLE webhook_events (
@@ -241,6 +240,10 @@ BEGIN
         UPDATE orders
         SET order_status = 'cancelled'
         WHERE id = existing_order_id;
+
+        UPDATE payments
+        SET status = 'cancelled'
+        WHERE order_id = existing_order_id;
     END IF;
 
     -- 3) Create a new order (FIXME add shipping address)
@@ -318,40 +321,5 @@ BEGIN
     SET quantity = i.quantity + order_data.quantity
     FROM order_data
     WHERE i.product_id = order_data.product_id;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION mark_order_as_paid(in_order_id BIGINT)
-RETURNS VOID
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    in_user_id BIGINT;
-BEGIN
-    -- 1) Fetch the user_id associated with the order
-    SELECT user_id
-    INTO in_user_id
-    FROM orders
-    WHERE id = in_order_id
-      AND order_status = 'created';
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'No matching "created" order found for order ID %, or order already finalized.', in_order_id;
-    END IF;
-
-    -- 2) Update the order status to 'paid'
-    UPDATE orders
-    SET order_status = 'paid',
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = in_order_id;
-
-    -- 3) Clear the user's cart
-    DELETE FROM cart_items
-    WHERE user_id = in_user_id;
-
-    DELETE FROM carts
-    WHERE user_id = in_user_id;
-
-    RAISE NOTICE 'Order % for user % marked as paid. Cart cleared.', in_order_id, in_user_id;
 END;
 $$;

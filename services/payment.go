@@ -254,19 +254,23 @@ func (ps *paymentService) PaymentIntentCreated(ctx context.Context, event models
 	}
 	// verify event has matching entry in payment table
 	paymentIntent := event.Data.Object
-	payments, err := ps.paymentRepo.GetPaymentsByPaymentIntentID(ctx, paymentIntent.ID)
+	payment, err := ps.paymentRepo.GetPayment(ctx, paymentIntent.ID)
 	if err != nil {
 		return err
 	}
-	for _, payment := range payments {
-		if payment.Status == "pending" &&
-			payment.Amount == paymentIntent.Amount &&
-			payment.Currency == paymentIntent.Currency &&
-			payment.ClientSecret == paymentIntent.ClientSecret {
-			return nil
-		}
+	if payment.Status != "pending" {
+		return nil // do nothing if order not pending
 	}
-	return fmt.Errorf("no pending payment found for intent %s", paymentIntent.ID)
+	if payment.Amount != paymentIntent.Amount {
+		return fmt.Errorf("payment intent amount does not match expected amount")
+	}
+	if payment.Currency != paymentIntent.Currency {
+		return fmt.Errorf("payment intent currency does not match expected currency")
+	}
+	if payment.ClientSecret != paymentIntent.ClientSecret {
+		return fmt.Errorf("payment intent client secret does not match expected client secret")
+	}
+	return nil
 }
 
 // To be called when a webhook event is received from Stripe for a payment intent success
@@ -276,49 +280,25 @@ func (ps *paymentService) PaymentIntentSucceeded(ctx context.Context, event mode
 		return err
 	}
 	paymentIntent := event.Data.Object
-	payments, err := ps.paymentRepo.GetPaymentsByPaymentIntentID(ctx, paymentIntent.ID)
+	payment, err := ps.paymentRepo.GetPayment(ctx, paymentIntent.ID)
 	if err != nil {
 		return err
 	}
-	paid := false
-	orderID := ""
-	// verify entry in payment table exists, with status pending
-	for _, payment := range payments {
-		if payment.Status == "paid" {
-			return nil // do nothing if order is already marked as paid
-		}
-		if payment.Status == "pending" {
-			if payment.Amount != paymentIntent.Amount {
-				return fmt.Errorf("payment intent amount does not match expected amount")
-			}
-			if payment.Currency != paymentIntent.Currency {
-				return fmt.Errorf("payment intent currency does not match expected currency")
-			}
-			if payment.ClientSecret != paymentIntent.ClientSecret {
-				return fmt.Errorf("payment intent client secret does not match expected client secret")
-			}
-			paid = true
-			orderID = payment.OrderID
-		}
+	if payment.Status != "pending" {
+		return nil // do nothing if order not pending
 	}
-	// if no pending payment found, log and return error
-	if !paid {
-		return fmt.Errorf("no pending payment found for intent %s", paymentIntent.ID)
+	if payment.Amount != paymentIntent.Amount {
+		return fmt.Errorf("payment intent amount does not match expected amount")
 	}
-	// update payment status to paid
-	if err := ps.paymentRepo.SavePayment(ctx, models.Payment{
-		PaymentIntentID: paymentIntent.ID,
-		ClientSecret:    paymentIntent.ClientSecret,
-		Amount:          paymentIntent.Amount,
-		Currency:        paymentIntent.Currency,
-		Status:          "paid",
-		OrderID:         orderID,
-	}); err != nil {
-		return err
+	if payment.Currency != paymentIntent.Currency {
+		return fmt.Errorf("payment intent currency does not match expected currency")
+	}
+	if payment.ClientSecret != paymentIntent.ClientSecret {
+		return fmt.Errorf("payment intent client secret does not match expected client secret")
 	}
 
-	// mark order as paid and clear cart
-	return ps.orderRepo.MarkOrderAsPaid(ctx, orderID)
+	// complete order payment flow
+	return ps.orderRepo.MarkOrderAsPaid(ctx, payment.OrderID)
 }
 
 // To be called when a webhook event is received from Stripe for a payment intent failure
