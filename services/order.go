@@ -24,16 +24,15 @@ const (
 	tolerance = time.Minute * 5 // Maximum allowed time difference between Stripe's timestamp and server time
 )
 
-type PaymentService interface {
-	SendPaymentRequest(ctx context.Context, req models.PaymentIntentRequest) (models.PaymentIntentResponse, error)
-	RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (models.PaymentIntent, error)
-	SavePayment(ctx context.Context, payment models.Payment) error
-	VerifyWebhookSignature(payload []byte, sigHeader string) error
+type OrderService interface {
+	CreatePaymentIntent(ctx context.Context, pi *models.PaymentIntent) error
+	CancelPaymentIntent(ctx context.Context, pi *models.PaymentIntent) error
+	CreateOrder(ctx context.Context) (models.PaymentIntent, error)
+	VerifyWebhookEventSignature(payload []byte, sigHeader string) error
 	ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error
 }
 
-type paymentService struct {
-	paymentRepo                repositories.PaymentRepository
+type orderService struct {
 	orderRepo                  repositories.OrderRepository
 	environment                models.Environment
 	stripeBaseURL              string
@@ -41,13 +40,11 @@ type paymentService struct {
 	stripeWebhookSigningSecret string
 }
 
-func NewPaymentService(
-	paymentRepo repositories.PaymentRepository,
+func NewOrderService(
 	orderRepo repositories.OrderRepository,
-	config models.PaymentConfig,
-) PaymentService {
-	return &paymentService{
-		paymentRepo:                paymentRepo,
+	config models.OrderConfig,
+) OrderService {
+	return &orderService{
 		orderRepo:                  orderRepo,
 		environment:                config.Envirnment,
 		stripeBaseURL:              config.StripeBaseURL,
@@ -56,132 +53,71 @@ func NewPaymentService(
 	}
 }
 
-func (ps *paymentService) SendPaymentRequest(ctx context.Context, req models.PaymentIntentRequest) (models.PaymentIntentResponse, error) {
-	if req.Currency == "" {
-		return models.PaymentIntentResponse{}, errors.New("missing currency")
+func (ps *orderService) CreatePaymentIntent(ctx context.Context, pi *models.PaymentIntent) error {
+	if pi.Currency == "" {
+		return errors.New("missing currency")
 	}
-	if req.Amount <= 0 {
-		return models.PaymentIntentResponse{}, errors.New("missing or invalid amount")
+	if pi.Amount <= 0 {
+		return errors.New("missing or invalid amount")
 	}
 
 	if ps.environment == "test" || ps.environment == "development" {
-		return ps.MockPaymentRequest(ctx, req)
+		return ps.mockPaymentRequest(ctx, pi)
 	}
 
 	stripeURL := fmt.Sprintf("%s/payment_intents", ps.stripeBaseURL)
-	data := fmt.Sprintf("amount=%d&currency=%s&payment_method_types[]=card", req.Amount, req.Currency)
+	data := fmt.Sprintf("amount=%d&currency=%s&payment_method_types[]=card", pi.Amount, pi.Currency)
 	reqBody := bytes.NewBufferString(data)
 	client := &http.Client{}
 	reqStripe, err := http.NewRequest("POST", stripeURL, reqBody)
 	if err != nil {
-		return models.PaymentIntentResponse{}, err
+		return err
 	}
 	reqStripe.SetBasicAuth(ps.stripeSecretKey, "")
 	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := client.Do(reqStripe)
 	if err != nil {
-		return models.PaymentIntentResponse{}, err
+		return err
 	}
 	defer resp.Body.Close()
 
 	// Handle Stripe API response
 	if resp.StatusCode != http.StatusOK {
-		return models.PaymentIntentResponse{}, fmt.Errorf("stripe API returned status %d", resp.StatusCode)
+		return fmt.Errorf("stripe API returned status %d", resp.StatusCode)
 	}
 
-	var paymentIntent models.PaymentIntentResponse
-	err = json.NewDecoder(resp.Body).Decode(&paymentIntent)
-	return paymentIntent, err
+	return json.NewDecoder(resp.Body).Decode(pi)
 }
 
-func (ps *paymentService) MockPaymentRequest(ctx context.Context, req models.PaymentIntentRequest) (models.PaymentIntentResponse, error) {
+func (ps *orderService) CancelPaymentIntent(ctx context.Context, pi *models.PaymentIntent) error {
+	// TODO: implement this method
+	return nil
+}
+
+func (ps *orderService) mockPaymentRequest(ctx context.Context, pi *models.PaymentIntent) error {
 	// Simulate network delay with context handling
 	select {
 	case <-ctx.Done():
-		return models.PaymentIntentResponse{}, ctx.Err()
+		return ctx.Err()
 	case <-time.After(2 * time.Second):
 	}
 
-	// Simulate possible failure
+	// Simulate failure or success
 	failure := mathrand.Intn(10) == 0 // 10% chance of failure
 	if failure {
-		return models.PaymentIntentResponse{
-			ID:           fmt.Sprintf("fake_payment_intent_%d", mathrand.Intn(1000000)),
-			Amount:       req.Amount,
-			Currency:     req.Currency,
-			Status:       "failed",
-			ClientSecret: "",
-			Error:        "incorrect_payment_details",
-		}, nil
+		pi.Status = "failed"
+		pi.Error = "incorrect_payment_details"
+	} else {
+		pi.Status = "pending"
+		pi.Error = ""
+		pi.ID = fmt.Sprintf("fake_payment_intent_%d", mathrand.Intn(1000000))
+		pi.ClientSecret = fmt.Sprintf("%s-%d", "fake_secret", mathrand.Intn(1000000))
 	}
 
-	// Simulate successful payment
-	return models.PaymentIntentResponse{
-		ID:           fmt.Sprintf("fake_payment_intent_%d", mathrand.Intn(1000000)),
-		Amount:       req.Amount,
-		Currency:     req.Currency,
-		Status:       "pending",
-		ClientSecret: fmt.Sprintf("%s-%d", "fake_secret", mathrand.Intn(1000000)),
-	}, nil
+	return nil
 }
 
-func (ps *paymentService) RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (models.PaymentIntent, error) {
-	// Placeholder for actual payment provider
-	if paymentIntentID == "" {
-		return models.PaymentIntent{}, errors.New("missing payment intent ID")
-	}
-
-	// Simulate network delay with context handling
-	select {
-	case <-ctx.Done():
-		return models.PaymentIntent{}, ctx.Err()
-	case <-time.After(1 * time.Second):
-	}
-
-	// Simulate payment response with random success/failure
-	failure := mathrand.Intn(10) == 0 // 10% chance of failure
-	if failure {
-		return models.PaymentIntent{
-			Status:         "not paid",
-			AmountReceived: 0,
-		}, nil
-	}
-
-	// FIXME will need to find a way to mock amount paid and TransactionID to simulate
-	// scenarios where amount paid does not match the expected amount
-	// or where the transaction ID is not found or does not match the expected ID
-
-	return models.PaymentIntent{
-		Status:         "paid",
-		AmountReceived: 500,
-	}, nil
-}
-
-var validStatuses = map[string]bool{
-	"pending":   true,
-	"paid":      true,
-	"cancelled": true,
-	"refunded":  true,
-}
-
-func isValidStatus(status string) bool {
-	return validStatuses[status]
-}
-
-func (ps *paymentService) SavePayment(ctx context.Context, payment models.Payment) error {
-	if payment.PaymentIntentID == "" {
-		return errors.New("payment intent ID is required")
-	}
-	if payment.OrderID == "" {
-		return errors.New("order ID is required")
-	}
-	if !isValidStatus(payment.Status) {
-		return errors.New("invalid payment status")
-	}
-	return ps.paymentRepo.SavePayment(ctx, payment)
-}
-
-func (ps *paymentService) VerifyWebhookSignature(payload []byte, sigHeader string) error {
+func (ps *orderService) VerifyWebhookEventSignature(payload []byte, sigHeader string) error {
 	// Split the signature header into components (e.g. "t=timestamp,v1=signature,v0=signature")
 	parts := strings.Split(sigHeader, ",")
 	if len(parts) < 2 {
@@ -225,7 +161,7 @@ func (ps *paymentService) VerifyWebhookSignature(payload []byte, sigHeader strin
 }
 
 // Stripe events can be triggered out of order, as well as be duplicated. This function should be idempotent.
-func (ps *paymentService) ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error {
+func (ps *orderService) ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error {
 	if event.Data == nil {
 		return errors.New("missing event data")
 	}
@@ -247,14 +183,14 @@ func (ps *paymentService) ProcessWebhookEvent(ctx context.Context, event models.
 }
 
 // To be called when a webhook event is received from Stripe for a payment intent that has been created
-func (ps *paymentService) PaymentIntentCreated(ctx context.Context, event models.StripeWebhookEvent) error {
+func (ps *orderService) PaymentIntentCreated(ctx context.Context, event models.StripeWebhookEvent) error {
 	// save raw event
-	if err := ps.paymentRepo.SavePaymentEvent(ctx, event); err != nil {
+	if err := ps.orderRepo.CreateWebhookEvent(ctx, event); err != nil {
 		return err
 	}
 	// verify event has matching entry in payment table
 	paymentIntent := event.Data.Object
-	payment, err := ps.paymentRepo.GetPayment(ctx, paymentIntent.ID)
+	payment, err := ps.orderRepo.GetPayment(ctx, paymentIntent.ID)
 	if err != nil {
 		return err
 	}
@@ -274,13 +210,13 @@ func (ps *paymentService) PaymentIntentCreated(ctx context.Context, event models
 }
 
 // To be called when a webhook event is received from Stripe for a payment intent success
-func (ps *paymentService) PaymentIntentSucceeded(ctx context.Context, event models.StripeWebhookEvent) error {
+func (ps *orderService) PaymentIntentSucceeded(ctx context.Context, event models.StripeWebhookEvent) error {
 	// save raw event
-	if err := ps.paymentRepo.SavePaymentEvent(ctx, event); err != nil {
+	if err := ps.orderRepo.CreateWebhookEvent(ctx, event); err != nil {
 		return err
 	}
 	paymentIntent := event.Data.Object
-	payment, err := ps.paymentRepo.GetPayment(ctx, paymentIntent.ID)
+	payment, err := ps.orderRepo.GetPayment(ctx, paymentIntent.ID)
 	if err != nil {
 		return err
 	}
@@ -298,13 +234,13 @@ func (ps *paymentService) PaymentIntentSucceeded(ctx context.Context, event mode
 	}
 
 	// complete order payment flow
-	return ps.orderRepo.MarkOrderAsPaid(ctx, payment.OrderID)
+	return ps.orderRepo.CompleteOrderPayment(ctx, payment.OrderID)
 }
 
 // To be called when a webhook event is received from Stripe for a payment intent failure
-func (ps *paymentService) PaymentIntentPaymentFailed(ctx context.Context, event models.StripeWebhookEvent) error {
+func (ps *orderService) PaymentIntentPaymentFailed(ctx context.Context, event models.StripeWebhookEvent) error {
 	// save raw event
-	return ps.paymentRepo.SavePaymentEvent(ctx, event)
+	return ps.orderRepo.CreateWebhookEvent(ctx, event)
 }
 
 // unixTimestampToTime converts a Unix timestamp string to a time.Time object.
@@ -327,4 +263,38 @@ func ComputeSignature(t time.Time, payload []byte, secret string) []byte {
 	mac.Write([]byte("."))
 	mac.Write(payload)
 	return mac.Sum(nil)
+}
+
+func (s *orderService) CreateOrder(ctx context.Context) (models.PaymentIntent, error) {
+	var userID = getUserID(ctx)
+
+	// FIXME call Stripe API and cancel the payment intent when an existing pending order/payment is found
+
+	// Create order
+	order, err := s.orderRepo.CreateOrder(ctx, userID)
+	if err != nil {
+		return models.PaymentIntent{}, err
+	}
+
+	// Send payment request to Stripe
+	// On success, this will trigger a webhook event where type = payment_intent.created
+	pi := models.PaymentIntent{
+		Amount:   order.TotalAmount + order.TaxAmount,
+		Currency: "usd",
+	}
+	if err = s.CreatePaymentIntent(ctx, &pi); err != nil {
+		return models.PaymentIntent{}, err
+	}
+
+	// Save payment details
+	err = s.orderRepo.CreatePayment(ctx, models.Payment{
+		PaymentIntentID: pi.ID,
+		ClientSecret:    pi.ClientSecret,
+		Amount:          pi.Amount,
+		Currency:        pi.Currency,
+		Status:          "pending",
+		OrderID:         order.ID,
+	})
+
+	return pi, err
 }

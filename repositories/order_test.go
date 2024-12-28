@@ -75,43 +75,7 @@ func TestOrderRepository_CreateOrder(t *testing.T) {
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
 }
 
-func TestOrderRepository_FetchPendingOrders(t *testing.T) {
-	ctx := context.Background()
-
-	orderRepo := NewOrderRepository(dbPool)
-	userRepo := NewUserRepository(dbPool)
-
-	user := createUniqueTestUser(t, userRepo)
-	productID := createTestProductAndInventory(t, dbPool, 10)
-	addToCart(t, dbPool, user.ID, productID, 2)
-
-	order, err := orderRepo.CreateOrder(ctx, user.ID)
-	assert.NoError(t, err)
-
-	pendingOrders, err := orderRepo.FetchPendingOrders(ctx, user.ID)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, pendingOrders)
-
-	found := false
-	for _, o := range pendingOrders {
-		if o.ID == order.ID {
-			found = true
-			break
-		}
-	}
-	assert.True(t, found)
-
-	// Cleanup
-	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, order.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM carts WHERE user_id = $1`, user.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM inventory WHERE product_id = $1`, productID)
-	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, productID)
-	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
-}
-
-func TestOrderRepository_MarkOrderAsPaid(t *testing.T) {
+func TestOrderRepository_CompleteOrderPayment(t *testing.T) {
 	ctx := context.Background()
 
 	orderRepo := NewOrderRepository(dbPool)
@@ -129,7 +93,7 @@ func TestOrderRepository_MarkOrderAsPaid(t *testing.T) {
 	assert.NoError(t, err, "CreateOrder should not return an error")
 
 	// 4. Mark the order as paid
-	err = orderRepo.MarkOrderAsPaid(ctx, order.ID)
+	err = orderRepo.CompleteOrderPayment(ctx, order.ID)
 	assert.NoError(t, err, "MarkOrderAsPaid should not return an error")
 
 	// 5. Validate that the order's status was updated to 'paid'

@@ -23,16 +23,15 @@ func main() {
 	categoryRepository := repositories.NewCategoryRepository(db)
 	productRepository := repositories.NewProductRepository(db)
 	cartRepository := repositories.NewCartRepository(db)
-	paymentRepository := repositories.NewPaymentRepository(db)
 	orderRepository := repositories.NewOrderRepository(db)
 
 	// create services
 	authService := services.NewAuthService(authRepository, utilities.LoadAuthConfig())
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
-	paymentService := services.NewPaymentService(paymentRepository, orderRepository, utilities.LoadPaymentConfig())
+	orderService := services.NewOrderService(orderRepository, utilities.LoadOrderConfig())
 	productService := services.NewProductService(productRepository)
-	cartService := services.NewCartService(cartRepository, orderRepository, paymentService)
+	cartService := services.NewCartService(cartRepository)
 
 	// create middleware
 	middleware := middleware.NewAccessControl(authService)
@@ -43,7 +42,7 @@ func main() {
 	handlers.RegisterCategoryHandler(categoryService, router, middleware)
 	handlers.RegisterProductHandler(productService, router, middleware)
 	handlers.RegisterCartHandler(cartService, router, middleware)
-	handlers.RegisterPaymentHandler(paymentService, router)
+	handlers.RegisterOrderHandler(orderService, router, middleware)
 
 	log.Println("Server is running on port 8000")
 	log.Fatal(http.ListenAndServe(":8000", router))

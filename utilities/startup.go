@@ -54,8 +54,8 @@ func LoadAuthConfig() models.AuthConfig {
 }
 
 // loads configuration necessary for the payment service
-func LoadPaymentConfig() models.PaymentConfig {
-	return models.PaymentConfig{
+func LoadOrderConfig() models.OrderConfig {
+	return models.OrderConfig{
 		Envirnment:                 models.Environment(GetEnv("ENVIRONMENT")),
 		StripeBaseURL:              GetEnv("STRIPE_BASE_URL"),
 		StripeSecretKey:            GetEnv("STRIPE_SECRET_KEY"),

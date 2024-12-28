@@ -12,9 +12,8 @@ import (
 
 type CartHandler interface {
 	AddItemToCart(w http.ResponseWriter, r *http.Request)
-	RemoveItemFromCart(w http.ResponseWriter, r *http.Request)
+	RemoveItemFromCart(w http.ResponseWriter, r *http.Request) // FIXME remove this and use AddItemToCart with 0 quantity
 	GetCart(w http.ResponseWriter, r *http.Request)
-	Checkout(w http.ResponseWriter, r *http.Request)
 }
 
 type cartHandler struct {
@@ -73,25 +72,8 @@ func (h *cartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(cart)
 }
 
-func (h *cartHandler) Checkout(w http.ResponseWriter, r *http.Request) {
-	res, err := h.cartService.CheckOut(r.Context())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if res.Error != "" {
-		http.Error(w, res.Error, http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
-}
-
 func (h *cartHandler) RegisterRoutes(authMiddleware middleware.AccessControl) {
 	h.router.Handle("/carts/items", authMiddleware.AuthenticateUser(h.AddItemToCart)).Methods(http.MethodPost)
 	h.router.Handle("/carts/items/{product_id}", authMiddleware.AuthenticateUser(h.RemoveItemFromCart)).Methods(http.MethodDelete)
 	h.router.Handle("/carts", authMiddleware.AuthenticateUser(h.GetCart)).Methods(http.MethodGet)
-	h.router.Handle("/carts/checkout", authMiddleware.AuthenticateUser(h.Checkout)).Methods(http.MethodPost)
 }

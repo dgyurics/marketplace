@@ -59,7 +59,7 @@ stripe-listen:
 		exit 1; \
 	fi; \
 	echo "Running Stripe listen with API Key $$SK..."; \
-	stripe listen --api-key $$SK --forward-to http://localhost:8000/stripe/webhook
+	stripe listen --api-key $$SK --forward-to http://localhost:8000/orders/events
 
 # make update-payment-intent PI=pi_xxxx
 update-payment-intent:

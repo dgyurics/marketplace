@@ -13,24 +13,14 @@ type CartService interface {
 	UpdateCartItem(ctx context.Context, item *models.CartItem) error
 	RemoveItemFromCart(ctx context.Context, productID string) error
 	ClearCart(ctx context.Context) error
-	CheckOut(ctx context.Context) (models.PaymentIntentResponse, error)
 }
 
 type cartService struct {
-	cartRepo       repositories.CartRepository
-	orderRepo      repositories.OrderRepository
-	paymentService PaymentService
+	cartRepo repositories.CartRepository
 }
 
-func NewCartService(
-	cartRepo repositories.CartRepository,
-	orderRepo repositories.OrderRepository,
-	paymentService PaymentService) CartService {
-	return &cartService{
-		cartRepo:       cartRepo,
-		orderRepo:      orderRepo,
-		paymentService: paymentService,
-	}
+func NewCartService(cartRepo repositories.CartRepository) CartService {
+	return &cartService{cartRepo: cartRepo}
 }
 
 func (s *cartService) AddItemToCart(ctx context.Context, item *models.CartItem) error {
@@ -51,35 +41,4 @@ func (s *cartService) RemoveItemFromCart(ctx context.Context, productID string) 
 
 func (s *cartService) ClearCart(ctx context.Context) error {
 	return s.cartRepo.ClearCart(ctx, getUserID(ctx))
-}
-
-func (s *cartService) CheckOut(ctx context.Context) (models.PaymentIntentResponse, error) {
-	var userID = getUserID(ctx)
-
-	// Create order
-	order, err := s.orderRepo.CreateOrder(ctx, userID)
-	if err != nil {
-		return models.PaymentIntentResponse{}, err
-	}
-
-	// Send payment request to Stripe
-	// On success, this will trigger a webhook event where type = payment_intent.created
-	paymentIntent, err := s.paymentService.SendPaymentRequest(ctx, models.PaymentIntentRequest{
-		Amount:   order.TotalAmount + order.TaxAmount,
-		Currency: "usd",
-	})
-	if err != nil {
-		return models.PaymentIntentResponse{}, err
-	}
-
-	// Save payment details
-	err = s.paymentService.SavePayment(ctx, models.Payment{
-		PaymentIntentID: paymentIntent.ID,
-		ClientSecret:    paymentIntent.ClientSecret,
-		Amount:          paymentIntent.Amount,
-		Currency:        paymentIntent.Currency,
-		Status:          "pending",
-		OrderID:         order.ID,
-	})
-	return paymentIntent, err
 }

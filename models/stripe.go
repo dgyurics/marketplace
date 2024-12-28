@@ -5,7 +5,7 @@ type StripeWebhookEvent struct {
 	Type     string             `json:"type"`
 	Data     *StripeWebhookData `json:"data"`
 	Livemode bool               `json:"livemode"`
-	Created  int64              `json:"created"` // Time at which the object was created. Measured in seconds since the Unix epoch.
+	Created  int64              `json:"created"` // seconds elapsed since Unix epoch
 }
 
 type StripeWebhookData struct {

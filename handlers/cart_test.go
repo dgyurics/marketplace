@@ -43,16 +43,6 @@ func (m *MockCartService) ClearCart(ctx context.Context) error {
 	return args.Error(0)
 }
 
-func (m *MockCartService) CheckOut(ctx context.Context) (models.PaymentIntentResponse, error) {
-	args := m.Called(ctx)
-	return args.Get(0).(models.PaymentIntentResponse), args.Error(1)
-}
-
-func (m *MockCartService) ConfirmPayment(ctx context.Context, paymentIntentID string) error {
-	args := m.Called(ctx, paymentIntentID)
-	return args.Error(0)
-}
-
 func TestAddItemToCart(t *testing.T) {
 	mockCartService := new(MockCartService)
 	router := mux.NewRouter()
@@ -158,50 +148,6 @@ func TestGetCart(t *testing.T) {
 
 	// Verify the cart details
 	require.Equal(t, expectedCart.UserID, responseCart.UserID)
-
-	// Assert that the mock's expectations were met
-	mockCartService.AssertExpectations(t)
-}
-
-func TestCheckout(t *testing.T) {
-	mockCartService := new(MockCartService)
-	router := mux.NewRouter()
-	handler := &cartHandler{
-		cartService: mockCartService,
-		router:      router,
-	}
-
-	// Prepare mock data for the request and expected response
-	expectedResponse := models.PaymentIntentResponse{
-		Status: "pending",
-	}
-
-	// Mock the CheckOut method to return a successful PaymentIntentResponse
-	mockCartService.On("CheckOut", mock.Anything).Return(expectedResponse, nil)
-
-	// Create a new HTTP POST request for checkout
-	req, err := http.NewRequest(http.MethodPost, "/carts/checkout", nil)
-	require.NoError(t, err)
-
-	// Set up a response recorder to capture the response
-	rr := httptest.NewRecorder()
-
-	// Add the route to the mux router
-	handler.router.HandleFunc("/carts/checkout", handler.Checkout).Methods(http.MethodPost)
-
-	// Serve the request via the router
-	handler.router.ServeHTTP(rr, req)
-
-	// Check that the status code is HTTP 200 OK
-	require.Equal(t, http.StatusOK, rr.Code)
-
-	// Decode the response body
-	var response models.PaymentIntentResponse
-	err = json.NewDecoder(rr.Body).Decode(&response)
-	require.NoError(t, err)
-
-	// Verify that the response matches the expected response
-	require.Equal(t, expectedResponse.Status, response.Status)
 
 	// Assert that the mock's expectations were met
 	mockCartService.AssertExpectations(t)

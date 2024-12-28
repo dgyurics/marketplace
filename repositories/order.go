@@ -3,14 +3,18 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"time"
 
 	"github.com/dgyurics/marketplace/models"
 )
 
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, userID string) (order *models.Order, err error)
-	FetchPendingOrders(ctx context.Context, userID string) ([]*models.Order, error)
-	MarkOrderAsPaid(ctx context.Context, orderID string) error
+	CompleteOrderPayment(ctx context.Context, orderID string) error
+	CreatePayment(ctx context.Context, payment models.Payment) error
+	GetPayment(ctx context.Context, paymentIntentID string) (*models.Payment, error)
+	CreateWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error
 }
 
 type orderRepository struct {
@@ -52,7 +56,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID string) (*mode
 	return order, nil
 }
 
-func (r *orderRepository) MarkOrderAsPaid(ctx context.Context, orderID string) error {
+func (r *orderRepository) CompleteOrderPayment(ctx context.Context, orderID string) error {
 	// Begin a transaction
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -105,33 +109,77 @@ func (r *orderRepository) MarkOrderAsPaid(ctx context.Context, orderID string) e
 	return tx.Commit()
 }
 
-func (r *orderRepository) FetchPendingOrders(ctx context.Context, userID string) (orders []*models.Order, err error) {
+func (r *orderRepository) CreateWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error {
 	query := `
-		SELECT id, user_id, total_amount, tax_amount, order_status, created_at, updated_at
-		FROM orders
-		WHERE user_id = $1 AND order_status = $2
+		INSERT INTO webhook_events (
+			id,
+			event_type,
+			payload,
+			processed_at
+		)
+		VALUES ($1, $2, $3, $4)
 	`
-	rows, err := r.db.QueryContext(ctx, query, userID, "created")
+	payload, err := json.Marshal(event.Data.Object)
 	if err != nil {
+		return err
+	}
+	_, err = r.db.ExecContext(ctx, query,
+		event.ID,
+		event.Type,
+		payload,
+		time.Unix(event.Created, 0),
+	)
+	return err
+}
+
+func (r *orderRepository) CreatePayment(ctx context.Context, payment models.Payment) error {
+	query := `
+		INSERT INTO payments (
+			payment_intent_id,
+			client_secret,
+			amount,
+			currency,
+			status,
+			order_id
+		)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`
+	_, err := r.db.ExecContext(ctx, query,
+		payment.PaymentIntentID,
+		payment.ClientSecret,
+		payment.Amount,
+		payment.Currency,
+		payment.Status,
+		payment.OrderID,
+	)
+	return err
+}
+
+func (r *orderRepository) GetPayment(ctx context.Context, paymentIntentID string) (*models.Payment, error) {
+	var payment models.Payment
+	if err := r.db.QueryRowContext(ctx, `
+		SELECT
+			payment_intent_id,
+			client_secret,
+			amount,
+			currency,
+			status,
+			order_id,
+			created_at,
+			updated_at
+		FROM payments
+		WHERE payment_intent_id = $1
+	`, paymentIntentID).Scan(
+		&payment.PaymentIntentID,
+		&payment.ClientSecret,
+		&payment.Amount,
+		&payment.Currency,
+		&payment.Status,
+		&payment.OrderID,
+		&payment.CreatedAt,
+		&payment.UpdatedAt,
+	); err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var order models.Order
-		err := rows.Scan(
-			&order.ID,
-			&order.UserID,
-			&order.TotalAmount,
-			&order.TaxAmount,
-			&order.OrderStatus,
-			&order.CreatedAt,
-			&order.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		orders = append(orders, &order)
-	}
-	return
+	return &payment, nil
 }
