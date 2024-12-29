@@ -1,4 +1,4 @@
-package handlers
+package routes
 
 import (
 	"encoding/json"
@@ -6,35 +6,25 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/dgyurics/marketplace/middleware"
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
-	"github.com/gorilla/mux"
 )
 
-type OrderHandler interface {
-	StripeWebhook(w http.ResponseWriter, r *http.Request)
-	CreateOrder(w http.ResponseWriter, r *http.Request)
-}
-
-type orderHandler struct {
+type OrderRoutes struct {
+	router
 	paymentService services.OrderService
-	router         *mux.Router
 }
 
-func RegisterOrderHandler(
+func NewOrderRoutes(
 	paymentService services.OrderService,
-	router *mux.Router,
-	authMiddleware middleware.AccessControl,
-) {
-	handler := &orderHandler{
-		paymentService: paymentService,
+	router router) *OrderRoutes {
+	return &OrderRoutes{
 		router:         router,
+		paymentService: paymentService,
 	}
-	handler.RegisterRoutes(authMiddleware)
 }
 
-func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	res, err := h.paymentService.CreateOrder(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -50,7 +40,7 @@ func (h *orderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func (h *orderHandler) StripeWebhook(w http.ResponseWriter, r *http.Request) {
+func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 	const MaxBodyBytes = int64(65536) // limit request body to 64KB // TODO do this globally
 	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
 	body, err := io.ReadAll(r.Body)
@@ -81,7 +71,7 @@ func (h *orderHandler) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *orderHandler) RegisterRoutes(authMiddleware middleware.AccessControl) {
-	h.router.HandleFunc("/orders/events", h.StripeWebhook).Methods(http.MethodPost)
-	h.router.Handle("/orders", authMiddleware.AuthenticateUser(h.CreateOrder)).Methods(http.MethodPost)
+func (h *OrderRoutes) RegisterRoutes() {
+	h.muxRouter.HandleFunc("/orders/events", h.StripeWebhook).Methods(http.MethodPost)
+	h.muxRouter.Handle("/orders", h.secure(h.CreateOrder)).Methods(http.MethodPost)
 }

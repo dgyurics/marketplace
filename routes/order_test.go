@@ -1,4 +1,4 @@
-package handlers
+package routes
 
 import (
 	"context"
@@ -44,10 +44,12 @@ func (m *MockOrderService) CreateOrder(ctx context.Context) (models.PaymentInten
 
 func TestCreateOrder(t *testing.T) {
 	mockOrderService := new(MockOrderService)
-	router := mux.NewRouter()
-	handler := &orderHandler{
+	routes := &OrderRoutes{
 		paymentService: mockOrderService,
-		router:         router,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
 	}
 
 	// Prepare mock data for the request and expected response
@@ -66,10 +68,10 @@ func TestCreateOrder(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	handler.router.HandleFunc("/orders", handler.CreateOrder).Methods(http.MethodPost)
+	routes.muxRouter.HandleFunc("/orders", routes.CreateOrder).Methods(http.MethodPost)
 
 	// Serve the request via the router
-	handler.router.ServeHTTP(rr, req)
+	routes.muxRouter.ServeHTTP(rr, req)
 
 	// Check that the status code is HTTP 200 OK
 	require.Equal(t, http.StatusOK, rr.Code)

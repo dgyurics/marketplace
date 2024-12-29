@@ -10,21 +10,21 @@ import (
 	"github.com/dgyurics/marketplace/services"
 )
 
-type AccessControl interface {
+type Authorizer interface {
 	AuthenticateUser(next http.HandlerFunc) http.Handler
 	AuthenticateAdmin(next http.HandlerFunc) http.Handler
 }
 
-type accessControl struct {
+type authorizer struct {
 	authService services.AuthService
 }
 
-func NewAccessControl(authService services.AuthService) AccessControl {
-	return &accessControl{authService}
+func NewAccessControl(authService services.AuthService) *authorizer {
+	return &authorizer{authService}
 }
 
 // verifies Authorization header token and allows access only for users.
-func (a *accessControl) AuthenticateUser(next http.HandlerFunc) http.Handler {
+func (a *authorizer) AuthenticateUser(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := a.authenticateToken(r)
 		if err != nil {
@@ -37,7 +37,7 @@ func (a *accessControl) AuthenticateUser(next http.HandlerFunc) http.Handler {
 }
 
 // verifies Authorization header token and allows access only for admin users.
-func (a *accessControl) AuthenticateAdmin(next http.HandlerFunc) http.Handler {
+func (a *authorizer) AuthenticateAdmin(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := a.authenticateToken(r)
 		if err != nil || !user.Admin {
@@ -50,7 +50,7 @@ func (a *accessControl) AuthenticateAdmin(next http.HandlerFunc) http.Handler {
 }
 
 // extracts and validates the token, returning the user if valid.
-func (a *accessControl) authenticateToken(r *http.Request) (models.User, error) {
+func (a *authorizer) authenticateToken(r *http.Request) (models.User, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return models.User{}, errors.New("authorization header missing")

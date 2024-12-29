@@ -1,39 +1,29 @@
-package handlers
+package routes
 
 import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dgyurics/marketplace/middleware"
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
 	"github.com/gorilla/mux"
 )
 
-type ProductHandler interface {
-	CreateProduct(w http.ResponseWriter, r *http.Request)
-	GetProducts(w http.ResponseWriter, r *http.Request)
-	GetProduct(w http.ResponseWriter, r *http.Request)
-	UpdateInventory(w http.ResponseWriter, r *http.Request)
-}
-
-type productHandler struct {
+type ProductRoutes struct {
+	router
 	productService services.ProductService
-	router         *mux.Router
 }
 
-func RegisterProductHandler(
+func NewProductRoutes(
 	productService services.ProductService,
-	router *mux.Router,
-	authMiddleware middleware.AccessControl) {
-	handler := &productHandler{
-		productService: productService,
+	router router) *ProductRoutes {
+	return &ProductRoutes{
 		router:         router,
+		productService: productService,
 	}
-	handler.RegisterRoutes(authMiddleware)
 }
 
-func (h *productHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
+func (h *ProductRoutes) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var product models.Product
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -59,7 +49,7 @@ func (h *productHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(product)
 }
 
-func (h *productHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
+func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 	products, err := h.productService.GetAllProducts(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -70,7 +60,7 @@ func (h *productHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(products)
 }
 
-func (h *productHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
+func (h *ProductRoutes) GetProduct(w http.ResponseWriter, r *http.Request) {
 	productId, ok := mux.Vars(r)["id"]
 	if !ok {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
@@ -86,7 +76,7 @@ func (h *productHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(product)
 }
 
-func (h *productHandler) UpdateInventory(w http.ResponseWriter, r *http.Request) {
+func (h *ProductRoutes) UpdateInventory(w http.ResponseWriter, r *http.Request) {
 	productID := mux.Vars(r)["id"]
 	var input struct {
 		Quantity int `json:"quantity"`
@@ -105,11 +95,11 @@ func (h *productHandler) UpdateInventory(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *productHandler) RegisterRoutes(authMiddleware middleware.AccessControl) {
-	h.router.HandleFunc("/products", h.GetProducts).Methods(http.MethodGet)
-	h.router.HandleFunc("/products/{id}", h.GetProduct).Methods(http.MethodGet)
-	h.router.Handle("/products", authMiddleware.AuthenticateAdmin(h.CreateProduct)).Methods(http.MethodPost)
-	h.router.Handle("/products/{id}/inventory", authMiddleware.AuthenticateAdmin(h.UpdateInventory)).Methods(http.MethodPut)
+func (h *ProductRoutes) RegisterRoutes() {
+	h.muxRouter.HandleFunc("/products", h.GetProducts).Methods(http.MethodGet)
+	h.muxRouter.HandleFunc("/products/{id}", h.GetProduct).Methods(http.MethodGet)
+	h.muxRouter.Handle("/products", h.secureAdmin(h.CreateProduct)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/products/{id}/inventory", h.secureAdmin(h.UpdateInventory)).Methods(http.MethodPut)
 	// router.HandleFunc("/products/{id}", h.UpdateProduct).Methods("PUT")
 	// router.HandleFunc("/products/{id}", h.DeleteProduct).Methods("DELETE")
 }

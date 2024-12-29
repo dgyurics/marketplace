@@ -1,4 +1,4 @@
-package handlers
+package routes
 
 import (
 	"encoding/json"
@@ -6,30 +6,23 @@ import (
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
-	"github.com/gorilla/mux"
 )
 
-type UserHandler interface {
-	Register(w http.ResponseWriter, r *http.Request)
-	Login(w http.ResponseWriter, r *http.Request)
-}
-
-type userHandler struct {
+type UserRoutes struct {
+	router
 	userService services.UserService
 	authService services.AuthService
-	router      *mux.Router
 }
 
-func RegisterUserHandler(userService services.UserService, authService services.AuthService, router *mux.Router) {
-	handler := &userHandler{
+func NewUserRoutes(userService services.UserService, authService services.AuthService, router router) *UserRoutes {
+	return &UserRoutes{
+		router:      router,
 		userService: userService,
 		authService: authService,
-		router:      router,
 	}
-	handler.registerRoutes()
 }
 
-func (h *userHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	var credentials models.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -77,7 +70,7 @@ func (h *userHandler) Register(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *userHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 	var credentials models.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -126,7 +119,7 @@ func (h *userHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // RefreshToken generates a new access token using a valid refresh token
-func (h *userHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
+func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var requestBody struct {
 		RefreshToken string `json:"refresh_token"`
 	}
@@ -164,16 +157,16 @@ func (h *userHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *userHandler) Logout(w http.ResponseWriter, r *http.Request) {
+func (h *UserRoutes) Logout(w http.ResponseWriter, r *http.Request) {
 	// todo
 	// revoke refresh token from database
 	// add option to remove all refresh tokens
 }
 
-func (h *userHandler) registerRoutes() {
-	h.router.HandleFunc("/users/register", h.Register).Methods(http.MethodPost)
-	h.router.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
-	h.router.HandleFunc("/users/refresh-token", h.RefreshToken).Methods("POST")
+func (h *UserRoutes) RegisterRoutes() {
+	h.muxRouter.HandleFunc("/users/register", h.Register).Methods(http.MethodPost)
+	h.muxRouter.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
+	h.muxRouter.HandleFunc("/users/refresh-token", h.RefreshToken).Methods("POST")
 	// router.HandleFunc("/users/logout", Logout).Methods("POST")
 	// router.HandleFunc("/users/profile", GetProfile).Methods("GET")
 	// router.HandleFunc("/users/update-profile", UpdateProfile).Methods("POST")

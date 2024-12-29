@@ -1,4 +1,4 @@
-package handlers
+package routes
 
 import (
 	"bytes"
@@ -42,11 +42,13 @@ func TestCreateCategory(t *testing.T) {
 	// Create a mock service
 	mockService := new(MockCategoryService)
 
-	// Set up the handler with the mock service
-	router := mux.NewRouter()
-	handler := &categoryHandler{
+	// Set up the routes with the mock service
+	routes := &CategoryRoutes{
 		categoryService: mockService,
-		router:          router,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
 	}
 
 	// Set up the expected behavior of the mock service
@@ -65,8 +67,8 @@ func TestCreateCategory(t *testing.T) {
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
-	// Call the handler's CreateCategory method directly
-	handler.CreateCategory(rr, req)
+	// Call the routes CreateCategory method directly
+	routes.CreateCategory(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusCreated, rr.Code)
@@ -87,13 +89,14 @@ func TestGetCategories(t *testing.T) {
 	// Create a mock service
 	mockService := new(MockCategoryService)
 
-	// Set up the handler with the mock service
-	router := mux.NewRouter()
-	handler := &categoryHandler{
+	// Set up the routes with the mock service
+	routes := &CategoryRoutes{
 		categoryService: mockService,
-		router:          router,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
 	}
-
 	// Create a sample list of categories that will be returned by the mock service
 	categories := []models.Category{
 		{ID: "1", Name: "Category 1"},
@@ -110,9 +113,9 @@ func TestGetCategories(t *testing.T) {
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
-	// Call the handler's GetCategories method via the router
-	handler.router.HandleFunc("/categories", handler.GetCategories).Methods(http.MethodGet)
-	handler.router.ServeHTTP(rr, req)
+	// Call the routes GetCategories method via the router
+	routes.muxRouter.HandleFunc("/categories", routes.GetCategories).Methods(http.MethodGet)
+	routes.muxRouter.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
@@ -134,11 +137,13 @@ func TestGetCategory(t *testing.T) {
 	// Create a mock service
 	mockService := new(MockCategoryService)
 
-	// Set up the handler with the mock service
-	router := mux.NewRouter()
-	handler := &categoryHandler{
+	// Set up the routes with the mock service
+	routes := &CategoryRoutes{
 		categoryService: mockService,
-		router:          router,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
 	}
 
 	// Create a sample category that will be returned by the mock service
@@ -157,9 +162,9 @@ func TestGetCategory(t *testing.T) {
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
-	// Call the handler's GetCategory method via the router
-	handler.router.HandleFunc("/categories/{id}", handler.GetCategory).Methods(http.MethodGet)
-	handler.router.ServeHTTP(rr, req)
+	// Call the routes GetCategory method via the router
+	routes.muxRouter.HandleFunc("/categories/{id}", routes.GetCategory).Methods(http.MethodGet)
+	routes.muxRouter.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
@@ -180,11 +185,13 @@ func TestGetProductsByCategory(t *testing.T) {
 	// Create a mock service
 	mockService := new(MockCategoryService)
 
-	// Set up the handler with the mock service
-	router := mux.NewRouter()
-	handler := &categoryHandler{
+	// Set up the routes with the mock service
+	routes := &CategoryRoutes{
 		categoryService: mockService,
-		router:          router,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
 	}
 
 	// Create a sample list of products that will be returned by the mock service
@@ -203,9 +210,9 @@ func TestGetProductsByCategory(t *testing.T) {
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
-	// Call the handler's GetProductsByCategory method via the router
-	handler.router.HandleFunc("/categories/{id}/products", handler.GetProductsByCategory).Methods(http.MethodGet)
-	handler.router.ServeHTTP(rr, req)
+	// Call the routes GetProductsByCategory method via the router
+	routes.muxRouter.HandleFunc("/categories/{id}/products", routes.GetProductsByCategory).Methods(http.MethodGet)
+	routes.muxRouter.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)

@@ -1,39 +1,29 @@
-package handlers
+package routes
 
 import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dgyurics/marketplace/middleware"
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
 	"github.com/gorilla/mux"
 )
 
-type CategoryHandler interface {
-	CreateCategory(w http.ResponseWriter, r *http.Request)
-	GetCategories(w http.ResponseWriter, r *http.Request)
-	GetCategory(w http.ResponseWriter, r *http.Request)
-	GetProductsByCategory(w http.ResponseWriter, r *http.Request)
-}
-
-type categoryHandler struct {
+type CategoryRoutes struct {
+	router
 	categoryService services.CategoryService
-	router          *mux.Router
 }
 
-func RegisterCategoryHandler(
+func NewCategoryRoutes(
 	categoryService services.CategoryService,
-	router *mux.Router,
-	authMiddleware middleware.AccessControl) {
-	handler := &categoryHandler{
-		categoryService: categoryService,
+	router router) *CategoryRoutes {
+	return &CategoryRoutes{
 		router:          router,
+		categoryService: categoryService,
 	}
-	handler.RegisterRoutes(authMiddleware)
 }
 
-func (h *categoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
+func (h *CategoryRoutes) CreateCategory(w http.ResponseWriter, r *http.Request) {
 	var category models.Category
 	if err := json.NewDecoder(r.Body).Decode(&category); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -51,7 +41,7 @@ func (h *categoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(category)
 }
 
-func (h *categoryHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
+func (h *CategoryRoutes) GetCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.categoryService.GetAllCategories(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -62,7 +52,7 @@ func (h *categoryHandler) GetCategories(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(categories)
 }
 
-func (h *categoryHandler) GetCategory(w http.ResponseWriter, r *http.Request) {
+func (h *CategoryRoutes) GetCategory(w http.ResponseWriter, r *http.Request) {
 	categoryId, ok := mux.Vars(r)["id"]
 	if !ok {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
@@ -78,7 +68,7 @@ func (h *categoryHandler) GetCategory(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(category)
 }
 
-func (h *categoryHandler) GetProductsByCategory(w http.ResponseWriter, r *http.Request) {
+func (h *CategoryRoutes) GetProductsByCategory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	products, err := h.categoryService.GetProductsByCategoryID(r.Context(), vars["id"])
 	if err != nil {
@@ -90,11 +80,11 @@ func (h *categoryHandler) GetProductsByCategory(w http.ResponseWriter, r *http.R
 	json.NewEncoder(w).Encode(products)
 }
 
-func (h *categoryHandler) RegisterRoutes(authMiddleware middleware.AccessControl) {
-	h.router.HandleFunc("/categories", h.GetCategories).Methods(http.MethodGet)
-	h.router.HandleFunc("/categories/{id}", h.GetCategory).Methods(http.MethodGet)
-	h.router.HandleFunc("/categories/{id}/products", h.GetProductsByCategory).Methods(http.MethodGet)
-	h.router.Handle("/categories", authMiddleware.AuthenticateAdmin(h.CreateCategory)).Methods(http.MethodPost)
+func (h *CategoryRoutes) RegisterRoutes() {
+	h.muxRouter.HandleFunc("/categories", h.GetCategories).Methods(http.MethodGet)
+	h.muxRouter.HandleFunc("/categories/{id}", h.GetCategory).Methods(http.MethodGet)
+	h.muxRouter.HandleFunc("/categories/{id}/products", h.GetProductsByCategory).Methods(http.MethodGet)
+	h.muxRouter.Handle("/categories", h.secureAdmin(h.CreateCategory)).Methods(http.MethodPost)
 	// router.HandleFunc("/categories/{id}", UpdateCategory).Methods("PUT")
 	// router.HandleFunc("/categories/{id}", DeleteCategory).Methods("DELETE")
 }

@@ -1,4 +1,4 @@
-package handlers
+package routes
 
 import (
 	"bytes"
@@ -45,10 +45,12 @@ func (m *MockCartService) ClearCart(ctx context.Context) error {
 
 func TestAddItemToCart(t *testing.T) {
 	mockCartService := new(MockCartService)
-	router := mux.NewRouter()
-	handler := &cartHandler{
+	routes := &CartRoutes{
 		cartService: mockCartService,
-		router:      router,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
 	}
 
 	item := models.CartItem{
@@ -67,10 +69,10 @@ func TestAddItemToCart(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	handler.router.HandleFunc("/carts/items", handler.AddItemToCart).Methods(http.MethodPost)
+	routes.muxRouter.HandleFunc("/carts/items", routes.AddItemToCart).Methods(http.MethodPost)
 
 	// Serve the request via the router
-	handler.router.ServeHTTP(rr, req)
+	routes.muxRouter.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusCreated, rr.Code)
@@ -81,10 +83,12 @@ func TestAddItemToCart(t *testing.T) {
 
 func TestRemoveItemFromCart(t *testing.T) {
 	mockCartService := new(MockCartService)
-	router := mux.NewRouter()
-	handler := &cartHandler{
+	routes := &CartRoutes{
 		cartService: mockCartService,
-		router:      router,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
 	}
 
 	productID := "test-product-id"
@@ -98,10 +102,10 @@ func TestRemoveItemFromCart(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	handler.router.HandleFunc("/carts/items/{product_id}", handler.RemoveItemFromCart).Methods(http.MethodDelete)
+	routes.muxRouter.HandleFunc("/carts/items/{product_id}", routes.RemoveItemFromCart).Methods(http.MethodDelete)
 
 	// Serve the request via the router
-	handler.router.ServeHTTP(rr, req)
+	routes.muxRouter.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
@@ -112,10 +116,12 @@ func TestRemoveItemFromCart(t *testing.T) {
 
 func TestGetCart(t *testing.T) {
 	mockCartService := new(MockCartService)
-	router := mux.NewRouter()
-	handler := &cartHandler{
+	routes := &CartRoutes{
 		cartService: mockCartService,
-		router:      router,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
 	}
 
 	expectedCart := &models.Cart{
@@ -133,10 +139,10 @@ func TestGetCart(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	handler.router.HandleFunc("/carts", handler.GetCart).Methods(http.MethodGet)
+	routes.muxRouter.HandleFunc("/carts", routes.GetCart).Methods(http.MethodGet)
 
 	// Serve the request via the router
-	handler.router.ServeHTTP(rr, req)
+	routes.muxRouter.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)

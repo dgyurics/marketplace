@@ -1,4 +1,4 @@
-package handlers
+package routes
 
 import (
 	"bytes"
@@ -48,11 +48,13 @@ func TestCreateProduct(t *testing.T) {
 	// Create a mock service
 	mockService := new(MockProductService)
 
-	// Set up the handler with the mock service
-	router := mux.NewRouter()
-	handler := &productHandler{
+	// Set up the routes with the mock service
+	routes := &ProductRoutes{
 		productService: mockService,
-		router:         router,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
 	}
 
 	// Set up the expected behavior of the mock service
@@ -73,8 +75,8 @@ func TestCreateProduct(t *testing.T) {
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
-	// Call the handler's CreateProduct method directly
-	handler.CreateProduct(rr, req)
+	// Call the router's CreateProduct method directly
+	routes.CreateProduct(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusCreated, rr.Code)
@@ -96,11 +98,13 @@ func TestGetProductByID(t *testing.T) {
 	// Create a mock service
 	mockService := new(MockProductService)
 
-	// Set up the handler with the mock service
-	router := mux.NewRouter()
-	handler := &productHandler{
+	// Set up the routes with the mock service
+	routes := &ProductRoutes{
 		productService: mockService,
-		router:         router,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
 	}
 
 	// Create a sample product that will be returned by the mock service
@@ -122,10 +126,10 @@ func TestGetProductByID(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	handler.router.HandleFunc("/products/{id}", handler.GetProduct).Methods(http.MethodGet)
+	routes.muxRouter.HandleFunc("/products/{id}", routes.GetProduct).Methods(http.MethodGet)
 
 	// Serve the request via the router
-	handler.router.ServeHTTP(rr, req)
+	routes.muxRouter.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
@@ -148,11 +152,13 @@ func TestGetProducts(t *testing.T) {
 	// Create a mock service
 	mockService := new(MockProductService)
 
-	// Set up the handler with the mock service
-	router := mux.NewRouter()
-	handler := &productHandler{
+	// Set up the routes with the mock service
+	routes := &ProductRoutes{
 		productService: mockService,
-		router:         router,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
 	}
 
 	// Create a sample list of products that will be returned by the mock service
@@ -182,10 +188,10 @@ func TestGetProducts(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	handler.router.HandleFunc("/products", handler.GetProducts).Methods(http.MethodGet)
+	routes.muxRouter.HandleFunc("/products", routes.GetProducts).Methods(http.MethodGet)
 
 	// Serve the request via the router
-	handler.router.ServeHTTP(rr, req)
+	routes.muxRouter.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
