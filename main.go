@@ -1,8 +1,13 @@
 package main
 
 import (
-	"log"
+	"context"
+	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/dgyurics/marketplace/db"
 	"github.com/dgyurics/marketplace/middleware"
@@ -14,10 +19,22 @@ import (
 )
 
 func main() {
+	// Initialize logger
+	utilities.InitLogger(utilities.LoadLoggerConfig())
+	defer utilities.CloseLogger()
+
+	// Initialize and start server
+	server := initializeServer()
+	server.ListenAndServe()
+	gracefulShutdown(server)
+}
+
+// initializeServer sets up the database, services, and HTTP server
+func initializeServer() *http.Server {
 	// connect to database
 	db := db.Connect()
 
-	// create repositories
+	// create database repositories
 	authRepository := repositories.NewAuthRepository(db)
 	userRepository := repositories.NewUserRepository(db)
 	categoryRepository := repositories.NewCategoryRepository(db)
@@ -46,7 +63,7 @@ func main() {
 	cartRoutes := routes.NewCartRoutes(cartService, baseRouter)
 	orderRoutes := routes.NewOrderRoutes(orderService, baseRouter)
 
-	// register routes to the main router
+	// register routes with main router
 	routes.RegisterAllRoutes(
 		userRoutes,
 		categoryRoutes,
@@ -55,6 +72,38 @@ func main() {
 		orderRoutes,
 	)
 
-	log.Println("Server is running on port 8000")
-	log.Fatal(http.ListenAndServe(":8000", router))
+	// Create and return the HTTP server
+	server := &http.Server{
+		Addr:           ":8000",
+		Handler:        router,
+		ReadTimeout:    15 * time.Second,
+		WriteTimeout:   15 * time.Second,
+		IdleTimeout:    60 * time.Second,
+		MaxHeaderBytes: 0, // DefaultMaxHeaderBytes used if 0
+		// ErrorLog:       slog.Default(), // FIXME ErrorLog expects *log.Logger
+	}
+	slog.Info("Server initialized", "port", 8000)
+	return server
+}
+
+// gracefulShutdown handles termination signals and gracefully shuts down the server
+func gracefulShutdown(server *http.Server) {
+	// Listen for OS signals
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	// Wait for a signal
+	<-stop
+	slog.Info("Shutdown signal received")
+
+	// Create a context with timeout for shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Gracefully shutdown the server
+	if err := server.Shutdown(ctx); err != nil {
+		slog.Error("Server shutdown failed", "error", err.Error())
+	} else {
+		slog.Info("Server gracefully stopped")
+	}
 }

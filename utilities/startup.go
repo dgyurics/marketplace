@@ -1,11 +1,11 @@
-// Package utilities environment provides functions to load environment and configuration data
-// critical for running starting the server. It ensures required resources are available,
+// Package utilities startup provides functions to load environment and configuration data
+// critical for starting the server. It ensures required resources are available,
 // otherwise exits the program.
 
 package utilities
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -13,31 +13,34 @@ import (
 )
 
 // wrapper for os.ReadFile
-// calls [os.Exit](1) if error occurs reading file
+// Exits the program with os.Exit(1) if an error occurs while reading the file.
 func GetKey(filename string) []byte {
 	bytes, err := os.ReadFile(filename)
 	if err != nil {
-		log.Fatalf("Error reading %s key: %v", filename, err)
+		slog.Error("Error reading key file", "filename", filename, "error", err)
+		os.Exit(1)
 	}
 	return bytes
 }
 
 // wrapper for os.LookupEnv
-// calls [os.Exit](1) if error occurs fetching environment variable
+// Exits the program with os.Exit(1) if the required environment variable is not set.
 func GetEnv(key string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
-	log.Fatalf("%s is required", key)
+	slog.Error("Environment variable is required", "key", key)
+	os.Exit(1)
 	return ""
 }
 
 // wrapper for time.ParseDuration
-// calls [os.Exit](1) if error occurs parsing duration
+// Exits the program with os.Exit(1) if an error occurs while parsing the duration.
 func parseDuration(key string) time.Duration {
 	duration, err := time.ParseDuration(GetEnv(key))
 	if err != nil {
-		log.Fatalf("Invalid duration: %v", err)
+		slog.Error("Invalid duration", "key", key, "error", err)
+		os.Exit(1)
 	}
 	return duration
 }
@@ -55,8 +58,19 @@ func LoadAuthConfig() models.AuthConfig {
 
 // loads configuration necessary for the payment service
 func LoadOrderConfig() models.OrderConfig {
+	env := GetEnv("ENVIRONMENT")
+	var environment models.Environment
+	switch env {
+	case string(models.Development):
+		environment = models.Development
+	case string(models.Production):
+		environment = models.Production
+	default:
+		slog.Warn("Invalid environment", "env", env)
+		environment = models.Development
+	}
 	return models.OrderConfig{
-		Envirnment:                 models.Environment(GetEnv("ENVIRONMENT")),
+		Envirnment:                 environment,
 		StripeBaseURL:              GetEnv("STRIPE_BASE_URL"),
 		StripeSecretKey:            GetEnv("STRIPE_SECRET_KEY"),
 		StripeWebhookSigningSecret: GetEnv("STRIPE_WEBHOOK_SIGNING_SECRET"),
