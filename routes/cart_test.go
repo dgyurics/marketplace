@@ -108,7 +108,7 @@ func TestRemoveItemFromCart(t *testing.T) {
 	routes.muxRouter.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
-	require.Equal(t, http.StatusOK, rr.Code)
+	require.Equal(t, http.StatusNoContent, rr.Code)
 
 	// Assert that the mock's expectations were met
 	mockCartService.AssertExpectations(t)

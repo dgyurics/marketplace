@@ -115,8 +115,13 @@ func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item
 	updateQuery := `
 		UPDATE cart_items
 		SET quantity = $3
-		WHERE user_id = $1 AND product_id = $2`
-	_, err = r.db.ExecContext(ctx, updateQuery, userID, item.ProductID, item.Quantity)
+		WHERE user_id = $1 AND product_id = $2
+		RETURNING product_id, quantity, unit_price`
+	err = r.db.QueryRowContext(ctx, updateQuery, userID, item.ProductID, item.Quantity).Scan(
+		&item.ProductID,
+		&item.Quantity,
+		&item.UnitPrice,
+	)
 	return err
 }
 
@@ -124,8 +129,14 @@ func (r *cartRepository) RemoveItemFromCart(ctx context.Context, userID string, 
 	deleteQuery := `
 		DELETE FROM cart_items
 		WHERE user_id = $1 AND product_id = $2`
-	_, err := r.db.ExecContext(ctx, deleteQuery, userID, productID)
-	return err
+	result, err := r.db.ExecContext(ctx, deleteQuery, userID, productID)
+	if err != nil {
+		return err
+	}
+	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func (r *cartRepository) ClearCart(ctx context.Context, userID string) error {
