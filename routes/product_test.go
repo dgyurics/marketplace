@@ -44,6 +44,11 @@ func (m *MockProductService) UpdateInventory(ctx context.Context, productID stri
 	return args.Error(0)
 }
 
+func (m *MockProductService) RemoveProduct(ctx context.Context, id string) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 func TestCreateProduct(t *testing.T) {
 	// Create a mock service
 	mockService := new(MockProductService)

@@ -51,9 +51,13 @@ CREATE TABLE IF NOT EXISTS products (
     name VARCHAR(255) NOT NULL,
     price BIGINT NOT NULL,
     description TEXT NOT NULL,
+    is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+CREATE INDEX idx_products_is_deleted_false
+ON products (id)
+WHERE is_deleted = FALSE;
 
 CREATE TYPE image_type_enum AS ENUM (
     'main',

@@ -28,7 +28,7 @@ func TestCreateProduct(t *testing.T) {
 	assert.Equal(t, expectedPrice, product.Price, "Expected product price to match")
 
 	// Clean up
-	err = repo.DeleteProduct(ctx, product.ID)
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
 	assert.NoError(t, err, "Expected no error on product deletion")
 }
 
@@ -59,7 +59,7 @@ func TestCreateProductWithCategory(t *testing.T) {
 	assert.Equal(t, expectedPrice, product.Price, "Expected product price to match")
 
 	// Clean up
-	err = repo.DeleteProduct(ctx, product.ID)
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
 	assert.NoError(t, err, "Expected no error on product deletion")
 }
 
@@ -93,7 +93,7 @@ func TestGetAllProducts(t *testing.T) {
 	assert.True(t, found, "Expected to find the created product in the products list")
 
 	// Clean up
-	err = repo.DeleteProduct(ctx, product.ID)
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
 	assert.NoError(t, err, "Expected no error on product deletion")
 }
 
@@ -121,7 +121,7 @@ func TestGetProductByID(t *testing.T) {
 	assert.Equal(t, product.Price, retrievedProduct.Price, "Expected product price to match")
 
 	// Clean up
-	err = repo.DeleteProduct(ctx, product.ID)
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
 	assert.NoError(t, err, "Expected no error on product deletion")
 }
 

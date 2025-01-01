@@ -95,11 +95,21 @@ func (h *ProductRoutes) UpdateInventory(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 }
 
+func (h *ProductRoutes) RemoveProduct(w http.ResponseWriter, r *http.Request) {
+	productID := mux.Vars(r)["id"]
+	err := h.productService.RemoveProduct(r.Context(), productID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *ProductRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/products", h.GetProducts).Methods(http.MethodGet)
 	h.muxRouter.HandleFunc("/products/{id}", h.GetProduct).Methods(http.MethodGet)
 	h.muxRouter.Handle("/products", h.secureAdmin(h.CreateProduct)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/products/{id}", h.secureAdmin(h.RemoveProduct)).Methods(http.MethodDelete)
 	h.muxRouter.Handle("/products/{id}/inventory", h.secureAdmin(h.UpdateInventory)).Methods(http.MethodPut)
 	// router.HandleFunc("/products/{id}", h.UpdateProduct).Methods("PUT")
-	// router.HandleFunc("/products/{id}", h.DeleteProduct).Methods("DELETE")
 }

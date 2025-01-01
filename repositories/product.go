@@ -90,7 +90,8 @@ func (r *productRepository) GetAllProducts(ctx context.Context) ([]models.Produc
 			p.description,
 			p.created_at,
 			p.updated_at
-		FROM products p`)
+		FROM products p
+		WHERE is_deleted = false`)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +124,8 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*mod
 			p.created_at,
 			p.updated_at
 		FROM products p
-		WHERE p.id = $1`, id).Scan(
+		WHERE p.id = $1
+			AND is_deleted = false`, id).Scan(
 		&product.ID,
 		&product.Name,
 		&product.Price,
@@ -137,9 +139,15 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*mod
 }
 
 func (r *productRepository) DeleteProduct(ctx context.Context, id string) error {
-	query := `DELETE FROM products WHERE id = $1`
-	_, err := r.db.ExecContext(ctx, query, id)
-	return err
+	query := `UPDATE products SET is_deleted = true WHERE id = $1`
+	result, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func (r *productRepository) UpdateInventory(ctx context.Context, productID string, quantity int) error {

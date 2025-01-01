@@ -10,6 +10,7 @@ import (
 type ProductService interface {
 	CreateProduct(ctx context.Context, product *models.Product) error
 	CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error
+	RemoveProduct(ctx context.Context, id string) error
 	GetAllProducts(ctx context.Context) ([]models.Product, error)
 	GetProductByID(ctx context.Context, id string) (*models.Product, error)
 	UpdateInventory(ctx context.Context, productID string, quantity int) error
@@ -37,6 +38,10 @@ func (s *productService) GetAllProducts(ctx context.Context) ([]models.Product, 
 
 func (s *productService) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
 	return s.repo.GetProductByID(ctx, id)
+}
+
+func (s *productService) RemoveProduct(ctx context.Context, id string) error {
+	return s.repo.DeleteProduct(ctx, id)
 }
 
 func (s *productService) UpdateInventory(ctx context.Context, productID string, quantity int) error {
