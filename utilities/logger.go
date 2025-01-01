@@ -1,3 +1,6 @@
+// logger utility initializes the structured logger, slog.
+// To access the logger throughout the application,
+// simply reference the slog package "log/slog"
 package utilities
 
 import (

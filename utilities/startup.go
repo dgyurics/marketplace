@@ -1,4 +1,4 @@
-// Package utilities startup provides functions to load environment and configuration data
+// startup utilities provides functions to load environment and configuration data
 // critical for starting the server. It ensures required resources are available,
 // otherwise exits the program.
 
