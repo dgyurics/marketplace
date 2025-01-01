@@ -23,7 +23,9 @@ func NewAccessControl(authService services.AuthService) *authorizer {
 	return &authorizer{authService}
 }
 
-// verifies Authorization header token and allows access only for users.
+// AuthenticateUser verifies the Authorization header.
+// If the token is valid, the user is stored in the request context.
+// If the token is invalid, or does not exist, a 401 Unauthorized response is returned.
 func (a *authorizer) AuthenticateUser(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := a.authenticateToken(r)
@@ -36,11 +38,18 @@ func (a *authorizer) AuthenticateUser(next http.HandlerFunc) http.Handler {
 	})
 }
 
-// verifies Authorization header token and allows access only for admin users.
+// AuthenticateAdmin verifies the Authorization header.
+// If the token is valid and the user is an admin, the user is stored in the request context.
+// If the token is invalid, or does not exist, a 401 Unauthorized response is returned.
+// If the user is not an admin, a 403 Forbidden response is returned.
 func (a *authorizer) AuthenticateAdmin(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := a.authenticateToken(r)
-		if err != nil || !user.Admin {
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		if !user.Admin {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
@@ -49,7 +58,9 @@ func (a *authorizer) AuthenticateAdmin(next http.HandlerFunc) http.Handler {
 	})
 }
 
-// extracts and validates the token, returning the user if valid.
+// authenticateToken checks the Authorization header for a token,
+// and validates it using the authService. If the token is valid,
+// the user is returned. If the token is invalid, an error is returned.
 func (a *authorizer) authenticateToken(r *http.Request) (models.User, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {

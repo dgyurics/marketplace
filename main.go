@@ -53,7 +53,7 @@ func initializeServer() *http.Server {
 	// create router
 	router := mux.NewRouter()
 
-	// create base router which encapsulates the primary router and the access control middleware
+	// create base router which encapsulates the primary router and access control middleware
 	baseRouter := routes.NewRouter(router, middleware.NewAccessControl(authService))
 
 	// create routes
