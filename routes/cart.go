@@ -30,6 +30,11 @@ func (h *CartRoutes) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if item.ProductID == "" || item.Quantity <= 0 {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
 	if err := h.cartService.AddItemToCart(r.Context(), &item); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
