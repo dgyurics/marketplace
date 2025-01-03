@@ -17,11 +17,6 @@ type MockOrderService struct {
 	mock.Mock
 }
 
-func (m *MockOrderService) CreatePaymentIntent(ctx context.Context, pi *models.PaymentIntent) error {
-	args := m.Called(ctx, pi)
-	return args.Error(0)
-}
-
 func (m *MockOrderService) CancelPaymentIntent(ctx context.Context, pi *models.PaymentIntent) error {
 	args := m.Called(ctx, pi)
 	return args.Error(0)

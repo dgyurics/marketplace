@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -25,8 +26,6 @@ const (
 )
 
 type OrderService interface {
-	CreatePaymentIntent(ctx context.Context, pi *models.PaymentIntent) error
-	CancelPaymentIntent(ctx context.Context, pi *models.PaymentIntent) error
 	CreateOrder(ctx context.Context) (models.PaymentIntent, error)
 	VerifyWebhookEventSignature(payload []byte, sigHeader string) error
 	ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error
@@ -53,7 +52,8 @@ func NewOrderService(
 	}
 }
 
-func (ps *orderService) CreatePaymentIntent(ctx context.Context, pi *models.PaymentIntent) error {
+// Call Stripe API to create a payment intent
+func (ps *orderService) createPaymentIntent(ctx context.Context, pi *models.PaymentIntent) error {
 	if pi.Currency == "" {
 		return errors.New("missing currency")
 	}
@@ -77,19 +77,21 @@ func (ps *orderService) CreatePaymentIntent(ctx context.Context, pi *models.Paym
 	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := client.Do(reqStripe)
 	if err != nil {
+		slog.Error("Error sending request to Stripe API", "url", stripeURL, "error", err)
 		return err
 	}
 	defer resp.Body.Close()
 
 	// Handle Stripe API response
 	if resp.StatusCode != http.StatusOK {
+		slog.Error("Stripe API returned status", "status", resp.StatusCode, "url", stripeURL)
 		return fmt.Errorf("stripe API returned status %d", resp.StatusCode)
 	}
 
 	return json.NewDecoder(resp.Body).Decode(pi)
 }
 
-func (ps *orderService) CancelPaymentIntent(ctx context.Context, pi *models.PaymentIntent) error {
+func (ps *orderService) cancelPaymentIntent(ctx context.Context, pi *models.PaymentIntent) error {
 	// TODO: implement this method
 	return nil
 }
@@ -117,10 +119,12 @@ func (ps *orderService) mockPaymentRequest(ctx context.Context, pi *models.Payme
 	return nil
 }
 
+// [payload] raw request body
+// [sigHeader] value of the Stripe-Signature header, in the format "t=timestamp,v1=signature,v1=signature,..."
 func (ps *orderService) VerifyWebhookEventSignature(payload []byte, sigHeader string) error {
-	// Split the signature header into components (e.g. "t=timestamp,v1=signature,v0=signature")
 	parts := strings.Split(sigHeader, ",")
 	if len(parts) < 2 {
+		slog.Error("Invalid signature header", "header", sigHeader)
 		return errors.New("invalid signature header")
 	}
 
@@ -137,57 +141,63 @@ func (ps *orderService) VerifyWebhookEventSignature(payload []byte, sigHeader st
 		}
 	}
 
-	if timestamp == "" || len(signatures) == 0 {
-		return errors.New("missing timestamp or signature")
+	if timestamp == "" {
+		slog.Error("Timestamp missing from signature header", "header", sigHeader)
+		return errors.New("missing timestamp")
+	}
+
+	if len(signatures) == 0 {
+		slog.Error("Signature missing from signature header", "header", sigHeader)
+		return errors.New("missing signature")
 	}
 
 	ts, err := unixTimestampToTime(timestamp)
 	if err != nil {
+		slog.Error("Error parsing timestamp", "timestamp", timestamp)
 		return errors.New("invalid timestamp")
 	} else if time.Since(ts) > tolerance {
+		slog.Error("Timestamp is too old", "timestamp", timestamp)
 		return errors.New("timestamp is too old")
 	}
 
+	// Compare expected signature with provided signatures
+	// Use a constant-time comparison function to mitigate timing attacks
+	// If a matching signature is found, return nil
 	expectedSignature := ComputeSignature(ts, payload, ps.stripeWebhookSigningSecret)
-
 	for _, signature := range signatures {
-		// use a constant-time comparison function to mitigate timing attacks
 		if hmac.Equal(signature, expectedSignature) {
 			return nil
 		}
 	}
 
+	slog.Error("Signature verification failed", "signatures", signatures)
 	return errors.New("signature verification failed: no matching v1 signature found")
 }
 
-// Stripe events can be triggered out of order, as well as be duplicated. This function should be idempotent.
+// ProcessWebhookEvent processes a Stripe webhook event. It is idompotent
 func (ps *orderService) ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error {
-	if event.Data == nil {
-		return errors.New("missing event data")
+	// save raw event data
+	if err := ps.orderRepo.CreateWebhookEvent(ctx, event); err != nil {
+		return err
 	}
-	if event.Data.Object.ID == "" {
-		return errors.New("missing payment intent ID")
-	}
-	// TODO payment_intent.canceled
 	switch event.Type {
 	case "payment_intent.created":
-		return ps.PaymentIntentCreated(ctx, event)
+		return ps.paymentIntentCreated(ctx, event)
 	case "payment_intent.succeeded":
-		return ps.PaymentIntentSucceeded(ctx, event)
+		return ps.paymentIntentSucceeded(ctx, event)
+	case "payment_intent.canceled":
+		slog.Warn("Payment canceled", "event", event.ID, "PaymentIntentID", event.Data.Object.ID)
 	case "payment_intent.payment_failed":
-		return ps.PaymentIntentPaymentFailed(ctx, event)
+		slog.Error("Payment failed", "event", event.ID, "PaymentIntentID", event.Data.Object.ID)
 	default:
-		// Placeholder for logging other events
+		slog.Debug("Unhandled event", "event", event.ID, "type", event.Type)
 	}
 	return nil
 }
 
-// To be called when a webhook event is received from Stripe for a payment intent that has been created
-func (ps *orderService) PaymentIntentCreated(ctx context.Context, event models.StripeWebhookEvent) error {
-	// save raw event
-	if err := ps.orderRepo.CreateWebhookEvent(ctx, event); err != nil {
-		return err
-	}
+// paymentIntentCreated is called when a webhook event is received from Stripe for a payment intent creation.
+// A matching payment entry should be found in the orders table
+func (ps *orderService) paymentIntentCreated(ctx context.Context, event models.StripeWebhookEvent) error {
 	// verify event has matching entry in payment table
 	paymentIntent := event.Data.Object
 	payment, err := ps.orderRepo.GetPayment(ctx, paymentIntent.ID)
@@ -209,12 +219,9 @@ func (ps *orderService) PaymentIntentCreated(ctx context.Context, event models.S
 	return nil
 }
 
-// To be called when a webhook event is received from Stripe for a payment intent success
-func (ps *orderService) PaymentIntentSucceeded(ctx context.Context, event models.StripeWebhookEvent) error {
-	// save raw event
-	if err := ps.orderRepo.CreateWebhookEvent(ctx, event); err != nil {
-		return err
-	}
+// paymentIntentSucceeded is called when a webhook event is received from Stripe for a payment intent success
+// A matching payment entry should be found in the orders table
+func (ps *orderService) paymentIntentSucceeded(ctx context.Context, event models.StripeWebhookEvent) error {
 	paymentIntent := event.Data.Object
 	payment, err := ps.orderRepo.GetPayment(ctx, paymentIntent.ID)
 	if err != nil {
@@ -237,14 +244,7 @@ func (ps *orderService) PaymentIntentSucceeded(ctx context.Context, event models
 	return ps.orderRepo.CompleteOrderPayment(ctx, payment.OrderID)
 }
 
-// To be called when a webhook event is received from Stripe for a payment intent failure
-func (ps *orderService) PaymentIntentPaymentFailed(ctx context.Context, event models.StripeWebhookEvent) error {
-	// save raw event
-	return ps.orderRepo.CreateWebhookEvent(ctx, event)
-}
-
-// unixTimestampToTime converts a Unix timestamp string to a time.Time object.
-// TODO: move this to a common utility package
+// unixTimestampToTime converts [timestamp], Unix timestamp string to a time.Time object.
 func unixTimestampToTime(timestamp string) (time.Time, error) {
 	seconds, err := strconv.ParseInt(timestamp, 10, 64)
 	if err != nil {
@@ -253,9 +253,16 @@ func unixTimestampToTime(timestamp string) (time.Time, error) {
 	return time.Unix(seconds, 0), nil
 }
 
-// ComputeSignature computes a webhook signature using Stripe's v1 signing
-// method.
-//
+// cancelPendingOrders cancels any unpaid orders for the specified [userID].
+func (s *orderService) cancelUnpaidOrders(ctx context.Context, userID string) {
+	// TODO: implement this method
+	// call cancelPaymentIntent
+}
+
+// ComputeSignature computes an API request signature using Stripe's v1 signing method.
+// [t] timestamp of the event
+// [payload] is the raw request body
+// [secret] webhook signing secret.
 // See https://stripe.com/docs/webhooks#signatures for more information.
 func ComputeSignature(t time.Time, payload []byte, secret string) []byte {
 	mac := hmac.New(sha256.New, []byte(secret))
@@ -268,25 +275,26 @@ func ComputeSignature(t time.Time, payload []byte, secret string) []byte {
 func (s *orderService) CreateOrder(ctx context.Context) (models.PaymentIntent, error) {
 	var userID = getUserID(ctx)
 
-	// FIXME call Stripe API and cancel the payment intent when an existing pending order/payment is found
+	// Cancel unpaid orders
+	s.cancelUnpaidOrders(ctx, userID)
 
 	// Create order
 	order, err := s.orderRepo.CreateOrder(ctx, userID)
 	if err != nil {
+		slog.Error("Error creating order", "user_id", userID, "error", err)
 		return models.PaymentIntent{}, err
 	}
 
-	// Send payment request to Stripe
-	// On success, this will trigger a webhook event where type = payment_intent.created
+	// Create payment intent
 	pi := models.PaymentIntent{
 		Amount:   order.TotalAmount + order.TaxAmount,
 		Currency: "usd",
 	}
-	if err = s.CreatePaymentIntent(ctx, &pi); err != nil {
+	if err = s.createPaymentIntent(ctx, &pi); err != nil {
 		return models.PaymentIntent{}, err
 	}
 
-	// Save payment details
+	// Save payment intent details
 	err = s.orderRepo.CreatePayment(ctx, models.Payment{
 		PaymentIntentID: pi.ID,
 		ClientSecret:    pi.ClientSecret,

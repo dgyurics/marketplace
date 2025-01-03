@@ -8,6 +8,7 @@ type StripeWebhookEvent struct {
 	Created  int64              `json:"created"` // seconds elapsed since Unix epoch
 }
 
+// TODO - add support for other webhook events
 type StripeWebhookData struct {
 	Object StripeWebhookPaymentIntent `json:"object"`
 }

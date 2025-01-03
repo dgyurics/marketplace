@@ -2,8 +2,8 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/dgyurics/marketplace/models"
@@ -45,6 +45,7 @@ func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		slog.Error("Error reading request body", "error", err)
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
@@ -62,10 +63,15 @@ func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// verify expected data in event
+	if event.Type == "" || event.Data == nil || event.Data.Object.ID == "" {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
 	// save and process event
 	if err := h.paymentService.ProcessWebhookEvent(r.Context(), event); err != nil {
-		// TODO log error
-		fmt.Printf("Error processing webhook event: %v\n", err)
+		slog.Error("Error processing webhook event", "error", err)
 	}
 
 	w.WriteHeader(http.StatusOK)
