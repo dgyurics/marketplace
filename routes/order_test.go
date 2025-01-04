@@ -40,7 +40,7 @@ func (m *MockOrderService) CreateOrder(ctx context.Context) (models.PaymentInten
 func TestCreateOrder(t *testing.T) {
 	mockOrderService := new(MockOrderService)
 	routes := &OrderRoutes{
-		paymentService: mockOrderService,
+		orderService: mockOrderService,
 		router: router{
 			muxRouter:      mux.NewRouter(),
 			authMiddleware: nil,

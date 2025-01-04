@@ -146,8 +146,9 @@ CREATE TABLE IF NOT EXISTS addresses (
 );
 
 CREATE TYPE order_status_enum AS ENUM (
-    'created',
+    'pending',
     'paid',
+    'refunded',
     'fulfilled',
     'shipped',
     'delivered',
@@ -157,9 +158,12 @@ CREATE TABLE IF NOT EXISTS orders (
     id BIGINT PRIMARY KEY DEFAULT gen_id(),
     user_id BIGINT,
     shipping_address_id BIGINT,
-    total_amount BIGINT NOT NULL, -- total not including tax
-    tax_amount BIGINT DEFAULT 0,
-    order_status order_status_enum DEFAULT 'created',
+    currency VARCHAR(10) DEFAULT 'usd',
+    amount BIGINT NOT NULL DEFAULT 0,
+    tax_amount BIGINT NOT NULL DEFAULT 0,
+    total_amount BIGINT NOT NULL DEFAULT 0,
+    status order_status_enum NOT NULL DEFAULT 'pending',
+    payment_intent_id VARCHAR(255) NOT NULL DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
@@ -178,23 +182,6 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
-CREATE TYPE payment_status_enum AS ENUM (
-    'pending',
-    'paid',
-    'cancelled'
-    'refunded'
-);
-CREATE TABLE payments (
-    order_id BIGINT PRIMARY KEY REFERENCES orders(id),
-    payment_intent_id VARCHAR(255) NOT NULL, -- fixme move this to a separate table. payments table should be vendor agnostic
-    client_secret VARCHAR(255) NOT NULL, -- fixme move this to a separate table. payments table should be vendor agnostic  (for frontend confirmation)
-    amount INTEGER NOT NULL,
-    currency VARCHAR(10) DEFAULT 'usd',
-    status payment_status_enum DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-
 -- Used for Stripe webhook events
 CREATE TABLE webhook_events (
     id VARCHAR(255) UNIQUE NOT NULL,
@@ -205,15 +192,15 @@ CREATE TABLE webhook_events (
 );
 REVOKE UPDATE, DELETE ON webhook_events FROM PUBLIC; -- make webhook_events insert only
 
-CREATE OR REPLACE FUNCTION create_order_from_cart(in_user_id BIGINT)
-RETURNS BIGINT -- Return the new order's ID
+CREATE OR REPLACE FUNCTION update_or_create_order_from_cart(in_user_id BIGINT)
+RETURNS BIGINT -- Return order ID
 LANGUAGE plpgsql
 AS $$
 DECLARE
     cart_item_count INT;
     existing_order_id BIGINT;
-    new_order_id BIGINT;
     cart_rec RECORD;
+    existing_item_quantity INT;
 BEGIN
     -- 1) Check if user's cart is empty
     SELECT COUNT(*)
@@ -222,108 +209,128 @@ BEGIN
     WHERE user_id = in_user_id;
 
     IF cart_item_count = 0 THEN
-        RAISE NOTICE 'User % has an empty cart. No order created.', in_user_id;
+        RAISE NOTICE 'User % has an empty cart. No order created or updated.', in_user_id;
         RETURN NULL;
     END IF;
 
-    -- 2. Check if user has an existing open order
+    -- 2) Check if user has an existing open order
     SELECT id
     INTO existing_order_id
     FROM orders
     WHERE user_id = in_user_id
-    AND order_status = 'created'
+    AND status = 'pending'
     LIMIT 1;
 
+    -- 3) If an existing order exists, update it
     IF existing_order_id IS NOT NULL THEN
-        -- If an order already exists, restore inventory for each item in that order, then delete it
-        PERFORM restore_inventory_for_order(existing_order_id);
+        FOR cart_rec IN
+            SELECT product_id, quantity, unit_price
+            FROM cart_items
+            WHERE user_id = in_user_id
+        LOOP
+            DECLARE current_inventory INT;
+            BEGIN
+                -- Check the existing reserved quantity in the order
+                SELECT quantity
+                INTO existing_item_quantity
+                FROM order_items
+                WHERE order_id = existing_order_id
+                AND product_id = cart_rec.product_id;
 
-        DELETE FROM order_items
-        WHERE order_id = existing_order_id;
+                -- If no matching item in the order, treat reserved quantity as 0
+                IF NOT FOUND THEN
+                    existing_item_quantity := 0;
+                END IF;
 
-        UPDATE orders
-        SET order_status = 'cancelled'
-        WHERE id = existing_order_id;
+                -- Check inventory, accounting for already reserved items
+                SELECT quantity
+                INTO current_inventory
+                FROM inventory
+                WHERE product_id = cart_rec.product_id
+                FOR UPDATE; -- lock row
 
-        UPDATE payments
-        SET status = 'cancelled'
-        WHERE order_id = existing_order_id;
+                IF current_inventory IS NULL THEN
+                    RAISE EXCEPTION 'Product % not found in inventory table', cart_rec.product_id;
+                END IF;
+
+                -- Effective inventory available is current minus already reserved
+                IF current_inventory + existing_item_quantity < cart_rec.quantity THEN
+                    RAISE EXCEPTION 'Insufficient inventory for product %; needed %, available %',
+                        cart_rec.product_id, cart_rec.quantity, current_inventory + existing_item_quantity;
+                END IF;
+
+                -- Update inventory only for new quantities added
+                UPDATE inventory
+                SET quantity = quantity - (cart_rec.quantity - existing_item_quantity)
+                WHERE product_id = cart_rec.product_id;
+
+                -- Insert or update order_items for the existing order
+                INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+                VALUES (existing_order_id, cart_rec.product_id, cart_rec.quantity, cart_rec.unit_price)
+                ON CONFLICT (order_id, product_id) DO UPDATE
+                SET quantity = EXCLUDED.quantity, unit_price = EXCLUDED.unit_price;
+            END;
+        END LOOP;
+    ELSE
+        -- 4) If no existing order, create a new one
+        INSERT INTO orders (user_id, status)
+        VALUES (in_user_id, 'pending')
+        RETURNING id INTO existing_order_id;
+
+        FOR cart_rec IN
+            SELECT product_id, quantity, unit_price
+            FROM cart_items
+            WHERE user_id = in_user_id
+        LOOP
+            DECLARE current_inventory INT;
+            BEGIN
+                SELECT quantity
+                INTO current_inventory
+                FROM inventory
+                WHERE product_id = cart_rec.product_id
+                FOR UPDATE; -- lock row
+
+                IF current_inventory IS NULL THEN
+                    RAISE EXCEPTION 'Product % not found in inventory table', cart_rec.product_id;
+                END IF;
+
+                -- If insufficient inventory, throw an error (this will rollback)
+                IF current_inventory < cart_rec.quantity THEN
+                    RAISE EXCEPTION 'Insufficient inventory for product %; needed %, have %',
+                        cart_rec.product_id, cart_rec.quantity, current_inventory;
+                END IF;
+
+                -- Subtract from inventory
+                UPDATE inventory
+                SET quantity = quantity - cart_rec.quantity
+                WHERE product_id = cart_rec.product_id;
+
+                -- Insert into order_items
+                INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+                VALUES (existing_order_id, cart_rec.product_id, cart_rec.quantity, cart_rec.unit_price);
+            END;
+        END LOOP;
     END IF;
 
-    -- 3) Create a new order (FIXME add shipping address)
-    INSERT INTO orders (user_id, total_amount, order_status)
-    VALUES (in_user_id, 0, 'created')
-    RETURNING id INTO new_order_id;
-
-    -- 4. For each cart item, decrement inventory and insert into order_items
-    FOR cart_rec IN
-        SELECT product_id, quantity, unit_price
-        FROM cart_items
-        WHERE user_id = in_user_id
-    LOOP
-        DECLARE current_inventory INT;
-        BEGIN
-            SELECT quantity
-            INTO current_inventory
-            FROM inventory
-            WHERE product_id = cart_rec.product_id
-            FOR UPDATE; -- lock row
-
-            IF current_inventory IS NULL THEN
-                RAISE EXCEPTION 'Product % not found in inventory table', cart_rec.product_id;
-            END IF;
-
-            -- If insufficient inventory, throw an error (this will rollback)
-            IF current_inventory < cart_rec.quantity THEN
-                RAISE EXCEPTION 'Insufficient inventory for product %; needed %, have %',
-                    cart_rec.product_id, cart_rec.quantity, current_inventory;
-            END IF;
-
-            -- Subtract from inventory
-            UPDATE inventory
-               SET quantity = quantity - cart_rec.quantity
-             WHERE product_id = cart_rec.product_id;
-
-            -- Insert into order_items
-            INSERT INTO order_items (order_id, product_id, quantity, unit_price)
-            VALUES (new_order_id, cart_rec.product_id, cart_rec.quantity, cart_rec.unit_price);
-        END;
-    END LOOP;
-
-    -- 5) Update the order total: sum of all order_items
+    -- Update the order amount
     UPDATE orders
-    SET total_amount = (
-        SELECT COALESCE(SUM(quantity * unit_price), 0)
-        FROM order_items
-        WHERE order_id = new_order_id
-    )
-    WHERE id = new_order_id;
+    SET amount = (
+            SELECT COALESCE(SUM(quantity * unit_price), 0)
+            FROM order_items
+            WHERE order_id = existing_order_id
+        )
+    WHERE id = existing_order_id;
 
-    -- 6) Return newly created order
-    RETURN new_order_id;
+    -- Update the total amount
+    UPDATE orders
+    SET total_amount = amount + tax_amount
+    WHERE id = existing_order_id;
 
+    RETURN existing_order_id;    
 EXCEPTION
     WHEN OTHERS THEN
         -- If there's an error, the transaction will be rolled back,
         -- unless you catch and handle it differently here.
-        RAISE EXCEPTION 'Error creating order for user %: %', in_user_id, SQLERRM;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION restore_inventory_for_order(in_order_id BIGINT)
-RETURNS VOID
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    -- For each item in the order, add back its quantity to inventory
-    WITH order_data AS (
-        SELECT product_id, quantity
-        FROM order_items
-        WHERE order_id = in_order_id
-    )
-    UPDATE inventory i
-    SET quantity = i.quantity + order_data.quantity
-    FROM order_data
-    WHERE i.product_id = order_data.product_id;
+        RAISE EXCEPTION 'Error updating or creating order for user %: %', in_user_id, SQLERRM;
 END;
 $$;

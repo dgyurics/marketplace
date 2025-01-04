@@ -33,6 +33,7 @@ type OrderService interface {
 
 type orderService struct {
 	orderRepo                  repositories.OrderRepository
+	cartRepo                   repositories.CartRepository
 	environment                models.Environment
 	stripeBaseURL              string
 	stripeSecretKey            string
@@ -41,10 +42,12 @@ type orderService struct {
 
 func NewOrderService(
 	orderRepo repositories.OrderRepository,
+	cartRepo repositories.CartRepository,
 	config models.OrderConfig,
 ) OrderService {
 	return &orderService{
 		orderRepo:                  orderRepo,
+		cartRepo:                   cartRepo,
 		environment:                config.Envirnment,
 		stripeBaseURL:              config.StripeBaseURL,
 		stripeSecretKey:            config.StripeSecretKey,
@@ -61,7 +64,7 @@ func (ps *orderService) createPaymentIntent(ctx context.Context, pi *models.Paym
 		return errors.New("missing or invalid amount")
 	}
 
-	if ps.environment == "test" || ps.environment == "development" {
+	if ps.environment != "production" {
 		return ps.mockPaymentRequest(ctx, pi)
 	}
 
@@ -69,7 +72,7 @@ func (ps *orderService) createPaymentIntent(ctx context.Context, pi *models.Paym
 	data := fmt.Sprintf("amount=%d&currency=%s&payment_method_types[]=card", pi.Amount, pi.Currency)
 	reqBody := bytes.NewBufferString(data)
 	client := &http.Client{}
-	reqStripe, err := http.NewRequest("POST", stripeURL, reqBody)
+	reqStripe, err := http.NewRequestWithContext(ctx, "POST", stripeURL, reqBody)
 	if err != nil {
 		return err
 	}
@@ -89,11 +92,6 @@ func (ps *orderService) createPaymentIntent(ctx context.Context, pi *models.Paym
 	}
 
 	return json.NewDecoder(resp.Body).Decode(pi)
-}
-
-func (ps *orderService) cancelPaymentIntent(ctx context.Context, pi *models.PaymentIntent) error {
-	// TODO: implement this method
-	return nil
 }
 
 func (ps *orderService) mockPaymentRequest(ctx context.Context, pi *models.PaymentIntent) error {
@@ -186,9 +184,9 @@ func (ps *orderService) ProcessWebhookEvent(ctx context.Context, event models.St
 	case "payment_intent.succeeded":
 		return ps.paymentIntentSucceeded(ctx, event)
 	case "payment_intent.canceled":
-		slog.Warn("Payment canceled", "event", event.ID, "PaymentIntentID", event.Data.Object.ID)
+		slog.Debug("Payment canceled", "event", event.ID, "PaymentIntentID", event.Data.Object.ID)
 	case "payment_intent.payment_failed":
-		slog.Error("Payment failed", "event", event.ID, "PaymentIntentID", event.Data.Object.ID)
+		slog.Info("Payment failed", "event", event.ID, "PaymentIntentID", event.Data.Object.ID)
 	default:
 		slog.Debug("Unhandled event", "event", event.ID, "type", event.Type)
 	}
@@ -199,22 +197,19 @@ func (ps *orderService) ProcessWebhookEvent(ctx context.Context, event models.St
 // A matching payment entry should be found in the orders table
 func (ps *orderService) paymentIntentCreated(ctx context.Context, event models.StripeWebhookEvent) error {
 	// verify event has matching entry in payment table
-	paymentIntent := event.Data.Object
-	payment, err := ps.orderRepo.GetPayment(ctx, paymentIntent.ID)
+	order := &models.Order{PaymentIntentID: event.Data.Object.ID}
+	err := ps.orderRepo.GetOrder(ctx, order)
 	if err != nil {
 		return err
 	}
-	if payment.Status != "pending" {
+	if order.Status != "pending" {
 		return nil // do nothing if order not pending
 	}
-	if payment.Amount != paymentIntent.Amount {
+	if order.TotalAmount != event.Data.Object.Amount {
 		return fmt.Errorf("payment intent amount does not match expected amount")
 	}
-	if payment.Currency != paymentIntent.Currency {
+	if order.Currency != event.Data.Object.Currency {
 		return fmt.Errorf("payment intent currency does not match expected currency")
-	}
-	if payment.ClientSecret != paymentIntent.ClientSecret {
-		return fmt.Errorf("payment intent client secret does not match expected client secret")
 	}
 	return nil
 }
@@ -223,25 +218,36 @@ func (ps *orderService) paymentIntentCreated(ctx context.Context, event models.S
 // A matching payment entry should be found in the orders table
 func (ps *orderService) paymentIntentSucceeded(ctx context.Context, event models.StripeWebhookEvent) error {
 	paymentIntent := event.Data.Object
-	payment, err := ps.orderRepo.GetPayment(ctx, paymentIntent.ID)
+	order := &models.Order{PaymentIntentID: paymentIntent.ID}
+	err := ps.orderRepo.GetOrder(ctx, order)
 	if err != nil {
 		return err
 	}
-	if payment.Status != "pending" {
+	if order.Status != "pending" {
 		return nil // do nothing if order not pending
 	}
-	if payment.Amount != paymentIntent.Amount {
+	if order.TotalAmount != paymentIntent.Amount {
+		slog.Error("Payment intent amount does not match expected amount", "order_id", order.ID)
 		return fmt.Errorf("payment intent amount does not match expected amount")
 	}
-	if payment.Currency != paymentIntent.Currency {
+	if order.Currency != paymentIntent.Currency {
+		slog.Error("Payment intent currency does not match expected currency", "order_id", order.ID)
 		return fmt.Errorf("payment intent currency does not match expected currency")
 	}
-	if payment.ClientSecret != paymentIntent.ClientSecret {
-		return fmt.Errorf("payment intent client secret does not match expected client secret")
+
+	// mark order as paid
+	order.Status = "paid"
+	if err = ps.orderRepo.UpdateOrder(ctx, order); err != nil {
+		slog.Error("Error updating order", "order_id", order.ID, "error", err)
+		return err
 	}
 
-	// complete order payment flow
-	return ps.orderRepo.CompleteOrderPayment(ctx, payment.OrderID)
+	// clear cart
+	if err = ps.cartRepo.ClearCart(ctx, order.UserID); err != nil {
+		slog.Error("Error clearing cart", "user_id", order.UserID, "error", err)
+		return err
+	}
+	return nil
 }
 
 // unixTimestampToTime converts [timestamp], Unix timestamp string to a time.Time object.
@@ -253,10 +259,56 @@ func unixTimestampToTime(timestamp string) (time.Time, error) {
 	return time.Unix(seconds, 0), nil
 }
 
-// cancelPendingOrders cancels any unpaid orders for the specified [userID].
-func (s *orderService) cancelUnpaidOrders(ctx context.Context, userID string) {
-	// TODO: implement this method
-	// call cancelPaymentIntent
+func (ps *orderService) cancelPaymentIntent(ctx context.Context, paymentIntentID string) error {
+	if paymentIntentID == "" {
+		return errors.New("missing payment intent ID")
+	}
+
+	if ps.environment != "production" {
+		return nil // no-op in development
+	}
+
+	stripeURL := fmt.Sprintf("%s/payment_intents/%s/cancel", ps.stripeBaseURL, paymentIntentID)
+	client := &http.Client{}
+
+	reqStripe, err := http.NewRequestWithContext(ctx, "POST", stripeURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create Stripe cancel request: %w", err)
+	}
+	reqStripe.SetBasicAuth(ps.stripeSecretKey, "")
+	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := client.Do(reqStripe)
+	if err != nil {
+		slog.Error("Error sending cancel request to Stripe API", "url", stripeURL, "error", err)
+		return fmt.Errorf("failed to send Stripe cancel request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Handle response
+	if resp.StatusCode != http.StatusOK {
+		slog.Error("Stripe API returned error on payment intent cancel", "status", resp.StatusCode, "url", stripeURL)
+		return fmt.Errorf("cancel payment intent request failed with status %d", resp.StatusCode)
+	}
+
+	// Parse response
+	var result struct {
+		ID     string `json:"id"`
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		slog.Error("Failed to parse Stripe cancel response", "error", err)
+		return fmt.Errorf("failed to decode Stripe cancel response: %w", err)
+	}
+
+	// Ensure the intent was canceled
+	if result.Status != "canceled" {
+		slog.Error("Payment intent not canceled", "id", result.ID, "status", result.Status)
+		return fmt.Errorf("payment intent %s was not canceled, current status: %s", result.ID, result.Status)
+	}
+
+	slog.Debug("Payment intent canceled successfully", "id", result.ID)
+	return nil
 }
 
 // ComputeSignature computes an API request signature using Stripe's v1 signing method.
@@ -275,8 +327,14 @@ func ComputeSignature(t time.Time, payload []byte, secret string) []byte {
 func (s *orderService) CreateOrder(ctx context.Context) (models.PaymentIntent, error) {
 	var userID = getUserID(ctx)
 
-	// Cancel unpaid orders
-	s.cancelUnpaidOrders(ctx, userID)
+	// Cancel open/unpaid payment intent, if any
+	order := &models.Order{UserID: userID}
+	s.orderRepo.GetOrder(ctx, order)
+	if order.Status == "pending" && order.PaymentIntentID != "" {
+		go func() {
+			s.cancelPaymentIntent(ctx, order.PaymentIntentID)
+		}()
+	}
 
 	// Create order
 	order, err := s.orderRepo.CreateOrder(ctx, userID)
@@ -285,24 +343,36 @@ func (s *orderService) CreateOrder(ctx context.Context) (models.PaymentIntent, e
 		return models.PaymentIntent{}, err
 	}
 
+	slog.Info("Order created",
+		"order_id", order.ID,
+		"user_id", order.UserID,
+		"amount", order.Amount,
+		"tax_amount", order.TaxAmount,
+		"total_amount", order.TotalAmount,
+	)
+
 	// Create payment intent
-	pi := models.PaymentIntent{
-		Amount:   order.TotalAmount + order.TaxAmount,
+	pi := &models.PaymentIntent{
+		Amount:   order.TotalAmount,
 		Currency: "usd",
 	}
-	if err = s.createPaymentIntent(ctx, &pi); err != nil {
+	if err = s.createPaymentIntent(ctx, pi); err != nil {
 		return models.PaymentIntent{}, err
 	}
 
-	// Save payment intent details
-	err = s.orderRepo.CreatePayment(ctx, models.Payment{
-		PaymentIntentID: pi.ID,
-		ClientSecret:    pi.ClientSecret,
-		Amount:          pi.Amount,
-		Currency:        pi.Currency,
-		Status:          "pending",
-		OrderID:         order.ID,
-	})
+	// Update order payment intent ID
+	order.Status = "" // reset status
+	order.PaymentIntentID = pi.ID
+	if err = s.orderRepo.UpdateOrder(ctx, order); err != nil {
+		slog.Error(
+			"Error updating order",
+			"order_id", order.ID,
+			"status", order.Status,
+			"payment_intent_id", pi.ID,
+			"error", err,
+		)
+		return models.PaymentIntent{}, err
+	}
 
-	return pi, err
+	return *pi, err
 }

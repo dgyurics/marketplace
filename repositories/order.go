@@ -4,16 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/dgyurics/marketplace/models"
 )
 
 type OrderRepository interface {
-	CreateOrder(ctx context.Context, userID string) (order *models.Order, err error)
-	CompleteOrderPayment(ctx context.Context, orderID string) error
-	CreatePayment(ctx context.Context, payment models.Payment) error
-	GetPayment(ctx context.Context, paymentIntentID string) (*models.Payment, error)
+	GetOrder(ctx context.Context, order *models.Order) error
+	CreateOrder(ctx context.Context, userID string) (*models.Order, error)
+	UpdateOrder(ctx context.Context, order *models.Order) error
 	CreateWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error
 }
 
@@ -25,18 +25,29 @@ func NewOrderRepository(db *sql.DB) OrderRepository {
 	return &orderRepository{db: db}
 }
 
+// CreateOrder creates a new order from the user's cart
 func (r *orderRepository) CreateOrder(ctx context.Context, userID string) (*models.Order, error) {
-	// 1) Call the stored procedure which creates an order from the cart
-	query := "SELECT create_order_from_cart($1)"
+	// 1) Create or update the order from the user's cart
+	query := "SELECT update_or_create_order_from_cart($1)"
 	var orderID string
 	err := r.db.QueryRowContext(ctx, query, userID).Scan(&orderID)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2) Retrieve the newly created order
+	// 2) Retrieve the new or updated order
 	query = `
-		SELECT id, user_id, total_amount, tax_amount, order_status, created_at, updated_at
+	  SELECT
+			id,
+			user_id,
+			currency,
+			amount,
+			tax_amount,
+			total_amount,
+			status,
+			payment_intent_id,
+			created_at,
+			updated_at
 		FROM orders
 		WHERE id = $1
 	`
@@ -44,69 +55,19 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID string) (*mode
 	err = r.db.QueryRowContext(ctx, query, orderID).Scan(
 		&order.ID,
 		&order.UserID,
-		&order.TotalAmount, // does not include tax
+		&order.Currency,
+		&order.Amount,
 		&order.TaxAmount,
-		&order.OrderStatus,
+		&order.TotalAmount,
+		&order.Status,
+		&order.PaymentIntentID,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve order: %w", err)
 	}
 	return order, nil
-}
-
-func (r *orderRepository) CompleteOrderPayment(ctx context.Context, orderID string) error {
-	// Begin a transaction
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback() // Roll back the transaction in case of an error
-
-	// Mark payment status as paid
-	query := `
-		UPDATE payments
-		SET status = 'paid'
-		WHERE order_id = $1 AND status = 'pending'
-	`
-	if _, err = tx.ExecContext(ctx, query, orderID); err != nil {
-		return err
-	}
-
-	// Mark order as paid
-	query = `
-		UPDATE orders
-		SET order_status = 'paid',
-				updated_at = CURRENT_TIMESTAMP
-		WHERE id = $1 AND order_status = 'created'
-		RETURNING user_id
-	`
-	var userID string
-	if err = tx.QueryRowContext(ctx, query, orderID).Scan(&userID); err != nil {
-		return err
-	}
-
-	// Empty the cart
-	query = `
-		DELETE FROM cart_items
-		WHERE user_id = $1
-	`
-	if _, err = tx.ExecContext(ctx, query, userID); err != nil {
-		return err
-	}
-
-	// Delete the cart
-	query = `
-		DELETE FROM carts
-		WHERE user_id = $1
-	`
-	if _, err = tx.ExecContext(ctx, query, userID); err != nil {
-		return err
-	}
-
-	return tx.Commit()
 }
 
 func (r *orderRepository) CreateWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error {
@@ -132,54 +93,102 @@ func (r *orderRepository) CreateWebhookEvent(ctx context.Context, event models.S
 	return err
 }
 
-func (r *orderRepository) CreatePayment(ctx context.Context, payment models.Payment) error {
+func (r *orderRepository) UpdateOrder(ctx context.Context, order *models.Order) error {
+	if order.ID == "" {
+		return fmt.Errorf("missing order ID")
+	}
+
 	query := `
-		INSERT INTO payments (
-			payment_intent_id,
-			client_secret,
-			amount,
-			currency,
-			status,
-			order_id
-		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		UPDATE orders
+		SET updated_at = CURRENT_TIMESTAMP
 	`
-	_, err := r.db.ExecContext(ctx, query,
-		payment.PaymentIntentID,
-		payment.ClientSecret,
-		payment.Amount,
-		payment.Currency,
-		payment.Status,
-		payment.OrderID,
-	)
+	args := []interface{}{}
+	argCount := 1
+
+	if order.Status != "" {
+		query += fmt.Sprintf(", status = $%d", argCount)
+		args = append(args, order.Status)
+		argCount++
+	}
+
+	if order.PaymentIntentID != "" {
+		query += fmt.Sprintf(", payment_intent_id = $%d", argCount)
+		args = append(args, order.PaymentIntentID)
+		argCount++
+	}
+
+	// Ensure there's something to update
+	if len(args) == 0 {
+		return fmt.Errorf("no fields to update")
+	}
+
+	// Add the WHERE clause
+	query += fmt.Sprintf(" WHERE id = $%d", argCount)
+	args = append(args, order.ID)
+
+	// Execute the query
+	_, err := r.db.ExecContext(ctx, query, args...)
 	return err
 }
 
-func (r *orderRepository) GetPayment(ctx context.Context, paymentIntentID string) (*models.Payment, error) {
-	var payment models.Payment
-	if err := r.db.QueryRowContext(ctx, `
+// GetOrder retrieves an order by ID, user ID, or payment intent ID
+func (r *orderRepository) GetOrder(ctx context.Context, order *models.Order) error {
+	// Validate input
+	if order.ID == "" && order.UserID == "" && order.PaymentIntentID == "" {
+		return fmt.Errorf("at least one of order.ID, order.UserID, or order.PaymentIntentID must be provided")
+	}
+
+	query := `
 		SELECT
-			payment_intent_id,
-			client_secret,
-			amount,
+			id,
+			user_id,
 			currency,
+			amount,
+			tax_amount,
+			total_amount,
 			status,
-			order_id,
+			payment_intent_id,
 			created_at,
 			updated_at
-		FROM payments
-		WHERE payment_intent_id = $1
-	`, paymentIntentID).Scan(
-		&payment.PaymentIntentID,
-		&payment.ClientSecret,
-		&payment.Amount,
-		&payment.Currency,
-		&payment.Status,
-		&payment.OrderID,
-		&payment.CreatedAt,
-		&payment.UpdatedAt,
-	); err != nil {
-		return nil, err
+		FROM orders
+	`
+	args := []interface{}{}
+	var whereClause string
+
+	// Build the WHERE clause based on provided fields
+	if order.ID != "" {
+		whereClause = "WHERE id = $1"
+		args = append(args, order.ID)
+	} else if order.UserID != "" {
+		whereClause = "WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1"
+		args = append(args, order.UserID)
+	} else if order.PaymentIntentID != "" {
+		whereClause = "WHERE payment_intent_id = $1"
+		args = append(args, order.PaymentIntentID)
 	}
-	return &payment, nil
+
+	// Combine query and where clause
+	query += whereClause
+
+	// Execute the query
+	err := r.db.QueryRowContext(ctx, query, args...).Scan(
+		&order.ID,
+		&order.UserID,
+		&order.Currency,
+		&order.Amount,
+		&order.TaxAmount,
+		&order.TotalAmount,
+		&order.Status,
+		&order.PaymentIntentID,
+		&order.CreatedAt,
+		&order.UpdatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("order not found")
+		}
+		return err
+	}
+
+	return nil
 }

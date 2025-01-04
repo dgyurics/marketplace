@@ -12,20 +12,20 @@ import (
 
 type OrderRoutes struct {
 	router
-	paymentService services.OrderService
+	orderService services.OrderService
 }
 
 func NewOrderRoutes(
-	paymentService services.OrderService,
+	orderService services.OrderService,
 	router router) *OrderRoutes {
 	return &OrderRoutes{
-		router:         router,
-		paymentService: paymentService,
+		router:       router,
+		orderService: orderService,
 	}
 }
 
 func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	res, err := h.paymentService.CreateOrder(r.Context())
+	res, err := h.orderService.CreateOrder(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -58,7 +58,7 @@ func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// verify signature
 	signature := r.Header.Get("Stripe-Signature")
-	if err := h.paymentService.VerifyWebhookEventSignature(body, signature); err != nil {
+	if err := h.orderService.VerifyWebhookEventSignature(body, signature); err != nil {
 		http.Error(w, "Invalid request signature", http.StatusBadRequest)
 		return
 	}
@@ -70,7 +70,7 @@ func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// save and process event
-	if err := h.paymentService.ProcessWebhookEvent(r.Context(), event); err != nil {
+	if err := h.orderService.ProcessWebhookEvent(r.Context(), event); err != nil {
 		slog.Error("Error processing webhook event", "error", err)
 	}
 
