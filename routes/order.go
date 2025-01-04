@@ -41,11 +41,8 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
-	const MaxBodyBytes = int64(65536) // limit request body to 64KB // TODO do this globally
-	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		slog.Error("Error reading request body", "error", err)
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
