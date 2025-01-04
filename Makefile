@@ -79,3 +79,12 @@ confirm-payment-intent:
 		exit 1; \
 	fi
 	stripe payment_intents confirm $(PI)
+
+# make refund-payment-intent PI=pi_xxxx
+refund-payment-intent:
+	@echo "Refunding payment intent $(PI)..."
+	@if [ -z "$(PI)" ]; then \
+		echo "Error: PI (Payment Intent) is not set"; \
+		exit 1; \
+	fi
+	stripe refunds create --payment_intent $(PI)
