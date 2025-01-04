@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"testing"
 
+	"github.com/dgyurics/marketplace/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,8 +63,8 @@ func TestOrderRepository_CreateOrder(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, order)
 	assert.Equal(t, user.ID, order.UserID)
-	assert.Equal(t, "created", order.OrderStatus)
-	assert.EqualValues(t, 2*1000, order.TotalAmount)
+	assert.Equal(t, models.OrderPending, order.Status)
+	assert.EqualValues(t, 2*1000, order.Amount)
 
 	// Cleanup
 	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
@@ -75,7 +76,9 @@ func TestOrderRepository_CreateOrder(t *testing.T) {
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
 }
 
-func TestOrderRepository_CompleteOrderPayment(t *testing.T) {
+func TestOrderRepository_GetOrder(t *testing.T) {}
+
+func TestOrderRepository_UpdateOrder(t *testing.T) {
 	ctx := context.Background()
 
 	orderRepo := NewOrderRepository(dbPool)
@@ -93,20 +96,15 @@ func TestOrderRepository_CompleteOrderPayment(t *testing.T) {
 	assert.NoError(t, err, "CreateOrder should not return an error")
 
 	// 4. Mark the order as paid
-	err = orderRepo.CompleteOrderPayment(ctx, order.ID)
-	assert.NoError(t, err, "MarkOrderAsPaid should not return an error")
+	order.Status = models.OrderPaid
+	err = orderRepo.UpdateOrder(ctx, order)
+	assert.NoError(t, err, "UpdateOrder should not return an error")
 
 	// 5. Validate that the order's status was updated to 'paid'
-	var status string
-	err = dbPool.QueryRowContext(ctx, `SELECT order_status FROM orders WHERE id = $1`, order.ID).Scan(&status)
+	var status models.OrderStatus
+	err = dbPool.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1`, order.ID).Scan(&status)
 	assert.NoError(t, err, "Querying the order status should not return an error")
-	assert.Equal(t, "paid", status, "The order status should be updated to 'paid'")
-
-	// 6. Verify the user's cart was cleared
-	var cartItemCount int
-	err = dbPool.QueryRowContext(ctx, `SELECT COUNT(*) FROM cart_items WHERE user_id = $1`, user.ID).Scan(&cartItemCount)
-	assert.NoError(t, err, "Querying the cart items count should not return an error")
-	assert.Equal(t, 0, cartItemCount, "The user's cart should be cleared after marking the order as paid")
+	assert.Equal(t, models.OrderPaid, status, "The order status should be updated to 'paid'")
 
 	// 7. Cleanup
 	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)

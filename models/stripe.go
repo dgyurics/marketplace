@@ -1,5 +1,14 @@
 package models
 
+type PaymentIntent struct {
+	ID           string `json:"id"`
+	Amount       int64  `json:"amount"`
+	Currency     string `json:"currency"`
+	Status       string `json:"status"`
+	ClientSecret string `json:"client_secret"`
+	Error        string `json:"error,omitempty"`
+}
+
 type StripeWebhookEvent struct {
 	ID       string             `json:"id"`
 	Type     string             `json:"type"`

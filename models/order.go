@@ -2,14 +2,29 @@ package models
 
 import "time"
 
+type OrderStatus string
+
+const (
+	OrderPending    OrderStatus = "pending"
+	OrderPaid       OrderStatus = "paid"
+	OrderRefunded   OrderStatus = "refunded"
+	OrderFullfilled OrderStatus = "fullfilled"
+	OrderShipped    OrderStatus = "shipped"
+	OrderDelivered  OrderStatus = "delivered"
+	OrderCanceled   OrderStatus = "canceled"
+)
+
 type Order struct {
-	ID          string    `json:"id"`
-	UserID      string    `json:"user_id"`
-	TotalAmount int64     `json:"total_amount"`
-	TaxAmount   int64     `json:"tax_amount"`
-	OrderStatus string    `json:"order_status"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID              string      `json:"id"`
+	UserID          string      `json:"user_id"`
+	Currency        string      `json:"currency"`
+	Amount          int64       `json:"amount"`
+	TaxAmount       int64       `json:"tax_amount"`
+	TotalAmount     int64       `json:"total_amount"`
+	Status          OrderStatus `json:"status"`
+	PaymentIntentID string      `json:"payment_intent_id"` // Stripe PaymentIntent ID
+	CreatedAt       time.Time   `json:"created_at"`
+	UpdatedAt       time.Time   `json:"updated_at"`
 }
 
 type Environment string
