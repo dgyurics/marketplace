@@ -27,6 +27,7 @@ const (
 
 type OrderService interface {
 	CreateOrder(ctx context.Context) (models.PaymentIntent, error)
+	GetOrders(ctx context.Context) ([]models.Order, error)
 	VerifyWebhookEventSignature(payload []byte, sigHeader string) error
 	ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error
 }
@@ -53,6 +54,18 @@ func NewOrderService(
 		stripeSecretKey:            config.StripeSecretKey,
 		stripeWebhookSigningSecret: config.StripeWebhookSigningSecret,
 	}
+}
+
+func (ps *orderService) GetOrders(ctx context.Context) ([]models.Order, error) {
+	var userID = getUserID(ctx)
+	orders, err := ps.orderRepo.GetOrders(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if err = ps.orderRepo.PopulateOrderItems(ctx, &orders); err != nil {
+		return nil, err
+	}
+	return orders, nil
 }
 
 // Call Stripe API to create a payment intent

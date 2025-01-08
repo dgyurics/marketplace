@@ -75,6 +75,9 @@ CREATE TABLE IF NOT EXISTS images (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
+CREATE UNIQUE INDEX idx_unique_thumbnail_per_product
+ON images (product_id)
+WHERE image_type = 'thumbnail';
 
 CREATE TABLE IF NOT EXISTS inventory (
     product_id BIGINT PRIMARY KEY,
@@ -181,6 +184,20 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
+
+-- View simplifies populating order items array when fetching orders
+CREATE OR REPLACE VIEW v_order_items AS
+SELECT
+    oi.order_id,
+    oi.product_id,
+    COALESCE(p.description, '') AS description,
+    COALESCE(img.image_url, '') AS thumbnail,
+    oi.quantity,
+    oi.unit_price
+FROM order_items oi
+JOIN products p ON oi.product_id = p.id
+LEFT JOIN images img ON img.product_id = p.id
+    AND img.image_type = 'thumbnail';
 
 -- Used for Stripe webhook events
 CREATE TABLE webhook_events (

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/dgyurics/marketplace/models"
@@ -12,6 +13,8 @@ import (
 
 type OrderRepository interface {
 	GetOrder(ctx context.Context, order *models.Order) error
+	GetOrders(ctx context.Context, userID string) ([]models.Order, error)
+	PopulateOrderItems(ctx context.Context, orders *[]models.Order) error
 	CreateOrder(ctx context.Context, userID string) (*models.Order, error)
 	UpdateOrder(ctx context.Context, order *models.Order) error
 	CreateWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error
@@ -70,6 +73,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID string) (*mode
 	return order, nil
 }
 
+// CreateWebhookEvent saves a Stripe webhook event to the database
 func (r *orderRepository) CreateWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error {
 	query := `
 		INSERT INTO webhook_events (
@@ -93,6 +97,7 @@ func (r *orderRepository) CreateWebhookEvent(ctx context.Context, event models.S
 	return err
 }
 
+// UpdateOrder updates an order with new status and/or payment intent ID
 func (r *orderRepository) UpdateOrder(ctx context.Context, order *models.Order) error {
 	if order.ID == "" {
 		return fmt.Errorf("missing order ID")
@@ -129,6 +134,120 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *models.Order) 
 	// Execute the query
 	_, err := r.db.ExecContext(ctx, query, args...)
 	return err
+}
+
+// GetOrders retrieves all orders for a user
+func (r *orderRepository) GetOrders(ctx context.Context, userID string) ([]models.Order, error) {
+	query := `
+		SELECT
+			id,
+			user_id,
+			currency,
+			amount,
+			tax_amount,
+			total_amount,
+			status,
+			payment_intent_id,
+			created_at,
+			updated_at
+		FROM orders
+		WHERE user_id = $1 AND status != 'pending'
+		ORDER BY created_at DESC
+	`
+	rows, err := r.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := []models.Order{}
+	for rows.Next() {
+		order := models.Order{}
+		err := rows.Scan(
+			&order.ID,
+			&order.UserID,
+			&order.Currency,
+			&order.Amount,
+			&order.TaxAmount,
+			&order.TotalAmount,
+			&order.Status,
+			&order.PaymentIntentID,
+			&order.CreatedAt,
+			&order.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, order)
+	}
+	return result, nil
+}
+
+// PopulateOrderItems populates the order items for a list of orders
+func (r *orderRepository) PopulateOrderItems(ctx context.Context, orders *[]models.Order) error {
+	if len(*orders) == 0 {
+		return nil
+	}
+
+	// Collect order IDs
+	orderIDs := make([]interface{}, len(*orders))
+	for i, order := range *orders {
+		orderIDs[i] = order.ID
+	}
+
+	// Dynamically build the query with placeholders
+	placeholders := make([]string, len(orderIDs))
+	for i := range placeholders {
+		placeholders[i] = fmt.Sprintf("$%d", i+1) // PostgreSQL uses $1, $2, ...
+	}
+
+	// Query to fetch order items
+	query := fmt.Sprintf(`
+		SELECT
+			order_id,
+			product_id,
+			description,
+			thumbnail,
+			quantity,
+			unit_price
+		FROM v_order_items
+		WHERE order_id IN (%s)
+	`, strings.Join(placeholders, ","))
+
+	// Query to fetch order items
+	rows, err := r.db.QueryContext(ctx, query, orderIDs...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	// Map to store items grouped by order ID
+	itemMap := make(map[string][]models.OrderItem)
+
+	// Process query results
+	for rows.Next() {
+		var orderID string
+		item := models.OrderItem{}
+		if err := rows.Scan(
+			&orderID,
+			&item.ProductID,
+			&item.Description,
+			&item.Thumbnail,
+			&item.Quantity,
+			&item.UnitPrice,
+		); err != nil {
+			return err
+		}
+		itemMap[orderID] = append(itemMap[orderID], item)
+	}
+
+	// Populate the orders with their items
+	for i, order := range *orders {
+		if items, ok := itemMap[order.ID]; ok {
+			(*orders)[i].Items = items
+		}
+	}
+
+	return nil
 }
 
 // GetOrder retrieves an order by ID, user ID, or payment intent ID

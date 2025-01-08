@@ -74,7 +74,19 @@ func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
+	orders, err := h.orderService.GetOrders(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(orders)
+}
+
 func (h *OrderRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/orders/events", h.StripeWebhook).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secure(h.CreateOrder)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/orders", h.secure(h.GetOrders)).Methods(http.MethodGet)
 }

@@ -17,11 +17,6 @@ type MockOrderService struct {
 	mock.Mock
 }
 
-func (m *MockOrderService) CancelPaymentIntent(ctx context.Context, pi *models.PaymentIntent) error {
-	args := m.Called(ctx, pi)
-	return args.Error(0)
-}
-
 func (m *MockOrderService) VerifyWebhookEventSignature(payload []byte, sigHeader string) error {
 	args := m.Called(payload, sigHeader)
 	return args.Error(0)
@@ -35,6 +30,11 @@ func (m *MockOrderService) ProcessWebhookEvent(ctx context.Context, event models
 func (m *MockOrderService) CreateOrder(ctx context.Context) (models.PaymentIntent, error) {
 	args := m.Called(ctx)
 	return args.Get(0).(models.PaymentIntent), args.Error(1)
+}
+
+func (m *MockOrderService) GetOrders(ctx context.Context) ([]models.Order, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]models.Order), args.Error(1)
 }
 
 func TestCreateOrder(t *testing.T) {
