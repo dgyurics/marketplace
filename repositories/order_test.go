@@ -9,6 +9,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Helper function to insert a test address for a user
+func createTestAddress(t *testing.T, db *sql.DB, userID string) string {
+	ctx := context.Background()
+	addressID := genID()
+
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO addresses (id, user_id, address_line1, city, state_code, postal_code)
+		VALUES ($1, $2, '123 Test St', 'Test City', 'CA', '12345')`,
+		addressID, userID)
+	assert.NoError(t, err)
+
+	return addressID
+}
+
 // Helper function to insert a product and inventory
 func createTestProductAndInventory(t *testing.T, db *sql.DB, quantity int) string {
 	ctx := context.Background()
@@ -55,16 +69,24 @@ func TestOrderRepository_CreateOrder(t *testing.T) {
 	orderRepo := NewOrderRepository(dbPool)
 	userRepo := NewUserRepository(dbPool)
 
+	// Create a test user
 	user := createUniqueTestUser(t, userRepo)
+
+	// Insert a test address for the user
+	AddressID := createTestAddress(t, dbPool, user.ID)
+
+	// Insert a product with inventory and add it to the cart
 	productID := createTestProductAndInventory(t, dbPool, 10)
 	addToCart(t, dbPool, user.ID, productID, 2)
 
-	order, err := orderRepo.CreateOrder(ctx, user.ID)
-	assert.NoError(t, err)
-	assert.NotNil(t, order)
-	assert.Equal(t, user.ID, order.UserID)
-	assert.Equal(t, models.OrderPending, order.Status)
-	assert.EqualValues(t, 2*1000, order.Amount)
+	// Create the order
+	order, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
+	assert.NoError(t, err, "CreateOrder should not return an error")
+	assert.NotNil(t, order, "Order should not be nil")
+	assert.Equal(t, user.ID, order.UserID, "Order UserID should match")
+	assert.Equal(t, AddressID, order.AddressID, "Order AddressID should match")
+	assert.Equal(t, models.OrderPending, order.Status, "Order status should be 'pending'")
+	assert.EqualValues(t, 2*1000, order.Amount, "Order amount should match expected value")
 
 	// Cleanup
 	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
@@ -73,6 +95,7 @@ func TestOrderRepository_CreateOrder(t *testing.T) {
 	dbPool.ExecContext(ctx, `DELETE FROM carts WHERE user_id = $1`, user.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM inventory WHERE product_id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, productID)
+	dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, AddressID)
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
 }
 
@@ -85,46 +108,53 @@ func TestOrderRepository_GetOrder(t *testing.T) {
 	// 1. Create a unique test user
 	user := createUniqueTestUser(t, userRepo)
 
-	// 2. Insert a product with inventory and add it to the user's cart
+	// 2. Insert a test address for the user
+	AddressID := createTestAddress(t, dbPool, user.ID)
+
+	// 3. Insert a product with inventory and add it to the user's cart
 	productID := createTestProductAndInventory(t, dbPool, 10)
 	addToCart(t, dbPool, user.ID, productID, 2)
 
-	// 3. Create an order for the user
-	order, err := orderRepo.CreateOrder(ctx, user.ID)
+	// 4. Create an order for the user
+	order, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
 	assert.NoError(t, err, "CreateOrder should not return an error")
 
-	// 4. Mock the PaymentIntentID and update the order
+	// 5. Mock the PaymentIntentID and update the order
 	mockPaymentIntentID := "pi_mocked_payment_intent_id"
 	order.PaymentIntentID = mockPaymentIntentID
 	err = orderRepo.UpdateOrder(ctx, order)
 	assert.NoError(t, err, "UpdateOrder should not return an error")
 
-	// 5. Test retrieving the order by ID
+	// 6. Test retrieving the order by ID
 	retrievedOrder := &models.Order{ID: order.ID}
 	err = orderRepo.GetOrder(ctx, retrievedOrder)
 	assert.NoError(t, err, "GetOrder by ID should not return an error")
 	assert.Equal(t, order.ID, retrievedOrder.ID, "The retrieved order ID should match")
 	assert.Equal(t, order.UserID, retrievedOrder.UserID, "The retrieved order UserID should match")
+	assert.Equal(t, order.AddressID, retrievedOrder.AddressID, "The retrieved order AddressID should match")
 
-	// 6. Test retrieving the order by UserID (latest order)
+	// 7. Test retrieving the order by UserID (latest order)
 	retrievedOrder = &models.Order{UserID: user.ID}
 	err = orderRepo.GetOrder(ctx, retrievedOrder)
 	assert.NoError(t, err, "GetOrder by UserID should not return an error")
 	assert.Equal(t, order.ID, retrievedOrder.ID, "The latest order ID should match the created order")
+	assert.Equal(t, order.AddressID, retrievedOrder.AddressID, "The retrieved order AddressID should match")
 
-	// 7. Test retrieving the order by PaymentIntentID
+	// 8. Test retrieving the order by PaymentIntentID
 	retrievedOrder = &models.Order{PaymentIntentID: mockPaymentIntentID}
 	err = orderRepo.GetOrder(ctx, retrievedOrder)
 	assert.NoError(t, err, "GetOrder by PaymentIntentID should not return an error")
 	assert.Equal(t, order.ID, retrievedOrder.ID, "The retrieved order ID should match the created order's ID")
+	assert.Equal(t, order.AddressID, retrievedOrder.AddressID, "The retrieved order AddressID should match")
 
-	// 8. Cleanup
+	// 9. Cleanup
 	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM carts WHERE user_id = $1`, user.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM inventory WHERE product_id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, productID)
+	dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, AddressID)
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
 }
 
@@ -150,6 +180,12 @@ func TestOrderRepository_GetOrder_MissingOrder(t *testing.T) {
 	err = orderRepo.GetOrder(ctx, missingOrder)
 	assert.Error(t, err, "GetOrder by PaymentIntentID should return an error for a nonexistent PaymentIntentID")
 	assert.Contains(t, err.Error(), "order not found", "The error message should indicate that the order was not found")
+
+	// Test case 4: No Identifiers Provided
+	missingOrder = &models.Order{} // No ID, UserID, or PaymentIntentID provided
+	err = orderRepo.GetOrder(ctx, missingOrder)
+	assert.Error(t, err, "GetOrder should return an error if no identifiers are provided")
+	assert.Contains(t, err.Error(), "at least one of order.ID, order.UserID, or order.PaymentIntentID must be provided", "The error message should indicate missing identifiers")
 }
 
 func TestOrderRepository_GetOrders(t *testing.T) {
@@ -161,15 +197,18 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 	// 1. Create a unique test user
 	user := createUniqueTestUser(t, userRepo)
 
-	// 2. Insert products with inventory and add them to the user's cart
+	// 2. Insert a test address for the user
+	AddressID := createTestAddress(t, dbPool, user.ID)
+
+	// 3. Insert products with inventory and add them to the user's cart
 	productID1 := createTestProductAndInventory(t, dbPool, 10)
 	addToCart(t, dbPool, user.ID, productID1, 2)
 
 	productID2 := createTestProductAndInventory(t, dbPool, 15)
 	addToCart(t, dbPool, user.ID, productID2, 3)
 
-	// 3. Create multiple orders for the user
-	order1, err := orderRepo.CreateOrder(ctx, user.ID)
+	// 4. Create multiple orders for the user
+	order1, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
 	assert.NoError(t, err, "CreateOrder should not return an error")
 	order1.Status = models.OrderPaid
 	err = orderRepo.UpdateOrder(ctx, order1)
@@ -177,38 +216,43 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 
 	// Add another order
 	addToCart(t, dbPool, user.ID, productID1, 1)
-	order2, err := orderRepo.CreateOrder(ctx, user.ID)
+	order2, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
 	assert.NoError(t, err, "CreateOrder should not return an error")
 	order2.Status = models.OrderShipped
 	err = orderRepo.UpdateOrder(ctx, order2)
 	assert.NoError(t, err, "UpdateOrder for order2 should not return an error")
 
-	// 4. Retrieve all orders for the user
+	// 5. Retrieve all orders for the user
 	orders, err := orderRepo.GetOrders(ctx, user.ID)
 	assert.NoError(t, err, "GetOrders should not return an error")
 	assert.Len(t, orders, 2, "GetOrders should return two orders")
 
-	// Dynamically verify the order
+	// 6. Dynamically validate the retrieved orders
 	if orders[0].ID == order2.ID {
 		// Validate order2
 		assert.Equal(t, models.OrderShipped, orders[0].Status, "The first order's status should be 'shipped'")
+		assert.Equal(t, AddressID, orders[0].AddressID, "The first order's AddressID should match")
 		assert.Equal(t, order1.ID, orders[1].ID, "The second order ID should match")
 		assert.Equal(t, models.OrderPaid, orders[1].Status, "The second order's status should be 'paid'")
+		assert.Equal(t, AddressID, orders[1].AddressID, "The second order's AddressID should match")
 	} else {
 		// Validate order1
 		assert.Equal(t, order1.ID, orders[0].ID, "The first order ID should match")
 		assert.Equal(t, models.OrderPaid, orders[0].Status, "The first order's status should be 'paid'")
+		assert.Equal(t, AddressID, orders[0].AddressID, "The first order's AddressID should match")
 		assert.Equal(t, order2.ID, orders[1].ID, "The second order ID should match")
 		assert.Equal(t, models.OrderShipped, orders[1].Status, "The second order's status should be 'shipped'")
+		assert.Equal(t, AddressID, orders[1].AddressID, "The second order's AddressID should match")
 	}
 
-	// 5. Cleanup
+	// 7. Cleanup
 	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id IN ($1, $2)`, order1.ID, order2.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id IN ($1, $2)`, order1.ID, order2.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM carts WHERE user_id = $1`, user.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM inventory WHERE product_id IN ($1, $2)`, productID1, productID2)
 	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id IN ($1, $2)`, productID1, productID2)
+	dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, AddressID)
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
 }
 
@@ -227,42 +271,5 @@ func TestOrderRepository_GetOrders_Empty(t *testing.T) {
 	assert.Len(t, orders, 0, "GetOrders should return an empty slice for a user with no orders")
 
 	// 3. Cleanup
-	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
-}
-
-func TestOrderRepository_UpdateOrder(t *testing.T) {
-	ctx := context.Background()
-
-	orderRepo := NewOrderRepository(dbPool)
-	userRepo := NewUserRepository(dbPool)
-
-	// 1. Create a unique test user
-	user := createUniqueTestUser(t, userRepo)
-
-	// 2. Insert a product with inventory and add it to the user's cart
-	productID := createTestProductAndInventory(t, dbPool, 10)
-	addToCart(t, dbPool, user.ID, productID, 2)
-
-	// 3. Create an order for the user
-	order, err := orderRepo.CreateOrder(ctx, user.ID)
-	assert.NoError(t, err, "CreateOrder should not return an error")
-
-	// 4. Mark the order as paid
-	order.Status = models.OrderPaid
-	err = orderRepo.UpdateOrder(ctx, order)
-	assert.NoError(t, err, "UpdateOrder should not return an error")
-
-	// 5. Validate that the order's status was updated to 'paid'
-	var status models.OrderStatus
-	err = dbPool.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1`, order.ID).Scan(&status)
-	assert.NoError(t, err, "Querying the order status should not return an error")
-	assert.Equal(t, models.OrderPaid, status, "The order status should be updated to 'paid'")
-
-	// 7. Cleanup
-	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, order.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM carts WHERE user_id = $1`, user.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM inventory WHERE product_id = $1`, productID)
-	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
 }

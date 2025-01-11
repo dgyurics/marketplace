@@ -136,17 +136,21 @@ CREATE TABLE IF NOT EXISTS cart_items (
 CREATE TABLE IF NOT EXISTS addresses (
     id BIGINT PRIMARY KEY DEFAULT gen_id(),
     user_id BIGINT NOT NULL,
-    recipient_name VARCHAR(255) NOT NULL,
+    addressee VARCHAR(255),
     address_line1 VARCHAR(255) NOT NULL,
     address_line2 VARCHAR(255),
     city VARCHAR(255) NOT NULL,
     state_code CHAR(2) NOT NULL,
     postal_code VARCHAR(20) NOT NULL,
     phone VARCHAR(20),
+    is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+CREATE INDEX idx_addresses_is_deleted_false
+ON addresses (id)
+WHERE is_deleted = FALSE;
 
 CREATE TYPE order_status_enum AS ENUM (
     'pending',
@@ -160,7 +164,7 @@ CREATE TYPE order_status_enum AS ENUM (
 CREATE TABLE IF NOT EXISTS orders (
     id BIGINT PRIMARY KEY DEFAULT gen_id(),
     user_id BIGINT,
-    shipping_address_id BIGINT,
+    address_id BIGINT,
     currency VARCHAR(10) DEFAULT 'usd',
     amount BIGINT NOT NULL DEFAULT 0,
     tax_amount BIGINT NOT NULL DEFAULT 0,
@@ -169,8 +173,8 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_intent_id VARCHAR(255) NOT NULL DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (shipping_address_id) REFERENCES addresses(id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
+    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE RESTRICT
 );
 
 -- when checking out, create an order from the user's cart
@@ -181,8 +185,8 @@ CREATE TABLE IF NOT EXISTS order_items (
     quantity INT NOT NULL,
     unit_price BIGINT NOT NULL,
     PRIMARY KEY (order_id, product_id),
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE RESTRICT,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
 );
 
 -- View simplifies populating order items array when fetching orders
@@ -209,28 +213,39 @@ CREATE TABLE webhook_events (
 );
 REVOKE UPDATE, DELETE ON webhook_events FROM PUBLIC; -- make webhook_events insert only
 
-CREATE OR REPLACE FUNCTION update_or_create_order_from_cart(in_user_id BIGINT)
+CREATE OR REPLACE FUNCTION update_or_create_order_from_cart(
+    in_user_id BIGINT,
+    in_address_id BIGINT
+)
 RETURNS BIGINT -- Return order ID
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    cart_item_count INT;
     existing_order_id BIGINT;
     cart_rec RECORD;
     existing_item_quantity INT;
 BEGIN
     -- 1) Check if user's cart is empty
-    SELECT COUNT(*)
-    INTO cart_item_count
-    FROM cart_items
-    WHERE user_id = in_user_id;
-
-    IF cart_item_count = 0 THEN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM cart_items
+        WHERE user_id = in_user_id
+    ) THEN
         RAISE NOTICE 'User % has an empty cart. No order created or updated.', in_user_id;
         RETURN NULL;
     END IF;
 
-    -- 2) Check if user has an existing open order
+    -- 2) Check if the address exists for the user
+    IF NOT EXISTS (
+        SELECT 1
+        FROM addresses
+        WHERE id = in_address_id
+        AND user_id = in_user_id
+    ) THEN
+        RAISE EXCEPTION 'Address % not found for user %', in_address_id, in_user_id;
+    END IF;
+
+    -- 3) Check if user has an existing open order
     SELECT id
     INTO existing_order_id
     FROM orders
@@ -238,8 +253,13 @@ BEGIN
     AND status = 'pending'
     LIMIT 1;
 
-    -- 3) If an existing order exists, update it
+    -- 4) If an existing order exists, update it
     IF existing_order_id IS NOT NULL THEN
+        -- Update the address_id for the existing order
+        UPDATE orders
+        SET address_id = in_address_id
+        WHERE id = existing_order_id;
+
         FOR cart_rec IN
             SELECT product_id, quantity, unit_price
             FROM cart_items
@@ -289,9 +309,9 @@ BEGIN
             END;
         END LOOP;
     ELSE
-        -- 4) If no existing order, create a new one
-        INSERT INTO orders (user_id, status)
-        VALUES (in_user_id, 'pending')
+        -- 5) If no existing order, create a new one
+        INSERT INTO orders (user_id, status, address_id)
+        VALUES (in_user_id, 'pending', in_address_id)
         RETURNING id INTO existing_order_id;
 
         FOR cart_rec IN
@@ -329,7 +349,7 @@ BEGIN
         END LOOP;
     END IF;
 
-    -- Update the order amount
+    -- 6) Update the order amount
     UPDATE orders
     SET amount = (
             SELECT COALESCE(SUM(quantity * unit_price), 0)
@@ -338,7 +358,7 @@ BEGIN
         )
     WHERE id = existing_order_id;
 
-    -- Update the total amount
+    -- 7) Update the total amount
     UPDATE orders
     SET total_amount = amount + tax_amount
     WHERE id = existing_order_id;

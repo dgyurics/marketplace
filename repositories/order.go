@@ -15,7 +15,7 @@ type OrderRepository interface {
 	GetOrder(ctx context.Context, order *models.Order) error
 	GetOrders(ctx context.Context, userID string) ([]models.Order, error)
 	PopulateOrderItems(ctx context.Context, orders *[]models.Order) error
-	CreateOrder(ctx context.Context, userID string) (*models.Order, error)
+	CreateOrder(ctx context.Context, userID, addressID string) (*models.Order, error)
 	UpdateOrder(ctx context.Context, order *models.Order) error
 	CreateWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error
 }
@@ -29,11 +29,11 @@ func NewOrderRepository(db *sql.DB) OrderRepository {
 }
 
 // CreateOrder creates a new order from the user's cart
-func (r *orderRepository) CreateOrder(ctx context.Context, userID string) (*models.Order, error) {
+func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID string) (*models.Order, error) {
 	// 1) Create or update the order from the user's cart
-	query := "SELECT update_or_create_order_from_cart($1)"
+	query := "SELECT update_or_create_order_from_cart($1, $2)"
 	var orderID string
-	err := r.db.QueryRowContext(ctx, query, userID).Scan(&orderID)
+	err := r.db.QueryRowContext(ctx, query, userID, addressID).Scan(&orderID)
 	if err != nil {
 		return nil, err
 	}
@@ -49,6 +49,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID string) (*mode
 			total_amount,
 			status,
 			payment_intent_id,
+			address_id,
 			created_at,
 			updated_at
 		FROM orders
@@ -64,6 +65,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID string) (*mode
 		&order.TotalAmount,
 		&order.Status,
 		&order.PaymentIntentID,
+		&order.AddressID,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
@@ -148,6 +150,7 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string) ([]model
 			total_amount,
 			status,
 			payment_intent_id,
+			address_id,
 			created_at,
 			updated_at
 		FROM orders
@@ -171,6 +174,7 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string) ([]model
 			&order.TotalAmount,
 			&order.Status,
 			&order.PaymentIntentID,
+			&order.AddressID,
 			&order.CreatedAt,
 			&order.UpdatedAt,
 		)
@@ -267,6 +271,7 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *models.Order) err
 			total_amount,
 			status,
 			payment_intent_id,
+			address_id,
 			created_at,
 			updated_at
 		FROM orders
@@ -299,6 +304,7 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *models.Order) err
 		&order.TotalAmount,
 		&order.Status,
 		&order.PaymentIntentID,
+		&order.AddressID,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)

@@ -25,7 +25,23 @@ func NewOrderRoutes(
 }
 
 func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	res, err := h.orderService.CreateOrder(r.Context())
+	// Parse the JSON body to extract addressID
+	var requestBody struct {
+		AddressID string `json:"address_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate that the addressID is provided
+	if requestBody.AddressID == "" {
+		http.Error(w, "Address ID is required", http.StatusBadRequest)
+		return
+	}
+	// Create the order
+	res, err := h.orderService.CreateOrder(r.Context(), requestBody.AddressID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

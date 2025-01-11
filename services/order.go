@@ -26,7 +26,7 @@ const (
 )
 
 type OrderService interface {
-	CreateOrder(ctx context.Context) (models.PaymentIntent, error)
+	CreateOrder(ctx context.Context, addressID string) (models.PaymentIntent, error)
 	GetOrders(ctx context.Context) ([]models.Order, error)
 	VerifyWebhookEventSignature(payload []byte, sigHeader string) error
 	ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error
@@ -337,7 +337,7 @@ func ComputeSignature(t time.Time, payload []byte, secret string) []byte {
 	return mac.Sum(nil)
 }
 
-func (s *orderService) CreateOrder(ctx context.Context) (models.PaymentIntent, error) {
+func (s *orderService) CreateOrder(ctx context.Context, addressID string) (models.PaymentIntent, error) {
 	var userID = getUserID(ctx)
 
 	// Cancel open/unpaid payment intent, if any
@@ -350,7 +350,7 @@ func (s *orderService) CreateOrder(ctx context.Context) (models.PaymentIntent, e
 	}
 
 	// Create order
-	order, err := s.orderRepo.CreateOrder(ctx, userID)
+	order, err := s.orderRepo.CreateOrder(ctx, userID, addressID)
 	if err != nil {
 		slog.Error("Error creating order", "user_id", userID, "error", err)
 		return models.PaymentIntent{}, err

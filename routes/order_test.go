@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -27,8 +28,8 @@ func (m *MockOrderService) ProcessWebhookEvent(ctx context.Context, event models
 	return args.Error(0)
 }
 
-func (m *MockOrderService) CreateOrder(ctx context.Context) (models.PaymentIntent, error) {
-	args := m.Called(ctx)
+func (m *MockOrderService) CreateOrder(ctx context.Context, addressID string) (models.PaymentIntent, error) {
+	args := m.Called(ctx, addressID)
 	return args.Get(0).(models.PaymentIntent), args.Error(1)
 }
 
@@ -48,16 +49,24 @@ func TestCreateOrder(t *testing.T) {
 	}
 
 	// Prepare mock data for the request and expected response
+	expectedAddressID := "address123"
 	expectedResponse := models.PaymentIntent{
 		Status: "pending",
 	}
 
 	// Mock the CreateOrder method to return a successful PaymentIntentResponse
-	mockOrderService.On("CreateOrder", mock.Anything).Return(expectedResponse, nil)
+	mockOrderService.On("CreateOrder", mock.Anything, expectedAddressID).Return(expectedResponse, nil)
 
-	// Create a new HTTP POST request for CreateOrder
-	req, err := http.NewRequest(http.MethodPost, "/orders", nil)
+	// Create a new HTTP POST request with a JSON body containing the addressID
+	requestBody := map[string]string{
+		"address_id": expectedAddressID,
+	}
+	body, err := json.Marshal(requestBody)
 	require.NoError(t, err)
+
+	req, err := http.NewRequest(http.MethodPost, "/orders", bytes.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
 
 	// Set up a response recorder to capture the response
 	rr := httptest.NewRecorder()

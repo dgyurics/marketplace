@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/gorilla/mux"
 )
 
 type UserRoutes struct {
@@ -163,10 +164,52 @@ func (h *UserRoutes) Logout(w http.ResponseWriter, r *http.Request) {
 	// add option to remove all refresh tokens
 }
 
+func (h *UserRoutes) GetAddresses(w http.ResponseWriter, r *http.Request) {
+	addresses, err := h.userService.GetAddresses(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(addresses)
+}
+
+func (h *UserRoutes) CreateAddress(w http.ResponseWriter, r *http.Request) {
+	var address models.Address
+	if err := json.NewDecoder(r.Body).Decode(&address); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.userService.CreateAddress(r.Context(), &address); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(address)
+}
+
+func (h *UserRoutes) RemoveAddress(w http.ResponseWriter, r *http.Request) {
+	addressID := mux.Vars(r)["id"]
+	if err := h.userService.RemoveAddress(r.Context(), addressID); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/users/register", h.Register).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
-	h.muxRouter.HandleFunc("/users/refresh-token", h.RefreshToken).Methods("POST")
+	h.muxRouter.HandleFunc("/users/refresh-token", h.RefreshToken).Methods(http.MethodPost)
+	h.muxRouter.Handle("/users/addresses", h.secure(h.GetAddresses)).Methods(http.MethodGet)
+	h.muxRouter.Handle("/users/addresses", h.secure(h.CreateAddress)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/users/addresses/{id}", h.secure(h.RemoveAddress)).Methods(http.MethodDelete)
+
 	// router.HandleFunc("/users/logout", Logout).Methods("POST")
 	// router.HandleFunc("/users/profile", GetProfile).Methods("GET")
 	// router.HandleFunc("/users/update-profile", UpdateProfile).Methods("POST")
