@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/stretchr/testify/assert"
@@ -271,5 +272,107 @@ func TestOrderRepository_GetOrders_Empty(t *testing.T) {
 	assert.Len(t, orders, 0, "GetOrders should return an empty slice for a user with no orders")
 
 	// 3. Cleanup
+	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
+}
+
+func TestOrderRepository_CreateWebhookEvent(t *testing.T) {
+	ctx := context.Background()
+
+	orderRepo := NewOrderRepository(dbPool)
+
+	// 1. Define a test Stripe webhook event
+	event := models.StripeWebhookEvent{
+		ID:   "evt_test_123",
+		Type: "payment_intent.succeeded",
+		Data: &models.StripeWebhookData{
+			Object: models.StripeWebhookPaymentIntent{
+				ID:           "pi_test_123",
+				Status:       "succeeded",
+				Amount:       1000,
+				ClientSecret: "secret_test_123",
+				Currency:     "usd",
+			},
+		},
+		Livemode: false,
+		Created:  time.Now().UTC().Unix(), // Use UTC for event creation time
+	}
+
+	// 2. Call CreateWebhookEvent
+	err := orderRepo.CreateWebhookEvent(ctx, event)
+	assert.NoError(t, err, "CreateWebhookEvent should not return an error")
+
+	// 3. Validate the webhook event was stored correctly
+	var eventType string
+	var payload []byte
+	var processedAt time.Time
+
+	err = dbPool.QueryRowContext(ctx, `
+		SELECT event_type, payload, processed_at
+		FROM webhook_events
+		WHERE id = $1`, event.ID).Scan(&eventType, &payload, &processedAt)
+	assert.NoError(t, err, "The webhook event should exist in the database")
+	assert.Equal(t, event.Type, eventType, "Event type should match")
+	assert.JSONEq(t, `
+		{
+			"id": "pi_test_123",
+			"status": "succeeded",
+			"amount": 1000,
+			"client_secret": "secret_test_123",
+			"currency": "usd"
+		}`, string(payload), "Payload should match the event data object")
+
+	// Convert expected time to UTC before comparison
+	expectedProcessedAt := time.Unix(event.Created, 0).UTC()
+	assert.WithinDuration(t, expectedProcessedAt, processedAt, time.Second, "Processed timestamp should match")
+
+	// 4. Cleanup
+	dbPool.ExecContext(ctx, `DELETE FROM webhook_events WHERE id = $1`, event.ID)
+}
+
+func TestOrderRepository_PopulateOrderItems(t *testing.T) {
+	ctx := context.Background()
+
+	orderRepo := NewOrderRepository(dbPool)
+	userRepo := NewUserRepository(dbPool)
+
+	// 1. Create a unique test user
+	user := createUniqueTestUser(t, userRepo)
+
+	// 2. Insert a test address for the user
+	AddressID := createTestAddress(t, dbPool, user.ID)
+
+	// 3. Insert products with inventory and add them to the user's cart
+	productID1 := createTestProductAndInventory(t, dbPool, 10)
+	addToCart(t, dbPool, user.ID, productID1, 2)
+
+	productID2 := createTestProductAndInventory(t, dbPool, 15)
+	addToCart(t, dbPool, user.ID, productID2, 3)
+
+	// 4. Create an order for the user
+	order, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
+	assert.NoError(t, err, "CreateOrder should not return an error")
+
+	// 5. Prepare orders for PopulateOrderItems
+	orders := []models.Order{*order}
+
+	// 6. Call PopulateOrderItems
+	err = orderRepo.PopulateOrderItems(ctx, &orders)
+	assert.NoError(t, err, "PopulateOrderItems should not return an error")
+
+	// 7. Validate populated order items
+	assert.Len(t, orders[0].Items, 2, "Order should have 2 items")
+	assert.Equal(t, productID1, orders[0].Items[0].ProductID, "First item's ProductID should match")
+	assert.Equal(t, 2, orders[0].Items[0].Quantity, "First item's quantity should match")
+	assert.Equal(t, productID2, orders[0].Items[1].ProductID, "Second item's ProductID should match")
+	assert.Equal(t, 3, orders[0].Items[1].Quantity, "Second item's quantity should match")
+
+	// 8. Cleanup
+	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
+	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, order.ID)
+	dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
+	dbPool.ExecContext(ctx, `DELETE FROM carts WHERE user_id = $1`, user.ID)
+	dbPool.ExecContext(ctx, `DELETE FROM inventory WHERE product_id IN ($1, $2)`, productID1, productID2)
+	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id IN ($1, $2)`, productID1, productID2)
+	dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, AddressID)
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
 }

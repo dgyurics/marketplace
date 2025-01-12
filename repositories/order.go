@@ -94,7 +94,7 @@ func (r *orderRepository) CreateWebhookEvent(ctx context.Context, event models.S
 		event.ID,
 		event.Type,
 		payload,
-		time.Unix(event.Created, 0),
+		time.Unix(event.Created, 0).UTC(),
 	)
 	return err
 }
