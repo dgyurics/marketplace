@@ -19,6 +19,7 @@ import (
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/repositories"
+	"github.com/dgyurics/marketplace/utilities"
 )
 
 const (
@@ -39,12 +40,14 @@ type orderService struct {
 	stripeBaseURL              string
 	stripeSecretKey            string
 	stripeWebhookSigningSecret string
+	httpClient                 utilities.HTTPClient
 }
 
 func NewOrderService(
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository,
 	config models.OrderConfig,
+	httpClient utilities.HTTPClient,
 ) OrderService {
 	return &orderService{
 		orderRepo:                  orderRepo,
@@ -53,23 +56,24 @@ func NewOrderService(
 		stripeBaseURL:              config.StripeBaseURL,
 		stripeSecretKey:            config.StripeSecretKey,
 		stripeWebhookSigningSecret: config.StripeWebhookSigningSecret,
+		httpClient:                 httpClient,
 	}
 }
 
-func (ps *orderService) GetOrders(ctx context.Context) ([]models.Order, error) {
+func (os *orderService) GetOrders(ctx context.Context) ([]models.Order, error) {
 	var userID = getUserID(ctx)
-	orders, err := ps.orderRepo.GetOrders(ctx, userID)
+	orders, err := os.orderRepo.GetOrders(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	if err = ps.orderRepo.PopulateOrderItems(ctx, &orders); err != nil {
+	if err = os.orderRepo.PopulateOrderItems(ctx, &orders); err != nil {
 		return nil, err
 	}
 	return orders, nil
 }
 
 // Call Stripe API to create a payment intent
-func (ps *orderService) createPaymentIntent(ctx context.Context, pi *models.PaymentIntent) error {
+func (os *orderService) createPaymentIntent(ctx context.Context, pi *models.PaymentIntent) error {
 	if pi.Currency == "" {
 		return errors.New("missing currency")
 	}
@@ -77,21 +81,20 @@ func (ps *orderService) createPaymentIntent(ctx context.Context, pi *models.Paym
 		return errors.New("missing or invalid amount")
 	}
 
-	if ps.environment != "production" {
-		return ps.mockPaymentRequest(ctx, pi)
+	if os.environment != "production" {
+		return os.mockPaymentRequest(ctx, pi)
 	}
 
-	stripeURL := fmt.Sprintf("%s/payment_intents", ps.stripeBaseURL)
+	stripeURL := fmt.Sprintf("%s/payment_intents", os.stripeBaseURL)
 	data := fmt.Sprintf("amount=%d&currency=%s&payment_method_types[]=card", pi.Amount, pi.Currency)
 	reqBody := bytes.NewBufferString(data)
-	client := &http.Client{}
 	reqStripe, err := http.NewRequestWithContext(ctx, "POST", stripeURL, reqBody)
 	if err != nil {
 		return err
 	}
-	reqStripe.SetBasicAuth(ps.stripeSecretKey, "")
+	reqStripe.SetBasicAuth(os.stripeSecretKey, "")
 	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(reqStripe)
+	resp, err := os.httpClient.Do(reqStripe)
 	if err != nil {
 		slog.Error("Error sending request to Stripe API", "url", stripeURL, "error", err)
 		return err
@@ -107,7 +110,7 @@ func (ps *orderService) createPaymentIntent(ctx context.Context, pi *models.Paym
 	return json.NewDecoder(resp.Body).Decode(pi)
 }
 
-func (ps *orderService) mockPaymentRequest(ctx context.Context, pi *models.PaymentIntent) error {
+func (os *orderService) mockPaymentRequest(ctx context.Context, pi *models.PaymentIntent) error {
 	// Simulate network delay with context handling
 	select {
 	case <-ctx.Done():
@@ -132,7 +135,7 @@ func (ps *orderService) mockPaymentRequest(ctx context.Context, pi *models.Payme
 
 // [payload] raw request body
 // [sigHeader] value of the Stripe-Signature header, in the format "t=timestamp,v1=signature,v1=signature,..."
-func (ps *orderService) VerifyWebhookEventSignature(payload []byte, sigHeader string) error {
+func (os *orderService) VerifyWebhookEventSignature(payload []byte, sigHeader string) error {
 	parts := strings.Split(sigHeader, ",")
 	if len(parts) < 2 {
 		slog.Error("Invalid signature header", "header", sigHeader)
@@ -174,7 +177,7 @@ func (ps *orderService) VerifyWebhookEventSignature(payload []byte, sigHeader st
 	// Compare expected signature with provided signatures
 	// Use a constant-time comparison function to mitigate timing attacks
 	// If a matching signature is found, return nil
-	expectedSignature := ComputeSignature(ts, payload, ps.stripeWebhookSigningSecret)
+	expectedSignature := ComputeSignature(ts, payload, os.stripeWebhookSigningSecret)
 	for _, signature := range signatures {
 		if hmac.Equal(signature, expectedSignature) {
 			return nil
@@ -186,16 +189,16 @@ func (ps *orderService) VerifyWebhookEventSignature(payload []byte, sigHeader st
 }
 
 // ProcessWebhookEvent processes a Stripe webhook event. It is idompotent
-func (ps *orderService) ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error {
+func (os *orderService) ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error {
 	// save raw event data
-	if err := ps.orderRepo.CreateWebhookEvent(ctx, event); err != nil {
+	if err := os.orderRepo.CreateWebhookEvent(ctx, event); err != nil {
 		return err
 	}
 	switch event.Type {
 	case "payment_intent.created":
-		return ps.paymentIntentCreated(ctx, event)
+		return os.paymentIntentCreated(ctx, event)
 	case "payment_intent.succeeded":
-		return ps.paymentIntentSucceeded(ctx, event)
+		return os.paymentIntentSucceeded(ctx, event)
 	case "payment_intent.canceled":
 		slog.Debug("Payment canceled", "event", event.ID, "PaymentIntentID", event.Data.Object.ID)
 	case "payment_intent.payment_failed":
@@ -208,10 +211,10 @@ func (ps *orderService) ProcessWebhookEvent(ctx context.Context, event models.St
 
 // paymentIntentCreated is called when a webhook event is received from Stripe for a payment intent creation.
 // A matching payment entry should be found in the orders table
-func (ps *orderService) paymentIntentCreated(ctx context.Context, event models.StripeWebhookEvent) error {
+func (os *orderService) paymentIntentCreated(ctx context.Context, event models.StripeWebhookEvent) error {
 	// verify event has matching entry in payment table
 	order := &models.Order{PaymentIntentID: event.Data.Object.ID}
-	err := ps.orderRepo.GetOrder(ctx, order)
+	err := os.orderRepo.GetOrder(ctx, order)
 	if err != nil {
 		return err
 	}
@@ -229,10 +232,10 @@ func (ps *orderService) paymentIntentCreated(ctx context.Context, event models.S
 
 // paymentIntentSucceeded is called when a webhook event is received from Stripe for a payment intent success
 // A matching payment entry should be found in the orders table
-func (ps *orderService) paymentIntentSucceeded(ctx context.Context, event models.StripeWebhookEvent) error {
+func (os *orderService) paymentIntentSucceeded(ctx context.Context, event models.StripeWebhookEvent) error {
 	paymentIntent := event.Data.Object
 	order := &models.Order{PaymentIntentID: paymentIntent.ID}
-	err := ps.orderRepo.GetOrder(ctx, order)
+	err := os.orderRepo.GetOrder(ctx, order)
 	if err != nil {
 		return err
 	}
@@ -250,13 +253,13 @@ func (ps *orderService) paymentIntentSucceeded(ctx context.Context, event models
 
 	// mark order as paid
 	order.Status = models.OrderPaid
-	if err = ps.orderRepo.UpdateOrder(ctx, order); err != nil {
+	if err = os.orderRepo.UpdateOrder(ctx, order); err != nil {
 		slog.Error("Error updating order", "order_id", order.ID, "error", err)
 		return err
 	}
 
 	// clear cart
-	if err = ps.cartRepo.ClearCart(ctx, order.UserID); err != nil {
+	if err = os.cartRepo.ClearCart(ctx, order.UserID); err != nil {
 		slog.Error("Error clearing cart", "user_id", order.UserID, "error", err)
 		return err
 	}
@@ -272,23 +275,23 @@ func unixTimestampToTime(timestamp string) (time.Time, error) {
 	return time.Unix(seconds, 0), nil
 }
 
-func (ps *orderService) cancelPaymentIntent(ctx context.Context, paymentIntentID string) error {
+func (os *orderService) cancelPaymentIntent(ctx context.Context, paymentIntentID string) error {
 	if paymentIntentID == "" {
 		return errors.New("missing payment intent ID")
 	}
 
-	if ps.environment != "production" {
+	if os.environment != "production" {
 		return nil // no-op in development
 	}
 
-	stripeURL := fmt.Sprintf("%s/payment_intents/%s/cancel", ps.stripeBaseURL, paymentIntentID)
+	stripeURL := fmt.Sprintf("%s/payment_intents/%s/cancel", os.stripeBaseURL, paymentIntentID)
 	client := &http.Client{}
 
 	reqStripe, err := http.NewRequestWithContext(ctx, "POST", stripeURL, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create Stripe cancel request: %w", err)
 	}
-	reqStripe.SetBasicAuth(ps.stripeSecretKey, "")
+	reqStripe.SetBasicAuth(os.stripeSecretKey, "")
 	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := client.Do(reqStripe)
@@ -337,20 +340,20 @@ func ComputeSignature(t time.Time, payload []byte, secret string) []byte {
 	return mac.Sum(nil)
 }
 
-func (s *orderService) CreateOrder(ctx context.Context, addressID string) (models.PaymentIntent, error) {
+func (os *orderService) CreateOrder(ctx context.Context, addressID string) (models.PaymentIntent, error) {
 	var userID = getUserID(ctx)
 
 	// Cancel open/unpaid payment intent, if any
 	order := &models.Order{UserID: userID}
-	s.orderRepo.GetOrder(ctx, order)
+	os.orderRepo.GetOrder(ctx, order)
 	if order.Status == models.OrderPending && order.PaymentIntentID != "" {
 		go func() {
-			s.cancelPaymentIntent(ctx, order.PaymentIntentID)
+			os.cancelPaymentIntent(ctx, order.PaymentIntentID)
 		}()
 	}
 
 	// Create order
-	order, err := s.orderRepo.CreateOrder(ctx, userID, addressID)
+	order, err := os.orderRepo.CreateOrder(ctx, userID, addressID)
 	if err != nil {
 		slog.Error("Error creating order", "user_id", userID, "error", err)
 		return models.PaymentIntent{}, err
@@ -369,14 +372,14 @@ func (s *orderService) CreateOrder(ctx context.Context, addressID string) (model
 		Amount:   order.TotalAmount,
 		Currency: "usd",
 	}
-	if err = s.createPaymentIntent(ctx, pi); err != nil {
+	if err = os.createPaymentIntent(ctx, pi); err != nil {
 		return models.PaymentIntent{}, err
 	}
 
 	// Update order payment intent ID
 	order.Status = "" // reset status
 	order.PaymentIntentID = pi.ID
-	if err = s.orderRepo.UpdateOrder(ctx, order); err != nil {
+	if err = os.orderRepo.UpdateOrder(ctx, order); err != nil {
 		slog.Error(
 			"Error updating order",
 			"order_id", order.ID,

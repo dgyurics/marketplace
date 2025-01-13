@@ -36,6 +36,10 @@ clean:
 test:
 	go test ./...
 
+# View test coverage
+test-coverage:
+	go test -cover ./...
+
 # Build the binary
 build:
 	go build -o $(BINARY_NAME) $(SRC_DIR)
