@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
 
@@ -202,6 +203,19 @@ func (h *UserRoutes) RemoveAddress(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	params := utilities.ParsePaginationParams(r, 1, 100)
+	users, err := h.userService.GetAllUsers(r.Context(), params.Page, params.Limit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(users)
+}
+
 func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/users/register", h.Register).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
@@ -209,7 +223,7 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/users/addresses", h.secure(h.GetAddresses)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/users/addresses", h.secure(h.CreateAddress)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/addresses/{id}", h.secure(h.RemoveAddress)).Methods(http.MethodDelete)
-
+	h.muxRouter.Handle("/users", h.secureAdmin(h.GetAllUsers)).Methods(http.MethodGet)
 	// router.HandleFunc("/users/logout", Logout).Methods("POST")
 	// router.HandleFunc("/users/profile", GetProfile).Methods("GET")
 	// router.HandleFunc("/users/update-profile", UpdateProfile).Methods("POST")

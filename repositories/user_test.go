@@ -74,7 +74,7 @@ func TestGetAllUsers(t *testing.T) {
 	user2 := createUniqueTestUser(t, repo)
 
 	// Retrieve all users
-	users, err := repo.GetUsers(ctx)
+	users, err := repo.GetAllUsers(ctx, 1, 10)
 	assert.NoError(t, err, "Expected no error on getting all users")
 	assert.True(t, len(users) >= 2, "Expected at least two users in the list")
 

@@ -13,7 +13,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *models.User) error
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUserByPhone(ctx context.Context, phone string) (*models.User, error)
-	GetUsers(ctx context.Context) ([]models.User, error)
+	GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error)
 	CreateAddress(ctx context.Context, address *models.Address) error
 	GetAddresses(ctx context.Context, userID string) ([]models.Address, error)
 	RemoveAddress(ctx context.Context, userID, addressID string) error
@@ -57,9 +57,14 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 	return &user, nil
 }
 
-func (r *userRepository) GetUsers(ctx context.Context) ([]models.User, error) {
+func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error) {
 	var users []models.User
-	rows, err := r.db.QueryContext(ctx, "SELECT id, COALESCE(email, ''), COALESCE(phone, ''), admin, updated_at FROM users")
+	query := `
+		SELECT id, COALESCE(email, ''), COALESCE(phone, ''), admin, updated_at
+		FROM users
+		LIMIT $1 OFFSET $2
+	`
+	rows, err := r.db.QueryContext(ctx, query, limit, (page-1)*limit)
 	if err != nil {
 		return nil, err
 	}

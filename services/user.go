@@ -12,7 +12,7 @@ import (
 type UserService interface {
 	CreateUser(ctx context.Context, user *models.User) error
 	AuthenticateUser(ctx context.Context, credential *models.Credential) (*models.User, error)
-	GetAllUsers(ctx context.Context) ([]models.User, error)
+	GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error)
 	CreateAddress(ctx context.Context, address *models.Address) error
 	GetAddresses(ctx context.Context) ([]models.Address, error)
 	RemoveAddress(ctx context.Context, addressID string) error
@@ -63,8 +63,8 @@ func (s *userService) verifyPhone(ctx context.Context, credentials *models.Crede
 	return user, err
 }
 
-func (s *userService) GetAllUsers(ctx context.Context) ([]models.User, error) {
-	return s.repo.GetUsers(ctx)
+func (s *userService) GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error) {
+	return s.repo.GetAllUsers(ctx, page, limit)
 }
 
 func (s *userService) CreateAddress(ctx context.Context, address *models.Address) error {
