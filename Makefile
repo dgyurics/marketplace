@@ -40,6 +40,14 @@ test:
 test-coverage:
 	go test -cover ./...
 
+# Generate test coverage report
+test-coverage-report:
+	go test ./... -coverprofile=coverage.out
+
+# View function-level test coverage
+test-coverage-func:
+	go tool cover -func=coverage.out
+
 # Build the binary
 build:
 	go build -o $(BINARY_NAME) $(SRC_DIR)

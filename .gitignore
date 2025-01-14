@@ -4,3 +4,4 @@ private.pem
 public.pem
 .env
 *.log
+*.out

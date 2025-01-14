@@ -4,32 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/dgyurics/marketplace/models"
 	"github.com/stretchr/testify/assert"
 )
-
-// Helper function to create a unique test user
-// func createUniqueTestUser(t *testing.T, repo UserRepository) *models.User {
-// 	ctx := context.Background()
-
-// 	// Generate a unique email and phone using random numbers and current timestamp
-// 	randomSuffix := rand.Intn(1000000)
-// 	email := fmt.Sprintf("testuser%d@example.com", randomSuffix)
-// 	phone := fmt.Sprintf("12345%06d", randomSuffix)
-
-// 	// Create a new user object
-// 	user := &models.User{
-// 		Email:        email,
-// 		Phone:        phone,
-// 		PasswordHash: "hashedpassword",
-// 	}
-
-// 	// Insert the user into the database
-// 	err := repo.CreateUser(ctx, user)
-// 	assert.NoError(t, err, "Expected no error on user creation")
-// 	assert.NotEmpty(t, user.ID, "Expected user ID to be set")
-
-// 	return user
-// }
 
 func TestCreateUser(t *testing.T) {
 	repo := NewUserRepository(dbPool)
@@ -116,5 +93,156 @@ func TestGetAllUsers(t *testing.T) {
 
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1 OR id = $2", user1.ID, user2.ID)
+	assert.NoError(t, err, "Expected no error on user deletion")
+}
+
+func TestCreateAddress(t *testing.T) {
+	repo := NewUserRepository(dbPool)
+	ctx := context.Background()
+
+	// Create a test user
+	user := createUniqueTestUser(t, repo)
+
+	// Nullable fields
+	addressLine2 := "Apt 456"
+	phone := "123-456-7890"
+
+	// Create a test address
+	address := &models.Address{
+		UserID:       user.ID,
+		Addressee:    "John Doe",
+		AddressLine1: "123 Test St",
+		AddressLine2: &addressLine2,
+		City:         "Testville",
+		StateCode:    "TS",
+		PostalCode:   "12345",
+		Phone:        &phone,
+	}
+
+	err := repo.CreateAddress(ctx, address)
+	assert.NoError(t, err, "Expected no error while creating an address")
+	assert.NotEmpty(t, address.ID, "Expected address ID to be set")
+
+	// Validate the address fields
+	assert.Equal(t, user.ID, address.UserID, "Expected user ID to match")
+	assert.Equal(t, "John Doe", address.Addressee, "Expected addressee to match")
+	assert.Equal(t, "123 Test St", address.AddressLine1, "Expected address line 1 to match")
+	assert.Equal(t, &addressLine2, address.AddressLine2, "Expected address line 2 to match")
+	assert.Equal(t, "Testville", address.City, "Expected city to match")
+	assert.Equal(t, "TS", address.StateCode, "Expected state code to match")
+	assert.Equal(t, "12345", address.PostalCode, "Expected postal code to match")
+	assert.Equal(t, &phone, address.Phone, "Expected phone to match")
+
+	// Clean up
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM addresses WHERE id = $1", address.ID)
+	assert.NoError(t, err, "Expected no error on address deletion")
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
+	assert.NoError(t, err, "Expected no error on user deletion")
+}
+
+func TestGetAddresses(t *testing.T) {
+	repo := NewUserRepository(dbPool)
+	ctx := context.Background()
+
+	// Create a test user
+	user := createUniqueTestUser(t, repo)
+
+	// Nullable fields
+	addressLine2 := "Apt 456"
+	phone := "123-456-7890"
+
+	// Create multiple addresses for the user
+	address1 := &models.Address{
+		UserID:       user.ID,
+		Addressee:    "John Doe",
+		AddressLine1: "123 Test St",
+		AddressLine2: &addressLine2,
+		City:         "Testville",
+		StateCode:    "TS",
+		PostalCode:   "12345",
+		Phone:        &phone,
+	}
+	address2 := &models.Address{
+		UserID:       user.ID,
+		Addressee:    "Jane Doe",
+		AddressLine1: "456 Test Ave",
+		City:         "Testville",
+		StateCode:    "TS",
+		PostalCode:   "67890",
+	}
+
+	err := repo.CreateAddress(ctx, address1)
+	assert.NoError(t, err, "Expected no error while creating address1")
+	err = repo.CreateAddress(ctx, address2)
+	assert.NoError(t, err, "Expected no error while creating address2")
+
+	// Retrieve addresses
+	addresses, err := repo.GetAddresses(ctx, user.ID)
+	assert.NoError(t, err, "Expected no error while getting addresses")
+	assert.Len(t, addresses, 2, "Expected 2 addresses for the user")
+
+	// Check individual addresses
+	for _, addr := range addresses {
+		switch addr.ID {
+		case address1.ID:
+			assert.Equal(t, address1.Addressee, addr.Addressee, "Expected addressee to match")
+			assert.Equal(t, address1.AddressLine1, addr.AddressLine1, "Expected address line 1 to match")
+			assert.Equal(t, address1.AddressLine2, addr.AddressLine2, "Expected address line 2 to match")
+			assert.Equal(t, address1.Phone, addr.Phone, "Expected phone to match")
+		case address2.ID:
+			assert.Equal(t, address2.Addressee, addr.Addressee, "Expected addressee to match")
+			assert.Equal(t, address2.AddressLine1, addr.AddressLine1, "Expected address line 1 to match")
+			assert.Nil(t, addr.AddressLine2, "Expected address line 2 to be nil")
+			assert.Nil(t, addr.Phone, "Expected phone to be nil")
+		default:
+			t.Errorf("Unexpected address ID: %s", addr.ID)
+		}
+	}
+
+	// Clean up
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM addresses WHERE user_id = $1", user.ID)
+	assert.NoError(t, err, "Expected no error on address deletion")
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
+	assert.NoError(t, err, "Expected no error on user deletion")
+}
+
+func TestRemoveAddress(t *testing.T) {
+	repo := NewUserRepository(dbPool)
+	ctx := context.Background()
+
+	// Create a test user
+	user := createUniqueTestUser(t, repo)
+
+	// Nullable fields
+	addressLine2 := "Apt 456"
+	phone := "123-456-7890"
+
+	// Create a test address
+	address := &models.Address{
+		UserID:       user.ID,
+		Addressee:    "John Doe",
+		AddressLine1: "123 Test St",
+		AddressLine2: &addressLine2,
+		City:         "Testville",
+		StateCode:    "TS",
+		PostalCode:   "12345",
+		Phone:        &phone,
+	}
+
+	err := repo.CreateAddress(ctx, address)
+	assert.NoError(t, err, "Expected no error while creating an address")
+	assert.NotEmpty(t, address.ID, "Expected address ID to be set")
+
+	// Remove the address
+	err = repo.RemoveAddress(ctx, user.ID, address.ID)
+	assert.NoError(t, err, "Expected no error while removing the address")
+
+	// Verify the address is deleted
+	addresses, err := repo.GetAddresses(ctx, user.ID)
+	assert.NoError(t, err, "Expected no error while getting addresses")
+	assert.Empty(t, addresses, "Expected no addresses for the user")
+
+	// Clean up
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
 	assert.NoError(t, err, "Expected no error on user deletion")
 }
