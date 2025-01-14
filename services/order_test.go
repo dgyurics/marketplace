@@ -32,8 +32,8 @@ func (m *MockOrderRepository) GetOrder(ctx context.Context, order *models.Order)
 	return args.Error(0)
 }
 
-func (m *MockOrderRepository) GetOrders(ctx context.Context, userID string) ([]models.Order, error) {
-	args := m.Called(ctx, userID)
+func (m *MockOrderRepository) GetOrders(ctx context.Context, userID string, page, limit int) ([]models.Order, error) {
+	args := m.Called(ctx, userID, page, limit)
 	return args.Get(0).([]models.Order), args.Error(1)
 }
 
@@ -235,13 +235,13 @@ func TestOrderService_GetOrders_Success(t *testing.T) {
 	}
 
 	// Mock GetOrders to return mock orders
-	mockOrderRepo.On("GetOrders", mock.Anything, user.ID).Return(mockOrders, nil)
+	mockOrderRepo.On("GetOrders", mock.Anything, user.ID, 1, 10).Return(mockOrders, nil)
 
 	// Mock PopulateOrderItems to populate items into orders
 	mockOrderRepo.On("PopulateOrderItems", mock.Anything, mock.AnythingOfType("*[]models.Order")).Return(nil)
 
 	// Call GetOrders
-	orders, err := orderService.GetOrders(ctx)
+	orders, err := orderService.GetOrders(ctx, 1, 10)
 
 	// Assertions
 	assert.NoError(t, err, "GetOrders should not return an error")

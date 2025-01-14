@@ -13,7 +13,7 @@ import (
 
 type OrderRepository interface {
 	GetOrder(ctx context.Context, order *models.Order) error
-	GetOrders(ctx context.Context, userID string) ([]models.Order, error)
+	GetOrders(ctx context.Context, userID string, page, limit int) ([]models.Order, error)
 	PopulateOrderItems(ctx context.Context, orders *[]models.Order) error
 	CreateOrder(ctx context.Context, userID, addressID string) (*models.Order, error)
 	UpdateOrder(ctx context.Context, order *models.Order) error
@@ -139,7 +139,7 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *models.Order) 
 }
 
 // GetOrders retrieves all orders for a user
-func (r *orderRepository) GetOrders(ctx context.Context, userID string) ([]models.Order, error) {
+func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, limit int) ([]models.Order, error) {
 	query := `
 		SELECT
 			id,
@@ -156,8 +156,9 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string) ([]model
 		FROM orders
 		WHERE user_id = $1 AND status != 'pending'
 		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
 	`
-	rows, err := r.db.QueryContext(ctx, query, userID)
+	rows, err := r.db.QueryContext(ctx, query, userID, limit, (page-1)*limit)
 	if err != nil {
 		return nil, err
 	}

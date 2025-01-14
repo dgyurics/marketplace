@@ -33,8 +33,8 @@ func (m *MockOrderService) CreateOrder(ctx context.Context, addressID string) (m
 	return args.Get(0).(models.PaymentIntent), args.Error(1)
 }
 
-func (m *MockOrderService) GetOrders(ctx context.Context) ([]models.Order, error) {
-	args := m.Called(ctx)
+func (m *MockOrderService) GetOrders(ctx context.Context, page, limit int) ([]models.Order, error) {
+	args := m.Called(ctx, page, limit)
 	return args.Get(0).([]models.Order), args.Error(1)
 }
 

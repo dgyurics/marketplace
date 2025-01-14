@@ -8,6 +8,7 @@ import (
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/utilities"
 )
 
 type OrderRoutes struct {
@@ -91,7 +92,8 @@ func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
-	orders, err := h.orderService.GetOrders(r.Context())
+	params := utilities.ParsePaginationParams(r, 1, 25)
+	orders, err := h.orderService.GetOrders(r.Context(), params.Page, params.Limit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

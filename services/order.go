@@ -28,7 +28,7 @@ const (
 
 type OrderService interface {
 	CreateOrder(ctx context.Context, addressID string) (models.PaymentIntent, error)
-	GetOrders(ctx context.Context) ([]models.Order, error)
+	GetOrders(ctx context.Context, page, limit int) ([]models.Order, error)
 	VerifyWebhookEventSignature(payload []byte, sigHeader string) error
 	ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error
 }
@@ -63,9 +63,9 @@ func NewOrderService(
 	}
 }
 
-func (os *orderService) GetOrders(ctx context.Context) ([]models.Order, error) {
+func (os *orderService) GetOrders(ctx context.Context, page, limit int) ([]models.Order, error) {
 	var userID = getUserID(ctx)
-	orders, err := os.orderRepo.GetOrders(ctx, userID)
+	orders, err := os.orderRepo.GetOrders(ctx, userID, page, limit)
 	if err != nil {
 		return nil, err
 	}

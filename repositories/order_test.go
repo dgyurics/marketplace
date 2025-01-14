@@ -224,7 +224,7 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 	assert.NoError(t, err, "UpdateOrder for order2 should not return an error")
 
 	// 5. Retrieve all orders for the user
-	orders, err := orderRepo.GetOrders(ctx, user.ID)
+	orders, err := orderRepo.GetOrders(ctx, user.ID, 1, 10)
 	assert.NoError(t, err, "GetOrders should not return an error")
 	assert.Len(t, orders, 2, "GetOrders should return two orders")
 
@@ -267,7 +267,7 @@ func TestOrderRepository_GetOrders_Empty(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 
 	// 2. Retrieve orders for the user (expected to be empty)
-	orders, err := orderRepo.GetOrders(ctx, user.ID)
+	orders, err := orderRepo.GetOrders(ctx, user.ID, 1, 10)
 	assert.NoError(t, err, "GetOrders should not return an error for a user with no orders")
 	assert.Len(t, orders, 0, "GetOrders should return an empty slice for a user with no orders")
 
