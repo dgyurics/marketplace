@@ -46,7 +46,7 @@ func initializeServer() *http.Server {
 	authService := services.NewAuthService(authRepository, utilities.LoadAuthConfig())
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
-	orderService := services.NewOrderService(orderRepository, cartRepository, utilities.LoadOrderConfig(), utilities.NewDefaultHTTPClient())
+	orderService := services.NewOrderService(orderRepository, cartRepository, utilities.LoadOrderConfig(), nil)
 	productService := services.NewProductService(productRepository)
 	cartService := services.NewCartService(cartRepository)
 

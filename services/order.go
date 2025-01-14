@@ -40,15 +40,18 @@ type orderService struct {
 	stripeBaseURL              string
 	stripeSecretKey            string
 	stripeWebhookSigningSecret string
-	httpClient                 utilities.HTTPClient
+	HttpClient                 utilities.HTTPClient
 }
 
 func NewOrderService(
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository,
 	config models.OrderConfig,
-	httpClient utilities.HTTPClient,
+	httpClient utilities.HTTPClient, // Optional: added to allow dependency injection during testing
 ) OrderService {
+	if httpClient == nil {
+		httpClient = utilities.NewDefaultHTTPClient()
+	}
 	return &orderService{
 		orderRepo:                  orderRepo,
 		cartRepo:                   cartRepo,
@@ -56,7 +59,7 @@ func NewOrderService(
 		stripeBaseURL:              config.StripeBaseURL,
 		stripeSecretKey:            config.StripeSecretKey,
 		stripeWebhookSigningSecret: config.StripeWebhookSigningSecret,
-		httpClient:                 httpClient,
+		HttpClient:                 httpClient,
 	}
 }
 
@@ -94,7 +97,7 @@ func (os *orderService) createPaymentIntent(ctx context.Context, pi *models.Paym
 	}
 	reqStripe.SetBasicAuth(os.stripeSecretKey, "")
 	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := os.httpClient.Do(reqStripe)
+	resp, err := os.HttpClient.Do(reqStripe)
 	if err != nil {
 		slog.Error("Error sending request to Stripe API", "url", stripeURL, "error", err)
 		return err
