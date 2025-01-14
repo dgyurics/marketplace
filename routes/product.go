@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
 
@@ -50,7 +51,8 @@ func (h *ProductRoutes) CreateProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
-	products, err := h.productService.GetAllProducts(r.Context())
+	params := utilities.ParsePaginationParams(r, 1, 25)
+	products, err := h.productService.GetAllProducts(r.Context(), params.Page, params.Limit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

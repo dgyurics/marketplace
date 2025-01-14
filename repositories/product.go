@@ -10,7 +10,7 @@ import (
 type ProductRepository interface {
 	CreateProduct(ctx context.Context, product *models.Product) error
 	CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error
-	GetAllProducts(ctx context.Context) ([]models.Product, error)
+	GetAllProducts(ctx context.Context, page, limit int) ([]models.Product, error)
 	GetProductByID(ctx context.Context, id string) (*models.Product, error)
 	DeleteProduct(ctx context.Context, id string) error
 	UpdateInventory(ctx context.Context, productID string, quantity int) error
@@ -80,7 +80,7 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 	return tx.Commit()
 }
 
-func (r *productRepository) GetAllProducts(ctx context.Context) ([]models.Product, error) {
+func (r *productRepository) GetAllProducts(ctx context.Context, page, limit int) ([]models.Product, error) {
 	var products []models.Product
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT
@@ -91,7 +91,10 @@ func (r *productRepository) GetAllProducts(ctx context.Context) ([]models.Produc
 			p.created_at,
 			p.updated_at
 		FROM products p
-		WHERE is_deleted = false`)
+		WHERE is_deleted = false
+		ORDER BY p.created_at DESC
+		LIMIT $1 OFFSET $2
+	`, limit, (page-1)*limit)
 	if err != nil {
 		return nil, err
 	}

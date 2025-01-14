@@ -78,7 +78,7 @@ func TestGetAllProducts(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on product creation")
 
 	// Get all products
-	products, err := repo.GetAllProducts(ctx)
+	products, err := repo.GetAllProducts(ctx, 1, 100)
 	assert.NoError(t, err, "Expected no error on getting all products")
 	assert.NotEmpty(t, products, "Expected products list to not be empty")
 

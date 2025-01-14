@@ -29,7 +29,7 @@ func (m *MockProductService) CreateProductWithCategory(ctx context.Context, prod
 	return args.Error(0)
 }
 
-func (m *MockProductService) GetAllProducts(ctx context.Context) ([]models.Product, error) {
+func (m *MockProductService) GetAllProducts(ctx context.Context, page, limit int) ([]models.Product, error) {
 	args := m.Called(ctx)
 	return args.Get(0).([]models.Product), args.Error(1)
 }
