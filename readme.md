@@ -12,17 +12,19 @@
   <li><strong>Shopping Cart:</strong> Manage user shopping carts, calculate totals, and track item quantities.</li>
   <li><strong>Transaction Handling:</strong> Ensure data consistency with transaction support for complex operations.</li>
   <li><strong>Repository Pattern:</strong> Abstraction layer for database operations, improving testability and flexibility.</li>
-  <li><strong>Logging:</strong> Structured logging supports multiple/redundant services, making logs easily distinguishable.</li>
+  <li><strong>Logging:</strong> Structured logging supports redundant services, making logs easily distinguishable.</li>
+  <li><strong>Order Management:</strong> Create and manage orders, including order status tracking.</li>
   <li><strong>Payments:</strong> Stripe integration for processing payments.</li>
 </ul>
 
 <h2>Planned Enhancements</h2>
 <ul>
-  <li><strong>Order Management:</strong> Implement order creation and tracking, with status updates and order history.</li>
-  <li><strong>Email Notifications:</strong> Send order confirmations to users.</li>
+  <li><strong>Email Notifications:</strong> Send order status emails to users.</li>
   <li><strong>Search and Filtering:</strong> Advanced search capabilities, allowing users to find products through keyword and fuzzy searches.</li>
-  <li><strong>Performance Optimization:</strong> Implement caching and pagination to improve performance.</li>
-  <li><strong>Cart Item Limits:</strong> Implement quantity thresholds for each product and number of items in a cart.</li>
+  <li><strong>Caching:</strong> Implement API caching to improve performance.</li>
+  <li><strong>Rate Limiting:</strong> Protect the API from abuse with rate limiting.</li>
+  <li><strong>Horizontal Database Scaling:</strong> Implement sharding and replication to scale the database horizontally.</li>
+  <li><strong>Cart Item Limits:</strong> Implement cart item limts to prevent abuse.</li>
 </ul>
 
 <h2>Future Considerations</h2>
