@@ -1,8 +1,3 @@
-SET TIME ZONE 'UTC'; -- Important for consistent timestamp handling
-
--- Table_id_seq is used to generate 10-bit sequence numbers for IDs
--- in the gen_id function. This is necessary to generate unique IDs
--- when multiple IDs are generated at the same millisecond.
 CREATE SEQUENCE table_id_seq
     START 1
     INCREMENT 1
@@ -10,8 +5,7 @@ CREATE SEQUENCE table_id_seq
     CACHE 1;
 
 -- Generate 64-bit IDs with parts for timestamp, shard ID, and sequence number.
--- Useful for distributed systems where multiple databases generate     IDs
--- and need to avoid collisions.
+-- Useful for distributed systems where multiple databases generate IDs
 CREATE OR REPLACE FUNCTION gen_id()
 RETURNS BIGINT
 LANGUAGE plpgsql
@@ -20,8 +14,8 @@ DECLARE
     our_epoch bigint := 1672531200000; -- custom epoch, 2023-01-01T00:00:00Z in milliseconds
     seq_id bigint; -- sequence ID
     now_millis bigint; -- current time in milliseconds
-    shard_id int := 0; -- custom shard ID (when using multiple DBs, set this to a unique value per DB)
-    result bigint; -- final ID/result
+    shard_id int := 0; -- custom shard ID
+    result bigint; -- final ID
 BEGIN
     -- Get the next sequence value and modulo by 1024 to get a number between 0 and 1023
     -- Necessary for events where multiple IDs are generated at the same millisecond
