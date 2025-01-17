@@ -74,7 +74,7 @@ func TestGetRefreshToken(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on user deletion")
 }
 
-func TestRevokeAllRefreshTokens(t *testing.T) {
+func TestRevokeRefreshTokens(t *testing.T) {
 	repo := NewAuthRepository(dbPool)
 	ctx := context.Background()
 	now := time.Now()
@@ -107,7 +107,7 @@ func TestRevokeAllRefreshTokens(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on storing second refresh token")
 
 	// Revoke all refresh tokens for the user
-	err = repo.RevokeAllRefreshTokens(ctx, refreshToken1.TokenHash)
+	err = repo.RevokeRefreshTokens(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on revoking all refresh tokens")
 
 	// Verify that both tokens are revoked

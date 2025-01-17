@@ -28,7 +28,7 @@ func (m *MockAuthService) ValidateRefreshToken(ctx context.Context, token string
 func (m *MockAuthService) StoreRefreshToken(ctx context.Context, userID, token string) error {
 	return nil
 }
-func (m *MockAuthService) RevokeAllRefreshTokens(ctx context.Context, token string) error { return nil }
+func (m *MockAuthService) RevokeRefreshTokens(ctx context.Context) error { return nil }
 
 func TestAuthenticateUser_ValidToken(t *testing.T) {
 	mockAuthService := &MockAuthService{

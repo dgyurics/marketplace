@@ -1,11 +1,15 @@
-package services
+package services_test
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"testing"
 	"time"
 
 	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/services"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -67,14 +71,14 @@ func (m *MockAuthRepository) GetRefreshToken(ctx context.Context, tokenHash stri
 	return args.Get(0).(*models.RefreshToken), args.Error(1)
 }
 
-func (m *MockAuthRepository) RevokeAllRefreshTokens(ctx context.Context, tokenHash string) error {
+func (m *MockAuthRepository) RevokeRefreshTokens(ctx context.Context, tokenHash string) error {
 	args := m.Called(ctx, tokenHash)
 	return args.Error(0)
 }
 
 // Helper function to create an AuthService with configuration
-func createAuthService(repo *MockAuthRepository) AuthService {
-	return NewAuthService(
+func createAuthService(repo *MockAuthRepository) services.AuthService {
+	return services.NewAuthService(
 		repo,
 		models.AuthConfig{
 			PrivateKey:           []byte(privateKeyPEM),
@@ -176,14 +180,24 @@ func TestStoreRefreshToken(t *testing.T) {
 	assert.NoError(t, err, "expected no error in storing refresh token")
 }
 
-func TestRevokeAllRefreshTokens(t *testing.T) {
+func TestRevokeRefreshTokens(t *testing.T) {
 	repo := new(MockAuthRepository)
 	authService := createAuthService(repo)
 
 	// Mock the behavior of the repository
-	refreshToken := "test_refresh_token"
-	repo.On("RevokeAllRefreshTokens", mock.Anything, refreshToken).Return(nil)
+	user := &models.User{
+		ID:    "user123",
+		Email: "user@example.com",
+	}
+	ctx := context.WithValue(context.Background(), services.UserKey, user)
+	repo.On("RevokeRefreshTokens", mock.Anything, user.ID).Return(nil)
 
-	err := authService.RevokeAllRefreshTokens(context.Background(), refreshToken)
-	assert.NoError(t, err, "expected no error in revoking all refresh tokens")
+	err := authService.RevokeRefreshTokens(ctx)
+	assert.NoError(t, err, "expected no error in revoking refresh tokens")
+}
+
+func hashRefreshToken(token string, secret []byte) string {
+	h := hmac.New(sha256.New, secret)
+	h.Write([]byte(token))                // FIXME check for error
+	return hex.EncodeToString(h.Sum(nil)) // return the final HMAC hash as a hexadecimal string
 }

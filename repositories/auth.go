@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"time"
 
 	"github.com/dgyurics/marketplace/models"
 )
@@ -12,7 +11,7 @@ import (
 type AuthRepository interface {
 	StoreRefreshToken(ctx context.Context, refreshToken models.RefreshToken) error
 	GetRefreshToken(ctx context.Context, tokenHash string) (*models.RefreshToken, error)
-	RevokeAllRefreshTokens(ctx context.Context, tokenHash string) error
+	RevokeRefreshTokens(ctx context.Context, userID string) error
 }
 
 type authRepository struct {
@@ -80,52 +79,8 @@ func (r *authRepository) GetRefreshToken(ctx context.Context, tokenHash string) 
 	return &refreshToken, nil
 }
 
-func (r *authRepository) RevokeAllRefreshTokens(ctx context.Context, tokenHash string) error {
-	// Begin a transaction
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback() // Roll back the transaction in case of an error
-
-	// Fetch the refresh token
-	var refreshToken models.RefreshToken
-	var user models.User
-	query := `
-		SELECT
-			id,
-			user_id,
-			token_hash,
-			expires_at,
-			created_at,
-			revoked,
-			last_used
-		FROM refresh_tokens
-		WHERE token_hash = $1`
-	if err = tx.QueryRowContext(ctx, query, tokenHash).Scan(
-		&refreshToken.ID,
-		&user.ID,
-		&refreshToken.TokenHash,
-		&refreshToken.ExpiresAt,
-		&refreshToken.CreatedAt,
-		&refreshToken.Revoked,
-		&refreshToken.LastUsed,
-	); err != nil {
-		return err
-	}
-	refreshToken.User = &user
-
-	// Check if the refresh token is valid (not revoked and not expired)
-	if refreshToken.Revoked || refreshToken.ExpiresAt.Before(time.Now()) {
-		return sql.ErrNoRows // Invalid or expired token
-	}
-
-	// Revoke all refresh tokens for the user
-	revokeQuery := `UPDATE refresh_tokens SET revoked = true WHERE user_id = $1`
-	if _, err = tx.ExecContext(ctx, revokeQuery, refreshToken.User.ID); err != nil {
-		return err
-	}
-
-	return tx.Commit()
+func (r *authRepository) RevokeRefreshTokens(ctx context.Context, userID string) error {
+	query := `UPDATE refresh_tokens SET revoked = true WHERE user_id = $1`
+	_, err := r.db.ExecContext(ctx, query, userID)
+	return err
 }

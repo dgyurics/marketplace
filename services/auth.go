@@ -24,7 +24,7 @@ type AuthService interface {
 	GenerateRefreshToken() (string, error)
 	ValidateRefreshToken(ctx context.Context, token string) (models.User, error)
 	StoreRefreshToken(ctx context.Context, userID, token string) error
-	RevokeAllRefreshTokens(ctx context.Context, token string) error
+	RevokeRefreshTokens(ctx context.Context) error
 }
 
 type authService struct {
@@ -133,8 +133,9 @@ func (a *authService) StoreRefreshToken(ctx context.Context, userID, token strin
 	})
 }
 
-func (a *authService) RevokeAllRefreshTokens(ctx context.Context, token string) error {
-	return a.repo.RevokeAllRefreshTokens(ctx, token)
+func (a *authService) RevokeRefreshTokens(ctx context.Context) error {
+	var userID = getUserID(ctx)
+	return a.repo.RevokeRefreshTokens(ctx, userID)
 }
 
 func hashRefreshToken(token string, secret []byte) string {

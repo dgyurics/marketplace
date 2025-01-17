@@ -160,9 +160,12 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserRoutes) Logout(w http.ResponseWriter, r *http.Request) {
-	// todo
-	// revoke refresh token from database
-	// add option to remove all refresh tokens
+	if err := h.authService.RevokeRefreshTokens(r.Context()); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *UserRoutes) GetAddresses(w http.ResponseWriter, r *http.Request) {
@@ -219,12 +222,12 @@ func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/users/register", h.Register).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
+	h.muxRouter.HandleFunc("/users/logout", h.Logout).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/refresh-token", h.RefreshToken).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/addresses", h.secure(h.GetAddresses)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/users/addresses", h.secure(h.CreateAddress)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/addresses/{id}", h.secure(h.RemoveAddress)).Methods(http.MethodDelete)
 	h.muxRouter.Handle("/users", h.secureAdmin(h.GetAllUsers)).Methods(http.MethodGet)
-	// router.HandleFunc("/users/logout", Logout).Methods("POST")
 	// router.HandleFunc("/users/profile", GetProfile).Methods("GET")
 	// router.HandleFunc("/users/update-profile", UpdateProfile).Methods("POST")
 	// router.HandleFunc("/users/change-password", ChangePassword).Methods("POST")
