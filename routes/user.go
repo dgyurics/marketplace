@@ -85,7 +85,7 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify user credentials
-	usr, err := h.userService.AuthenticateUser(r.Context(), &credentials)
+	usr, err := h.userService.Login(r.Context(), &credentials)
 	if err != nil {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return

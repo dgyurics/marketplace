@@ -11,7 +11,7 @@ import (
 
 type UserService interface {
 	CreateUser(ctx context.Context, user *models.User) error
-	AuthenticateUser(ctx context.Context, credential *models.Credential) (*models.User, error)
+	Login(ctx context.Context, credential *models.Credential) (*models.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error)
 	CreateAddress(ctx context.Context, address *models.Address) error
 	GetAddresses(ctx context.Context) ([]models.Address, error)
@@ -35,7 +35,7 @@ func (s *userService) CreateUser(ctx context.Context, user *models.User) error {
 	return s.repo.CreateUser(ctx, user)
 }
 
-func (s *userService) AuthenticateUser(ctx context.Context, credentials *models.Credential) (*models.User, error) {
+func (s *userService) Login(ctx context.Context, credentials *models.Credential) (*models.User, error) {
 	if credentials.Email != "" {
 		return s.verifyEmail(ctx, credentials)
 	}
