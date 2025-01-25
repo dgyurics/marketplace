@@ -31,8 +31,13 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if (credentials.Email == "" && credentials.Phone == "") || credentials.Password == "" {
+	if credentials.Email == "" && credentials.Phone == "" {
 		http.Error(w, "Email or phone and password are required", http.StatusBadRequest)
+		return
+	}
+
+	if credentials.Password == "" {
+		http.Error(w, "Password is required", http.StatusBadRequest)
 		return
 	}
 
@@ -42,7 +47,7 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		Password: credentials.Password,
 	}
 	if err := h.userService.CreateUser(r.Context(), &usr); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Message, err.StatusCode)
 		return
 	}
 
