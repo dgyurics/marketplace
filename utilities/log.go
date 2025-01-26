@@ -66,3 +66,15 @@ func parseLogLevel(levelStr string) slog.Level {
 		return slog.LevelInfo // Default to Info if the level is not recognized
 	}
 }
+
+// ErrorLog adapts slog to implement the log.Logger interface.
+//
+// By implementing the Write method, ErrorLog makes it possible
+// to pass slog as the logger for http.Server, which requires
+// a logger conforming to the log.Logger interface.
+type ErrorLog struct{}
+
+func (s *ErrorLog) Write(p []byte) (n int, err error) {
+	slog.Error(string(p))
+	return len(p), nil
+}

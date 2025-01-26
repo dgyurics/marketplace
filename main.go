@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -83,7 +84,7 @@ func initializeServer() *http.Server {
 		WriteTimeout:   15 * time.Second,
 		IdleTimeout:    60 * time.Second,
 		MaxHeaderBytes: 0, // DefaultMaxHeaderBytes used if 0
-		// ErrorLog:       slog.Default(), // FIXME ErrorLog expects *log.Logger
+		ErrorLog:       log.New(&utilities.ErrorLog{}, "", 0),
 	}
 	slog.Info("Server initialized", "port", 8000)
 	return server
