@@ -12,7 +12,6 @@ import (
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *models.User) error
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
-	GetUserByPhone(ctx context.Context, phone string) (*models.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error)
 	CreateAddress(ctx context.Context, address *models.Address) error
 	GetAddresses(ctx context.Context, userID string) ([]models.Address, error)
@@ -29,28 +28,18 @@ func NewUserRepository(db *sql.DB) UserRepository {
 
 func (r *userRepository) CreateUser(ctx context.Context, user *models.User) error {
 	query := `
-		INSERT INTO users (email, phone, password_hash)
-		VALUES (NULLIF($1, ''), NULLIF($2, ''), $3)
-		RETURNING id, COALESCE(email, ''), COALESCE(phone, ''), admin, updated_at
+		INSERT INTO users (email, password_hash)
+		VALUES ($1, $2)
+		RETURNING id, email, admin, updated_at
 	`
-	return r.db.QueryRowContext(ctx, query, user.Email, user.Phone, user.PasswordHash).
-		Scan(&user.ID, &user.Email, &user.Phone, &user.Admin, &user.UpdatedAt)
-}
-
-func (r *userRepository) GetUserByPhone(ctx context.Context, phone string) (*models.User, error) {
-	var user models.User
-	err := r.db.QueryRowContext(ctx, "SELECT id, COALESCE(email, ''), COALESCE(phone, ''), password_hash, admin, updated_at FROM users WHERE phone = $1", phone).
-		Scan(&user.ID, &user.Email, &user.Phone, &user.PasswordHash, &user.Admin, &user.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	return r.db.QueryRowContext(ctx, query, user.Email, user.PasswordHash).
+		Scan(&user.ID, &user.Email, &user.Admin, &user.UpdatedAt)
 }
 
 func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	err := r.db.QueryRowContext(ctx, "SELECT id, COALESCE(email, ''), COALESCE(phone, ''), password_hash, admin, updated_at FROM users WHERE email = $1", email).
-		Scan(&user.ID, &user.Email, &user.Phone, &user.PasswordHash, &user.Admin, &user.UpdatedAt)
+	err := r.db.QueryRowContext(ctx, "SELECT id, email, password_hash, admin, updated_at FROM users WHERE email = $1", email).
+		Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Admin, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +49,7 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error) {
 	var users []models.User
 	query := `
-		SELECT id, COALESCE(email, ''), COALESCE(phone, ''), admin, updated_at
+		SELECT id, email, admin, updated_at
 		FROM users
 		LIMIT $1 OFFSET $2
 	`
@@ -71,7 +60,7 @@ func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]mo
 	defer rows.Close()
 	for rows.Next() {
 		var user models.User
-		err = rows.Scan(&user.ID, &user.Email, &user.Phone, &user.Admin, &user.UpdatedAt)
+		err = rows.Scan(&user.ID, &user.Email, &user.Admin, &user.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}

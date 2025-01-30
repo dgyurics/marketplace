@@ -31,8 +31,8 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if credentials.Email == "" && credentials.Phone == "" {
-		http.Error(w, "Email or phone and password are required", http.StatusBadRequest)
+	if credentials.Email == "" {
+		http.Error(w, "Email is required", http.StatusBadRequest)
 		return
 	}
 
@@ -43,7 +43,6 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 
 	usr := models.User{
 		Email:    credentials.Email,
-		Phone:    credentials.Phone,
 		Password: credentials.Password,
 	}
 	if err := h.userService.CreateUser(r.Context(), &usr); err != nil {
@@ -84,8 +83,13 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if (credentials.Email == "" && credentials.Phone == "") || credentials.Password == "" {
-		http.Error(w, "Email or phone and password are required", http.StatusBadRequest)
+	if credentials.Email == "" {
+		http.Error(w, "Email is required", http.StatusBadRequest)
+		return
+	}
+
+	if credentials.Password == "" {
+		http.Error(w, "Password is required", http.StatusBadRequest)
 		return
 	}
 

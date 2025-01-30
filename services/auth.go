@@ -54,7 +54,6 @@ func (a *authService) GenerateAccessToken(user models.User) (token string, err e
 	claims := jwt.MapClaims{
 		"user_id": user.ID,
 		"email":   user.Email,
-		"phone":   user.Phone,
 		"admin":   user.Admin,
 		"exp":     now.Add(a.durationAccessToken).Unix(),
 		"iat":     now.Unix(),
@@ -82,7 +81,6 @@ func (a *authService) ValidateAccessToken(token string) (user models.User, err e
 		user = models.User{
 			ID:    claims["user_id"].(string),
 			Email: claims["email"].(string),
-			Phone: claims["phone"].(string),
 			Admin: claims["admin"].(bool),
 		}
 		return

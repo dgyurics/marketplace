@@ -28,7 +28,7 @@ BEGIN
     result := (now_millis - our_epoch) << 23; -- 41 bits for timestamp
     result := result | (shard_id << 10); -- 13 bits for shard ID
     result := result | (seq_id); -- 10 bits for sequence id
-    RETURN result;
+    RETURN result; -- FIXME: if most significant bit is 1, this will return a negative number
 END;
 $$;
 
@@ -90,13 +90,11 @@ CREATE TABLE IF NOT EXISTS product_categories (
 
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY DEFAULT gen_id(),
-    email VARCHAR(255) UNIQUE,
-    phone VARCHAR(255) UNIQUE,
+    email VARCHAR(255) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     admin BOOLEAN DEFAULT FALSE,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CHECK (email IS NOT NULL OR phone IS NOT NULL)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (

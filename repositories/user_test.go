@@ -18,30 +18,9 @@ func TestCreateUser(t *testing.T) {
 	// Validate user creation
 	assert.NotEmpty(t, user.ID, "Expected user ID to be set")
 	assert.NotEmpty(t, user.Email, "Expected email to be set")
-	assert.NotEmpty(t, user.Phone, "Expected phone to be set")
 
 	// Clean up
 	_, err := dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
-	assert.NoError(t, err, "Expected no error on user deletion")
-}
-
-func TestGetUserByPhone(t *testing.T) {
-	repo := NewUserRepository(dbPool)
-	ctx := context.Background()
-
-	// Create a unique test user
-	user := createUniqueTestUser(t, repo)
-
-	// Retrieve the user by phone number
-	retrievedUser, err := repo.GetUserByPhone(ctx, user.Phone)
-	assert.NoError(t, err, "Expected no error on getting user by phone")
-	assert.NotNil(t, retrievedUser, "Expected retrieved user to not be nil")
-	assert.Equal(t, user.ID, retrievedUser.ID, "Expected user ID to match")
-	assert.Equal(t, user.Email, retrievedUser.Email, "Expected email to match")
-	assert.Equal(t, user.Phone, retrievedUser.Phone, "Expected phone to match")
-
-	// Clean up
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
 	assert.NoError(t, err, "Expected no error on user deletion")
 }
 
@@ -58,7 +37,6 @@ func TestGetUserByEmail(t *testing.T) {
 	assert.NotNil(t, retrievedUser, "Expected retrieved user to not be nil")
 	assert.Equal(t, user.ID, retrievedUser.ID, "Expected user ID to match")
 	assert.Equal(t, user.Email, retrievedUser.Email, "Expected email to match")
-	assert.Equal(t, user.Phone, retrievedUser.Phone, "Expected phone to match")
 
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)

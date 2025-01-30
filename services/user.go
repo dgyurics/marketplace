@@ -36,7 +36,7 @@ func (s *userService) CreateUser(ctx context.Context, user *models.User) *models
 	if err != nil {
 		dbErr := utilities.ConvertToDatabaseError(err)
 		if dbErr == models.UniqueConstraintViolation {
-			return models.NewAPIError(409, "email or phone already in use", err)
+			return models.NewAPIError(409, "email already in use", err)
 		}
 		return models.NewAPIError(500, "failed to create user", err)
 	}
@@ -44,26 +44,11 @@ func (s *userService) CreateUser(ctx context.Context, user *models.User) *models
 }
 
 func (s *userService) Login(ctx context.Context, credentials *models.Credential) (*models.User, error) {
-	if credentials.Email != "" {
-		return s.verifyEmail(ctx, credentials)
-	}
-	if credentials.Phone != "" {
-		return s.verifyPhone(ctx, credentials)
-	}
-	return nil, errors.New("invalid credentials: email or phone required")
+	return s.verifyEmail(ctx, credentials)
 }
 
 func (s *userService) verifyEmail(ctx context.Context, credentials *models.Credential) (*models.User, error) {
 	user, err := s.repo.GetUserByEmail(ctx, credentials.Email)
-	if err != nil {
-		return nil, err
-	}
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password))
-	return user, err
-}
-
-func (s *userService) verifyPhone(ctx context.Context, credentials *models.Credential) (*models.User, error) {
-	user, err := s.repo.GetUserByPhone(ctx, credentials.Phone)
 	if err != nil {
 		return nil, err
 	}

@@ -42,15 +42,13 @@ func genID() string {
 func createUniqueTestUser(t *testing.T, userRepo UserRepository) *models.User {
 	ctx := context.Background()
 
-	// Generate a unique email and phone using random numbers and current timestamp
+	// Generate a unique email using random numbers and current timestamp
 	randomSuffix := mathrand.Intn(1000000)
 	email := fmt.Sprintf("testuser%d@example.com", randomSuffix)
-	phone := fmt.Sprintf("12345%06d", randomSuffix)
 
 	// Create a new user object
 	user := &models.User{
 		Email:        email,
-		Phone:        phone,
 		PasswordHash: "hashedpassword",
 	}
 
