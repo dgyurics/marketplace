@@ -3,6 +3,9 @@ package routes
 import (
 	"encoding/json"
 	"net/http"
+	"net/mail"
+	"regexp"
+	"strings"
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
@@ -24,6 +27,23 @@ func NewUserRoutes(userService services.UserService, authService services.AuthSe
 	}
 }
 
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$`)
+
+func isValidEmail(email string) bool {
+	if email == "" || strings.Contains(email, " ") || len(email) > 254 {
+		return false
+	}
+
+	// Use a simple regex for a quick check
+	if !emailRegex.MatchString(email) {
+		return false
+	}
+
+	// Use Go's built-in parser for more strict validation
+	_, err := mail.ParseAddress(email)
+	return err == nil
+}
+
 func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	var credentials models.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
@@ -31,7 +51,9 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if credentials.Email == "" {
+	credentials.Email = strings.ToLower(credentials.Email) // store email in lowercase
+
+	if credentials.Email == "" || !isValidEmail(credentials.Email) {
 		http.Error(w, "Email is required", http.StatusBadRequest)
 		return
 	}
@@ -83,7 +105,7 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if credentials.Email == "" {
+	if credentials.Email == "" || !isValidEmail(credentials.Email) {
 		http.Error(w, "Email is required", http.StatusBadRequest)
 		return
 	}
