@@ -76,6 +76,16 @@ func (m *MockAuthRepository) RevokeRefreshTokens(ctx context.Context, tokenHash 
 	return args.Error(0)
 }
 
+func (m *MockAuthRepository) StoreInviteCode(ctx context.Context, code string, used bool) error {
+	args := m.Called(ctx, code, used)
+	return args.Error(0)
+}
+
+func (m *MockAuthRepository) GetInviteCode(ctx context.Context, code string) (used bool, exists bool, err error) {
+	args := m.Called(ctx, code)
+	return args.Bool(0), args.Bool(1), args.Error(2)
+}
+
 // Helper function to create an AuthService with configuration
 func createAuthService(repo *MockAuthRepository) services.AuthService {
 	return services.NewAuthService(

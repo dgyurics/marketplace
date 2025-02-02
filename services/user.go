@@ -26,6 +26,7 @@ type userService struct {
 func NewUserService(repo repositories.UserRepository) UserService {
 	return &userService{repo: repo}
 }
+
 func (s *userService) CreateUser(ctx context.Context, user *models.User) *models.HTTPError {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {

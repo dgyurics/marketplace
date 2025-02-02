@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"math/big"
 	"time"
 
 	"github.com/dgyurics/marketplace/models"
@@ -25,6 +26,9 @@ type AuthService interface {
 	ValidateRefreshToken(ctx context.Context, token string) (models.User, error)
 	StoreRefreshToken(ctx context.Context, userID, token string) error
 	RevokeRefreshTokens(ctx context.Context) error
+	GenerateInviteCode(ctx context.Context) (string, error)
+	GetInviteCode(ctx context.Context, code string) (used bool, exists bool, err error)
+	StoreInviteCode(ctx context.Context, code string, used bool) error
 }
 
 type authService struct {
@@ -148,4 +152,31 @@ func getUserID(ctx context.Context) string {
 		return ""
 	}
 	return user.ID
+}
+
+// Allowed characters for the invitation code
+const inviteCharset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const inviteCodeLength = 6
+
+// GenerateInviteCode creates a random 6-character alphanumeric invitation code.
+func (a *authService) GenerateInviteCode(ctx context.Context) (string, error) {
+	code := make([]byte, inviteCodeLength)
+	for i := range code {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(inviteCharset))))
+		if err != nil {
+			return "", errors.New("failed to generate invite code")
+		}
+		code[i] = inviteCharset[num.Int64()]
+	}
+	return string(code), nil
+}
+
+// GetInviteCode retrieves an invitation code from the database and checks if it has been used.
+func (a *authService) GetInviteCode(ctx context.Context, code string) (used bool, exists bool, err error) {
+	return a.repo.GetInviteCode(ctx, code)
+}
+
+// StoreInviteCode stores an invitation code in the database. If the code already exists, it updates the "used" status.
+func (a *authService) StoreInviteCode(ctx context.Context, code string, used bool) error {
+	return a.repo.StoreInviteCode(ctx, code, used)
 }

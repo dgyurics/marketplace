@@ -109,6 +109,13 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+-- Used to limit registration to users with an invitation code
+CREATE TABLE IF NOT EXISTS invitation_codes (
+    code CHAR(6) PRIMARY KEY CHECK (code ~ '^[A-Z0-9]{6}$'),
+    used_at TIMESTAMP DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS carts (
     user_id BIGINT PRIMARY KEY,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

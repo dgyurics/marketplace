@@ -30,6 +30,18 @@ func (m *MockAuthService) StoreRefreshToken(ctx context.Context, userID, token s
 }
 func (m *MockAuthService) RevokeRefreshTokens(ctx context.Context) error { return nil }
 
+func (m *MockAuthService) GenerateInviteCode(ctx context.Context) (string, error) {
+	return "", nil
+}
+
+func (m *MockAuthService) GetInviteCode(ctx context.Context, code string) (used bool, exists bool, err error) {
+	return false, false, nil
+}
+
+func (m *MockAuthService) StoreInviteCode(ctx context.Context, code string, used bool) error {
+	return nil
+}
+
 func TestAuthenticateUser_ValidToken(t *testing.T) {
 	mockAuthService := &MockAuthService{
 		ValidateTokenFunc: func(token string) (models.User, error) {

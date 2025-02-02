@@ -3,8 +3,9 @@ package models
 import "time"
 
 type Credential struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	InviteCode string `json:"invite_code"`
 }
 
 type AuthConfig struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/dgyurics/marketplace/models"
 )
@@ -12,6 +13,8 @@ type AuthRepository interface {
 	StoreRefreshToken(ctx context.Context, refreshToken models.RefreshToken) error
 	GetRefreshToken(ctx context.Context, tokenHash string) (*models.RefreshToken, error)
 	RevokeRefreshTokens(ctx context.Context, userID string) error
+	StoreInviteCode(ctx context.Context, code string, used bool) error
+	GetInviteCode(ctx context.Context, code string) (used bool, exists bool, err error)
 }
 
 type authRepository struct {
@@ -82,4 +85,40 @@ func (r *authRepository) RevokeRefreshTokens(ctx context.Context, userID string)
 	query := `UPDATE refresh_tokens SET revoked = true WHERE user_id = $1`
 	_, err := r.db.ExecContext(ctx, query, userID)
 	return err
+}
+
+// StoreInviteCode inserts or updates an invitation code.
+func (r *authRepository) StoreInviteCode(ctx context.Context, code string, used bool) error {
+	var usedAt interface{}
+	if used {
+		usedAt = time.Now()
+	} else {
+		usedAt = nil
+	}
+
+	query := `
+		INSERT INTO invitation_codes (code, used_at)
+		VALUES ($1, $2)
+		ON CONFLICT (code) DO UPDATE
+		SET used_at = EXCLUDED.used_at
+	`
+	_, err := r.db.ExecContext(ctx, query, code, usedAt)
+	return err
+}
+
+// GetInviteCode retrieves an invite code from the database
+// and returns whether it has been used and if it exists
+func (r *authRepository) GetInviteCode(ctx context.Context, code string) (used bool, exists bool, err error) {
+	query := `SELECT used_at FROM invitation_codes WHERE code = $1`
+	var usedAt sql.NullTime
+
+	err = r.db.QueryRowContext(ctx, query, code).Scan(&usedAt)
+	if err == sql.ErrNoRows {
+		return false, false, nil
+	}
+	if err != nil {
+		return false, false, err
+	}
+
+	return usedAt.Valid, true, nil
 }

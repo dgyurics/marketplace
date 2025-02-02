@@ -7,6 +7,7 @@ package utilities
 import (
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/dgyurics/marketplace/models"
@@ -75,4 +76,9 @@ func LoadOrderConfig() models.OrderConfig {
 		StripeSecretKey:            GetEnv("STRIPE_SECRET_KEY"),
 		StripeWebhookSigningSecret: GetEnv("STRIPE_WEBHOOK_SIGNING_SECRET"),
 	}
+}
+
+// IsFeatureEnabled checks if a feature flag is enabled via environment variables (case-insensitive).
+func IsFeatureEnabled(feature string) bool {
+	return strings.EqualFold(os.Getenv(feature), "true")
 }
