@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
 
@@ -26,58 +27,53 @@ func NewCategoryRoutes(
 func (h *CategoryRoutes) CreateCategory(w http.ResponseWriter, r *http.Request) {
 	var category models.Category
 	if err := json.NewDecoder(r.Body).Decode(&category); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	categoryId, err := h.categoryService.CreateCategory(r.Context(), category)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 	category.ID = categoryId
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(category)
+	u.RespondWithJSON(w, http.StatusCreated, category)
 }
 
 func (h *CategoryRoutes) GetCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.categoryService.GetAllCategories(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(categories)
+
+	u.RespondWithJSON(w, http.StatusOK, categories)
 }
 
 func (h *CategoryRoutes) GetCategory(w http.ResponseWriter, r *http.Request) {
 	categoryId, ok := mux.Vars(r)["id"]
 	if !ok {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 	category, err := h.categoryService.GetCategoryByID(r.Context(), categoryId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(category)
+
+	u.RespondWithJSON(w, http.StatusOK, category)
 }
 
 func (h *CategoryRoutes) GetProductsByCategory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	products, err := h.categoryService.GetProductsByCategoryID(r.Context(), vars["id"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(products)
+
+	u.RespondWithJSON(w, http.StatusOK, products)
 }
 
 func (h *CategoryRoutes) RegisterRoutes() {

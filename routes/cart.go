@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
 
@@ -26,70 +27,63 @@ func NewCartRoutes(
 func (h *CartRoutes) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	var item models.CartItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	if item.ProductID == "" || item.Quantity <= 0 {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	if err := h.cartService.AddItemToCart(r.Context(), &item); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	u.RespondSuccess(w)
 }
 
 func (h *CartRoutes) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 	var item models.CartItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	if item.ProductID == "" || item.Quantity <= 0 {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	if err := h.cartService.UpdateCartItem(r.Context(), &item); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(item)
+	u.RespondWithJSON(w, http.StatusOK, item)
 }
 
 func (h *CartRoutes) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	productID := vars["product_id"]
 
-	err := h.cartService.RemoveItemFromCart(r.Context(), productID)
-	if err != nil {
-		// FIXME create custom error types
-		// allowing for more granular/specific status codes
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := h.cartService.RemoveItemFromCart(r.Context(), productID); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	u.RespondSuccess(w)
 }
 
 func (h *CartRoutes) GetCart(w http.ResponseWriter, r *http.Request) {
 	cart, err := h.cartService.GetCart(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(cart)
+	u.RespondWithJSON(w, http.StatusOK, cart)
 }
 
 func (h *CartRoutes) RegisterRoutes() {

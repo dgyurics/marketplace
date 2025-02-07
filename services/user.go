@@ -6,12 +6,11 @@ import (
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/repositories"
-	"github.com/dgyurics/marketplace/utilities"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService interface {
-	CreateUser(ctx context.Context, user *models.User) *models.HTTPError
+	CreateUser(ctx context.Context, user *models.User) error
 	Login(ctx context.Context, credential *models.Credential) (*models.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error)
 	CreateAddress(ctx context.Context, address *models.Address) error
@@ -27,21 +26,13 @@ func NewUserService(repo repositories.UserRepository) UserService {
 	return &userService{repo: repo}
 }
 
-func (s *userService) CreateUser(ctx context.Context, user *models.User) *models.HTTPError {
+func (s *userService) CreateUser(ctx context.Context, user *models.User) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return models.NewAPIError(500, err.Error(), err)
+		return err
 	}
 	user.PasswordHash = string(hashedPassword)
-	err = s.repo.CreateUser(ctx, user)
-	if err != nil {
-		dbErr := utilities.ConvertToDatabaseError(err)
-		if dbErr == models.UniqueConstraintViolation {
-			return models.NewAPIError(409, "email already in use", err)
-		}
-		return models.NewAPIError(500, "failed to create user", err)
-	}
-	return nil
+	return s.repo.CreateUser(ctx, user)
 }
 
 func (s *userService) Login(ctx context.Context, credentials *models.Credential) (*models.User, error) {

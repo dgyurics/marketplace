@@ -6,7 +6,7 @@ import (
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
-	"github.com/dgyurics/marketplace/utilities"
+	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
 
@@ -27,7 +27,7 @@ func NewProductRoutes(
 func (h *ProductRoutes) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var product models.Product
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
@@ -36,46 +36,43 @@ func (h *ProductRoutes) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	if categoryId != "" {
 		if err := h.productService.CreateProductWithCategory(r.Context(), &product, categoryId); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 			return
 		}
 	} else {
 		if err := h.productService.CreateProduct(r.Context(), &product); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 			return
 		}
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(product)
+
+	u.RespondWithJSON(w, http.StatusCreated, product)
 }
 
 func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
-	params := utilities.ParsePaginationParams(r, 1, 25)
+	params := u.ParsePaginationParams(r, 1, 25)
 	products, err := h.productService.GetAllProducts(r.Context(), params.Page, params.Limit)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(products)
+
+	u.RespondWithJSON(w, http.StatusOK, products)
 }
 
 func (h *ProductRoutes) GetProduct(w http.ResponseWriter, r *http.Request) {
 	productId, ok := mux.Vars(r)["id"]
 	if !ok {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 	product, err := h.productService.GetProductByID(r.Context(), productId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(product)
+
+	u.RespondWithJSON(w, http.StatusOK, product)
 }
 
 func (h *ProductRoutes) UpdateInventory(w http.ResponseWriter, r *http.Request) {
@@ -84,27 +81,28 @@ func (h *ProductRoutes) UpdateInventory(w http.ResponseWriter, r *http.Request) 
 		Quantity int `json:"quantity"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	err := h.productService.UpdateInventory(r.Context(), productID, input.Quantity)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	u.RespondSuccess(w)
 }
 
 func (h *ProductRoutes) RemoveProduct(w http.ResponseWriter, r *http.Request) {
 	productID := mux.Vars(r)["id"]
 	err := h.productService.RemoveProduct(r.Context(), productID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+
+	u.RespondSuccess(w)
 }
 
 func (h *ProductRoutes) RegisterRoutes() {

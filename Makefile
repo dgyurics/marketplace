@@ -54,7 +54,7 @@ build:
 
 # Run the binary
 run: build
-	env $(shell cat $(ENV_FILE) | xargs) ./$(BINARY_NAME)
+	env $(shell grep -v '^\s*#' $(ENV_FILE) | grep -v '^\s*$$' | sed 's/\s*#.*//g' | xargs) ./$(BINARY_NAME)
 
 # stripe listen is a command provided by the Stripe CLI that listens for
 # events (webhooks) from Stripe in real-time. It allows you to test and debug

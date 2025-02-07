@@ -8,7 +8,7 @@ import (
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
-	"github.com/dgyurics/marketplace/utilities"
+	u "github.com/dgyurics/marketplace/utilities"
 )
 
 type OrderRoutes struct {
@@ -32,54 +32,52 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	// Validate that the addressID is provided
 	if requestBody.AddressID == "" {
-		http.Error(w, "Address ID is required", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Address ID is required")
 		return
 	}
 	// Create the order
 	res, err := h.orderService.CreateOrder(r.Context(), requestBody.AddressID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if res.Error != "" {
-		http.Error(w, res.Error, http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	u.RespondWithJSON(w, http.StatusOK, res)
 }
 
 func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(http.StatusServiceUnavailable)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	var event models.StripeWebhookEvent
 	if err := json.Unmarshal(body, &event); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	// verify signature
 	signature := r.Header.Get("Stripe-Signature")
 	if err := h.orderService.VerifyWebhookEventSignature(body, signature); err != nil {
-		http.Error(w, "Invalid request signature", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request signature")
 		return
 	}
 
 	// verify expected data in event
 	if event.Type == "" || event.Data == nil || event.Data.Object.ID == "" {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
@@ -88,19 +86,18 @@ func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Error processing webhook event", "error", err)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	u.RespondWithJSON(w, http.StatusOK, map[string]string{"status": "success"})
 }
 
 func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
-	params := utilities.ParsePaginationParams(r, 1, 25)
+	params := u.ParsePaginationParams(r, 1, 25)
 	orders, err := h.orderService.GetOrders(r.Context(), params.Page, params.Limit)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(orders)
+
+	u.RespondWithJSON(w, http.StatusOK, orders)
 }
 
 func (h *OrderRoutes) RegisterRoutes() {

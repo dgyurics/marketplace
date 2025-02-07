@@ -56,7 +56,6 @@ func initializeServer() *http.Server {
 
 	// add middleware
 	router.Use(middleware.LimitBodySizeMiddleware)
-	router.Use(middleware.LoggingMiddleware)
 
 	// create base router which encapsulates the primary router and access control middleware
 	baseRouter := routes.NewRouter(router, middleware.NewAccessControl(authService))

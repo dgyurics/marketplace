@@ -10,7 +10,7 @@ import (
 
 	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
-	"github.com/dgyurics/marketplace/utilities"
+	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
 
@@ -48,37 +48,37 @@ func isValidEmail(email string) bool {
 func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	var credentials models.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	credentials.Email = strings.ToLower(credentials.Email) // store email in lowercase
 
 	if credentials.Email == "" || !isValidEmail(credentials.Email) {
-		http.Error(w, "Email is required", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
 		return
 	}
 
 	if credentials.Password == "" {
-		http.Error(w, "Password is required", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Password is required")
 		return
 	}
 
 	// Check if registration code is required and validate it
-	if utilities.IsFeatureEnabled("REQUIRE_INVITE_CODE") && len(credentials.InviteCode) != 6 {
-		http.Error(w, "Invite code is required", http.StatusBadRequest)
+	if u.IsFeatureEnabled("REQUIRE_INVITE_CODE") && len(credentials.InviteCode) != 6 {
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invite code is required")
 		return
 	}
 
 	// fetch the invite code
 	used, exists, err := h.authService.GetInviteCode(r.Context(), credentials.InviteCode)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if !exists || used {
-		http.Error(w, "Invalid invite code", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid invite code")
 		return
 	}
 
@@ -88,8 +88,8 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create the user
-	if httpErr := h.userService.CreateUser(r.Context(), &usr); httpErr != nil {
-		http.Error(w, httpErr.Message, httpErr.StatusCode)
+	if err := h.userService.CreateUser(r.Context(), &usr); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -101,7 +101,7 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	// Generate access token
 	accessToken, err := h.authService.GenerateAccessToken(usr)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -109,21 +109,18 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	var token string
 	token, err = h.authService.GenerateRefreshToken()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Store refresh token
 	err = h.authService.StoreRefreshToken(r.Context(), usr.ID, token)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Respond with tokens
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{
+	u.RespondWithJSON(w, http.StatusCreated, map[string]string{
 		"token":         accessToken,
 		"refresh_token": token,
 	})
@@ -132,54 +129,56 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 	var credentials models.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	if credentials.Email == "" || !isValidEmail(credentials.Email) {
-		http.Error(w, "Email is required", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Email required")
 		return
 	}
 
 	if credentials.Password == "" {
-		http.Error(w, "Password is required", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Password required")
 		return
 	}
 
 	// Verify user credentials
 	usr, err := h.userService.Login(r.Context(), &credentials)
 	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		u.RespondWithError(w, r, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
 	// Generate access token
 	accessToken, err := h.authService.GenerateAccessToken(*usr)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Generate refresh token
 	refreshToken, err := h.authService.GenerateRefreshToken()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Store refresh token
 	if err := h.authService.StoreRefreshToken(r.Context(), usr.ID, refreshToken); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Respond with tokens
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
+	u.RespondWithJSON(w, http.StatusOK, map[string]string{
 		"token":         accessToken,
 		"refresh_token": refreshToken,
 	})
+}
+
+// Exists checks if a user with the given email exists
+func (h *UserRoutes) Exists(w http.ResponseWriter, r *http.Request) {
+	// TODO
 }
 
 // RefreshToken generates a new access token using a valid refresh token
@@ -188,18 +187,18 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		RefreshToken string `json:"refresh_token"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 	if requestBody.RefreshToken == "" {
-		http.Error(w, "Refresh token is required", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "Refresh token required")
 		return
 	}
 
 	// Validate the refresh token
 	user, err := h.authService.ValidateRefreshToken(r.Context(), requestBody.RefreshToken)
 	if err != nil {
-		http.Error(w, "Invalid or expired refresh token", http.StatusUnauthorized)
+		u.RespondWithError(w, r, http.StatusUnauthorized, "Invalid or expired refresh token")
 		return
 	}
 
@@ -209,13 +208,11 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	// Generate a new access token
 	accessToken, err := h.authService.GenerateAccessToken(user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
+	u.RespondWithJSON(w, http.StatusOK, map[string]string{
 		"token":         accessToken,
 		"refresh_token": requestBody.RefreshToken,
 	})
@@ -223,80 +220,73 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserRoutes) Logout(w http.ResponseWriter, r *http.Request) {
 	if err := h.authService.RevokeRefreshTokens(r.Context()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	u.RespondSuccess(w)
 }
 
 func (h *UserRoutes) GetAddresses(w http.ResponseWriter, r *http.Request) {
 	addresses, err := h.userService.GetAddresses(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(addresses)
+	u.RespondWithJSON(w, http.StatusOK, addresses)
 }
 
 func (h *UserRoutes) CreateAddress(w http.ResponseWriter, r *http.Request) {
 	var address models.Address
 	if err := json.NewDecoder(r.Body).Decode(&address); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
 	}
 
 	if err := h.userService.CreateAddress(r.Context(), &address); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(address)
+	u.RespondWithJSON(w, http.StatusCreated, address)
 }
 
 func (h *UserRoutes) RemoveAddress(w http.ResponseWriter, r *http.Request) {
 	addressID := mux.Vars(r)["id"]
 	if err := h.userService.RemoveAddress(r.Context(), addressID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	u.RespondSuccess(w)
 }
 
 func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	params := utilities.ParsePaginationParams(r, 1, 100)
+	params := u.ParsePaginationParams(r, 1, 100)
 	users, err := h.userService.GetAllUsers(r.Context(), params.Page, params.Limit)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(users)
+	u.RespondWithJSON(w, http.StatusCreated, users)
 }
 
 func (h *UserRoutes) GenerateInviteCode(w http.ResponseWriter, r *http.Request) {
 	// Generate a new invite code
 	code, err := h.authService.GenerateInviteCode(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// Store the invite code in the database
 	if err = h.authService.StoreInviteCode(r.Context(), code, false); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(code)
+	u.RespondWithJSON(w, http.StatusCreated, code)
 }
 
 func (h *UserRoutes) RegisterRoutes() {
@@ -304,6 +294,7 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/logout", h.Logout).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/refresh-token", h.RefreshToken).Methods(http.MethodPost)
+	h.muxRouter.HandleFunc("/users/exists", h.Exists).Methods(http.MethodGet)
 	h.muxRouter.Handle("/users/addresses", h.secure(h.GetAddresses)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/users/addresses", h.secure(h.CreateAddress)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/addresses/{id}", h.secure(h.RemoveAddress)).Methods(http.MethodDelete)
