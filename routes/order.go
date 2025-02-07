@@ -3,7 +3,6 @@ package routes
 import (
 	"encoding/json"
 	"io"
-	"log/slog"
 	"net/http"
 
 	"github.com/dgyurics/marketplace/models"
@@ -32,7 +31,7 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
 		return
 	}
 
@@ -48,7 +47,7 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if res.Error != "" {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		u.RespondWithError(w, r, http.StatusInternalServerError, res.Error)
 		return
 	}
 
@@ -64,7 +63,7 @@ func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 
 	var event models.StripeWebhookEvent
 	if err := json.Unmarshal(body, &event); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
 		return
 	}
 
@@ -76,17 +75,27 @@ func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// verify expected data in event
-	if event.Type == "" || event.Data == nil || event.Data.Object.ID == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
+	if event.Type == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "event.type is required")
+		return
+	}
+
+	if event.Data == nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "event.data is required")
+		return
+	}
+
+	if event.Data.Object.ID == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "event.data.object.id is required")
 		return
 	}
 
 	// save and process event
 	if err := h.orderService.ProcessWebhookEvent(r.Context(), event); err != nil {
-		slog.Error("Error processing webhook event", "error", err)
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 	}
 
-	u.RespondWithJSON(w, http.StatusOK, map[string]string{"status": "success"})
+	u.RespondSuccess(w)
 }
 
 func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {

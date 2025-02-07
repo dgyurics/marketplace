@@ -2,37 +2,12 @@ package utilities
 
 import (
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"net/http"
-
-	"github.com/dgyurics/marketplace/models"
-	"github.com/lib/pq"
 )
 
-// ConvertToDatabaseError converts a raw error [err] to a [models.DatabaseError].
-// Intended to be used in the service layer to convert database errors to an [models.HTTPError].
-func ConvertToDatabaseError(err error) models.DatabaseError {
-	var pqErr *pq.Error
-	if errors.As(err, &pqErr) {
-		switch pqErr.Code {
-		case "23505":
-			return models.UniqueConstraintViolation
-		case "23502":
-			return models.NotNullViolation
-		case "23514":
-			return models.CheckConstraintViolation
-		case "23503":
-			return models.ForeignKeyViolation
-		default:
-			return models.UnknownDatabaseError
-		}
-	}
-	return models.UnknownDatabaseError
-}
-
 // RespondWithError logs the error and responds with a generic error message
-// Exposing the actual error message to the client can be a security risk
+// Exposing the actual error to the client can be a security risk
 func RespondWithError(w http.ResponseWriter, r *http.Request, code int, message string) {
 	slog.Error("request_error",
 		"status_code", code,
@@ -48,18 +23,22 @@ func RespondWithError(w http.ResponseWriter, r *http.Request, code int, message 
 	switch code {
 	case http.StatusNotFound:
 		message = "resource not found"
+	case http.StatusBadRequest:
+		message = "bad request"
 	case http.StatusInternalServerError:
 		message = "something went wrong"
 	}
 	http.Error(w, message, code)
 }
 
+// RespondWithJSON responds with a JSON payload, setting the appropriate headers and status code
 func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(payload)
 }
 
+// RespondSuccess responds with a 200 OK status code
 func RespondSuccess(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusOK)
 }

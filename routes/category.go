@@ -27,7 +27,7 @@ func NewCategoryRoutes(
 func (h *CategoryRoutes) CreateCategory(w http.ResponseWriter, r *http.Request) {
 	var category models.Category
 	if err := json.NewDecoder(r.Body).Decode(&category); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
 	}
 
@@ -51,12 +51,8 @@ func (h *CategoryRoutes) GetCategories(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CategoryRoutes) GetCategory(w http.ResponseWriter, r *http.Request) {
-	categoryId, ok := mux.Vars(r)["id"]
-	if !ok {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid ID")
-		return
-	}
-	category, err := h.categoryService.GetCategoryByID(r.Context(), categoryId)
+	vars := mux.Vars(r)
+	category, err := h.categoryService.GetCategoryByID(r.Context(), vars["id"])
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return

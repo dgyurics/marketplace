@@ -27,23 +27,29 @@ func NewProductRoutes(
 func (h *ProductRoutes) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var product models.Product
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
 		return
 	}
 
-	// Retrieve optional categoryId query parameter
-	categoryId := r.URL.Query().Get("categoryId")
+	if err := h.productService.CreateProduct(r.Context(), &product); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
 
-	if categoryId != "" {
-		if err := h.productService.CreateProductWithCategory(r.Context(), &product, categoryId); err != nil {
-			u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-			return
-		}
-	} else {
-		if err := h.productService.CreateProduct(r.Context(), &product); err != nil {
-			u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-			return
-		}
+	u.RespondWithJSON(w, http.StatusCreated, product)
+}
+
+func (h *ProductRoutes) CreateProductWithCategory(w http.ResponseWriter, r *http.Request) {
+	categoryID := mux.Vars(r)["id"]
+	var product models.Product
+	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
+		return
+	}
+
+	if err := h.productService.CreateProductWithCategory(r.Context(), &product, categoryID); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	u.RespondWithJSON(w, http.StatusCreated, product)
@@ -109,6 +115,7 @@ func (h *ProductRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/products", h.GetProducts).Methods(http.MethodGet)
 	h.muxRouter.HandleFunc("/products/{id}", h.GetProduct).Methods(http.MethodGet)
 	h.muxRouter.Handle("/products", h.secureAdmin(h.CreateProduct)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/products/categories/{id}", h.secureAdmin(h.CreateProductWithCategory)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/products/{id}", h.secureAdmin(h.RemoveProduct)).Methods(http.MethodDelete)
 	h.muxRouter.Handle("/products/{id}/inventory", h.secureAdmin(h.UpdateInventory)).Methods(http.MethodPut)
 	// router.HandleFunc("/products/{id}", h.UpdateProduct).Methods("PUT")
