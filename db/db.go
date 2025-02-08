@@ -5,16 +5,15 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/dgyurics/marketplace/utilities"
+	"github.com/dgyurics/marketplace/models"
 	_ "github.com/lib/pq"
 )
 
 // Connect creates a connection to the database and returns the connection.
 // The returned [sql.DB] is safe for concurrent use by multiple goroutines,
 // and should only be called once.
-func Connect() *sql.DB {
-	databaseURL := utilities.GetEnv("DATABASE_URL")
-	db, err := sql.Open("postgres", databaseURL)
+func Connect(c models.DBConfig) *sql.DB {
+	db, err := sql.Open("postgres", c.URL)
 	if err != nil {
 		slog.Error("Failed to connect to database", "error", err)
 		os.Exit(1)
@@ -23,6 +22,12 @@ func Connect() *sql.DB {
 		slog.Error("Failed to ping database", "error", err)
 		os.Exit(1)
 	}
+
+	db.SetMaxOpenConns(c.MaxOpenConns)
+	db.SetMaxIdleConns(c.MaxIdleConns)
+	db.SetConnMaxLifetime(c.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(c.ConnMaxIdleTime)
+
 	slog.Info("Connected to database")
 	return db
 }

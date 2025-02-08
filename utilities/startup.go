@@ -1,19 +1,20 @@
 // startup utilities provides functions to load environment and configuration data
 // critical for starting the server. It ensures required resources are available,
-// otherwise exits the program.
+// otherwise exiting the program.
 
 package utilities
 
 import (
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/dgyurics/marketplace/models"
 )
 
-// wrapper for os.ReadFile
+// GetKey is a wrapper for os.ReadFile
 // Exits the program with os.Exit(1) if an error occurs while reading the file.
 func GetKey(filename string) []byte {
 	bytes, err := os.ReadFile(filename)
@@ -24,7 +25,7 @@ func GetKey(filename string) []byte {
 	return bytes
 }
 
-// wrapper for os.LookupEnv
+// GetEnv is a wrapper for os.LookupEnv
 // Exits the program with os.Exit(1) if the required environment variable is not set.
 func GetEnv(key string) string {
 	if value, ok := os.LookupEnv(key); ok {
@@ -46,7 +47,29 @@ func parseDuration(key string) time.Duration {
 	return duration
 }
 
-// loads configuration necessary for the auth service
+// parseInt parses an integer from the environment variable
+// Exits the program with os.Exit(1) if an error occurs while parsing the integer.
+func parseInt(key string) int {
+	value, err := strconv.Atoi(GetEnv(key))
+	if err != nil {
+		slog.Error("Invalid integer", "key", key, "error", err)
+		os.Exit(1)
+	}
+	return value
+}
+
+// LoadDBConfig loads configuration necessary for the database connection
+func LoadDBConfig() models.DBConfig {
+	return models.DBConfig{
+		URL:             GetEnv("DATABASE_URL"),
+		MaxOpenConns:    parseInt("DATABASE_MAX_CONNECTIONS"),
+		MaxIdleConns:    parseInt("DATABASE_MAX_IDLE_CONNECTIONS"),
+		ConnMaxLifetime: parseDuration("DATABASE_CONNECTION_MAX_LIFETIME"),
+		ConnMaxIdleTime: parseDuration("DATABASE_CONNECTION_MAX_IDLE_TIME"),
+	}
+}
+
+// LoadAuthConfig loads configuration necessary for the auth service
 func LoadAuthConfig() models.AuthConfig {
 	return models.AuthConfig{
 		PrivateKey:           GetKey("private.pem"),
@@ -57,7 +80,7 @@ func LoadAuthConfig() models.AuthConfig {
 	}
 }
 
-// loads configuration necessary for the payment service
+// LoadOrderConfig loads configuration necessary for the payment service
 func LoadOrderConfig() models.OrderConfig {
 	env := GetEnv("ENVIRONMENT")
 	var environment models.Environment

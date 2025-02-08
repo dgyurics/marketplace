@@ -33,7 +33,7 @@ func main() {
 // initializeServer sets up the database, services, and HTTP server
 func initializeServer() *http.Server {
 	// connect to database
-	db := db.Connect()
+	db := db.Connect(utilities.LoadDBConfig())
 
 	// create database repositories
 	authRepository := repositories.NewAuthRepository(db)
