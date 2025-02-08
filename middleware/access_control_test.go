@@ -34,8 +34,8 @@ func (m *MockAuthService) GenerateInviteCode(ctx context.Context) (string, error
 	return "", nil
 }
 
-func (m *MockAuthService) GetInviteCode(ctx context.Context, code string) (used bool, exists bool, err error) {
-	return false, false, nil
+func (m *MockAuthService) ValidateInviteCode(ctx context.Context, code string, required bool) (valid bool, err error) {
+	return true, nil
 }
 
 func (m *MockAuthService) StoreInviteCode(ctx context.Context, code string, used bool) error {

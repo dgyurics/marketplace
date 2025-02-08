@@ -65,19 +65,20 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if registration code is required and if the invite code is valid
-	if u.IsFeatureEnabled("REQUIRE_INVITE_CODE") && len(credentials.InviteCode) != 6 {
+	inviteCodeReq := u.IsFeatureEnabled("REQUIRE_INVITE_CODE")
+	if inviteCodeReq && len(credentials.InviteCode) != 6 {
 		u.RespondWithError(w, r, http.StatusBadRequest, "Invite code is required")
 		return
 	}
 
 	// fetch the invite code
-	used, exists, err := h.authService.GetInviteCode(r.Context(), credentials.InviteCode)
+	valid, err := h.authService.ValidateInviteCode(r.Context(), credentials.InviteCode, inviteCodeReq)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	if !exists || used {
+	if !valid {
 		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid invite code")
 		return
 	}
@@ -178,7 +179,27 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 
 // Exists checks if a user with the given email exists
 func (h *UserRoutes) Exists(w http.ResponseWriter, r *http.Request) {
-	// TODO
+	var credentials models.Credential
+	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
+		return
+	}
+
+	// Validate the email
+	credentials.Email = strings.ToLower(credentials.Email)
+	if credentials.Email == "" || !isValidEmail(credentials.Email) {
+		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
+		return
+	}
+
+	// Check if the user exists
+	exists, err := h.userService.Exists(r.Context(), credentials.Email)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	u.RespondWithJSON(w, http.StatusOK, map[string]bool{"exists": exists})
 }
 
 // RefreshToken generates a new access token using a valid refresh token
@@ -294,7 +315,7 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/logout", h.Logout).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/refresh-token", h.RefreshToken).Methods(http.MethodPost)
-	h.muxRouter.HandleFunc("/users/exists", h.Exists).Methods(http.MethodGet)
+	h.muxRouter.HandleFunc("/users/exists", h.Exists).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/addresses", h.secure(h.GetAddresses)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/users/addresses", h.secure(h.CreateAddress)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/addresses/{id}", h.secure(h.RemoveAddress)).Methods(http.MethodDelete)

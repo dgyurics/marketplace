@@ -11,6 +11,7 @@ import (
 
 type UserService interface {
 	CreateUser(ctx context.Context, user *models.User) error
+	Exists(ctx context.Context, email string) (bool, error)
 	Login(ctx context.Context, credential *models.Credential) (*models.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error)
 	CreateAddress(ctx context.Context, address *models.Address) error
@@ -33,6 +34,10 @@ func (s *userService) CreateUser(ctx context.Context, user *models.User) error {
 	}
 	user.PasswordHash = string(hashedPassword)
 	return s.repo.CreateUser(ctx, user)
+}
+
+func (s *userService) Exists(ctx context.Context, email string) (bool, error) {
+	return s.repo.Exists(ctx, email)
 }
 
 func (s *userService) Login(ctx context.Context, credentials *models.Credential) (*models.User, error) {

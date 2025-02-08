@@ -27,7 +27,7 @@ type AuthService interface {
 	StoreRefreshToken(ctx context.Context, userID, token string) error
 	RevokeRefreshTokens(ctx context.Context) error
 	GenerateInviteCode(ctx context.Context) (string, error)
-	GetInviteCode(ctx context.Context, code string) (used bool, exists bool, err error)
+	ValidateInviteCode(ctx context.Context, code string, required bool) (valid bool, err error)
 	StoreInviteCode(ctx context.Context, code string, used bool) error
 }
 
@@ -171,9 +171,13 @@ func (a *authService) GenerateInviteCode(ctx context.Context) (string, error) {
 	return string(code), nil
 }
 
-// GetInviteCode retrieves an invitation code from the database and checks if it has been used.
-func (a *authService) GetInviteCode(ctx context.Context, code string) (used bool, exists bool, err error) {
-	return a.repo.GetInviteCode(ctx, code)
+// ValidateInviteCode retrieves an invitation code from the database and checks if it has been used.
+func (a *authService) ValidateInviteCode(ctx context.Context, code string, required bool) (valid bool, err error) {
+	if required {
+		used, _, err := a.repo.GetInviteCode(ctx, code)
+		return !used, err
+	}
+	return true, nil
 }
 
 // StoreInviteCode stores an invitation code in the database. If the code already exists, it updates the "used" status.
