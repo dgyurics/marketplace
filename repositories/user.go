@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/dgyurics/marketplace/models"
@@ -11,7 +12,6 @@ import (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *models.User) error
-	Exists(ctx context.Context, email string) (bool, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error)
 	CreateAddress(ctx context.Context, address *models.Address) error
@@ -27,15 +27,6 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
-func (r *userRepository) Exists(ctx context.Context, email string) (bool, error) {
-	var exists bool
-	err := r.db.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", email).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
-}
-
 func (r *userRepository) CreateUser(ctx context.Context, user *models.User) error {
 	query := `
 		INSERT INTO users (email, password_hash)
@@ -46,12 +37,18 @@ func (r *userRepository) CreateUser(ctx context.Context, user *models.User) erro
 		Scan(&user.ID, &user.Email, &user.Admin, &user.UpdatedAt)
 }
 
+// GetUserByEmail retrieves a user from the database by email
+// Returns nil, nil if no user is found
 func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
 	err := r.db.QueryRowContext(ctx, "SELECT id, email, password_hash, admin, updated_at FROM users WHERE email = $1", email).
 		Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Admin, &user.UpdatedAt)
+
 	if err != nil {
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil // Return nil, nil when no user is found
+		}
+		return nil, err // Return error only on actual DB issues
 	}
 	return &user, nil
 }

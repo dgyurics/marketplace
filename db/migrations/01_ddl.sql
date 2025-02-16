@@ -109,6 +109,17 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS password_reset_codes (
+    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    user_id BIGINT NOT NULL,
+    code_hash TEXT NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Used to limit registration to users with an invitation code
 CREATE TABLE IF NOT EXISTS invitation_codes (
     code CHAR(6) PRIMARY KEY CHECK (code ~ '^[A-Z0-9]{6}$'),

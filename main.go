@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -42,14 +43,17 @@ func initializeServer() *http.Server {
 	productRepository := repositories.NewProductRepository(db)
 	cartRepository := repositories.NewCartRepository(db)
 	orderRepository := repositories.NewOrderRepository(db)
+	passResetRepository := repositories.NewPasswordResetRepository(db)
 
 	// create services
+	emailService := services.NewMailjetSender(utilities.LoadMailjetConfig())
 	authService := services.NewAuthService(authRepository, utilities.LoadAuthConfig())
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	orderService := services.NewOrderService(orderRepository, cartRepository, utilities.LoadOrderConfig(), nil)
 	productService := services.NewProductService(productRepository)
 	cartService := services.NewCartService(cartRepository)
+	passwordResetService := services.NewPasswordResetService(passResetRepository, []byte(utilities.GetEnv("HMAC_SECRET")))
 
 	// create router
 	router := mux.NewRouter()
@@ -57,15 +61,14 @@ func initializeServer() *http.Server {
 	// add middleware
 	router.Use(middleware.LimitBodySizeMiddleware)
 
-	// create base router which encapsulates the primary router and access control middleware
-	baseRouter := routes.NewRouter(router, middleware.NewAccessControl(authService))
-
 	// create routes
+	baseRouter := routes.NewRouter(router, middleware.NewAccessControl(authService))
 	categoryRoutes := routes.NewCategoryRoutes(categoryService, baseRouter)
 	userRoutes := routes.NewUserRoutes(userService, authService, baseRouter)
 	productRoutes := routes.NewProductRoutes(productService, baseRouter)
 	cartRoutes := routes.NewCartRoutes(cartService, baseRouter)
 	orderRoutes := routes.NewOrderRoutes(orderService, baseRouter)
+	passwordResetRoutes := routes.NewPasswordResetRoutes(passwordResetService, userService, emailService, baseRouter)
 
 	// register routes with main router
 	routes.RegisterAllRoutes(
@@ -74,11 +77,13 @@ func initializeServer() *http.Server {
 		productRoutes,
 		cartRoutes,
 		orderRoutes,
+		passwordResetRoutes,
 	)
 
 	// Create and return the HTTP server
+	port := fmt.Sprintf(":%s", utilities.GetEnv("PORT"))
 	server := &http.Server{
-		Addr:           ":8000",
+		Addr:           port,
 		Handler:        router,
 		ReadTimeout:    15 * time.Second,
 		WriteTimeout:   15 * time.Second,
@@ -86,7 +91,7 @@ func initializeServer() *http.Server {
 		MaxHeaderBytes: 0, // DefaultMaxHeaderBytes used if 0
 		ErrorLog:       log.New(&utilities.ErrorLog{}, "", 0),
 	}
-	slog.Info("Server initialized", "port", 8000)
+	slog.Info("Server initialized", "port", port)
 	return server
 }
 

@@ -101,6 +101,16 @@ func LoadOrderConfig() models.OrderConfig {
 	}
 }
 
+func LoadMailjetConfig() models.MailjetConfig {
+	return models.MailjetConfig{
+		Enabled:   IsFeatureEnabled("MAILJET_ENABLED"),
+		APIKey:    GetEnv("MAILJET_API_KEY"),
+		APISecret: GetEnv("MAILJET_API_SECRET"),
+		FromEmail: GetEnv("MAILJET_FROM_EMAIL"),
+		FromName:  GetEnv("MAILJET_FROM_NAME"),
+	}
+}
+
 // IsFeatureEnabled checks if a feature flag is enabled via environment variables (case-insensitive).
 func IsFeatureEnabled(feature string) bool {
 	return strings.EqualFold(os.Getenv(feature), "true")

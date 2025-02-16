@@ -20,12 +20,15 @@ type contextKey string
 const UserKey contextKey = "user"
 
 type AuthService interface {
+	// TODO move to separate service
 	GenerateAccessToken(user models.User) (token string, err error)
 	ValidateAccessToken(token string) (user models.User, err error)
+	// TODO move to separate service
 	GenerateRefreshToken() (string, error)
-	ValidateRefreshToken(ctx context.Context, token string) (models.User, error)
 	StoreRefreshToken(ctx context.Context, userID, token string) error
+	ValidateRefreshToken(ctx context.Context, token string) (models.User, error)
 	RevokeRefreshTokens(ctx context.Context) error
+	// TODO move to separate service
 	GenerateInviteCode(ctx context.Context) (string, error)
 	ValidateInviteCode(ctx context.Context, code string, required bool) (valid bool, err error)
 	StoreInviteCode(ctx context.Context, code string, used bool) error
@@ -35,7 +38,7 @@ type authService struct {
 	repo                 repositories.AuthRepository
 	privateKey           []byte        // asymmetric key pair for signing access tokens
 	publicKey            []byte        // asymmetric key pair for verifying access tokens
-	hmacSecret           []byte        // symmetric key for hashing refresh tokens
+	hmacKey              []byte        // symmetric key for hashing refresh tokens
 	durationAccessToken  time.Duration // duration of jwt access token
 	durationRefreshToken time.Duration // duration of refresh token
 }
@@ -47,7 +50,7 @@ func NewAuthService(
 		repo:                 repo,
 		privateKey:           config.PrivateKey,
 		publicKey:            config.PublicKey,
-		hmacSecret:           config.HMACSecret,
+		hmacKey:              config.HMACSecret,
 		durationAccessToken:  config.DurationAccessToken,
 		durationRefreshToken: config.DurationRefreshToken,
 	}
@@ -103,7 +106,7 @@ func (a *authService) GenerateRefreshToken() (string, error) {
 func (a *authService) ValidateRefreshToken(ctx context.Context, token string) (usr models.User, err error) {
 	now := time.Now()
 	// Retrieve the refresh token from the repository
-	tokenHash := hashRefreshToken(token, a.hmacSecret)
+	tokenHash := hashString(token, a.hmacKey)
 	refreshToken, err := a.repo.GetRefreshToken(ctx, tokenHash)
 	if err != nil || refreshToken == nil {
 		return usr, errors.New("invalid refresh token")
@@ -127,7 +130,7 @@ func (a *authService) StoreRefreshToken(ctx context.Context, userID, token strin
 	now := time.Now().UTC()
 	return a.repo.StoreRefreshToken(ctx, models.RefreshToken{
 		User:      &models.User{ID: userID},
-		TokenHash: hashRefreshToken(token, a.hmacSecret),
+		TokenHash: hashString(token, a.hmacKey),
 		Revoked:   false,
 		ExpiresAt: now.Add(a.durationRefreshToken),
 		CreatedAt: now,
@@ -140,7 +143,7 @@ func (a *authService) RevokeRefreshTokens(ctx context.Context) error {
 	return a.repo.RevokeRefreshTokens(ctx, userID)
 }
 
-func hashRefreshToken(token string, secret []byte) string {
+func hashString(token string, secret []byte) string {
 	h := hmac.New(sha256.New, secret)
 	h.Write([]byte(token))                // FIXME check for error
 	return hex.EncodeToString(h.Sum(nil)) // return the final HMAC hash as a hexadecimal string

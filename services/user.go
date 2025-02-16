@@ -11,7 +11,7 @@ import (
 
 type UserService interface {
 	CreateUser(ctx context.Context, user *models.User) error
-	Exists(ctx context.Context, email string) (bool, error)
+	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	Login(ctx context.Context, credential *models.Credential) (*models.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error)
 	CreateAddress(ctx context.Context, address *models.Address) error
@@ -28,7 +28,7 @@ func NewUserService(repo repositories.UserRepository) UserService {
 }
 
 func (s *userService) CreateUser(ctx context.Context, user *models.User) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedPassword, err := generateFromPassword(user.Password)
 	if err != nil {
 		return err
 	}
@@ -36,8 +36,13 @@ func (s *userService) CreateUser(ctx context.Context, user *models.User) error {
 	return s.repo.CreateUser(ctx, user)
 }
 
-func (s *userService) Exists(ctx context.Context, email string) (bool, error) {
-	return s.repo.Exists(ctx, email)
+// generateFromPassword generates a hashed password from a plaintext password
+func generateFromPassword(password string) ([]byte, error) {
+	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+}
+
+func (s *userService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	return s.repo.GetUserByEmail(ctx, email)
 }
 
 func (s *userService) Login(ctx context.Context, credentials *models.Credential) (*models.User, error) {
@@ -48,6 +53,9 @@ func (s *userService) verifyEmail(ctx context.Context, credentials *models.Crede
 	user, err := s.repo.GetUserByEmail(ctx, credentials.Email)
 	if err != nil {
 		return nil, err
+	}
+	if user == nil {
+		return nil, errors.New("user not found")
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password))
 	return user, err

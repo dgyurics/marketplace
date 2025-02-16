@@ -193,13 +193,14 @@ func (h *UserRoutes) Exists(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if the user exists
-	exists, err := h.userService.Exists(r.Context(), credentials.Email)
+	usr, err := h.userService.GetUserByEmail(r.Context(), credentials.Email)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusOK, map[string]bool{"exists": exists})
+	usrExists := usr != nil
+	u.RespondWithJSON(w, http.StatusOK, map[string]bool{"exists": usrExists})
 }
 
 // RefreshToken generates a new access token using a valid refresh token
@@ -323,9 +324,5 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/users/invite", h.secureAdmin(h.GenerateInviteCode)).Methods(http.MethodPost)
 	// router.HandleFunc("/users/profile", GetProfile).Methods("GET")
 	// router.HandleFunc("/users/update-profile", UpdateProfile).Methods("POST")
-	// router.HandleFunc("/users/change-password", ChangePassword).Methods("POST")
-	// router.HandleFunc("/users/forgot-password", ForgotPassword).Methods("POST")
-	// router.HandleFunc("/users/reset-password", ResetPassword).Methods("POST")
-	// router.HandleFunc("/users", GetUsers).Methods("GET")
 	// router.HandleFunc("/users/{id}", DeleteUser).Methods("DELETE")
 }
