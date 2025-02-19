@@ -8,23 +8,32 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
 
 type UserRoutes struct {
 	router
-	userService services.UserService
-	authService services.AuthService
+	userService    services.UserService
+	inviteService  services.InviteService
+	jwtService     services.JWTService
+	refreshService services.RefreshService
 }
 
-func NewUserRoutes(userService services.UserService, authService services.AuthService, router router) *UserRoutes {
+func NewUserRoutes(
+	userService services.UserService,
+	inviteService services.InviteService,
+	jwtService services.JWTService,
+	refreshService services.RefreshService,
+	router router) *UserRoutes {
 	return &UserRoutes{
-		router:      router,
-		userService: userService,
-		authService: authService,
+		router:         router,
+		userService:    userService,
+		inviteService:  inviteService,
+		jwtService:     jwtService,
+		refreshService: refreshService,
 	}
 }
 
@@ -46,7 +55,7 @@ func isValidEmail(email string) bool {
 }
 
 func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
-	var credentials models.Credential
+	var credentials types.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
@@ -72,7 +81,7 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// fetch the invite code
-	valid, err := h.authService.ValidateInviteCode(r.Context(), credentials.InviteCode, inviteCodeReq)
+	valid, err := h.inviteService.ValidateCode(r.Context(), credentials.InviteCode, inviteCodeReq)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -83,7 +92,7 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usr := models.User{
+	usr := types.User{
 		Email:    credentials.Email,
 		Password: credentials.Password,
 	}
@@ -95,12 +104,12 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Mark the invite code as used
-	if err := h.authService.StoreInviteCode(r.Context(), credentials.InviteCode, true); err != nil {
+	if err := h.inviteService.StoreCode(r.Context(), credentials.InviteCode, true); err != nil {
 		slog.Error("Failed to update invite code", "code", credentials.InviteCode, "error", err.Error())
 	}
 
 	// Generate access token
-	accessToken, err := h.authService.GenerateAccessToken(usr)
+	accessToken, err := h.jwtService.GenerateToken(usr)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -108,14 +117,14 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 
 	// Generate refresh token
 	var token string
-	token, err = h.authService.GenerateRefreshToken()
+	token, err = h.refreshService.GenerateToken()
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Store refresh token
-	err = h.authService.StoreRefreshToken(r.Context(), usr.ID, token)
+	err = h.refreshService.StoreToken(r.Context(), usr.ID, token)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -128,7 +137,7 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
-	var credentials models.Credential
+	var credentials types.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
@@ -152,21 +161,21 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate access token
-	accessToken, err := h.authService.GenerateAccessToken(*usr)
+	accessToken, err := h.jwtService.GenerateToken(*usr)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Generate refresh token
-	refreshToken, err := h.authService.GenerateRefreshToken()
+	refreshToken, err := h.refreshService.GenerateToken()
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Store refresh token
-	if err := h.authService.StoreRefreshToken(r.Context(), usr.ID, refreshToken); err != nil {
+	if err := h.refreshService.StoreToken(r.Context(), usr.ID, refreshToken); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -179,7 +188,7 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 
 // Exists checks if a user with the given email exists
 func (h *UserRoutes) Exists(w http.ResponseWriter, r *http.Request) {
-	var credentials models.Credential
+	var credentials types.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
@@ -217,8 +226,8 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate the refresh token
-	user, err := h.authService.ValidateRefreshToken(r.Context(), requestBody.RefreshToken)
+	// Parse the refresh token
+	usr, err := h.refreshService.ParseToken(r.Context(), requestBody.RefreshToken)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusUnauthorized, "Invalid or expired refresh token")
 		return
@@ -228,7 +237,7 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	// revoke the just validated refresh token and generate a new one
 
 	// Generate a new access token
-	accessToken, err := h.authService.GenerateAccessToken(user)
+	accessToken, err := h.jwtService.GenerateToken(*usr)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -241,7 +250,7 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserRoutes) Logout(w http.ResponseWriter, r *http.Request) {
-	if err := h.authService.RevokeRefreshTokens(r.Context()); err != nil {
+	if err := h.refreshService.RevokeTokens(r.Context()); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -260,7 +269,7 @@ func (h *UserRoutes) GetAddresses(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserRoutes) CreateAddress(w http.ResponseWriter, r *http.Request) {
-	var address models.Address
+	var address types.Address
 	if err := json.NewDecoder(r.Body).Decode(&address); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
@@ -297,13 +306,13 @@ func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserRoutes) GenerateInviteCode(w http.ResponseWriter, r *http.Request) {
 	// Generate a new invite code
-	code, err := h.authService.GenerateInviteCode(r.Context())
+	code, err := h.inviteService.GenerateCode(r.Context())
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// Store the invite code in the database
-	if err = h.authService.StoreInviteCode(r.Context(), code, false); err != nil {
+	if err = h.inviteService.StoreCode(r.Context(), code, false); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}

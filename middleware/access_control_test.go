@@ -1,54 +1,39 @@
 package middleware
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/stretchr/testify/assert"
 )
 
-type MockAuthService struct {
-	ValidateTokenFunc func(token string) (models.User, error)
+// MockJWTService simulates JWTService behavior for testing
+type MockJWTService struct {
+	ParseTokenFunc func(token string) (*types.User, error)
 }
 
-func (m *MockAuthService) ValidateAccessToken(token string) (models.User, error) {
-	return m.ValidateTokenFunc(token)
+func (m *MockJWTService) GenerateToken(user types.User) (string, error) {
+	return "", errors.New("not implemented")
 }
 
-func (m *MockAuthService) GenerateAccessToken(user models.User) (string, error) { return "", nil }
-func (m *MockAuthService) GenerateRefreshToken() (string, error)                { return "", nil }
-func (m *MockAuthService) ValidateRefreshToken(ctx context.Context, token string) (models.User, error) {
-	return models.User{}, nil
-}
-func (m *MockAuthService) StoreRefreshToken(ctx context.Context, userID, token string) error {
-	return nil
-}
-func (m *MockAuthService) RevokeRefreshTokens(ctx context.Context) error { return nil }
-
-func (m *MockAuthService) GenerateInviteCode(ctx context.Context) (string, error) {
-	return "", nil
-}
-
-func (m *MockAuthService) ValidateInviteCode(ctx context.Context, code string, required bool) (valid bool, err error) {
-	return true, nil
-}
-
-func (m *MockAuthService) StoreInviteCode(ctx context.Context, code string, used bool) error {
-	return nil
+func (m *MockJWTService) ParseToken(token string) (*types.User, error) {
+	if m.ParseTokenFunc != nil {
+		return m.ParseTokenFunc(token)
+	}
+	return nil, errors.New("invalid token")
 }
 
 func TestAuthenticateUser_ValidToken(t *testing.T) {
-	mockAuthService := &MockAuthService{
-		ValidateTokenFunc: func(token string) (models.User, error) {
-			return models.User{ID: "123", Email: "test@example.com"}, nil
+	mockJWTService := &MockJWTService{
+		ParseTokenFunc: func(token string) (*types.User, error) {
+			return &types.User{ID: "123", Email: "test@example.com"}, nil
 		},
 	}
-	auth := NewAccessControl(mockAuthService)
+	auth := NewAccessControl(mockJWTService)
 
 	// Create a test request with a valid token
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -57,10 +42,10 @@ func TestAuthenticateUser_ValidToken(t *testing.T) {
 
 	// Mock next handler to verify user context
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, ok := r.Context().Value(services.UserKey).(*models.User)
-		if !ok || user.ID != "123" {
-			t.Errorf("expected user ID 123 in context, got %+v", user)
-		}
+		user, ok := r.Context().Value(services.UserKey).(*types.User)
+		assert.True(t, ok, "expected user to be stored in context")
+		assert.NotNil(t, user, "user should not be nil")
+		assert.Equal(t, "123", user.ID, "expected user ID to be 123")
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -73,12 +58,12 @@ func TestAuthenticateUser_ValidToken(t *testing.T) {
 }
 
 func TestAuthenticateUser_InvalidToken(t *testing.T) {
-	mockAuthService := &MockAuthService{
-		ValidateTokenFunc: func(token string) (models.User, error) {
-			return models.User{}, errors.New("invalid token")
+	mockJWTService := &MockJWTService{
+		ParseTokenFunc: func(token string) (*types.User, error) {
+			return nil, errors.New("invalid token")
 		},
 	}
-	auth := NewAccessControl(mockAuthService)
+	auth := NewAccessControl(mockJWTService)
 
 	// Create a test request with an invalid token
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -99,12 +84,12 @@ func TestAuthenticateUser_InvalidToken(t *testing.T) {
 }
 
 func TestAuthenticateAdmin_ValidAdminToken(t *testing.T) {
-	mockAuthService := &MockAuthService{
-		ValidateTokenFunc: func(token string) (models.User, error) {
-			return models.User{ID: "123", Email: "admin@example.com", Admin: true}, nil
+	mockJWTService := &MockJWTService{
+		ParseTokenFunc: func(token string) (*types.User, error) {
+			return &types.User{ID: "123", Email: "admin@example.com", Admin: true}, nil
 		},
 	}
-	auth := NewAccessControl(mockAuthService)
+	auth := NewAccessControl(mockJWTService)
 
 	// Create a test request with a valid admin token
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -113,9 +98,11 @@ func TestAuthenticateAdmin_ValidAdminToken(t *testing.T) {
 
 	// Mock next handler to verify user context
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, ok := r.Context().Value(services.UserKey).(*models.User)
+		user, ok := r.Context().Value(services.UserKey).(*types.User)
 		assert.True(t, ok, "expected user in context")
+		assert.NotNil(t, user, "user should not be nil")
 		assert.Equal(t, "123", user.ID)
+		assert.True(t, user.Admin, "user should be admin")
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -128,12 +115,12 @@ func TestAuthenticateAdmin_ValidAdminToken(t *testing.T) {
 }
 
 func TestAuthenticateAdmin_NonAdminToken(t *testing.T) {
-	mockAuthService := &MockAuthService{
-		ValidateTokenFunc: func(token string) (models.User, error) {
-			return models.User{ID: "456", Email: "user@example.com", Admin: false}, nil
+	mockJWTService := &MockJWTService{
+		ParseTokenFunc: func(token string) (*types.User, error) {
+			return &types.User{ID: "456", Email: "user@example.com", Admin: false}, nil
 		},
 	}
-	auth := NewAccessControl(mockAuthService)
+	auth := NewAccessControl(mockJWTService)
 
 	// Create a test request with a non-admin token
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -154,12 +141,12 @@ func TestAuthenticateAdmin_NonAdminToken(t *testing.T) {
 }
 
 func TestAuthenticateAdmin_InvalidToken(t *testing.T) {
-	mockAuthService := &MockAuthService{
-		ValidateTokenFunc: func(token string) (models.User, error) {
-			return models.User{}, errors.New("invalid token")
+	mockJWTService := &MockJWTService{
+		ParseTokenFunc: func(token string) (*types.User, error) {
+			return nil, errors.New("invalid token")
 		},
 	}
-	auth := NewAccessControl(mockAuthService)
+	auth := NewAccessControl(mockJWTService)
 
 	// Create a test request with an invalid token
 	req := httptest.NewRequest(http.MethodGet, "/", nil)

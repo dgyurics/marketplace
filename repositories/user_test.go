@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -86,7 +86,7 @@ func TestCreateAddress(t *testing.T) {
 	phone := "123-456-7890"
 
 	// Create a test address
-	address := &models.Address{
+	address := &types.Address{
 		UserID:       user.ID,
 		Addressee:    "John Doe",
 		AddressLine1: "123 Test St",
@@ -130,7 +130,7 @@ func TestGetAddresses(t *testing.T) {
 	phone := "123-456-7890"
 
 	// Create multiple addresses for the user
-	address1 := &models.Address{
+	address1 := &types.Address{
 		UserID:       user.ID,
 		Addressee:    "John Doe",
 		AddressLine1: "123 Test St",
@@ -140,7 +140,7 @@ func TestGetAddresses(t *testing.T) {
 		PostalCode:   "12345",
 		Phone:        &phone,
 	}
-	address2 := &models.Address{
+	address2 := &types.Address{
 		UserID:       user.ID,
 		Addressee:    "Jane Doe",
 		AddressLine1: "456 Test Ave",
@@ -196,7 +196,7 @@ func TestRemoveAddress(t *testing.T) {
 	phone := "123-456-7890"
 
 	// Create a test address
-	address := &models.Address{
+	address := &types.Address{
 		UserID:       user.ID,
 		Addressee:    "John Doe",
 		AddressLine1: "123 Test St",

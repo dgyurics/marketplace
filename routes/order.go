@@ -5,8 +5,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
 )
 
@@ -61,7 +61,7 @@ func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var event models.StripeWebhookEvent
+	var event types.StripeWebhookEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
 		return

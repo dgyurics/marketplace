@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/types"
 )
 
 type Authorizer interface {
@@ -16,11 +16,11 @@ type Authorizer interface {
 }
 
 type authorizer struct {
-	authService services.AuthService
+	jwtService services.JWTService
 }
 
-func NewAccessControl(authService services.AuthService) *authorizer {
-	return &authorizer{authService}
+func NewAccessControl(jwtService services.JWTService) *authorizer {
+	return &authorizer{jwtService}
 }
 
 // AuthenticateUser verifies the Authorization header.
@@ -61,20 +61,20 @@ func (a *authorizer) AuthenticateAdmin(next http.HandlerFunc) http.Handler {
 // authenticateToken checks the Authorization header for a token,
 // and validates it using the authService. If the token is valid,
 // the user is returned. If the token is invalid, an error is returned.
-func (a *authorizer) authenticateToken(r *http.Request) (models.User, error) {
+func (a *authorizer) authenticateToken(r *http.Request) (types.User, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
-		return models.User{}, errors.New("authorization header missing")
+		return types.User{}, errors.New("authorization header missing")
 	}
 
 	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 	if tokenString == authHeader {
-		return models.User{}, errors.New("invalid token format")
+		return types.User{}, errors.New("invalid token format")
 	}
 
-	user, err := a.authService.ValidateAccessToken(tokenString)
+	user, err := a.jwtService.ParseToken(tokenString)
 	if err != nil {
-		return models.User{}, errors.New("invalid or expired token")
+		return types.User{}, errors.New("invalid or expired token")
 	}
-	return user, nil
+	return *user, nil
 }

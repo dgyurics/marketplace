@@ -6,16 +6,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/lib/pq"
 )
 
 type UserRepository interface {
-	CreateUser(ctx context.Context, user *models.User) error
-	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
-	GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error)
-	CreateAddress(ctx context.Context, address *models.Address) error
-	GetAddresses(ctx context.Context, userID string) ([]models.Address, error)
+	CreateUser(ctx context.Context, user *types.User) error
+	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
+	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
+	CreateAddress(ctx context.Context, address *types.Address) error
+	GetAddresses(ctx context.Context, userID string) ([]types.Address, error)
 	RemoveAddress(ctx context.Context, userID, addressID string) error
 }
 
@@ -27,7 +27,7 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
-func (r *userRepository) CreateUser(ctx context.Context, user *models.User) error {
+func (r *userRepository) CreateUser(ctx context.Context, user *types.User) error {
 	query := `
 		INSERT INTO users (email, password_hash)
 		VALUES ($1, $2)
@@ -39,8 +39,8 @@ func (r *userRepository) CreateUser(ctx context.Context, user *models.User) erro
 
 // GetUserByEmail retrieves a user from the database by email
 // Returns nil, nil if no user is found
-func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	var user models.User
+func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*types.User, error) {
+	var user types.User
 	err := r.db.QueryRowContext(ctx, "SELECT id, email, password_hash, admin, updated_at FROM users WHERE email = $1", email).
 		Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Admin, &user.UpdatedAt)
 
@@ -53,8 +53,8 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 	return &user, nil
 }
 
-func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error) {
-	var users []models.User
+func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error) {
+	var users []types.User
 	query := `
 		SELECT id, email, admin, updated_at
 		FROM users
@@ -66,7 +66,7 @@ func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]mo
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var user models.User
+		var user types.User
 		err = rows.Scan(&user.ID, &user.Email, &user.Admin, &user.UpdatedAt)
 		if err != nil {
 			return nil, err
@@ -76,7 +76,7 @@ func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]mo
 	return users, nil
 }
 
-func (r *userRepository) CreateAddress(ctx context.Context, address *models.Address) error {
+func (r *userRepository) CreateAddress(ctx context.Context, address *types.Address) error {
 	query := `
 		INSERT INTO addresses (
 			user_id,
@@ -111,13 +111,13 @@ func (r *userRepository) CreateAddress(ctx context.Context, address *models.Addr
 	return err
 }
 
-func (r *userRepository) GetPrimaryAddress(ctx context.Context, userID string) (*models.Address, error) {
+func (r *userRepository) GetPrimaryAddress(ctx context.Context, userID string) (*types.Address, error) {
 	query := `
 		SELECT id, user_id, addressee, address_line1, address_line2, city, state_code, postal_code, phone, is_deleted, created_at, updated_at
 		FROM addresses
 		WHERE user_id = $1 AND is_deleted = FALSE
 	`
-	var address models.Address
+	var address types.Address
 	err := r.db.QueryRowContext(ctx, query, userID).Scan(
 		&address.ID,
 		&address.UserID,
@@ -135,14 +135,14 @@ func (r *userRepository) GetPrimaryAddress(ctx context.Context, userID string) (
 	return &address, err
 }
 
-func (r *userRepository) GetAddresses(ctx context.Context, userID string) ([]models.Address, error) {
+func (r *userRepository) GetAddresses(ctx context.Context, userID string) ([]types.Address, error) {
 	query := `
 		SELECT id, user_id, addressee, address_line1, address_line2, city, state_code, postal_code, phone, is_deleted, created_at, updated_at
 		FROM addresses
 		WHERE user_id = $1 AND is_deleted = FALSE
 	`
 
-	addresses := []models.Address{}
+	addresses := []types.Address{}
 	rows, err := r.db.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -151,7 +151,7 @@ func (r *userRepository) GetAddresses(ctx context.Context, userID string) ([]mod
 
 	// Iterate over the rows and populate the addresses slice
 	for rows.Next() {
-		var address models.Address
+		var address types.Address
 		if err := rows.Scan(
 			&address.ID,
 			&address.UserID,

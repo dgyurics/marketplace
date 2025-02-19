@@ -8,16 +8,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 )
 
 type OrderRepository interface {
-	GetOrder(ctx context.Context, order *models.Order) error
-	GetOrders(ctx context.Context, userID string, page, limit int) ([]models.Order, error)
-	PopulateOrderItems(ctx context.Context, orders *[]models.Order) error
-	CreateOrder(ctx context.Context, userID, addressID string) (*models.Order, error)
-	UpdateOrder(ctx context.Context, order *models.Order) error
-	CreateWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error
+	GetOrder(ctx context.Context, order *types.Order) error
+	GetOrders(ctx context.Context, userID string, page, limit int) ([]types.Order, error)
+	PopulateOrderItems(ctx context.Context, orders *[]types.Order) error
+	CreateOrder(ctx context.Context, userID, addressID string) (*types.Order, error)
+	UpdateOrder(ctx context.Context, order *types.Order) error
+	CreateWebhookEvent(ctx context.Context, event types.StripeWebhookEvent) error
 }
 
 type orderRepository struct {
@@ -29,7 +29,7 @@ func NewOrderRepository(db *sql.DB) OrderRepository {
 }
 
 // CreateOrder creates a new order from the user's cart
-func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID string) (*models.Order, error) {
+func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID string) (*types.Order, error) {
 	// 1) Create or update the order from the user's cart
 	query := "SELECT update_or_create_order_from_cart($1, $2)"
 	var orderID string
@@ -55,7 +55,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID str
 		FROM orders
 		WHERE id = $1
 	`
-	order := &models.Order{}
+	order := &types.Order{}
 	err = r.db.QueryRowContext(ctx, query, orderID).Scan(
 		&order.ID,
 		&order.UserID,
@@ -76,7 +76,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID str
 }
 
 // CreateWebhookEvent saves a Stripe webhook event to the database
-func (r *orderRepository) CreateWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error {
+func (r *orderRepository) CreateWebhookEvent(ctx context.Context, event types.StripeWebhookEvent) error {
 	query := `
 		INSERT INTO webhook_events (
 			id,
@@ -100,7 +100,7 @@ func (r *orderRepository) CreateWebhookEvent(ctx context.Context, event models.S
 }
 
 // UpdateOrder updates an order with new status and/or payment intent ID
-func (r *orderRepository) UpdateOrder(ctx context.Context, order *models.Order) error {
+func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) error {
 	if order.ID == "" {
 		return fmt.Errorf("missing order ID")
 	}
@@ -139,7 +139,7 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *models.Order) 
 }
 
 // GetOrders retrieves all orders for a user
-func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, limit int) ([]models.Order, error) {
+func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, limit int) ([]types.Order, error) {
 	query := `
 		SELECT
 			id,
@@ -163,9 +163,9 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 		return nil, err
 	}
 	defer rows.Close()
-	result := []models.Order{}
+	result := []types.Order{}
 	for rows.Next() {
-		order := models.Order{}
+		order := types.Order{}
 		err := rows.Scan(
 			&order.ID,
 			&order.UserID,
@@ -188,7 +188,7 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 }
 
 // PopulateOrderItems populates the order items for a list of orders
-func (r *orderRepository) PopulateOrderItems(ctx context.Context, orders *[]models.Order) error {
+func (r *orderRepository) PopulateOrderItems(ctx context.Context, orders *[]types.Order) error {
 	if len(*orders) == 0 {
 		return nil
 	}
@@ -226,12 +226,12 @@ func (r *orderRepository) PopulateOrderItems(ctx context.Context, orders *[]mode
 	defer rows.Close()
 
 	// Map to store items grouped by order ID
-	itemMap := make(map[string][]models.OrderItem)
+	itemMap := make(map[string][]types.OrderItem)
 
 	// Process query results
 	for rows.Next() {
 		var orderID string
-		item := models.OrderItem{}
+		item := types.OrderItem{}
 		if err := rows.Scan(
 			&orderID,
 			&item.ProductID,
@@ -256,7 +256,7 @@ func (r *orderRepository) PopulateOrderItems(ctx context.Context, orders *[]mode
 }
 
 // GetOrder retrieves an order by ID, user ID, or payment intent ID
-func (r *orderRepository) GetOrder(ctx context.Context, order *models.Order) error {
+func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) error {
 	// Validate input
 	if order.ID == "" && order.UserID == "" && order.PaymentIntentID == "" {
 		return fmt.Errorf("at least one of order.ID, order.UserID, or order.PaymentIntentID must be provided")

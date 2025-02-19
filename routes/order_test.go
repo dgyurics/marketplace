@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -23,19 +23,19 @@ func (m *MockOrderService) VerifyWebhookEventSignature(payload []byte, sigHeader
 	return args.Error(0)
 }
 
-func (m *MockOrderService) ProcessWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error {
+func (m *MockOrderService) ProcessWebhookEvent(ctx context.Context, event types.StripeWebhookEvent) error {
 	args := m.Called(ctx, event)
 	return args.Error(0)
 }
 
-func (m *MockOrderService) CreateOrder(ctx context.Context, addressID string) (models.PaymentIntent, error) {
+func (m *MockOrderService) CreateOrder(ctx context.Context, addressID string) (types.PaymentIntent, error) {
 	args := m.Called(ctx, addressID)
-	return args.Get(0).(models.PaymentIntent), args.Error(1)
+	return args.Get(0).(types.PaymentIntent), args.Error(1)
 }
 
-func (m *MockOrderService) GetOrders(ctx context.Context, page, limit int) ([]models.Order, error) {
+func (m *MockOrderService) GetOrders(ctx context.Context, page, limit int) ([]types.Order, error) {
 	args := m.Called(ctx, page, limit)
-	return args.Get(0).([]models.Order), args.Error(1)
+	return args.Get(0).([]types.Order), args.Error(1)
 }
 
 func TestCreateOrder(t *testing.T) {
@@ -50,7 +50,7 @@ func TestCreateOrder(t *testing.T) {
 
 	// Prepare mock data for the request and expected response
 	expectedAddressID := "address123"
-	expectedResponse := models.PaymentIntent{
+	expectedResponse := types.PaymentIntent{
 		Status: "pending",
 	}
 
@@ -81,7 +81,7 @@ func TestCreateOrder(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	// Decode the response body
-	var response models.PaymentIntent
+	var response types.PaymentIntent
 	err = json.NewDecoder(rr.Body).Decode(&response)
 	require.NoError(t, err)
 

@@ -5,29 +5,29 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
 )
 
-type PasswordResetRoutes struct {
+type PasswordRoutes struct {
 	router
-	servicePasswordReset services.PasswordResetService
-	serviceUser          services.UserService
-	serviceEmail         services.EmailSender
+	servicePassword services.PasswordService
+	serviceUser     services.UserService
+	serviceEmail    services.EmailSender
 }
 
-func NewPasswordResetRoutes(servicePR services.PasswordResetService, serviceUsr services.UserService, emailSndr services.EmailSender, router router) *PasswordResetRoutes {
-	return &PasswordResetRoutes{
-		router:               router,
-		servicePasswordReset: servicePR,
-		serviceUser:          serviceUsr,
-		serviceEmail:         emailSndr,
+func NewPasswordRoutes(servicePR services.PasswordService, serviceUsr services.UserService, emailSndr services.EmailSender, router router) *PasswordRoutes {
+	return &PasswordRoutes{
+		router:          router,
+		servicePassword: servicePR,
+		serviceUser:     serviceUsr,
+		serviceEmail:    emailSndr,
 	}
 }
 
-func (h *PasswordResetRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
-	var credentials models.Credential
+func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var credentials types.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
@@ -50,14 +50,14 @@ func (h *PasswordResetRoutes) ResetPassword(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Generate password reset code
-	code, err := h.servicePasswordReset.GeneratePasswordResetCode(r.Context())
+	code, err := h.servicePassword.GenerateResetCode(r.Context())
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Store password reset code
-	if err := h.servicePasswordReset.StorePasswordResetCode(r.Context(), code, usr.ID); err != nil {
+	if err := h.servicePassword.StoreResetCode(r.Context(), code, usr.ID); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -77,8 +77,8 @@ func (h *PasswordResetRoutes) ResetPassword(w http.ResponseWriter, r *http.Reque
 	u.RespondSuccess(w)
 }
 
-func (h *PasswordResetRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *http.Request) {
-	var credentials models.Credential
+func (h *PasswordRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *http.Request) {
+	var credentials types.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
@@ -100,7 +100,7 @@ func (h *PasswordResetRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *htt
 	}
 
 	// Validate email and code match, exists, and is not expired
-	valid, err := h.servicePasswordReset.ValidatePasswordResetCode(r.Context(), credentials.ResetCode, credentials.Email)
+	valid, err := h.servicePassword.ValidateResetCode(r.Context(), credentials.ResetCode, credentials.Email)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -111,7 +111,7 @@ func (h *PasswordResetRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *htt
 	}
 
 	// Reset the password
-	if err := h.servicePasswordReset.ResetPassword(r.Context(), credentials.ResetCode, credentials.Email, credentials.Password); err != nil {
+	if err := h.servicePassword.ResetPassword(r.Context(), credentials.ResetCode, credentials.Email, credentials.Password); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -119,7 +119,7 @@ func (h *PasswordResetRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *htt
 	u.RespondSuccess(w)
 }
 
-func (h *PasswordResetRoutes) RegisterRoutes() {
+func (h *PasswordRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/users/password-reset", h.ResetPassword).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/password-reset/confirm", h.ResetPasswordConfirm).Methods(http.MethodPost)
 }

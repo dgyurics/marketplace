@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +12,7 @@ func TestCreateCategory(t *testing.T) {
 	repo := NewCategoryRepository(dbPool)
 	ctx := context.Background()
 
-	category := models.Category{
+	category := types.Category{
 		Name:        "Test Category",
 		Description: "A test category description",
 	}
@@ -31,7 +31,7 @@ func TestGetAllCategories(t *testing.T) {
 	ctx := context.Background()
 
 	// Add a test category for retrieval
-	category := models.Category{
+	category := types.Category{
 		Name:        "Test Category for GetAll",
 		Description: "A test category for get all",
 	}
@@ -64,7 +64,7 @@ func TestGetCategoryByID(t *testing.T) {
 	ctx := context.Background()
 
 	// Add a test category for retrieval
-	category := models.Category{
+	category := types.Category{
 		Name:        "Test Category for GetByID",
 		Description: "A test category for get by ID",
 	}
@@ -90,7 +90,7 @@ func TestGetProductsByCategoryID(t *testing.T) {
 	ctx := context.Background()
 
 	// Add a test category
-	category := models.Category{
+	category := types.Category{
 		Name:        "Test Category for Products",
 		Description: "A test category for products",
 	}
@@ -99,7 +99,7 @@ func TestGetProductsByCategoryID(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on category creation")
 
 	// Add a test product associated with the category
-	product := &models.Product{
+	product := &types.Product{
 		Name:        "Test Product for Category",
 		Price:       500000,
 		Description: "A test product for category",

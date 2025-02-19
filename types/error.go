@@ -1,4 +1,4 @@
-package models
+package types
 
 // HTTPError represents an error that occurred during an HTTP request.
 type HTTPError struct {

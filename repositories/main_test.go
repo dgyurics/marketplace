@@ -2,19 +2,27 @@ package repositories
 
 import (
 	"database/sql"
+	"log/slog"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/dgyurics/marketplace/db"
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
+	"github.com/joho/godotenv"
 )
 
 var dbPool *sql.DB
 
 func TestMain(m *testing.M) {
-	dbConfig := models.DBConfig{
-		URL:             "postgres://postgres:postgres@localhost:5432/marketplace?sslmode=disable",
+	// Load environment variables from .env
+	err := godotenv.Load("../.env")
+	if err != nil {
+		slog.Warn("No .env file found, using system environment variables")
+	}
+
+	dbConfig := types.DBConfig{
+		URL:             os.Getenv("DATABASE_URL"),
 		MaxOpenConns:    10,
 		MaxIdleConns:    5,
 		ConnMaxLifetime: time.Minute * 5,

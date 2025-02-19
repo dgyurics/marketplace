@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,7 +39,7 @@ func genID() string {
 }
 
 // Helper function to create a unique test user
-func createUniqueTestUser(t *testing.T, userRepo UserRepository) *models.User {
+func createUniqueTestUser(t *testing.T, userRepo UserRepository) *types.User {
 	ctx := context.Background()
 
 	// Generate a unique email using random numbers and current timestamp
@@ -47,7 +47,7 @@ func createUniqueTestUser(t *testing.T, userRepo UserRepository) *models.User {
 	email := fmt.Sprintf("testuser%d@example.com", randomSuffix)
 
 	// Create a new user object
-	user := &models.User{
+	user := &types.User{
 		Email:        email,
 		PasswordHash: "hashedpassword",
 	}
@@ -117,7 +117,7 @@ func TestAddItemToCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on inserting inventory")
 
 	// Step 3: Add an item to the cart
-	item := &models.CartItem{
+	item := &types.CartItem{
 		ProductID: productID, // Use the valid UUID
 		Quantity:  1,
 		UnitPrice: 100000,
@@ -176,7 +176,7 @@ func TestUpdateCartItem(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on inserting inventory")
 
 	// Step 3: Add an item to the cart
-	item := &models.CartItem{
+	item := &types.CartItem{
 		ProductID: productID,
 		Quantity:  1,
 		UnitPrice: 100000,
@@ -238,7 +238,7 @@ func TestRemoveItemFromCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on inserting inventory")
 
 	// Step 3: Add an item to the cart
-	item := &models.CartItem{
+	item := &types.CartItem{
 		ProductID: productID,
 		Quantity:  1,
 		UnitPrice: 100000,
@@ -295,7 +295,7 @@ func TestClearCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on inserting inventory")
 
 	// Step 3: Add an item to the cart
-	item := &models.CartItem{
+	item := &types.CartItem{
 		ProductID: productID,
 		Quantity:  1,
 		UnitPrice: 100000,

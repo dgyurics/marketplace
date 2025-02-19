@@ -5,26 +5,27 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 )
 
-type PasswordResetRepository interface {
-	StorePasswordResetCode(ctx context.Context, code *models.PasswordResetCode) error
-	GetPasswordResetCode(ctx context.Context, userID string) (*models.PasswordResetCode, error)
-	MarkPasswordResetCodeUsed(ctx context.Context, email string) error
+// PasswordRepository is the interface that defines the methods for interacting with password reset codes
+type PasswordRepository interface {
+	StoreResetCode(ctx context.Context, code *types.PasswordReset) error
+	GetResetCode(ctx context.Context, userID string) (*types.PasswordReset, error)
+	MarkResetCodeUsed(ctx context.Context, email string) error
 	UpdatePassword(ctx context.Context, email, password string) error
 }
 
-type passwordResetRepository struct {
+type passwordRepository struct {
 	db *sql.DB
 }
 
-func NewPasswordResetRepository(db *sql.DB) PasswordResetRepository {
-	return &passwordResetRepository{db: db}
+func NewPasswordRepository(db *sql.DB) PasswordRepository {
+	return &passwordRepository{db: db}
 }
 
-// StorePasswordResetCode stores a password reset code in the database
-func (r *passwordResetRepository) StorePasswordResetCode(ctx context.Context, code *models.PasswordResetCode) error {
+// StoreResetCode stores a password reset code in the database
+func (r *passwordRepository) StoreResetCode(ctx context.Context, code *types.PasswordReset) error {
 	if code.User == nil || code.User.ID == "" {
 		return errors.New("user.id is required")
 	}
@@ -36,7 +37,7 @@ func (r *passwordResetRepository) StorePasswordResetCode(ctx context.Context, co
 	return err
 }
 
-func (r *passwordResetRepository) GetPasswordResetCode(ctx context.Context, email string) (*models.PasswordResetCode, error) {
+func (r *passwordRepository) GetResetCode(ctx context.Context, email string) (*types.PasswordReset, error) {
 	query := `
 		SELECT
 			prc.id,
@@ -56,8 +57,8 @@ func (r *passwordResetRepository) GetPasswordResetCode(ctx context.Context, emai
 		ORDER BY prc.created_at DESC
 		LIMIT 1
 	`
-	var code models.PasswordResetCode
-	var user models.User
+	var code types.PasswordReset
+	var user types.User
 	if err := r.db.QueryRowContext(ctx, query, email).Scan(
 		&code.ID,
 		&code.CodeHash,
@@ -77,8 +78,8 @@ func (r *passwordResetRepository) GetPasswordResetCode(ctx context.Context, emai
 	return &code, nil
 }
 
-// MarkPasswordResetCodeUsed updates a password reset code to mark it as used
-func (r *passwordResetRepository) MarkPasswordResetCodeUsed(ctx context.Context, email string) error {
+// MarkResetCodeUsed updates a password reset code to mark it as used
+func (r *passwordRepository) MarkResetCodeUsed(ctx context.Context, email string) error {
 	query := `
 		UPDATE password_reset_codes
 		SET used = TRUE, updated_at = NOW()
@@ -104,7 +105,7 @@ func (r *passwordResetRepository) MarkPasswordResetCodeUsed(ctx context.Context,
 }
 
 // UpdatePassword updates a user's password
-func (r *passwordResetRepository) UpdatePassword(ctx context.Context, email, password string) error {
+func (r *passwordRepository) UpdatePassword(ctx context.Context, email, password string) error {
 	query := `
 		UPDATE users
 		SET password_hash = $1, updated_at = NOW()

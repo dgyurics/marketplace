@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -19,24 +19,24 @@ type MockProductService struct {
 	mock.Mock
 }
 
-func (m *MockProductService) CreateProduct(ctx context.Context, product *models.Product) error {
+func (m *MockProductService) CreateProduct(ctx context.Context, product *types.Product) error {
 	args := m.Called(ctx, product)
 	return args.Error(0)
 }
 
-func (m *MockProductService) CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error {
+func (m *MockProductService) CreateProductWithCategory(ctx context.Context, product *types.Product, categoryID string) error {
 	args := m.Called(ctx, product, categoryID)
 	return args.Error(0)
 }
 
-func (m *MockProductService) GetAllProducts(ctx context.Context, page, limit int) ([]models.Product, error) {
+func (m *MockProductService) GetAllProducts(ctx context.Context, page, limit int) ([]types.Product, error) {
 	args := m.Called(ctx)
-	return args.Get(0).([]models.Product), args.Error(1)
+	return args.Get(0).([]types.Product), args.Error(1)
 }
 
-func (m *MockProductService) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
+func (m *MockProductService) GetProductByID(ctx context.Context, id string) (*types.Product, error) {
 	args := m.Called(ctx, id)
-	return args.Get(0).(*models.Product), args.Error(1)
+	return args.Get(0).(*types.Product), args.Error(1)
 }
 
 func (m *MockProductService) UpdateInventory(ctx context.Context, productID string, quantity int) error {
@@ -63,10 +63,10 @@ func TestCreateProduct(t *testing.T) {
 	}
 
 	// Set up the expected behavior of the mock service
-	mockService.On("CreateProduct", mock.Anything, mock.AnythingOfType("*models.Product")).Return(nil)
+	mockService.On("CreateProduct", mock.Anything, mock.AnythingOfType("*types.Product")).Return(nil)
 
 	// Create a new product as the request payload
-	product := models.Product{
+	product := types.Product{
 		Name:        "Test Product",
 		Price:       100000,
 		Description: "This is a test product",
@@ -87,7 +87,7 @@ func TestCreateProduct(t *testing.T) {
 	require.Equal(t, http.StatusCreated, rr.Code)
 
 	// Check the response body is what you expect
-	var responseProduct models.Product
+	var responseProduct types.Product
 	err = json.NewDecoder(rr.Body).Decode(&responseProduct)
 	require.NoError(t, err)
 
@@ -113,7 +113,7 @@ func TestGetProductByID(t *testing.T) {
 	}
 
 	// Create a sample product that will be returned by the mock service
-	product := &models.Product{
+	product := &types.Product{
 		ID:          "1",
 		Name:        "Test Product",
 		Price:       100000,
@@ -140,7 +140,7 @@ func TestGetProductByID(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	// Check the response body is what you expect
-	var responseProduct models.Product
+	var responseProduct types.Product
 	err = json.NewDecoder(rr.Body).Decode(&responseProduct)
 	require.NoError(t, err)
 
@@ -167,7 +167,7 @@ func TestGetProducts(t *testing.T) {
 	}
 
 	// Create a sample list of products that will be returned by the mock service
-	products := []models.Product{
+	products := []types.Product{
 		{
 			ID:          "1",
 			Name:        "Test Product 1",
@@ -202,7 +202,7 @@ func TestGetProducts(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	// Check the response body is what you expect
-	var responseProducts []models.Product
+	var responseProducts []types.Product
 	err = json.NewDecoder(rr.Body).Decode(&responseProducts)
 	require.NoError(t, err)
 

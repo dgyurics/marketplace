@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -86,7 +86,7 @@ func TestOrderRepository_CreateOrder(t *testing.T) {
 	assert.NotNil(t, order, "Order should not be nil")
 	assert.Equal(t, user.ID, order.UserID, "Order UserID should match")
 	assert.Equal(t, AddressID, order.AddressID, "Order AddressID should match")
-	assert.Equal(t, models.OrderPending, order.Status, "Order status should be 'pending'")
+	assert.Equal(t, types.OrderPending, order.Status, "Order status should be 'pending'")
 	assert.EqualValues(t, 2*1000, order.Amount, "Order amount should match expected value")
 
 	// Cleanup
@@ -127,7 +127,7 @@ func TestOrderRepository_GetOrder(t *testing.T) {
 	assert.NoError(t, err, "UpdateOrder should not return an error")
 
 	// 6. Test retrieving the order by ID
-	retrievedOrder := &models.Order{ID: order.ID}
+	retrievedOrder := &types.Order{ID: order.ID}
 	err = orderRepo.GetOrder(ctx, retrievedOrder)
 	assert.NoError(t, err, "GetOrder by ID should not return an error")
 	assert.Equal(t, order.ID, retrievedOrder.ID, "The retrieved order ID should match")
@@ -135,14 +135,14 @@ func TestOrderRepository_GetOrder(t *testing.T) {
 	assert.Equal(t, order.AddressID, retrievedOrder.AddressID, "The retrieved order AddressID should match")
 
 	// 7. Test retrieving the order by UserID (latest order)
-	retrievedOrder = &models.Order{UserID: user.ID}
+	retrievedOrder = &types.Order{UserID: user.ID}
 	err = orderRepo.GetOrder(ctx, retrievedOrder)
 	assert.NoError(t, err, "GetOrder by UserID should not return an error")
 	assert.Equal(t, order.ID, retrievedOrder.ID, "The latest order ID should match the created order")
 	assert.Equal(t, order.AddressID, retrievedOrder.AddressID, "The retrieved order AddressID should match")
 
 	// 8. Test retrieving the order by PaymentIntentID
-	retrievedOrder = &models.Order{PaymentIntentID: mockPaymentIntentID}
+	retrievedOrder = &types.Order{PaymentIntentID: mockPaymentIntentID}
 	err = orderRepo.GetOrder(ctx, retrievedOrder)
 	assert.NoError(t, err, "GetOrder by PaymentIntentID should not return an error")
 	assert.Equal(t, order.ID, retrievedOrder.ID, "The retrieved order ID should match the created order's ID")
@@ -165,25 +165,25 @@ func TestOrderRepository_GetOrder_MissingOrder(t *testing.T) {
 	orderRepo := NewOrderRepository(dbPool)
 
 	// Test case 1: Missing Order by ID
-	missingOrder := &models.Order{ID: "999999999999999"} // Use a valid BIGINT format
+	missingOrder := &types.Order{ID: "999999999999999"} // Use a valid BIGINT format
 	err := orderRepo.GetOrder(ctx, missingOrder)
 	assert.Error(t, err, "GetOrder by ID should return an error for a nonexistent order")
 	assert.Contains(t, err.Error(), "order not found", "The error message should indicate that the order was not found")
 
 	// Test case 2: Missing Order by UserID
-	missingOrder = &models.Order{UserID: "999999999999999"} // Use a valid BIGINT format
+	missingOrder = &types.Order{UserID: "999999999999999"} // Use a valid BIGINT format
 	err = orderRepo.GetOrder(ctx, missingOrder)
 	assert.Error(t, err, "GetOrder by UserID should return an error for a nonexistent user")
 	assert.Contains(t, err.Error(), "order not found", "The error message should indicate that the order was not found")
 
 	// Test case 3: Missing Order by PaymentIntentID
-	missingOrder = &models.Order{PaymentIntentID: "nonexistent_payment_intent_id"}
+	missingOrder = &types.Order{PaymentIntentID: "nonexistent_payment_intent_id"}
 	err = orderRepo.GetOrder(ctx, missingOrder)
 	assert.Error(t, err, "GetOrder by PaymentIntentID should return an error for a nonexistent PaymentIntentID")
 	assert.Contains(t, err.Error(), "order not found", "The error message should indicate that the order was not found")
 
 	// Test case 4: No Identifiers Provided
-	missingOrder = &models.Order{} // No ID, UserID, or PaymentIntentID provided
+	missingOrder = &types.Order{} // No ID, UserID, or PaymentIntentID provided
 	err = orderRepo.GetOrder(ctx, missingOrder)
 	assert.Error(t, err, "GetOrder should return an error if no identifiers are provided")
 	assert.Contains(t, err.Error(), "at least one of order.ID, order.UserID, or order.PaymentIntentID must be provided", "The error message should indicate missing identifiers")
@@ -211,7 +211,7 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 	// 4. Create multiple orders for the user
 	order1, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
 	assert.NoError(t, err, "CreateOrder should not return an error")
-	order1.Status = models.OrderPaid
+	order1.Status = types.OrderPaid
 	err = orderRepo.UpdateOrder(ctx, order1)
 	assert.NoError(t, err, "UpdateOrder for order1 should not return an error")
 
@@ -219,7 +219,7 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 	addToCart(t, dbPool, user.ID, productID1, 1)
 	order2, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
 	assert.NoError(t, err, "CreateOrder should not return an error")
-	order2.Status = models.OrderShipped
+	order2.Status = types.OrderShipped
 	err = orderRepo.UpdateOrder(ctx, order2)
 	assert.NoError(t, err, "UpdateOrder for order2 should not return an error")
 
@@ -231,18 +231,18 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 	// 6. Dynamically validate the retrieved orders
 	if orders[0].ID == order2.ID {
 		// Validate order2
-		assert.Equal(t, models.OrderShipped, orders[0].Status, "The first order's status should be 'shipped'")
+		assert.Equal(t, types.OrderShipped, orders[0].Status, "The first order's status should be 'shipped'")
 		assert.Equal(t, AddressID, orders[0].AddressID, "The first order's AddressID should match")
 		assert.Equal(t, order1.ID, orders[1].ID, "The second order ID should match")
-		assert.Equal(t, models.OrderPaid, orders[1].Status, "The second order's status should be 'paid'")
+		assert.Equal(t, types.OrderPaid, orders[1].Status, "The second order's status should be 'paid'")
 		assert.Equal(t, AddressID, orders[1].AddressID, "The second order's AddressID should match")
 	} else {
 		// Validate order1
 		assert.Equal(t, order1.ID, orders[0].ID, "The first order ID should match")
-		assert.Equal(t, models.OrderPaid, orders[0].Status, "The first order's status should be 'paid'")
+		assert.Equal(t, types.OrderPaid, orders[0].Status, "The first order's status should be 'paid'")
 		assert.Equal(t, AddressID, orders[0].AddressID, "The first order's AddressID should match")
 		assert.Equal(t, order2.ID, orders[1].ID, "The second order ID should match")
-		assert.Equal(t, models.OrderShipped, orders[1].Status, "The second order's status should be 'shipped'")
+		assert.Equal(t, types.OrderShipped, orders[1].Status, "The second order's status should be 'shipped'")
 		assert.Equal(t, AddressID, orders[1].AddressID, "The second order's AddressID should match")
 	}
 
@@ -281,11 +281,11 @@ func TestOrderRepository_CreateWebhookEvent(t *testing.T) {
 	orderRepo := NewOrderRepository(dbPool)
 
 	// 1. Define a test Stripe webhook event
-	event := models.StripeWebhookEvent{
+	event := types.StripeWebhookEvent{
 		ID:   "evt_test_123",
 		Type: "payment_intent.succeeded",
-		Data: &models.StripeWebhookData{
-			Object: models.StripeWebhookPaymentIntent{
+		Data: &types.StripeWebhookData{
+			Object: types.StripeWebhookPaymentIntent{
 				ID:           "pi_test_123",
 				Status:       "succeeded",
 				Amount:       1000,
@@ -353,7 +353,7 @@ func TestOrderRepository_PopulateOrderItems(t *testing.T) {
 	assert.NoError(t, err, "CreateOrder should not return an error")
 
 	// 5. Prepare orders for PopulateOrderItems
-	orders := []models.Order{*order}
+	orders := []types.Order{*order}
 
 	// 6. Call PopulateOrderItems
 	err = orderRepo.PopulateOrderItems(ctx, &orders)

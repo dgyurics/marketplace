@@ -9,13 +9,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 )
 
 var logFile *os.File // Keep a reference to the log file to close it later
 
 // InitLogger initializes the logger with the given configuration.
-func InitLogger(config models.LoggerConfig) {
+func InitLogger(config types.LoggerConfig) {
 	logFile, openErr := os.OpenFile(config.LogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if openErr != nil {
 		fmt.Printf("Failed to open log file: %v\n", openErr)
@@ -37,10 +37,10 @@ func CloseLogger() {
 }
 
 // LoadLoggerConfig loads logger configuration from environment variables.
-func LoadLoggerConfig() models.LoggerConfig {
+func LoadLoggerConfig() types.LoggerConfig {
 	levelStr := GetEnv("LOG_LEVEL") // returns string
 	level := parseLogLevel(levelStr)
-	return models.LoggerConfig{
+	return types.LoggerConfig{
 		LogFilePath: GetEnv("LOG_FILE_PATH"),
 		AppID:       GetEnv("APP_ID"),
 		Level:       level,

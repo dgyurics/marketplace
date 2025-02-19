@@ -7,39 +7,39 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/types"
 )
 
 type MockCategoryRepository struct {
 	mock.Mock
 }
 
-func (m *MockCategoryRepository) CreateCategory(ctx context.Context, category models.Category) (string, error) {
+func (m *MockCategoryRepository) CreateCategory(ctx context.Context, category types.Category) (string, error) {
 	args := m.Called(ctx, category)
 	return args.String(0), args.Error(1)
 }
 
-func (m *MockCategoryRepository) GetAllCategories(ctx context.Context) ([]models.Category, error) {
+func (m *MockCategoryRepository) GetAllCategories(ctx context.Context) ([]types.Category, error) {
 	args := m.Called(ctx)
-	return args.Get(0).([]models.Category), args.Error(1)
+	return args.Get(0).([]types.Category), args.Error(1)
 }
 
-func (m *MockCategoryRepository) GetCategoryByID(ctx context.Context, id string) (*models.Category, error) {
+func (m *MockCategoryRepository) GetCategoryByID(ctx context.Context, id string) (*types.Category, error) {
 	args := m.Called(ctx, id)
-	return args.Get(0).(*models.Category), args.Error(1)
+	return args.Get(0).(*types.Category), args.Error(1)
 }
 
-func (m *MockCategoryRepository) GetProductsByCategoryID(ctx context.Context, id string) ([]models.Product, error) {
+func (m *MockCategoryRepository) GetProductsByCategoryID(ctx context.Context, id string) ([]types.Product, error) {
 	args := m.Called(ctx, id)
-	return args.Get(0).([]models.Product), args.Error(1)
+	return args.Get(0).([]types.Product), args.Error(1)
 }
 
 func TestCategoryService_CreateCategory(t *testing.T) {
 	mockRepo := new(MockCategoryRepository)
 	service := services.NewCategoryService(mockRepo)
 
-	category := models.Category{Name: "Test Category", Description: "A test category"}
+	category := types.Category{Name: "Test Category", Description: "A test category"}
 	expectedID := "1"
 
 	mockRepo.On("CreateCategory", mock.Anything, category).Return(expectedID, nil)
@@ -56,7 +56,7 @@ func TestCategoryService_GetAllCategories(t *testing.T) {
 	mockRepo := new(MockCategoryRepository)
 	service := services.NewCategoryService(mockRepo)
 
-	expectedCategories := []models.Category{
+	expectedCategories := []types.Category{
 		{ID: "1", Name: "Category 1", Description: "Description 1"},
 		{ID: "2", Name: "Category 2", Description: "Description 2"},
 	}
@@ -76,7 +76,7 @@ func TestCategoryService_GetCategoryByID(t *testing.T) {
 	service := services.NewCategoryService(mockRepo)
 
 	expectedID := "1"
-	expectedCategory := &models.Category{ID: "1", Name: "Category 1", Description: "Description 1"}
+	expectedCategory := &types.Category{ID: "1", Name: "Category 1", Description: "Description 1"}
 
 	mockRepo.On("GetCategoryByID", mock.Anything, expectedID).Return(expectedCategory, nil)
 
@@ -93,7 +93,7 @@ func TestCategoryService_GetProductsByCategoryID(t *testing.T) {
 	service := services.NewCategoryService(mockRepo)
 
 	categoryID := "123"
-	expectedProducts := []models.Product{
+	expectedProducts := []types.Product{
 		{ID: "1", Name: "Product 1", Description: "Description 1"},
 		{ID: "2", Name: "Product 2", Description: "Description 2"},
 	}

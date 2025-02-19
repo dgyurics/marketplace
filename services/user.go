@@ -4,18 +4,19 @@ import (
 	"context"
 	"errors"
 
-	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/repositories"
+	"github.com/dgyurics/marketplace/types"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService interface {
-	CreateUser(ctx context.Context, user *models.User) error
-	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
-	Login(ctx context.Context, credential *models.Credential) (*models.User, error)
-	GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error)
-	CreateAddress(ctx context.Context, address *models.Address) error
-	GetAddresses(ctx context.Context) ([]models.Address, error)
+	CreateUser(ctx context.Context, user *types.User) error
+	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
+	Login(ctx context.Context, credential *types.Credential) (*types.User, error)
+	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
+	// refactor, and move to address service
+	CreateAddress(ctx context.Context, address *types.Address) error
+	GetAddresses(ctx context.Context) ([]types.Address, error)
 	RemoveAddress(ctx context.Context, addressID string) error
 }
 
@@ -27,7 +28,7 @@ func NewUserService(repo repositories.UserRepository) UserService {
 	return &userService{repo: repo}
 }
 
-func (s *userService) CreateUser(ctx context.Context, user *models.User) error {
+func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
 	hashedPassword, err := generateFromPassword(user.Password)
 	if err != nil {
 		return err
@@ -41,15 +42,15 @@ func generateFromPassword(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }
 
-func (s *userService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+func (s *userService) GetUserByEmail(ctx context.Context, email string) (*types.User, error) {
 	return s.repo.GetUserByEmail(ctx, email)
 }
 
-func (s *userService) Login(ctx context.Context, credentials *models.Credential) (*models.User, error) {
+func (s *userService) Login(ctx context.Context, credentials *types.Credential) (*types.User, error) {
 	return s.verifyEmail(ctx, credentials)
 }
 
-func (s *userService) verifyEmail(ctx context.Context, credentials *models.Credential) (*models.User, error) {
+func (s *userService) verifyEmail(ctx context.Context, credentials *types.Credential) (*types.User, error) {
 	user, err := s.repo.GetUserByEmail(ctx, credentials.Email)
 	if err != nil {
 		return nil, err
@@ -61,11 +62,11 @@ func (s *userService) verifyEmail(ctx context.Context, credentials *models.Crede
 	return user, err
 }
 
-func (s *userService) GetAllUsers(ctx context.Context, page, limit int) ([]models.User, error) {
+func (s *userService) GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error) {
 	return s.repo.GetAllUsers(ctx, page, limit)
 }
 
-func (s *userService) CreateAddress(ctx context.Context, address *models.Address) error {
+func (s *userService) CreateAddress(ctx context.Context, address *types.Address) error {
 	var userID = getUserID(ctx)
 	if address == nil || address.AddressLine1 == "" || address.City == "" || address.StateCode == "" || address.PostalCode == "" {
 		return errors.New("missing required fields for address")
@@ -74,7 +75,7 @@ func (s *userService) CreateAddress(ctx context.Context, address *models.Address
 	return s.repo.CreateAddress(ctx, address)
 }
 
-func (s *userService) GetAddresses(ctx context.Context) ([]models.Address, error) {
+func (s *userService) GetAddresses(ctx context.Context) ([]types.Address, error) {
 	var userID = getUserID(ctx)
 	return s.repo.GetAddresses(ctx, userID)
 }

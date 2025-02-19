@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 )
 
 // EmailSender defines a generic interface for sending emails
@@ -25,7 +25,7 @@ type MailjetSender struct {
 	FromName  string
 }
 
-func NewMailjetSender(config models.MailjetConfig) *MailjetSender {
+func NewMailjetSender(config types.MailjetConfig) *MailjetSender {
 	return &MailjetSender{
 		Enabled:   config.Enabled,
 		APIKey:    config.APIKey,

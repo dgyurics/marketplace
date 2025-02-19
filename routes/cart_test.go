@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -18,17 +18,17 @@ type MockCartService struct {
 	mock.Mock
 }
 
-func (m *MockCartService) AddItemToCart(ctx context.Context, item *models.CartItem) error {
+func (m *MockCartService) AddItemToCart(ctx context.Context, item *types.CartItem) error {
 	args := m.Called(ctx, item)
 	return args.Error(0)
 }
 
-func (m *MockCartService) GetCart(ctx context.Context) (*models.Cart, error) {
+func (m *MockCartService) GetCart(ctx context.Context) (*types.Cart, error) {
 	args := m.Called(ctx)
-	return args.Get(0).(*models.Cart), args.Error(1)
+	return args.Get(0).(*types.Cart), args.Error(1)
 }
 
-func (m *MockCartService) UpdateCartItem(ctx context.Context, item *models.CartItem) error {
+func (m *MockCartService) UpdateCartItem(ctx context.Context, item *types.CartItem) error {
 	args := m.Called(ctx, item)
 	return args.Error(0)
 }
@@ -53,7 +53,7 @@ func TestAddItemToCart(t *testing.T) {
 		},
 	}
 
-	item := models.CartItem{
+	item := types.CartItem{
 		ProductID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8",
 		Quantity:  2,
 	}
@@ -124,9 +124,9 @@ func TestGetCart(t *testing.T) {
 		},
 	}
 
-	expectedCart := &models.Cart{
+	expectedCart := &types.Cart{
 		UserID: "test-user-id",
-		Items:  []models.CartItem{{ProductID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8", Quantity: 2}},
+		Items:  []types.CartItem{{ProductID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8", Quantity: 2}},
 	}
 
 	mockCartService.On("GetCart", mock.Anything).Return(expectedCart, nil)
@@ -148,7 +148,7 @@ func TestGetCart(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	// Decode the response body
-	var responseCart models.Cart
+	var responseCart types.Cart
 	err = json.NewDecoder(rr.Body).Decode(&responseCart)
 	require.NoError(t, err)
 

@@ -4,14 +4,14 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 )
 
 type ProductRepository interface {
-	CreateProduct(ctx context.Context, product *models.Product) error
-	CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error
-	GetAllProducts(ctx context.Context, page, limit int) ([]models.Product, error)
-	GetProductByID(ctx context.Context, id string) (*models.Product, error)
+	CreateProduct(ctx context.Context, product *types.Product) error
+	CreateProductWithCategory(ctx context.Context, product *types.Product, categoryID string) error
+	GetAllProducts(ctx context.Context, page, limit int) ([]types.Product, error)
+	GetProductByID(ctx context.Context, id string) (*types.Product, error)
 	DeleteProduct(ctx context.Context, id string) error
 	UpdateInventory(ctx context.Context, productID string, quantity int) error
 }
@@ -24,7 +24,7 @@ func NewProductRepository(db *sql.DB) ProductRepository {
 	return &productRepository{db: db}
 }
 
-func (r *productRepository) CreateProduct(ctx context.Context, product *models.Product) error {
+func (r *productRepository) CreateProduct(ctx context.Context, product *types.Product) error {
 	query := `
 		INSERT INTO products (name, price, description)
 		VALUES ($1, $2, $3)
@@ -43,7 +43,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *models.P
 	return err
 }
 
-func (r *productRepository) CreateProductWithCategory(ctx context.Context, product *models.Product, categoryID string) error {
+func (r *productRepository) CreateProductWithCategory(ctx context.Context, product *types.Product, categoryID string) error {
 	// Begin a transaction
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -80,8 +80,8 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 	return tx.Commit()
 }
 
-func (r *productRepository) GetAllProducts(ctx context.Context, page, limit int) ([]models.Product, error) {
-	var products []models.Product
+func (r *productRepository) GetAllProducts(ctx context.Context, page, limit int) ([]types.Product, error) {
+	var products []types.Product
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT
 			p.id,
@@ -100,7 +100,7 @@ func (r *productRepository) GetAllProducts(ctx context.Context, page, limit int)
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var product models.Product
+		var product types.Product
 		if err = rows.Scan(
 			&product.ID,
 			&product.Name,
@@ -116,8 +116,8 @@ func (r *productRepository) GetAllProducts(ctx context.Context, page, limit int)
 	return products, nil
 }
 
-func (r *productRepository) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
-	var product models.Product
+func (r *productRepository) GetProductByID(ctx context.Context, id string) (*types.Product, error) {
+	var product types.Product
 	if err := r.db.QueryRowContext(ctx, `
 		SELECT
 			p.id,

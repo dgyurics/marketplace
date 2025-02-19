@@ -15,8 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/types"
 )
 
 type MockOrderRepository struct {
@@ -27,47 +27,47 @@ type MockCartRepository struct {
 	mock.Mock
 }
 
-func (m *MockOrderRepository) GetOrder(ctx context.Context, order *models.Order) error {
+func (m *MockOrderRepository) GetOrder(ctx context.Context, order *types.Order) error {
 	args := m.Called(ctx, order)
 	return args.Error(0)
 }
 
-func (m *MockOrderRepository) GetOrders(ctx context.Context, userID string, page, limit int) ([]models.Order, error) {
+func (m *MockOrderRepository) GetOrders(ctx context.Context, userID string, page, limit int) ([]types.Order, error) {
 	args := m.Called(ctx, userID, page, limit)
-	return args.Get(0).([]models.Order), args.Error(1)
+	return args.Get(0).([]types.Order), args.Error(1)
 }
 
-func (m *MockOrderRepository) PopulateOrderItems(ctx context.Context, orders *[]models.Order) error {
+func (m *MockOrderRepository) PopulateOrderItems(ctx context.Context, orders *[]types.Order) error {
 	args := m.Called(ctx, orders)
 	return args.Error(0)
 }
 
-func (m *MockOrderRepository) CreateWebhookEvent(ctx context.Context, event models.StripeWebhookEvent) error {
+func (m *MockOrderRepository) CreateWebhookEvent(ctx context.Context, event types.StripeWebhookEvent) error {
 	args := m.Called(ctx, event)
 	return args.Error(0)
 }
 
-func (m *MockOrderRepository) CreateOrder(ctx context.Context, userID, addressID string) (*models.Order, error) {
+func (m *MockOrderRepository) CreateOrder(ctx context.Context, userID, addressID string) (*types.Order, error) {
 	args := m.Called(ctx, userID, addressID)
-	return args.Get(0).(*models.Order), args.Error(1)
+	return args.Get(0).(*types.Order), args.Error(1)
 }
 
-func (m *MockOrderRepository) UpdateOrder(ctx context.Context, order *models.Order) error {
+func (m *MockOrderRepository) UpdateOrder(ctx context.Context, order *types.Order) error {
 	args := m.Called(ctx, order)
 	return args.Error(0)
 }
 
-func (m *MockCartRepository) AddItemToCart(ctx context.Context, userID string, item *models.CartItem) error {
+func (m *MockCartRepository) AddItemToCart(ctx context.Context, userID string, item *types.CartItem) error {
 	args := m.Called(ctx, userID, item)
 	return args.Error(0)
 }
 
-func (m *MockCartRepository) GetOrCreateCart(ctx context.Context, userID string) (*models.Cart, error) {
+func (m *MockCartRepository) GetOrCreateCart(ctx context.Context, userID string) (*types.Cart, error) {
 	args := m.Called(ctx, userID)
-	return args.Get(0).(*models.Cart), args.Error(1)
+	return args.Get(0).(*types.Cart), args.Error(1)
 }
 
-func (m *MockCartRepository) UpdateCartItem(ctx context.Context, userID string, item *models.CartItem) error {
+func (m *MockCartRepository) UpdateCartItem(ctx context.Context, userID string, item *types.CartItem) error {
 	args := m.Called(ctx, userID, item)
 	return args.Error(0)
 }
@@ -96,13 +96,13 @@ func TestOrderService_CreateOrder(t *testing.T) {
 	mockCartRepo := new(MockCartRepository)
 	mockHTTPClient := new(MockHTTPClient)
 
-	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, models.OrderConfig{
+	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.OrderConfig{
 		StripeSecretKey: "test_secret_key",
 		StripeBaseURL:   "https://api.stripe.com/v1",
-		Envirnment:      models.Production,
+		Envirnment:      types.Production,
 	}, mockHTTPClient)
 
-	user := &models.User{
+	user := &types.User{
 		ID:    "user123",
 		Email: "user@example.com",
 	}
@@ -113,11 +113,11 @@ func TestOrderService_CreateOrder(t *testing.T) {
 	mockOrderRepo.On("GetOrder", mock.Anything, mock.Anything).Return(nil)
 
 	// Mock order creation
-	newOrder := &models.Order{
+	newOrder := &types.Order{
 		ID:          "order123",
 		UserID:      user.ID,
 		TotalAmount: 2000,
-		Status:      models.OrderPending,
+		Status:      types.OrderPending,
 	}
 	mockOrderRepo.On("CreateOrder", mock.Anything, user.ID, addressID).Return(newOrder, nil)
 
@@ -135,7 +135,7 @@ func TestOrderService_CreateOrder(t *testing.T) {
 	}, nil)
 
 	// Mock order update to handle the `UpdateOrder` call
-	mockOrderRepo.On("UpdateOrder", mock.Anything, mock.MatchedBy(func(order *models.Order) bool {
+	mockOrderRepo.On("UpdateOrder", mock.Anything, mock.MatchedBy(func(order *types.Order) bool {
 		return order.ID == "order123" && order.PaymentIntentID == "pi_mock_123"
 	})).Return(nil)
 
@@ -157,13 +157,13 @@ func TestOrderService_CreateOrder_OrderCreationFails(t *testing.T) {
 	mockCartRepo := new(MockCartRepository)
 	mockHTTPClient := new(MockHTTPClient)
 
-	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, models.OrderConfig{
+	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.OrderConfig{
 		StripeSecretKey: "test_secret_key",
 		StripeBaseURL:   "https://api.stripe.com/v1",
-		Envirnment:      models.Production,
+		Envirnment:      types.Production,
 	}, mockHTTPClient)
 
-	user := &models.User{
+	user := &types.User{
 		ID:    "user123",
 		Email: "user@example.com",
 	}
@@ -174,8 +174,8 @@ func TestOrderService_CreateOrder_OrderCreationFails(t *testing.T) {
 	mockOrderRepo.On("GetOrder", mock.Anything, mock.Anything).Return(nil)
 
 	// Mock CreateOrder to simulate a failure
-	// Return a placeholder `*models.Order` along with an error to avoid nil dereference
-	mockOrder := &models.Order{}
+	// Return a placeholder `*types.Order` along with an error to avoid nil dereference
+	mockOrder := &types.Order{}
 	mockOrderRepo.On("CreateOrder", mock.Anything, user.ID, addressID).
 		Return(mockOrder, errors.New("failed to create order"))
 
@@ -196,27 +196,27 @@ func TestOrderService_GetOrders_Success(t *testing.T) {
 	mockCartRepo := new(MockCartRepository)
 	mockHTTPClient := new(MockHTTPClient)
 
-	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, models.OrderConfig{
+	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.OrderConfig{
 		StripeSecretKey: "test_secret_key",
 		StripeBaseURL:   "https://api.stripe.com/v1",
-		Envirnment:      models.Production,
+		Envirnment:      types.Production,
 	}, mockHTTPClient)
 
-	user := &models.User{
+	user := &types.User{
 		ID:    "user123",
 		Email: "user@example.com",
 	}
 	ctx := context.WithValue(context.Background(), services.UserKey, user)
 
 	// Mock orders returned by the repository
-	mockOrders := []models.Order{
+	mockOrders := []types.Order{
 		{
 			ID:          "order1",
 			UserID:      user.ID,
 			AddressID:   "address123",
 			Currency:    "usd",
 			TotalAmount: 1500,
-			Status:      models.OrderPaid,
+			Status:      types.OrderPaid,
 			Items:       nil, // Items will be populated separately
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
@@ -227,7 +227,7 @@ func TestOrderService_GetOrders_Success(t *testing.T) {
 			AddressID:   "address456",
 			Currency:    "usd",
 			TotalAmount: 2500,
-			Status:      models.OrderShipped,
+			Status:      types.OrderShipped,
 			Items:       nil, // Items will be populated separately
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
@@ -238,7 +238,7 @@ func TestOrderService_GetOrders_Success(t *testing.T) {
 	mockOrderRepo.On("GetOrders", mock.Anything, user.ID, 1, 10).Return(mockOrders, nil)
 
 	// Mock PopulateOrderItems to populate items into orders
-	mockOrderRepo.On("PopulateOrderItems", mock.Anything, mock.AnythingOfType("*[]models.Order")).Return(nil)
+	mockOrderRepo.On("PopulateOrderItems", mock.Anything, mock.AnythingOfType("*[]types.Order")).Return(nil)
 
 	// Call GetOrders
 	orders, err := orderService.GetOrders(ctx, 1, 10)
@@ -260,7 +260,7 @@ func TestOrderService_VerifyWebhookEventSignature_Valid(t *testing.T) {
 	mockCartRepo := new(MockCartRepository)
 	mockHTTPClient := new(MockHTTPClient)
 
-	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, models.OrderConfig{
+	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.OrderConfig{
 		StripeWebhookSigningSecret: "test_signing_secret",
 	}, mockHTTPClient)
 
@@ -283,7 +283,7 @@ func TestOrderService_VerifyWebhookEventSignature_Invalid(t *testing.T) {
 	mockCartRepo := new(MockCartRepository)
 	mockHTTPClient := new(MockHTTPClient)
 
-	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, models.OrderConfig{
+	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.OrderConfig{
 		StripeWebhookSigningSecret: "test_signing_secret",
 	}, mockHTTPClient)
 
@@ -306,13 +306,13 @@ func TestOrderService_ProcessWebhookEvent(t *testing.T) {
 	mockCartRepo := new(MockCartRepository)
 	mockHTTPClient := new(MockHTTPClient)
 
-	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, models.OrderConfig{}, mockHTTPClient)
+	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.OrderConfig{}, mockHTTPClient)
 
-	event := models.StripeWebhookEvent{
+	event := types.StripeWebhookEvent{
 		ID:   "evt_test_123",
 		Type: "payment_intent.succeeded",
-		Data: &models.StripeWebhookData{
-			Object: models.StripeWebhookPaymentIntent{
+		Data: &types.StripeWebhookData{
+			Object: types.StripeWebhookPaymentIntent{
 				ID:       "pi_test_123",
 				Amount:   2000,
 				Currency: "usd",
@@ -326,16 +326,16 @@ func TestOrderService_ProcessWebhookEvent(t *testing.T) {
 	mockOrderRepo.On("CreateWebhookEvent", mock.Anything, event).Return(nil)
 
 	// Mock GetOrder to return an order matching the payment intent
-	mockOrder := &models.Order{
+	mockOrder := &types.Order{
 		ID:              "order123",
 		UserID:          "user123",
 		PaymentIntentID: "pi_test_123",
 		TotalAmount:     2000,
 		Currency:        "usd",
-		Status:          models.OrderPending,
+		Status:          types.OrderPending,
 	}
 	mockOrderRepo.On("GetOrder", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
-		arg := args.Get(1).(*models.Order)
+		arg := args.Get(1).(*types.Order)
 		*arg = *mockOrder
 	})
 

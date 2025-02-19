@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
@@ -25,7 +25,7 @@ func NewProductRoutes(
 }
 
 func (h *ProductRoutes) CreateProduct(w http.ResponseWriter, r *http.Request) {
-	var product models.Product
+	var product types.Product
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
 		return
@@ -41,7 +41,7 @@ func (h *ProductRoutes) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProductRoutes) CreateProductWithCategory(w http.ResponseWriter, r *http.Request) {
 	categoryID := mux.Vars(r)["id"]
-	var product models.Product
+	var product types.Product
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
 		return

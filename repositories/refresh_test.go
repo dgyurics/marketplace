@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStoreRefreshToken(t *testing.T) {
-	repo := NewAuthRepository(dbPool)
+func TestStoreToken(t *testing.T) {
+	repo := NewRefreshRepository(dbPool)
 	ctx := context.Background()
 	now := time.Now()
 
@@ -18,7 +18,7 @@ func TestStoreRefreshToken(t *testing.T) {
 	user := createUniqueTestUser(t, NewUserRepository(dbPool))
 
 	// Create a refresh token
-	refreshToken := models.RefreshToken{
+	refreshToken := types.RefreshToken{
 		User:      user,
 		TokenHash: "testtokenhash",
 		ExpiresAt: now.Add(24 * time.Hour),
@@ -28,7 +28,7 @@ func TestStoreRefreshToken(t *testing.T) {
 	}
 
 	// Store the refresh token
-	err := repo.StoreRefreshToken(ctx, refreshToken)
+	err := repo.StoreToken(ctx, refreshToken)
 	assert.NoError(t, err, "Expected no error on storing refresh token")
 
 	// Clean up
@@ -39,7 +39,7 @@ func TestStoreRefreshToken(t *testing.T) {
 }
 
 func TestGetRefreshToken(t *testing.T) {
-	repo := NewAuthRepository(dbPool)
+	repo := NewRefreshRepository(dbPool)
 	ctx := context.Background()
 	now := time.Now()
 
@@ -47,7 +47,7 @@ func TestGetRefreshToken(t *testing.T) {
 	user := createUniqueTestUser(t, NewUserRepository(dbPool))
 
 	// Create a refresh token
-	refreshToken := models.RefreshToken{
+	refreshToken := types.RefreshToken{
 		User:      user,
 		TokenHash: "testtokenhash",
 		ExpiresAt: now.Add(24 * time.Hour),
@@ -57,11 +57,11 @@ func TestGetRefreshToken(t *testing.T) {
 	}
 
 	// Store the refresh token
-	err := repo.StoreRefreshToken(ctx, refreshToken)
+	err := repo.StoreToken(ctx, refreshToken)
 	assert.NoError(t, err, "Expected no error on storing refresh token")
 
 	// Retrieve the refresh token
-	retrievedToken, err := repo.GetRefreshToken(ctx, refreshToken.TokenHash)
+	retrievedToken, err := repo.GetToken(ctx, refreshToken.TokenHash)
 	assert.NoError(t, err, "Expected no error on getting refresh token")
 	assert.NotNil(t, retrievedToken, "Expected the retrieved token to not be nil")
 	assert.Equal(t, refreshToken.User.ID, retrievedToken.User.ID, "Expected user ID to match")
@@ -74,8 +74,8 @@ func TestGetRefreshToken(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on user deletion")
 }
 
-func TestRevokeRefreshTokens(t *testing.T) {
-	repo := NewAuthRepository(dbPool)
+func TestRevokeTokens(t *testing.T) {
+	repo := NewRefreshRepository(dbPool)
 	ctx := context.Background()
 	now := time.Now()
 
@@ -83,7 +83,7 @@ func TestRevokeRefreshTokens(t *testing.T) {
 	user := createUniqueTestUser(t, NewUserRepository(dbPool))
 
 	// Create two refresh tokens for the same user
-	refreshToken1 := models.RefreshToken{
+	refreshToken1 := types.RefreshToken{
 		User:      user,
 		TokenHash: "testtokenhash1",
 		ExpiresAt: now.Add(24 * time.Hour),
@@ -91,7 +91,7 @@ func TestRevokeRefreshTokens(t *testing.T) {
 		Revoked:   false,
 		LastUsed:  now,
 	}
-	refreshToken2 := models.RefreshToken{
+	refreshToken2 := types.RefreshToken{
 		User:      user,
 		TokenHash: "testtokenhash2",
 		ExpiresAt: now.Add(24 * time.Hour),
@@ -101,21 +101,21 @@ func TestRevokeRefreshTokens(t *testing.T) {
 	}
 
 	// Store both refresh tokens
-	err := repo.StoreRefreshToken(ctx, refreshToken1)
+	err := repo.StoreToken(ctx, refreshToken1)
 	assert.NoError(t, err, "Expected no error on storing first refresh token")
-	err = repo.StoreRefreshToken(ctx, refreshToken2)
+	err = repo.StoreToken(ctx, refreshToken2)
 	assert.NoError(t, err, "Expected no error on storing second refresh token")
 
 	// Revoke all refresh tokens for the user
-	err = repo.RevokeRefreshTokens(ctx, user.ID)
+	err = repo.RevokeTokens(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on revoking all refresh tokens")
 
 	// Verify that both tokens are revoked
-	retrievedToken1, err := repo.GetRefreshToken(ctx, refreshToken1.TokenHash)
+	retrievedToken1, err := repo.GetToken(ctx, refreshToken1.TokenHash)
 	assert.NoError(t, err, "Expected no error on getting first refresh token")
 	assert.True(t, retrievedToken1.Revoked, "Expected first token to be revoked")
 
-	retrievedToken2, err := repo.GetRefreshToken(ctx, refreshToken2.TokenHash)
+	retrievedToken2, err := repo.GetToken(ctx, refreshToken2.TokenHash)
 	assert.NoError(t, err, "Expected no error on getting second refresh token")
 	assert.True(t, retrievedToken2.Revoked, "Expected second token to be revoked")
 

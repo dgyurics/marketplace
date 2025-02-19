@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
@@ -25,7 +25,7 @@ func NewCartRoutes(
 }
 
 func (h *CartRoutes) AddItemToCart(w http.ResponseWriter, r *http.Request) {
-	var item models.CartItem
+	var item types.CartItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
@@ -50,7 +50,7 @@ func (h *CartRoutes) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CartRoutes) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
-	var item models.CartItem
+	var item types.CartItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return

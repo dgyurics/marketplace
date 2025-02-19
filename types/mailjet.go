@@ -1,4 +1,4 @@
-package models
+package types
 
 // MailjetConfig holds the configuration for the Mailjet email sender
 type MailjetConfig struct {

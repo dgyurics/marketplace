@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 )
 
 type CartRepository interface {
-	AddItemToCart(ctx context.Context, userID string, item *models.CartItem) error
-	GetOrCreateCart(ctx context.Context, userID string) (*models.Cart, error)
-	UpdateCartItem(ctx context.Context, userID string, item *models.CartItem) error
+	AddItemToCart(ctx context.Context, userID string, item *types.CartItem) error
+	GetOrCreateCart(ctx context.Context, userID string) (*types.Cart, error)
+	UpdateCartItem(ctx context.Context, userID string, item *types.CartItem) error
 	RemoveItemFromCart(ctx context.Context, userID, productID string) error
 	ClearCart(ctx context.Context, userID string) error
 }
@@ -24,8 +24,8 @@ func NewCartRepository(db *sql.DB) CartRepository {
 	return &cartRepository{db: db}
 }
 
-func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*models.Cart, error) {
-	cart := &models.Cart{
+func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*types.Cart, error) {
+	cart := &types.Cart{
 		UserID: userID,
 	}
 
@@ -49,9 +49,9 @@ func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*m
 	}
 	defer rows.Close()
 
-	items := make([]models.CartItem, 0)
+	items := make([]types.CartItem, 0)
 	for rows.Next() {
-		var item models.CartItem
+		var item types.CartItem
 		if err := rows.Scan(&item.ProductID, &item.Quantity, &item.UnitPrice); err != nil {
 			return nil, err
 		}
@@ -61,7 +61,7 @@ func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*m
 	return cart, nil
 }
 
-func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item *models.CartItem) error {
+func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item *types.CartItem) error {
 	// Check inventory availability
 	var availableQuantity int
 	if err := r.db.QueryRowContext(ctx, "SELECT quantity FROM inventory WHERE product_id = $1", item.ProductID).Scan(&availableQuantity); err != nil {
@@ -87,7 +87,7 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 	return err
 }
 
-func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item *models.CartItem) error {
+func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item *types.CartItem) error {
 	// Check inventory availability
 	var availableQuantity int
 	if err := r.db.QueryRowContext(ctx, "SELECT quantity FROM inventory WHERE product_id = $1", item.ProductID).Scan(&availableQuantity); err != nil {

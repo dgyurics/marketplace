@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 )
 
 // GetKey is a wrapper for os.ReadFile
@@ -38,7 +38,7 @@ func GetEnv(key string) string {
 
 // wrapper for time.ParseDuration
 // Exits the program with os.Exit(1) if an error occurs while parsing the duration.
-func parseDuration(key string) time.Duration {
+func ParseDuration(key string) time.Duration {
 	duration, err := time.ParseDuration(GetEnv(key))
 	if err != nil {
 		slog.Error("Invalid duration", "key", key, "error", err)
@@ -59,41 +59,39 @@ func parseInt(key string) int {
 }
 
 // LoadDBConfig loads configuration necessary for the database connection
-func LoadDBConfig() models.DBConfig {
-	return models.DBConfig{
+func LoadDBConfig() types.DBConfig {
+	return types.DBConfig{
 		URL:             GetEnv("DATABASE_URL"),
 		MaxOpenConns:    parseInt("DATABASE_MAX_CONNECTIONS"),
 		MaxIdleConns:    parseInt("DATABASE_MAX_IDLE_CONNECTIONS"),
-		ConnMaxLifetime: parseDuration("DATABASE_CONNECTION_MAX_LIFETIME"),
-		ConnMaxIdleTime: parseDuration("DATABASE_CONNECTION_MAX_IDLE_TIME"),
+		ConnMaxLifetime: ParseDuration("DATABASE_CONNECTION_MAX_LIFETIME"),
+		ConnMaxIdleTime: ParseDuration("DATABASE_CONNECTION_MAX_IDLE_TIME"),
 	}
 }
 
-// LoadAuthConfig loads configuration necessary for the auth service
-func LoadAuthConfig() models.AuthConfig {
-	return models.AuthConfig{
-		PrivateKey:           GetKey("private.pem"),
-		PublicKey:            GetKey("public.pem"),
-		HMACSecret:           []byte(GetEnv("HMAC_SECRET")),
-		DurationAccessToken:  parseDuration("DURATION_ACCESS_TOKEN"),
-		DurationRefreshToken: parseDuration("DURATION_REFRESH_TOKEN"),
+// LoadJWTConfig loads configuration necessary for the JWT service
+func LoadJWTConfig() types.JWTConfig {
+	return types.JWTConfig{
+		PrivateKey: GetKey("private.pem"),
+		PublicKey:  GetKey("public.pem"),
+		Expiry:     ParseDuration("JWT_EXPIRY"),
 	}
 }
 
 // LoadOrderConfig loads configuration necessary for the payment service
-func LoadOrderConfig() models.OrderConfig {
+func LoadOrderConfig() types.OrderConfig {
 	env := GetEnv("ENVIRONMENT")
-	var environment models.Environment
+	var environment types.Environment
 	switch env {
-	case string(models.Development):
-		environment = models.Development
-	case string(models.Production):
-		environment = models.Production
+	case string(types.Development):
+		environment = types.Development
+	case string(types.Production):
+		environment = types.Production
 	default:
 		slog.Warn("Invalid environment", "env", env)
-		environment = models.Development
+		environment = types.Development
 	}
-	return models.OrderConfig{
+	return types.OrderConfig{
 		Envirnment:                 environment,
 		StripeBaseURL:              GetEnv("STRIPE_BASE_URL"),
 		StripeSecretKey:            GetEnv("STRIPE_SECRET_KEY"),
@@ -101,8 +99,8 @@ func LoadOrderConfig() models.OrderConfig {
 	}
 }
 
-func LoadMailjetConfig() models.MailjetConfig {
-	return models.MailjetConfig{
+func LoadMailjetConfig() types.MailjetConfig {
+	return types.MailjetConfig{
 		Enabled:   IsFeatureEnabled("MAILJET_ENABLED"),
 		APIKey:    GetEnv("MAILJET_API_KEY"),
 		APISecret: GetEnv("MAILJET_API_SECRET"),

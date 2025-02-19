@@ -1,4 +1,4 @@
-package models
+package types
 
 import "time"
 
@@ -9,12 +9,10 @@ type Credential struct {
 	ResetCode  string `json:"reset_code"`
 }
 
-type AuthConfig struct {
-	PrivateKey           []byte        // asymmetric key pair for signing access tokens
-	PublicKey            []byte        // asymmetric key pair for verifying access tokens
-	HMACSecret           []byte        // symmetric key for hashing refresh tokens
-	DurationAccessToken  time.Duration // duration of jwt access token
-	DurationRefreshToken time.Duration // duration of refresh token
+type JWTConfig struct {
+	PrivateKey []byte        // asymmetric key pair for signing access tokens
+	PublicKey  []byte        // asymmetric key pair for verifying access tokens
+	Expiry     time.Duration // duration of jwt access token
 }
 
 type RefreshToken struct {
@@ -28,7 +26,7 @@ type RefreshToken struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type PasswordResetCode struct {
+type PasswordReset struct {
 	ID        string    `json:"id"`
 	User      *User     `json:"user"`
 	CodeHash  string    `json:"code_hash"`

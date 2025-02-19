@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +12,7 @@ func TestCreateProduct(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
 
-	product := &models.Product{
+	product := &types.Product{
 		Name:        "Test Product",
 		Price:       100000,
 		Description: "A test product description",
@@ -36,7 +36,7 @@ func TestCreateProductWithCategory(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
 
-	product := &models.Product{
+	product := &types.Product{
 		Name:        "Test Product with Category",
 		Price:       150000,
 		Description: "A test product with category description",
@@ -44,7 +44,7 @@ func TestCreateProductWithCategory(t *testing.T) {
 
 	// create category
 	catRepo := NewCategoryRepository(dbPool)
-	categoryID, err := catRepo.CreateCategory(ctx, models.Category{
+	categoryID, err := catRepo.CreateCategory(ctx, types.Category{
 		Name:        "Test Category",
 		Description: "A test category",
 	})
@@ -68,7 +68,7 @@ func TestGetAllProducts(t *testing.T) {
 	ctx := context.Background()
 
 	// Add a test product for retrieval
-	product := &models.Product{
+	product := &types.Product{
 		Name:        "Test Product for GetAll",
 		Price:       200000,
 		Description: "A test product for get all",
@@ -102,7 +102,7 @@ func TestGetProductByID(t *testing.T) {
 	ctx := context.Background()
 
 	// Add a test product for retrieval
-	product := &models.Product{
+	product := &types.Product{
 		Name:        "Test Product for GetByID",
 		Price:       250000,
 		Description: "A test product for get by ID",
@@ -130,7 +130,7 @@ func TestDeleteProduct(t *testing.T) {
 	ctx := context.Background()
 
 	// Add a test product for deletion
-	product := &models.Product{
+	product := &types.Product{
 		Name:        "Test Product for Deletion",
 		Price:       300000,
 		Description: "A test product for deletion",

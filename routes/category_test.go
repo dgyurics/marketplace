@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/dgyurics/marketplace/models"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -18,24 +18,24 @@ type MockCategoryService struct {
 	mock.Mock
 }
 
-func (m *MockCategoryService) CreateCategory(ctx context.Context, category models.Category) (string, error) {
+func (m *MockCategoryService) CreateCategory(ctx context.Context, category types.Category) (string, error) {
 	args := m.Called(ctx, category)
 	return args.String(0), args.Error(1)
 }
 
-func (m *MockCategoryService) GetAllCategories(ctx context.Context) ([]models.Category, error) {
+func (m *MockCategoryService) GetAllCategories(ctx context.Context) ([]types.Category, error) {
 	args := m.Called(ctx)
-	return args.Get(0).([]models.Category), args.Error(1)
+	return args.Get(0).([]types.Category), args.Error(1)
 }
 
-func (m *MockCategoryService) GetCategoryByID(ctx context.Context, id string) (*models.Category, error) {
+func (m *MockCategoryService) GetCategoryByID(ctx context.Context, id string) (*types.Category, error) {
 	args := m.Called(ctx, id)
-	return args.Get(0).(*models.Category), args.Error(1)
+	return args.Get(0).(*types.Category), args.Error(1)
 }
 
-func (m *MockCategoryService) GetProductsByCategoryID(ctx context.Context, categoryId string) ([]models.Product, error) {
+func (m *MockCategoryService) GetProductsByCategoryID(ctx context.Context, categoryId string) ([]types.Product, error) {
 	args := m.Called(ctx, categoryId)
-	return args.Get(0).([]models.Product), args.Error(1)
+	return args.Get(0).([]types.Product), args.Error(1)
 }
 
 func TestCreateCategory(t *testing.T) {
@@ -52,10 +52,10 @@ func TestCreateCategory(t *testing.T) {
 	}
 
 	// Set up the expected behavior of the mock service
-	mockService.On("CreateCategory", mock.Anything, mock.AnythingOfType("models.Category")).Return("1", nil)
+	mockService.On("CreateCategory", mock.Anything, mock.AnythingOfType("types.Category")).Return("1", nil)
 
 	// Create a new category as the request payload
-	category := models.Category{
+	category := types.Category{
 		Name: "Test Category",
 	}
 	payload, _ := json.Marshal(category)
@@ -74,7 +74,7 @@ func TestCreateCategory(t *testing.T) {
 	require.Equal(t, http.StatusCreated, rr.Code)
 
 	// Check the response body is what you expect
-	var responseCategory models.Category
+	var responseCategory types.Category
 	err = json.NewDecoder(rr.Body).Decode(&responseCategory)
 	require.NoError(t, err)
 
@@ -98,7 +98,7 @@ func TestGetCategories(t *testing.T) {
 		},
 	}
 	// Create a sample list of categories that will be returned by the mock service
-	categories := []models.Category{
+	categories := []types.Category{
 		{ID: "1", Name: "Category 1"},
 		{ID: "2", Name: "Category 2"},
 	}
@@ -121,7 +121,7 @@ func TestGetCategories(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	// Check the response body is what you expect
-	var responseCategories []models.Category
+	var responseCategories []types.Category
 	err = json.NewDecoder(rr.Body).Decode(&responseCategories)
 	require.NoError(t, err)
 
@@ -147,7 +147,7 @@ func TestGetCategory(t *testing.T) {
 	}
 
 	// Create a sample category that will be returned by the mock service
-	category := models.Category{
+	category := types.Category{
 		ID:   "1",
 		Name: "Test Category",
 	}
@@ -170,7 +170,7 @@ func TestGetCategory(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	// Check the response body is what you expect
-	var responseCategory models.Category
+	var responseCategory types.Category
 	err = json.NewDecoder(rr.Body).Decode(&responseCategory)
 	require.NoError(t, err)
 
@@ -195,7 +195,7 @@ func TestGetProductsByCategory(t *testing.T) {
 	}
 
 	// Create a sample list of products that will be returned by the mock service
-	products := []models.Product{
+	products := []types.Product{
 		{ID: "1", Name: "Product 1", Price: 100000},
 		{ID: "2", Name: "Product 2", Price: 200000},
 	}
@@ -218,7 +218,7 @@ func TestGetProductsByCategory(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	// Check the response body is what you expect
-	var responseProducts []models.Product
+	var responseProducts []types.Product
 	err = json.NewDecoder(rr.Body).Decode(&responseProducts)
 	require.NoError(t, err)
 

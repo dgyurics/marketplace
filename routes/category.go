@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dgyurics/marketplace/models"
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
@@ -25,7 +25,7 @@ func NewCategoryRoutes(
 }
 
 func (h *CategoryRoutes) CreateCategory(w http.ResponseWriter, r *http.Request) {
-	var category models.Category
+	var category types.Category
 	if err := json.NewDecoder(r.Body).Decode(&category); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
