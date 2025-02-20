@@ -38,12 +38,10 @@ func CloseLogger() {
 
 // LoadLoggerConfig loads logger configuration from environment variables.
 func LoadLoggerConfig() types.LoggerConfig {
-	levelStr := getEnv("LOG_LEVEL") // returns string
-	level := parseLogLevel(levelStr)
 	return types.LoggerConfig{
 		LogFilePath: getEnv("LOG_FILE_PATH"),
 		AppID:       getEnv("APP_ID"),
-		Level:       level,
+		Level:       parseLogLevel(getEnv("LOG_LEVEL")),
 	}
 }
 

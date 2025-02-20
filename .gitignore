@@ -1,5 +1,5 @@
+/bin/
 .DS_Store
-marketplace
 private.pem
 public.pem
 .env

@@ -1,6 +1,7 @@
 package utilities
 
 import (
+	"log"
 	"log/slog"
 	"os"
 	"strconv"
@@ -13,7 +14,7 @@ import (
 // LoadConfig loads the configuration from environment variables
 func LoadConfig() types.Config {
 	return types.Config{
-		Port:        getEnv("PORT"),
+		Server:      LoadServerConfig(),
 		Environment: LoadEnvironment(),
 		Auth:        LoadAuthConfig(),
 		Database:    LoadDBConfig(),
@@ -24,9 +25,20 @@ func LoadConfig() types.Config {
 	}
 }
 
+func LoadServerConfig() types.ServerConfig {
+	return types.ServerConfig{
+		Addr:           getEnv("SERVER_ADDR"),
+		ReadTimeout:    parseDuration("SERVER_READ_TIMEOUT"),
+		WriteTimeout:   parseDuration("SERVER_WRITE_TIMEOUT"),
+		IdleTimeout:    parseDuration("SERVER_IDLE_TIMEOUT"),
+		MaxHeaderBytes: parseInt("SERVER_MAX_HEADER_BYTES"),
+		ErrorLog:       log.New(&ErrorLog{}, "", 0),
+	}
+}
+
 func LoadAuthConfig() types.AuthConfig {
 	return types.AuthConfig{
-		HMACSecret:    getKey("HMAC_SECRET"),
+		HMACSecret:    []byte(getEnv("HMAC_SECRET")),
 		RefreshExpiry: parseDuration("REFRESH_EXPIRY"),
 		InviteReq:     isFeatureEnabled("INVITE_REQUIRED"),
 	}

@@ -1,12 +1,13 @@
 package types
 
 import (
+	"log"
 	"log/slog"
 	"time"
 )
 
 type Config struct {
-	Port        string
+	Server      ServerConfig
 	Environment Environment
 	Auth        AuthConfig
 	Database    DBConfig
@@ -14,6 +15,17 @@ type Config struct {
 	Logger      LoggerConfig
 	Stripe      StripeConfig
 	JWT         JWTConfig
+}
+
+// ServerConfig is based on net/http.Server.
+// See https://pkg.go.dev/net/http#Server for documentation.
+type ServerConfig struct {
+	Addr           string
+	ReadTimeout    time.Duration
+	WriteTimeout   time.Duration
+	IdleTimeout    time.Duration
+	MaxHeaderBytes int
+	ErrorLog       *log.Logger
 }
 
 type AuthConfig struct {

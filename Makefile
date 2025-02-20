@@ -29,11 +29,11 @@ test-coverage-func:
 
 # Build the binary
 build:
-	go build -o $(BINARY_NAME) $(SRC_DIR)
+	go build -o bin/$(BINARY_NAME) $(SRC_DIR)
 
 # Run the binary
 run: build
-	./$(BINARY_NAME)
+	./bin/$(BINARY_NAME)
 
 # Stripe listen
 stripe-listen:
