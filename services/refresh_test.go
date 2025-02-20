@@ -40,7 +40,9 @@ func (m *MockRefreshRepository) RevokeTokens(ctx context.Context, tokenHash stri
 
 // Helper function to create an AuthService with configuration
 func createRefreshService(repo *MockRefreshRepository) services.RefreshService {
-	return services.NewRefreshService(repo, []byte(hmacSecret), refreshTokenExpiry)
+	return services.NewRefreshService(repo, types.AuthConfig{
+		HMACSecret: []byte(hmacSecret),
+	})
 }
 
 func TestGenerateRefreshToken(t *testing.T) {

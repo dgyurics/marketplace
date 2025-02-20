@@ -1,0 +1,65 @@
+package types
+
+import (
+	"log/slog"
+	"time"
+)
+
+type Config struct {
+	Port        string
+	Environment Environment
+	Auth        AuthConfig
+	Database    DBConfig
+	Email       EmailConfig
+	Logger      LoggerConfig
+	Stripe      StripeConfig
+	JWT         JWTConfig
+}
+
+type AuthConfig struct {
+	HMACSecret    []byte
+	RefreshExpiry time.Duration // duration for which the refresh token is valid
+	InviteReq     bool          // flag for requiring an invite to register
+}
+
+type EmailConfig struct {
+	Enabled   bool // toggle for enabling/disabling the email service
+	APIKey    string
+	APISecret string
+	FromEmail string
+	FromName  string
+}
+
+type JWTConfig struct {
+	PrivateKey []byte        // asymmetric key for signing access tokens
+	PublicKey  []byte        // asymmetric key for verifying access tokens
+	Expiry     time.Duration // duration for which the access token is valid
+}
+
+type DBConfig struct {
+	URL             string
+	MaxOpenConns    int           // max number of open connections to the database
+	MaxIdleConns    int           // max number of connections in the idle connection pool
+	ConnMaxLifetime time.Duration // max time a connection may be reused
+	ConnMaxIdleTime time.Duration // max time a connection may be idle
+}
+
+type LoggerConfig struct {
+	LogFilePath string // path to the log file
+	AppID       string // unique identifier for the application
+	Level       slog.Level
+}
+
+type Environment string
+
+const (
+	Development Environment = "development"
+	Production  Environment = "production"
+)
+
+type StripeConfig struct {
+	Envirnment           Environment
+	BaseURL              string // https://api.stripe.com
+	SecretKey            string // sk_test_xxxxxxxxxxxxxxxxxxxxxxxx
+	WebhookSigningSecret string // whsec_xxxxxxxxxxxxxxxxxxxxxxxx
+}

@@ -20,6 +20,7 @@ type UserRoutes struct {
 	inviteService  services.InviteService
 	jwtService     services.JWTService
 	refreshService services.RefreshService
+	config         types.AuthConfig
 }
 
 func NewUserRoutes(
@@ -27,6 +28,7 @@ func NewUserRoutes(
 	inviteService services.InviteService,
 	jwtService services.JWTService,
 	refreshService services.RefreshService,
+	config types.AuthConfig,
 	router router) *UserRoutes {
 	return &UserRoutes{
 		router:         router,
@@ -34,6 +36,7 @@ func NewUserRoutes(
 		inviteService:  inviteService,
 		jwtService:     jwtService,
 		refreshService: refreshService,
+		config:         config,
 	}
 }
 
@@ -73,14 +76,13 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if registration code is required and if the invite code is valid
-	inviteCodeReq := u.IsFeatureEnabled("REQUIRE_INVITE_CODE")
+	// Validate invite code if invite_required is set
+	inviteCodeReq := h.config.InviteReq
 	if inviteCodeReq && len(credentials.InviteCode) != 6 {
 		u.RespondWithError(w, r, http.StatusBadRequest, "Invite code is required")
 		return
 	}
 
-	// fetch the invite code
 	valid, err := h.inviteService.ValidateCode(r.Context(), credentials.InviteCode, inviteCodeReq)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
@@ -92,12 +94,11 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create the user
 	usr := types.User{
 		Email:    credentials.Email,
 		Password: credentials.Password,
 	}
-
-	// Create the user
 	if err := h.userService.CreateUser(r.Context(), &usr); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return

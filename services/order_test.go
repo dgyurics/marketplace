@@ -96,10 +96,10 @@ func TestOrderService_CreateOrder(t *testing.T) {
 	mockCartRepo := new(MockCartRepository)
 	mockHTTPClient := new(MockHTTPClient)
 
-	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.OrderConfig{
-		StripeSecretKey: "test_secret_key",
-		StripeBaseURL:   "https://api.stripe.com/v1",
-		Envirnment:      types.Production,
+	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.StripeConfig{
+		SecretKey:  "test_secret_key",
+		BaseURL:    "https://api.stripe.com/v1",
+		Envirnment: types.Production,
 	}, mockHTTPClient)
 
 	user := &types.User{
@@ -157,10 +157,10 @@ func TestOrderService_CreateOrder_OrderCreationFails(t *testing.T) {
 	mockCartRepo := new(MockCartRepository)
 	mockHTTPClient := new(MockHTTPClient)
 
-	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.OrderConfig{
-		StripeSecretKey: "test_secret_key",
-		StripeBaseURL:   "https://api.stripe.com/v1",
-		Envirnment:      types.Production,
+	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.StripeConfig{
+		SecretKey:  "test_secret_key",
+		BaseURL:    "https://api.stripe.com/v1",
+		Envirnment: types.Production,
 	}, mockHTTPClient)
 
 	user := &types.User{
@@ -196,10 +196,10 @@ func TestOrderService_GetOrders_Success(t *testing.T) {
 	mockCartRepo := new(MockCartRepository)
 	mockHTTPClient := new(MockHTTPClient)
 
-	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.OrderConfig{
-		StripeSecretKey: "test_secret_key",
-		StripeBaseURL:   "https://api.stripe.com/v1",
-		Envirnment:      types.Production,
+	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.StripeConfig{
+		SecretKey:  "test_secret_key",
+		BaseURL:    "https://api.stripe.com/v1",
+		Envirnment: types.Production,
 	}, mockHTTPClient)
 
 	user := &types.User{
@@ -260,8 +260,8 @@ func TestOrderService_VerifyWebhookEventSignature_Valid(t *testing.T) {
 	mockCartRepo := new(MockCartRepository)
 	mockHTTPClient := new(MockHTTPClient)
 
-	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.OrderConfig{
-		StripeWebhookSigningSecret: "test_signing_secret",
+	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.StripeConfig{
+		WebhookSigningSecret: "test_signing_secret",
 	}, mockHTTPClient)
 
 	payload := []byte(`{"id":"evt_test_123","type":"payment_intent.succeeded"}`)
@@ -283,8 +283,8 @@ func TestOrderService_VerifyWebhookEventSignature_Invalid(t *testing.T) {
 	mockCartRepo := new(MockCartRepository)
 	mockHTTPClient := new(MockHTTPClient)
 
-	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.OrderConfig{
-		StripeWebhookSigningSecret: "test_signing_secret",
+	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.StripeConfig{
+		WebhookSigningSecret: "test_signing_secret",
 	}, mockHTTPClient)
 
 	payload := []byte(`{"id":"evt_test_123","type":"payment_intent.succeeded"}`)
@@ -306,7 +306,7 @@ func TestOrderService_ProcessWebhookEvent(t *testing.T) {
 	mockCartRepo := new(MockCartRepository)
 	mockHTTPClient := new(MockHTTPClient)
 
-	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.OrderConfig{}, mockHTTPClient)
+	orderService := services.NewOrderService(mockOrderRepo, mockCartRepo, types.StripeConfig{}, mockHTTPClient)
 
 	event := types.StripeWebhookEvent{
 		ID:   "evt_test_123",

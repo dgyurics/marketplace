@@ -46,7 +46,7 @@ type orderService struct {
 func NewOrderService(
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository,
-	config types.OrderConfig,
+	config types.StripeConfig,
 	httpClient utilities.HTTPClient, // Optional: added to allow dependency injection during testing
 ) OrderService {
 	if httpClient == nil {
@@ -56,9 +56,9 @@ func NewOrderService(
 		orderRepo:                  orderRepo,
 		cartRepo:                   cartRepo,
 		environment:                config.Envirnment,
-		stripeBaseURL:              config.StripeBaseURL,
-		stripeSecretKey:            config.StripeSecretKey,
-		stripeWebhookSigningSecret: config.StripeWebhookSigningSecret,
+		stripeBaseURL:              config.BaseURL,
+		stripeSecretKey:            config.SecretKey,
+		stripeWebhookSigningSecret: config.WebhookSigningSecret,
 		HttpClient:                 httpClient,
 	}
 }

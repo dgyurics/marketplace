@@ -36,17 +36,3 @@ type OrderItem struct {
 	Quantity    int    `json:"quantity"`
 	UnitPrice   int64  `json:"unit_price"`
 }
-
-type Environment string
-
-const (
-	Development Environment = "development"
-	Production  Environment = "production"
-)
-
-type OrderConfig struct {
-	Envirnment                 Environment
-	StripeBaseURL              string // https://api.stripe.com
-	StripeSecretKey            string // sk_test_xxxxxxxxxxxxxxxxxxxxxxxx
-	StripeWebhookSigningSecret string // whsec_xxxxxxxxxxxxxxxxxxxxxxxx
-}

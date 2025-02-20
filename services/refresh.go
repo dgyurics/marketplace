@@ -22,17 +22,15 @@ type RefreshService interface {
 }
 
 type refreshService struct {
-	repo    repositories.RefreshRepository
-	hmacKey []byte        // HMAC key for hashing refresh tokens
-	expiry  time.Duration // Duration of refresh tokens
+	repo   repositories.RefreshRepository
+	config types.AuthConfig
 }
 
 // NewRefreshService creates a new RefreshService instance.
-func NewRefreshService(repo repositories.RefreshRepository, hmacKey []byte, expiry time.Duration) RefreshService {
+func NewRefreshService(repo repositories.RefreshRepository, config types.AuthConfig) RefreshService {
 	return &refreshService{
-		repo:    repo,
-		hmacKey: hmacKey,
-		expiry:  expiry,
+		repo:   repo,
+		config: config,
 	}
 }
 
@@ -50,9 +48,9 @@ func (s *refreshService) StoreToken(ctx context.Context, userID, token string) e
 	now := time.Now().UTC()
 	return s.repo.StoreToken(ctx, types.RefreshToken{
 		User:      &types.User{ID: userID},
-		TokenHash: hashString(token, s.hmacKey),
+		TokenHash: hashString(token, s.config.HMACSecret),
 		Revoked:   false,
-		ExpiresAt: now.Add(s.expiry),
+		ExpiresAt: now.Add(s.config.RefreshExpiry),
 		CreatedAt: now,
 		LastUsed:  now,
 	})
@@ -61,7 +59,7 @@ func (s *refreshService) StoreToken(ctx context.Context, userID, token string) e
 // ValidateToken verifies the refresh token and returns the associated user if valid.
 func (s *refreshService) ParseToken(ctx context.Context, token string) (*types.User, error) {
 	now := time.Now()
-	tokenHash := hashString(token, s.hmacKey)
+	tokenHash := hashString(token, s.config.HMACSecret)
 
 	refreshToken, err := s.repo.GetToken(ctx, tokenHash)
 	if err != nil || refreshToken == nil {

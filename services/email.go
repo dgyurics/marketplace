@@ -25,7 +25,7 @@ type MailjetSender struct {
 	FromName  string
 }
 
-func NewMailjetSender(config types.MailjetConfig) *MailjetSender {
+func NewMailjetSender(config types.EmailConfig) *MailjetSender {
 	return &MailjetSender{
 		Enabled:   config.Enabled,
 		APIKey:    config.APIKey,

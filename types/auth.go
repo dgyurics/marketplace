@@ -9,12 +9,6 @@ type Credential struct {
 	ResetCode  string `json:"reset_code"`
 }
 
-type JWTConfig struct {
-	PrivateKey []byte        // asymmetric key pair for signing access tokens
-	PublicKey  []byte        // asymmetric key pair for verifying access tokens
-	Expiry     time.Duration // duration of jwt access token
-}
-
 type RefreshToken struct {
 	ID        string    `json:"id"`
 	User      *User     `json:"user"`
