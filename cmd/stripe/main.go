@@ -8,16 +8,10 @@ import (
 
 	"os/exec"
 
-	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
-	// Load environment variables from .env
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("No .env file found, using system environment variables")
-	}
-
 	// Define CLI commands
 	command := flag.String("cmd", "", "Command to execute: listen, update, confirm, refund")
 	paymentIntent := flag.String("pi", "", "Payment Intent ID (required for update, confirm, refund)")

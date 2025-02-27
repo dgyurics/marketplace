@@ -47,10 +47,10 @@ func NewOrderService(
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository,
 	config types.StripeConfig,
-	httpClient utilities.HTTPClient, // Optional: added to allow dependency injection during testing
+	httpClient utilities.HTTPClient, // Optional: added to allow dependency injection during testing // FIXME make it required somehow
 ) OrderService {
 	if httpClient == nil {
-		httpClient = utilities.NewDefaultHTTPClient()
+		httpClient = utilities.NewDefaultHTTPClient(10 * time.Second)
 	}
 	return &orderService{
 		orderRepo:                  orderRepo,

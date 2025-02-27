@@ -7,14 +7,16 @@ import (
 )
 
 type Config struct {
-	Server      ServerConfig
-	Environment Environment
-	Auth        AuthConfig
-	Database    DBConfig
-	Email       EmailConfig
-	Logger      LoggerConfig
-	Stripe      StripeConfig
-	JWT         JWTConfig
+	Server       ServerConfig
+	Environment  Environment
+	Auth         AuthConfig
+	Database     DBConfig
+	Email        EmailConfig
+	Logger       LoggerConfig
+	Stripe       StripeConfig
+	JWT          JWTConfig
+	TemplatesDir string // path to the directory containing email templates
+	BaseURL      string // base URL for the application
 }
 
 // ServerConfig is based on net/http.Server.
@@ -70,8 +72,8 @@ const (
 )
 
 type StripeConfig struct {
-	Envirnment           Environment
-	BaseURL              string // https://api.stripe.com
-	SecretKey            string // sk_test_xxxxxxxxxxxxxxxxxxxxxxxx
-	WebhookSigningSecret string // whsec_xxxxxxxxxxxxxxxxxxxxxxxx
+	Envirnment           Environment // FIXME remove this as it already exists in the config
+	BaseURL              string      // https://api.stripe.com
+	SecretKey            string      // sk_test_xxxxxxxxxxxxxxxxxxxxxxxx
+	WebhookSigningSecret string      // whsec_xxxxxxxxxxxxxxxxxxxxxxxx
 }

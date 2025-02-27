@@ -18,13 +18,10 @@ import (
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
-	// Load environment variables
-	_ = godotenv.Load(".env")
-
 	// Load configuration
 	config := utilities.LoadConfig()
 
@@ -60,7 +57,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewProductRoutes(services.Product, baseRouter),
 		routes.NewCartRoutes(services.Cart, baseRouter),
 		routes.NewOrderRoutes(services.Order, baseRouter),
-		routes.NewPasswordRoutes(services.Password, services.User, services.Email, baseRouter),
+		routes.NewPasswordRoutes(services.Password, services.User, services.Email, services.Template, config.BaseURL, baseRouter),
 	)
 
 	// Create and return the server
@@ -88,17 +85,21 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	passwordRepository := repositories.NewPasswordRepository(db)
 	refreshTokenRepository := repositories.NewRefreshRepository(db)
 
+	// create http client required by certain services
+	httpClient := utilities.NewDefaultHTTPClient(10 * time.Second)
+
 	// create services
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
 	cartService := services.NewCartService(cartRepository)
-	orderService := services.NewOrderService(orderRepository, cartRepository, config.Stripe, nil)
+	orderService := services.NewOrderService(orderRepository, cartRepository, config.Stripe, httpClient)
 	inviteService := services.NewInviteService(inviteRepository, config.Auth.HMACSecret)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
-	emailService := services.NewMailjetSender(utilities.LoadMailConfig())
-	jwtService := services.NewJWTService(utilities.LoadJWTConfig())
+	emailService := services.NewMailjetSender(config.Email)
+	jwtService := services.NewJWTService(config.JWT)
+	templateService, _ := services.NewTemplateService(config.TemplatesDir)
 
 	return servicesContainer{
 		User:     userService,
@@ -111,6 +112,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		Refresh:  refreshService,
 		Email:    emailService,
 		JWT:      jwtService,
+		Template: templateService,
 	}
 }
 
@@ -126,6 +128,7 @@ type servicesContainer struct {
 	Refresh  services.RefreshService
 	Email    services.EmailSender
 	JWT      services.JWTService
+	Template services.TemplateService
 }
 
 // gracefulShutdown handles termination signals and gracefully shuts down the server.

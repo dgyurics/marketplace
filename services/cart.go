@@ -24,6 +24,7 @@ func NewCartService(cartRepo repositories.CartRepository) CartService {
 }
 
 func (s *cartService) AddItemToCart(ctx context.Context, item *types.CartItem) error {
+	// FIXME if user has no cart, create one (similar to GetOrCreateCart)
 	return s.cartRepo.AddItemToCart(ctx, getUserID(ctx), item)
 }
 

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -15,14 +16,25 @@ type PasswordRoutes struct {
 	servicePassword services.PasswordService
 	serviceUser     services.UserService
 	serviceEmail    services.EmailSender
+	serviceTemplate services.TemplateService
+	baseUrl         string
 }
 
-func NewPasswordRoutes(servicePR services.PasswordService, serviceUsr services.UserService, emailSndr services.EmailSender, router router) *PasswordRoutes {
+func NewPasswordRoutes(
+	servicePR services.PasswordService,
+	serviceUsr services.UserService,
+	serviceEmail services.EmailSender,
+	serviceTmp services.TemplateService,
+	baseUrl string,
+	router router,
+) *PasswordRoutes {
 	return &PasswordRoutes{
 		router:          router,
 		servicePassword: servicePR,
 		serviceUser:     serviceUsr,
-		serviceEmail:    emailSndr,
+		serviceEmail:    serviceEmail,
+		serviceTemplate: serviceTmp,
+		baseUrl:         baseUrl,
 	}
 }
 
@@ -63,13 +75,16 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send password reset email
-	go func(recipientEmail, code string) {
-		emailBody, err := u.GeneratePasswordResetEmail(recipientEmail, code)
+	go func(recEmail, code string) {
+		data := map[string]string{
+			"ResetLink": fmt.Sprintf("%s/users/password-reset/confirm?email=%s&code=%s", h.baseUrl, recEmail, code),
+		}
+		body, err := h.serviceTemplate.RenderToString(services.PasswordReset, data)
 		if err != nil {
 			slog.Error("Error loading email template: ", "error", err)
 			return
 		}
-		if err := h.serviceEmail.SendEmail([]string{recipientEmail}, "Password Reset", emailBody, true); err != nil {
+		if err := h.serviceEmail.SendEmail([]string{recEmail}, "Password Reset", body, true); err != nil {
 			slog.Error("Error sending email: ", "error", err)
 		}
 	}(usr.Email, code)

@@ -14,18 +14,20 @@ import (
 // LoadConfig loads the configuration from environment variables
 func LoadConfig() types.Config {
 	return types.Config{
-		Server:      LoadServerConfig(),
-		Environment: LoadEnvironment(),
-		Auth:        LoadAuthConfig(),
-		Database:    LoadDBConfig(),
-		Email:       LoadMailConfig(),
-		Logger:      LoadLoggerConfig(),
-		Stripe:      LoadStripeConfig(),
-		JWT:         LoadJWTConfig(),
+		Server:       loadServerConfig(),
+		Environment:  loadEnvironment(),
+		Auth:         loadAuthConfig(),
+		Database:     loadDBConfig(),
+		Email:        loadMailConfig(),
+		Logger:       LoadLoggerConfig(),
+		Stripe:       loadStripeConfig(),
+		JWT:          loadJWTConfig(),
+		TemplatesDir: loadTemplatesDir(),
+		BaseURL:      loadBaseURL(),
 	}
 }
 
-func LoadServerConfig() types.ServerConfig {
+func loadServerConfig() types.ServerConfig {
 	return types.ServerConfig{
 		Addr:           getEnv("SERVER_ADDR"),
 		ReadTimeout:    parseDuration("SERVER_READ_TIMEOUT"),
@@ -36,7 +38,7 @@ func LoadServerConfig() types.ServerConfig {
 	}
 }
 
-func LoadAuthConfig() types.AuthConfig {
+func loadAuthConfig() types.AuthConfig {
 	return types.AuthConfig{
 		HMACSecret:    []byte(getEnv("HMAC_SECRET")),
 		RefreshExpiry: parseDuration("REFRESH_EXPIRY"),
@@ -44,7 +46,7 @@ func LoadAuthConfig() types.AuthConfig {
 	}
 }
 
-func LoadDBConfig() types.DBConfig {
+func loadDBConfig() types.DBConfig {
 	return types.DBConfig{
 		URL:             getEnv("DATABASE_URL"),
 		MaxOpenConns:    parseInt("DATABASE_MAX_CONNECTIONS"),
@@ -54,7 +56,7 @@ func LoadDBConfig() types.DBConfig {
 	}
 }
 
-func LoadJWTConfig() types.JWTConfig {
+func loadJWTConfig() types.JWTConfig {
 	return types.JWTConfig{
 		PrivateKey: getKey("private.pem"),
 		PublicKey:  getKey("public.pem"),
@@ -62,15 +64,16 @@ func LoadJWTConfig() types.JWTConfig {
 	}
 }
 
-func LoadStripeConfig() types.StripeConfig {
+func loadStripeConfig() types.StripeConfig {
 	return types.StripeConfig{
+		Envirnment:           loadEnvironment(), // FIXME remove this as it already exists in the config
 		BaseURL:              getEnv("STRIPE_BASE_URL"),
 		SecretKey:            getEnv("STRIPE_SECRET_KEY"),
 		WebhookSigningSecret: getEnv("STRIPE_WEBHOOK_SIGNING_SECRET"),
 	}
 }
 
-func LoadEnvironment() types.Environment {
+func loadEnvironment() types.Environment {
 	env := getEnv("ENVIRONMENT")
 	switch env {
 	case string(types.Development):
@@ -82,7 +85,15 @@ func LoadEnvironment() types.Environment {
 	}
 }
 
-func LoadMailConfig() types.EmailConfig {
+func loadTemplatesDir() string {
+	return "./utilities/templates"
+}
+
+func loadBaseURL() string {
+	return getEnv("BASE_URL")
+}
+
+func loadMailConfig() types.EmailConfig {
 	return types.EmailConfig{
 		Enabled:   isFeatureEnabled("MAIL_ENABLED"),
 		APIKey:    getEnv("MAIL_API_KEY"),

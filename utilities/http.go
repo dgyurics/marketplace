@@ -1,6 +1,9 @@
 package utilities
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+)
 
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
@@ -10,10 +13,10 @@ type DefaultHTTPClient struct {
 	client *http.Client
 }
 
-func NewDefaultHTTPClient() *DefaultHTTPClient {
+func NewDefaultHTTPClient(timeout time.Duration) *DefaultHTTPClient {
 	return &DefaultHTTPClient{
 		client: &http.Client{
-			Timeout: 10,
+			Timeout: timeout,
 		},
 	}
 }
