@@ -54,24 +54,25 @@ ON products (id)
 WHERE is_deleted = FALSE;
 
 CREATE TYPE image_type_enum AS ENUM (
-    'main',
-    'thumbnail',
-    'gallery'
+    'main',      -- Primary image displayed on product pages
+    'thumbnail', -- Used in checkout/cart
+    'gallery',   -- Additional images for product views
+    'hero',      -- Large banner image (e.g., homepage spotlight)
+    'zoom'       -- High-resolution image for zooming
 );
 CREATE TABLE IF NOT EXISTS images (
     id BIGINT PRIMARY KEY DEFAULT gen_id(),
     product_id BIGINT NOT NULL,
-    image_url TEXT NOT NULL,
+    image_url TEXT NOT NULL, -- Store a single high resolution image
     image_type image_type_enum DEFAULT 'main',
+    format VARCHAR(10) CHECK (format IN ('jpg', 'png', 'webp', 'avif', 'gif')),
+    animated BOOLEAN DEFAULT FALSE,
     display_order INT DEFAULT 0,
     alt_text VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
-CREATE UNIQUE INDEX idx_unique_thumbnail_per_product
-ON images (product_id)
-WHERE image_type = 'thumbnail';
 
 CREATE TABLE IF NOT EXISTS inventory (
     product_id BIGINT PRIMARY KEY,
