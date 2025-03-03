@@ -16,6 +16,7 @@ func LoadConfig() types.Config {
 	return types.Config{
 		Server:       loadServerConfig(),
 		Environment:  loadEnvironment(),
+		CORS:         loadCORSConfig(),
 		Auth:         loadAuthConfig(),
 		Database:     loadDBConfig(),
 		Email:        loadMailConfig(),
@@ -24,6 +25,15 @@ func LoadConfig() types.Config {
 		JWT:          loadJWTConfig(),
 		TemplatesDir: loadTemplatesDir(),
 		BaseURL:      loadBaseURL(),
+	}
+}
+
+func loadCORSConfig() types.CORSConfig {
+	return types.CORSConfig{
+		AllowedOrigins:   strings.Split(getEnv("CORS_ALLOWED_ORIGINS"), ","),
+		AllowedMethods:   strings.Split(getEnv("CORS_ALLOWED_METHODS"), ","),
+		AllowedHeaders:   strings.Split(getEnv("CORS_ALLOWED_HEADERS"), ","),
+		AllowCredentials: isFeatureEnabled("CORS_ALLOW_CREDENTIALS"),
 	}
 }
 

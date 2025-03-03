@@ -7,16 +7,17 @@ import (
 )
 
 type Config struct {
-	Server       ServerConfig
-	Environment  Environment
 	Auth         AuthConfig
+	BaseURL      string
+	CORS         CORSConfig
 	Database     DBConfig
 	Email        EmailConfig
-	Logger       LoggerConfig
-	Stripe       StripeConfig
+	Environment  Environment
 	JWT          JWTConfig
+	Logger       LoggerConfig
+	Server       ServerConfig
+	Stripe       StripeConfig
 	TemplatesDir string // path to the directory containing email templates
-	BaseURL      string // base URL for the application
 }
 
 // ServerConfig is based on net/http.Server.
@@ -34,6 +35,13 @@ type AuthConfig struct {
 	HMACSecret    []byte
 	RefreshExpiry time.Duration // duration for which the refresh token is valid
 	InviteReq     bool          // flag for requiring an invite to register
+}
+
+type CORSConfig struct {
+	AllowedOrigins   []string
+	AllowedMethods   []string
+	AllowedHeaders   []string
+	AllowCredentials bool
 }
 
 type EmailConfig struct {

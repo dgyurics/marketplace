@@ -45,6 +45,7 @@ func main() {
 func initializeServer(config types.Config, services servicesContainer) *http.Server {
 	// create router
 	router := mux.NewRouter()
+	router.Use(middleware.CORSMiddleware(config.CORS))
 	router.Use(middleware.LimitBodySizeMiddleware)
 
 	// create base router
