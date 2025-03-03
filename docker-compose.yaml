@@ -16,5 +16,16 @@ services:
       - ./:/var/lib/postgresql/log  # Mount logs to the local machine
     command: postgres -c 'config_file=/etc/postgresql/postgresql.conf' # Tell Postgres to use the custom config file
 
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    container_name: swagger-ui
+    ports:
+      - "8001:8080"
+    environment:
+      SWAGGER_JSON: /openapi.yaml
+    volumes:
+      - ./openapi.yaml:/openapi.yaml:ro
+    restart: always
+
 volumes:
   postgres-data:

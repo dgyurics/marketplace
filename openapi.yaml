@@ -1,0 +1,358 @@
+openapi: 3.0.0
+info:
+  title: Marketplace API
+  description: API documentation for the Marketplace backend
+  version: 1.0.0
+
+servers:
+  # - url: https://api.marketplace.com
+  #   description: Production Server
+  - url: http://localhost:8000
+    description: Local Development Server
+    x-cors: true
+
+security:
+  - BearerAuth: []
+
+paths:
+  /users/register:
+    post:
+      summary: Register a new user
+      description: Creates a new user account with email and password.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  example: securepassword
+                invite_code:
+                  type: string
+                  example: 123456
+      responses:
+        "201":
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User registered successfully
+        "400":
+          description: Invalid request
+        "500":
+          description: Internal server error
+
+  /users/login:
+    post:
+      summary: Authenticate user
+      description: Logs in a user with email and password, returning an access token and refresh token.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  example: securepassword
+      responses:
+        "200":
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refresh_token:
+                    type: string
+                    example: 6ed52f4f-d7f1-4f64-b3a3-3b6ccebf0ebd
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Invalid credentials
+        "500":
+          description: Internal server error
+
+  /users/logout:
+    post:
+      summary: Log out user
+      description: Revokes all active refresh tokens for the authenticated user, effectively logging them out.
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Successfully logged out
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+
+  /users/refresh-token:
+    post:
+      summary: Refresh access token
+      description: Generates a new access token using a valid refresh token.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  example: 6ed52f4f-d7f1-4f64-b3a3-3b6ccebf0ebd
+      responses:
+        "200":
+          description: Successfully refreshed token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refresh_token:
+                    type: string
+                    example: 6ed52f4f-d7f1-4f64-b3a3-3b6ccebf0ebd
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Invalid or expired refresh token
+        "500":
+          description: Internal server error
+
+  /users/exists:
+    post:
+      summary: Check if a user exists
+      description: Verifies whether a user with the given email exists in the system.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+      responses:
+        "200":
+          description: User existence check completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                    example: true
+        "400":
+          description: Invalid request payload
+        "500":
+          description: Internal server error
+
+  /users/addresses:
+    get:
+      summary: Get user addresses
+      description: Retrieves all saved addresses for the authenticated user.
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Successfully retrieved addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Address"
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+    post:
+      summary: Add a new address
+      description: Saves a new address for the authenticated user.
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Address"
+      responses:
+        "201":
+          description: Address successfully added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+
+  /users/addresses/{id}:
+    delete:
+      summary: Remove an address
+      description: Deletes a saved address for the authenticated user.
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Address successfully removed
+        "400":
+          description: Invalid address ID
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+
+  /users:
+    get:
+      summary: Get all users
+      description: Retrieves a paginated list of all users. Requires admin privileges.
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 100
+      responses:
+        "200":
+          description: Successfully retrieved users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "403":
+          description: Forbidden - Admin access required
+        "500":
+          description: Internal server error
+
+  /users/invite:
+    post:
+      summary: Generate an invite code
+      description: Generates a new invite code for user registration. Requires admin privileges.
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      responses:
+        "201":
+          description: Successfully generated invite code
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "A1B2C3"
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "403":
+          description: Forbidden - Admin access required
+        "500":
+          description: Internal server error
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "user-123"
+        email:
+          type: string
+          example: "user@example.com"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-03-04T12:00:00Z"
+
+    Address:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "abc123"
+        user_id:
+          type: string
+          example: "user-456"
+        street:
+          type: string
+          example: "123 Main St"
+        city:
+          type: string
+          example: "New York"
+        state:
+          type: string
+          example: "NY"
+        postal_code:
+          type: string
+          example: "10001"
+        country:
+          type: string
+          example: "USA"
