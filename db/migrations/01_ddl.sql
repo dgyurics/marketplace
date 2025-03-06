@@ -74,6 +74,36 @@ CREATE TABLE IF NOT EXISTS images (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
+CREATE MATERIALIZED VIEW mv_product AS
+SELECT
+    p.id,
+    p.name,
+    p.price,
+    p.description,
+    p.created_at,
+    p.updated_at,
+    COALESCE(
+        JSONB_AGG(
+            JSONB_BUILD_OBJECT(
+                'id', i.id::TEXT,
+                'image_url', i.image_url,
+                'image_type', i.image_type,
+                'format', i.format,
+                'animated', i.animated,
+                'display_order', i.display_order,
+                'alt_text', i.alt_text
+            )
+            ORDER BY i.display_order
+        ) FILTER (WHERE i.id IS NOT NULL), '[]'
+    ) AS images
+FROM products p
+LEFT JOIN images i ON p.id = i.product_id
+WHERE p.is_deleted = FALSE
+GROUP BY p.id;
+
+CREATE UNIQUE INDEX mv_product_id_idx
+ON mv_product (id);
+
 CREATE TABLE IF NOT EXISTS inventory (
     product_id BIGINT PRIMARY KEY,
     quantity INT NOT NULL DEFAULT 0,

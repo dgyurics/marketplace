@@ -116,9 +116,13 @@ func TestAddItemToCart(t *testing.T) {
 		productID)
 	assert.NoError(t, err, "Expected no error on inserting inventory")
 
+	_, err = dbPool.ExecContext(ctx, `
+		REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product`)
+	assert.NoError(t, err, "Expected no error on refreshing materialized view")
+
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
-		ProductID: productID, // Use the valid UUID
+		Product:   types.Product{ID: productID},
 		Quantity:  1,
 		UnitPrice: 100000,
 	}
@@ -129,7 +133,7 @@ func TestAddItemToCart(t *testing.T) {
 	addedCart, err := repo.GetOrCreateCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on fetching cart")
 	assert.Equal(t, 1, len(addedCart.Items), "Expected one item in the cart")
-	assert.Equal(t, item.ProductID, addedCart.Items[0].ProductID, "Expected the same product ID")
+	assert.Equal(t, item.Product.ID, addedCart.Items[0].Product.ID, "Expected the same product ID")
 	assert.Equal(t, item.Quantity, addedCart.Items[0].Quantity, "Expected the same quantity")
 	assert.Equal(t, item.UnitPrice, addedCart.Items[0].UnitPrice, "Expected the same unit price")
 
@@ -175,9 +179,13 @@ func TestUpdateCartItem(t *testing.T) {
 		productID)
 	assert.NoError(t, err, "Expected no error on inserting inventory")
 
+	_, err = dbPool.ExecContext(ctx, `
+		REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product`)
+	assert.NoError(t, err, "Expected no error on refreshing materialized view")
+
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
-		ProductID: productID,
+		Product:   types.Product{ID: productID},
 		Quantity:  1,
 		UnitPrice: 100000,
 	}
@@ -237,9 +245,13 @@ func TestRemoveItemFromCart(t *testing.T) {
 		productID)
 	assert.NoError(t, err, "Expected no error on inserting inventory")
 
+	_, err = dbPool.ExecContext(ctx, `
+		REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product`)
+	assert.NoError(t, err, "Expected no error on refreshing materialized view")
+
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
-		ProductID: productID,
+		Product:   types.Product{ID: productID},
 		Quantity:  1,
 		UnitPrice: 100000,
 	}
@@ -294,9 +306,13 @@ func TestClearCart(t *testing.T) {
 		productID)
 	assert.NoError(t, err, "Expected no error on inserting inventory")
 
+	_, err = dbPool.ExecContext(ctx, `
+		REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product`)
+	assert.NoError(t, err, "Expected no error on refreshing materialized view")
+
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
-		ProductID: productID,
+		Product:   types.Product{ID: productID},
 		Quantity:  1,
 		UnitPrice: 100000,
 	}
@@ -315,6 +331,88 @@ func TestClearCart(t *testing.T) {
 	// Clean up the cart, product, and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
 	assert.NoError(t, err, "Expected no error on deleting cart")
+
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", productID)
+	assert.NoError(t, err, "Expected no error on deleting product")
+
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
+	assert.NoError(t, err, "Expected no error on deleting user")
+}
+
+func TestGetCartWithImages(t *testing.T) {
+	repo := NewCartRepository(dbPool)
+	userRepo := NewUserRepository(dbPool)
+	ctx := context.Background()
+
+	// Create a unique test user
+	user := createUniqueTestUser(t, userRepo)
+
+	// Step 1: Create a new cart for the test user
+	_, err := repo.GetOrCreateCart(ctx, user.ID)
+	assert.NoError(t, err, "Expected no error on cart creation")
+
+	// Step 2: Add a valid product to the inventory
+	productID := genID()
+	assert.NoError(t, err, "Expected no error on generating UUID")
+
+	_, err = dbPool.ExecContext(ctx, `
+		INSERT INTO products (id, name, price, description)
+		VALUES ($1, 'Test Product', 1000, 'Test product description')`,
+		productID)
+	assert.NoError(t, err, "Expected no error on inserting test product")
+
+	_, err = dbPool.ExecContext(ctx, `
+		INSERT INTO inventory (product_id, quantity)
+		VALUES ($1, 10)`,
+		productID)
+	assert.NoError(t, err, "Expected no error on inserting inventory")
+
+	// Step 3: Add images to the product
+	imageIDs := []string{genID(), genID()}
+	imageURLs := []string{"https://example.com/image1.jpg", "https://example.com/image2.jpg"}
+
+	for i, imageID := range imageIDs {
+		_, err = dbPool.ExecContext(ctx, `
+			INSERT INTO images (id, product_id, image_url, image_type, format, animated, display_order)
+			VALUES ($1, $2, $3, 'gallery', 'jpg', false, $4)`,
+			imageID, productID, imageURLs[i], i)
+		assert.NoError(t, err, "Expected no error on inserting product images")
+	}
+
+	// Refresh the materialized view
+	_, err = dbPool.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product`)
+	assert.NoError(t, err, "Expected no error on refreshing materialized view")
+
+	// Step 4: Add an item to the cart
+	item := &types.CartItem{
+		Product:   types.Product{ID: productID},
+		Quantity:  1,
+		UnitPrice: 100000,
+	}
+	err = repo.AddItemToCart(ctx, user.ID, item)
+	assert.NoError(t, err, "Expected no error on adding item to cart")
+
+	// Step 5: Retrieve the cart and verify images
+	cart, err := repo.GetOrCreateCart(ctx, user.ID)
+	assert.NoError(t, err, "Expected no error on fetching cart")
+	assert.Equal(t, 1, len(cart.Items), "Expected one item in the cart")
+
+	// Verify that product images are included
+	fetchedProduct := cart.Items[0].Product
+	assert.Equal(t, productID, fetchedProduct.ID, "Expected correct product ID")
+	assert.GreaterOrEqual(t, len(fetchedProduct.Images), 2, "Expected at least 2 images for the product")
+	assert.Equal(t, imageURLs[0], fetchedProduct.Images[0].ImageURL, "Expected correct image URL")
+	assert.Equal(t, imageURLs[1], fetchedProduct.Images[1].ImageURL, "Expected correct image URL")
+
+	// Cleanup
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
+	assert.NoError(t, err, "Expected no error on deleting cart items")
+
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
+	assert.NoError(t, err, "Expected no error on deleting cart")
+
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM images WHERE product_id = $1", productID)
+	assert.NoError(t, err, "Expected no error on deleting images")
 
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", productID)
 	assert.NoError(t, err, "Expected no error on deleting product")

@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 
 	"github.com/dgyurics/marketplace/types"
 )
@@ -39,7 +40,12 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 	inventoryQuery := `
 		INSERT INTO inventory (product_id, quantity)
 		VALUES ($1, 0)`
-	_, err := r.db.ExecContext(ctx, inventoryQuery, product.ID)
+	if _, err := r.db.ExecContext(ctx, inventoryQuery, product.ID); err != nil {
+		return err
+	}
+
+	// Refresh the materialized view to include the new product
+	_, err := r.db.ExecContext(ctx, "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product")
 	return err
 }
 
@@ -77,30 +83,31 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 		return err
 	}
 
+	// Refresh the materialized view within the transaction
+	if _, err := tx.ExecContext(ctx, "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product"); err != nil {
+		return err
+	}
+
 	return tx.Commit()
 }
 
 func (r *productRepository) GetAllProducts(ctx context.Context, page, limit int) ([]types.Product, error) {
 	var products []types.Product
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT
-			p.id,
-			p.name,
-			p.price,
-			p.description,
-			p.created_at,
-			p.updated_at
-		FROM products p
-		WHERE is_deleted = false
-		ORDER BY p.created_at DESC
+		SELECT id, name, price, description, created_at, updated_at, images
+		FROM mv_product
+		ORDER BY created_at DESC
 		LIMIT $1 OFFSET $2
 	`, limit, (page-1)*limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
 	for rows.Next() {
 		var product types.Product
+		var imagesJSON []byte
+
 		if err = rows.Scan(
 			&product.ID,
 			&product.Name,
@@ -108,36 +115,44 @@ func (r *productRepository) GetAllProducts(ctx context.Context, page, limit int)
 			&product.Description,
 			&product.CreatedAt,
 			&product.UpdatedAt,
+			&imagesJSON,
 		); err != nil {
 			return nil, err
 		}
+
+		// Convert JSONB array to Go struct
+		if err := json.Unmarshal(imagesJSON, &product.Images); err != nil {
+			return nil, err
+		}
+
 		products = append(products, product)
 	}
 	return products, nil
 }
 
 func (r *productRepository) GetProductByID(ctx context.Context, id string) (*types.Product, error) {
+	query := `
+	SELECT id, name, price, description, created_at, updated_at, images
+	FROM mv_product
+	WHERE id = $1;
+	`
+
 	var product types.Product
-	if err := r.db.QueryRowContext(ctx, `
-		SELECT
-			p.id,
-			p.name,
-			p.price,
-			p.description,
-			p.created_at,
-			p.updated_at
-		FROM products p
-		WHERE p.id = $1
-			AND is_deleted = false`, id).Scan(
-		&product.ID,
-		&product.Name,
-		&product.Price,
-		&product.Description,
-		&product.CreatedAt,
-		&product.UpdatedAt,
-	); err != nil {
+	var imagesJSON []byte
+
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&product.ID, &product.Name, &product.Price, &product.Description, &product.CreatedAt, &product.UpdatedAt,
+		&imagesJSON,
+	)
+	if err != nil {
 		return nil, err
 	}
+
+	// Convert JSONB to Go struct
+	if err := json.Unmarshal(imagesJSON, &product.Images); err != nil {
+		return nil, err
+	}
+
 	return &product, nil
 }
 
@@ -150,7 +165,10 @@ func (r *productRepository) DeleteProduct(ctx context.Context, id string) error 
 	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
 		return sql.ErrNoRows
 	}
-	return nil
+
+	// Refresh the materialized view to include the new product
+	_, err = r.db.ExecContext(ctx, "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product")
+	return err
 }
 
 func (r *productRepository) UpdateInventory(ctx context.Context, productID string, quantity int) error {

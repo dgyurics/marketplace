@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 
 	"github.com/dgyurics/marketplace/types"
@@ -38,11 +39,14 @@ func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*t
 		return nil, err
 	}
 
-	// populate cart items
+	// Fetch cart items using the materialized view (contains product and images)
 	itemsQuery := `
-		SELECT product_id, quantity, unit_price
-		FROM cart_items
-		WHERE user_id = $1`
+		SELECT ci.product_id, ci.quantity, ci.unit_price,
+		       pv.name, pv.price, pv.description, pv.images
+		FROM cart_items ci
+		JOIN mv_product pv ON ci.product_id = pv.id
+		WHERE ci.user_id = $1`
+
 	rows, err := r.db.QueryContext(ctx, itemsQuery, userID)
 	if err != nil {
 		return nil, err
@@ -52,9 +56,25 @@ func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*t
 	items := make([]types.CartItem, 0)
 	for rows.Next() {
 		var item types.CartItem
-		if err := rows.Scan(&item.ProductID, &item.Quantity, &item.UnitPrice); err != nil {
+		var imagesJSON []byte
+
+		if err := rows.Scan(
+			&item.Product.ID,
+			&item.Quantity,
+			&item.UnitPrice,
+			&item.Product.Name,
+			&item.Product.Price,
+			&item.Product.Description,
+			&imagesJSON,
+		); err != nil {
 			return nil, err
 		}
+
+		// Convert JSON array to Go struct
+		if err := json.Unmarshal(imagesJSON, &item.Product.Images); err != nil {
+			return nil, err
+		}
+
 		items = append(items, item)
 	}
 	cart.Items = items
@@ -64,15 +84,15 @@ func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*t
 func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item *types.CartItem) error {
 	// Check inventory availability
 	var availableQuantity int
-	if err := r.db.QueryRowContext(ctx, "SELECT quantity FROM inventory WHERE product_id = $1", item.ProductID).Scan(&availableQuantity); err != nil {
+	if err := r.db.QueryRowContext(ctx, "SELECT quantity FROM inventory WHERE product_id = $1", item.Product.ID).Scan(&availableQuantity); err != nil {
 		return err
 	}
 	if availableQuantity < item.Quantity {
-		return fmt.Errorf("insufficient inventory for product %s", item.ProductID)
+		return fmt.Errorf("insufficient inventory for product %s", item.Product.ID)
 	}
 
 	// Fetch unit_price from the product table
-	if err := r.db.QueryRowContext(ctx, "SELECT price FROM products WHERE id = $1", item.ProductID).Scan(&item.UnitPrice); err != nil {
+	if err := r.db.QueryRowContext(ctx, "SELECT price FROM products WHERE id = $1", item.Product.ID).Scan(&item.UnitPrice); err != nil {
 		return err
 	}
 
@@ -83,14 +103,14 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 		ON CONFLICT (user_id, product_id) DO UPDATE
 		SET quantity = EXCLUDED.quantity,
 		    unit_price = EXCLUDED.unit_price`
-	_, err := r.db.ExecContext(ctx, query, userID, item.ProductID, item.Quantity, item.UnitPrice)
+	_, err := r.db.ExecContext(ctx, query, userID, item.Product.ID, item.Quantity, item.UnitPrice)
 	return err
 }
 
 func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item *types.CartItem) error {
 	// Check inventory availability
 	var availableQuantity int
-	if err := r.db.QueryRowContext(ctx, "SELECT quantity FROM inventory WHERE product_id = $1", item.ProductID).Scan(&availableQuantity); err != nil {
+	if err := r.db.QueryRowContext(ctx, "SELECT quantity FROM inventory WHERE product_id = $1", item.Product.ID).Scan(&availableQuantity); err != nil {
 		return err
 	}
 
@@ -100,7 +120,7 @@ func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item
 		SELECT quantity
 		FROM cart_items
 		WHERE user_id = $1 AND product_id = $2`
-	err := r.db.QueryRowContext(ctx, query, userID, item.ProductID).Scan(&oldQuantity)
+	err := r.db.QueryRowContext(ctx, query, userID, item.Product.ID).Scan(&oldQuantity)
 	if err != nil {
 		return err
 	}
@@ -108,7 +128,7 @@ func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item
 	// Check if the new quantity exceeds available inventory
 	quantityDifference := item.Quantity - oldQuantity
 	if availableQuantity < quantityDifference {
-		return fmt.Errorf("insufficient inventory for product %s", item.ProductID)
+		return fmt.Errorf("insufficient inventory for product %s", item.Product.ID)
 	}
 
 	// Update the cart item
@@ -117,8 +137,8 @@ func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item
 		SET quantity = $3
 		WHERE user_id = $1 AND product_id = $2
 		RETURNING product_id, quantity, unit_price`
-	err = r.db.QueryRowContext(ctx, updateQuery, userID, item.ProductID, item.Quantity).Scan(
-		&item.ProductID,
+	err = r.db.QueryRowContext(ctx, updateQuery, userID, item.Product.ID, item.Quantity).Scan(
+		&item.Product.ID,
 		&item.Quantity,
 		&item.UnitPrice,
 	)

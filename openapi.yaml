@@ -310,6 +310,121 @@ paths:
         "500":
           description: Internal server error
 
+  /carts/items:
+    post:
+      summary: Add an item to the cart
+      description: Adds a product to the authenticated user's cart.
+      tags:
+        - Cart
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: "123"
+                quantity:
+                  type: integer
+                  minimum: 1
+                  example: 2
+      responses:
+        "200":
+          description: Item successfully added to the cart
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+    patch:
+      summary: Update an item in the cart
+      description: Updates the quantity of an existing item in the user's cart.
+      tags:
+        - Cart
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: "123"
+                quantity:
+                  type: integer
+                  minimum: 1
+                  example: 3
+      responses:
+        "200":
+          description: Item successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartItem"
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /carts/items/{product_id}:
+    delete:
+      summary: Remove an item from the cart
+      description: Deletes a specific product from the authenticated user's cart.
+      tags:
+        - Cart
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Item successfully removed
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /carts:
+    get:
+      summary: Get user's cart
+      description: Retrieves the authenticated user's cart along with the list of items and images.
+      tags:
+        - Cart
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Successfully retrieved cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
 components:
   securitySchemes:
     BearerAuth:
@@ -356,3 +471,68 @@ components:
         country:
           type: string
           example: "USA"
+
+    Cart:
+      type: object
+      properties:
+        user_id:
+          type: string
+          example: "user-456"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
+
+    CartItem:
+      type: object
+      properties:
+        product:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "123"
+            name:
+              type: string
+              example: "Product Name"
+            description:
+              type: string
+              example: "Product description"
+            images:
+              type: array
+              items:
+                $ref: "#/components/schemas/Image"
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        unit_price:
+          type: number
+          example: 1000
+
+
+    Image:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "image-123"
+        image_url:
+          type: string
+          format: uri
+          example: "https://example.com/image.jpg"
+        image_type:
+          type: string
+          enum: ["main", "thumbnail", "gallery", "hero", "zoom"]
+        alt_text:
+          type: string
+          example: "Product image"
+        format:
+          type: string
+          example: "jpg"
+        animated:
+          type: boolean
+          example: false
+        display_order:
+          type: integer
+          example: 0

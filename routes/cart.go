@@ -31,16 +31,12 @@ func (h *CartRoutes) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if item.ProductID == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "product_id is required")
-		return
-	}
-
 	if item.Quantity <= 0 {
 		u.RespondWithError(w, r, http.StatusBadRequest, "quantity must be greater than 0")
 		return
 	}
 
+	item.Product.ID = mux.Vars(r)["product_id"]
 	if err := h.cartService.AddItemToCart(r.Context(), &item); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -56,16 +52,12 @@ func (h *CartRoutes) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if item.ProductID == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "product_id is required")
-		return
-	}
-
 	if item.Quantity <= 0 {
 		u.RespondWithError(w, r, http.StatusBadRequest, "quantity must be greater than 0")
 		return
 	}
 
+	item.Product.ID = mux.Vars(r)["product_id"]
 	if err := h.cartService.UpdateCartItem(r.Context(), &item); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -97,8 +89,8 @@ func (h *CartRoutes) GetCart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CartRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/carts/items", h.secure(h.AddItemToCart)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/carts/items", h.secure(h.UpdateCartItem)).Methods(http.MethodPatch)
+	h.muxRouter.Handle("/carts/items/{product_id}", h.secure(h.AddItemToCart)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/carts/items/{product_id}", h.secure(h.UpdateCartItem)).Methods(http.MethodPatch)
 	h.muxRouter.Handle("/carts/items/{product_id}", h.secure(h.RemoveItemFromCart)).Methods(http.MethodDelete)
 	h.muxRouter.Handle("/carts", h.secure(h.GetCart)).Methods(http.MethodGet)
 }

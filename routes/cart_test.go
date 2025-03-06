@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -53,23 +54,27 @@ func TestAddItemToCart(t *testing.T) {
 		},
 	}
 
+	productID := "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8"
 	item := types.CartItem{
-		ProductID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8",
-		Quantity:  2,
+		Quantity: 2,
+		Product: types.Product{
+			ID: productID,
+		},
 	}
 
 	mockCartService.On("AddItemToCart", mock.Anything, &item).Return(nil)
 
 	// Create a new HTTP POST request with the cart ID in the URL and the item as the payload
 	payload, _ := json.Marshal(item)
-	req, err := http.NewRequest(http.MethodPost, "/carts/items", bytes.NewBuffer(payload))
+	url := fmt.Sprintf("/carts/items/%s", productID)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
 	require.NoError(t, err)
 
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	routes.muxRouter.HandleFunc("/carts/items", routes.AddItemToCart).Methods(http.MethodPost)
+	routes.muxRouter.HandleFunc("/carts/items/{product_id}", routes.AddItemToCart).Methods(http.MethodPost)
 
 	// Serve the request via the router
 	routes.muxRouter.ServeHTTP(rr, req)
@@ -126,7 +131,13 @@ func TestGetCart(t *testing.T) {
 
 	expectedCart := &types.Cart{
 		UserID: "test-user-id",
-		Items:  []types.CartItem{{ProductID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8", Quantity: 2}},
+		Items: []types.CartItem{
+			{
+				Product:   types.Product{ID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8"},
+				Quantity:  2,
+				UnitPrice: 1000, // Set an appropriate unit price
+			},
+		},
 	}
 
 	mockCartService.On("GetCart", mock.Anything).Return(expectedCart, nil)

@@ -6,9 +6,11 @@ import (
 
 	"github.com/dgyurics/marketplace/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateProduct(t *testing.T) {
+	t.Parallel()
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
 
@@ -19,17 +21,22 @@ func TestCreateProduct(t *testing.T) {
 	}
 
 	err := repo.CreateProduct(ctx, product)
+	require.NoError(t, err, "Failed to create product")
+	require.NotEmpty(t, product.ID, "Product ID should not be empty")
 
-	assert.NoError(t, err, "Expected no error on product creation")
-	assert.NotEmpty(t, product.ID, "Expected product ID to be set")
-	assert.Equal(t, "Test Product", product.Name, "Expected product name to match")
-	assert.Equal(t, "A test product description", product.Description, "Expected product description to match")
-	expectedPrice := int64(100000)
-	assert.Equal(t, expectedPrice, product.Price, "Expected product price to match")
+	// Verify product exists
+	storedProduct, err := repo.GetProductByID(ctx, product.ID)
+	require.NoError(t, err, "Failed to fetch created product")
+	assert.Equal(t, product.Name, storedProduct.Name)
+	assert.Equal(t, product.Description, storedProduct.Description)
+	assert.Equal(t, product.Price, storedProduct.Price)
 
-	// Clean up
+	// Ensure images field is properly unmarshaled (since we are using a materialized view)
+	assert.NotNil(t, storedProduct.Images, "Images should not be nil")
+
+	// Cleanup
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
-	assert.NoError(t, err, "Expected no error on product deletion")
+	require.NoError(t, err, "Failed to delete test product")
 }
 
 func TestCreateProductWithCategory(t *testing.T) {
