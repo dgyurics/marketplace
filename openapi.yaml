@@ -425,6 +425,113 @@ paths:
         "500":
           description: Internal server error
 
+  /products:
+    post:
+      summary: Create a new product
+      description: Adds a new product to the catalog.
+      tags:
+        - Products
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Nordic Lounge Chair"
+                price:
+                  type: number
+                  example: 29999
+                description:
+                  type: string
+                  example: "A stylish and comfortable lounge chair with minimalist design."
+      responses:
+        "201":
+          description: Product successfully created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized - Admin access required
+        "500":
+          description: Internal server error
+
+    get:
+      summary: Get all products
+      description: Retrieves a paginated list of products with optional filtering and sorting.
+      tags:
+        - Products
+      parameters:
+        - name: category
+          in: query
+          description: Filter products by category ID
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Sort products by price (price_asc, price_desc)
+          schema:
+            type: string
+            enum: [price_asc, price_desc]
+        - name: in_stock
+          in: query
+          description: Filter products that are in stock only (true/false)
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Successfully retrieved products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "500":
+          description: Internal server error
+
+  /products/{id}:
+    get:
+      summary: Get product by ID
+      description: Retrieves a single product by its ID.
+      tags:
+        - Products
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "123"
+      responses:
+        "200":
+          description: Successfully retrieved product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Product not found
+        "500":
+          description: Internal server error
+
 components:
   securitySchemes:
     BearerAuth:
@@ -510,6 +617,34 @@ components:
           type: number
           example: 1000
 
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "123"
+        name:
+          type: string
+          example: "Nordic Lounge Chair"
+        price:
+          type: integer
+          example: 29999
+          description: "Price in cents (e.g., 29999 represents $299.99)"
+        description:
+          type: string
+          example: "A stylish and comfortable lounge chair with minimalist design."
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/Image"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
 
     Image:
       type: object
@@ -517,6 +652,9 @@ components:
         id:
           type: string
           example: "image-123"
+        product_id:
+          type: string
+          example: "123"
         image_url:
           type: string
           format: uri
@@ -524,15 +662,18 @@ components:
         image_type:
           type: string
           enum: ["main", "thumbnail", "gallery", "hero", "zoom"]
-        alt_text:
-          type: string
-          example: "Product image"
+          example: "main"
         format:
           type: string
-          example: "jpg"
+          enum: ["jpg", "png", "webp", "avif", "gif"]
+          example: "webp"
         animated:
           type: boolean
           example: false
         display_order:
           type: integer
           example: 0
+        alt_text:
+          type: string
+          nullable: true
+          example: "A modern chair with a wooden frame."

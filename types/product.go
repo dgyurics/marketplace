@@ -20,3 +20,12 @@ type Image struct {
 	DisplayOrder int     `json:"display_order"`
 	AltText      *string `json:"alt_text,omitempty"`
 }
+
+type ProductFilter struct {
+	Category    string
+	SortByPrice bool
+	SortAsc     bool
+	InStock     bool
+	Page        int
+	Limit       int
+}

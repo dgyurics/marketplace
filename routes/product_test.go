@@ -29,8 +29,8 @@ func (m *MockProductService) CreateProductWithCategory(ctx context.Context, prod
 	return args.Error(0)
 }
 
-func (m *MockProductService) GetAllProducts(ctx context.Context, page, limit int) ([]types.Product, error) {
-	args := m.Called(ctx)
+func (m *MockProductService) GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error) {
+	args := m.Called(ctx, filter)
 	return args.Get(0).([]types.Product), args.Error(1)
 }
 
@@ -183,7 +183,7 @@ func TestGetProducts(t *testing.T) {
 	}
 
 	// Set up the expected behavior of the mock service
-	mockService.On("GetAllProducts", mock.Anything).Return(products, nil)
+	mockService.On("GetProducts", mock.Anything, mock.Anything).Return(products, nil)
 
 	// Create a new HTTP request
 	req, err := http.NewRequest(http.MethodGet, "/products", nil)
@@ -209,6 +209,62 @@ func TestGetProducts(t *testing.T) {
 	require.Len(t, responseProducts, len(products))
 	require.Equal(t, products[0].Name, responseProducts[0].Name)
 	require.Equal(t, products[1].Name, responseProducts[1].Name)
+
+	// Assert that the mock's expectations were met
+	mockService.AssertExpectations(t)
+}
+
+func TestGetProductsUsingCategory(t *testing.T) {
+	// Create a mock service
+	mockService := new(MockProductService)
+
+	// Set up the routes with the mock service
+	routes := &ProductRoutes{
+		productService: mockService,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
+	}
+
+	// Expected products filtered by category "Electronics"
+	expectedProducts := []types.Product{
+		{
+			ID:          "3",
+			Name:        "Smartphone",
+			Price:       50000,
+			Description: "Latest smartphone",
+		},
+	}
+
+	// Set up the expected behavior of the mock service with filter check
+	mockService.On("GetProducts", mock.Anything, mock.MatchedBy(func(filter types.ProductFilter) bool {
+		return filter.Category == "Electronics"
+	})).Return(expectedProducts, nil)
+
+	// Create a new HTTP request with category filter
+	req, err := http.NewRequest(http.MethodGet, "/products?category=Electronics", nil)
+	require.NoError(t, err)
+
+	// Create a response recorder
+	rr := httptest.NewRecorder()
+
+	// Add the route to the mux router
+	routes.muxRouter.HandleFunc("/products", routes.GetProducts).Methods(http.MethodGet)
+
+	// Serve the request via the router
+	routes.muxRouter.ServeHTTP(rr, req)
+
+	// Check the status code
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	// Check the response body
+	var responseProducts []types.Product
+	err = json.NewDecoder(rr.Body).Decode(&responseProducts)
+	require.NoError(t, err)
+
+	require.Len(t, responseProducts, 1)
+	require.Equal(t, expectedProducts[0].Name, responseProducts[0].Name)
 
 	// Assert that the mock's expectations were met
 	mockService.AssertExpectations(t)

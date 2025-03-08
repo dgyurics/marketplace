@@ -11,7 +11,7 @@ type ProductService interface {
 	CreateProduct(ctx context.Context, product *types.Product) error
 	CreateProductWithCategory(ctx context.Context, product *types.Product, categoryID string) error
 	RemoveProduct(ctx context.Context, id string) error
-	GetAllProducts(ctx context.Context, page, limit int) ([]types.Product, error)
+	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
 	GetProductByID(ctx context.Context, id string) (*types.Product, error)
 	UpdateInventory(ctx context.Context, productID string, quantity int) error
 }
@@ -32,8 +32,8 @@ func (s *productService) CreateProductWithCategory(ctx context.Context, product 
 	return s.repo.CreateProductWithCategory(ctx, product, categoryID)
 }
 
-func (s *productService) GetAllProducts(ctx context.Context, page, limit int) ([]types.Product, error) {
-	return s.repo.GetAllProducts(ctx, page, limit)
+func (s *productService) GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error) {
+	return s.repo.GetProducts(ctx, filter)
 }
 
 func (s *productService) GetProductByID(ctx context.Context, id string) (*types.Product, error) {

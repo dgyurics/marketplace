@@ -70,7 +70,7 @@ func TestCreateProductWithCategory(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on product deletion")
 }
 
-func TestGetAllProducts(t *testing.T) {
+func TestGetProducts(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
 
@@ -85,7 +85,7 @@ func TestGetAllProducts(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on product creation")
 
 	// Get all products
-	products, err := repo.GetAllProducts(ctx, 1, 100)
+	products, err := repo.GetProducts(ctx, types.ProductFilter{Limit: 100, Page: 1})
 	assert.NoError(t, err, "Expected no error on getting all products")
 	assert.NotEmpty(t, products, "Expected products list to not be empty")
 

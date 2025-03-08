@@ -57,7 +57,17 @@ func (h *ProductRoutes) CreateProductWithCategory(w http.ResponseWriter, r *http
 
 func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 	params := u.ParsePaginationParams(r, 1, 25)
-	products, err := h.productService.GetAllProducts(r.Context(), params.Page, params.Limit)
+
+	filters := types.ProductFilter{
+		Category:    r.URL.Query().Get("category"),
+		Page:        params.Page,
+		Limit:       params.Limit,
+		InStock:     r.URL.Query().Get("in_stock") == "true",
+		SortByPrice: r.URL.Query().Get("sort_by") == "price",
+		SortAsc:     r.URL.Query().Get("sort_order") == "asc",
+	}
+
+	products, err := h.productService.GetProducts(r.Context(), filters)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return

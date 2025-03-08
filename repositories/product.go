@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 
 	"github.com/dgyurics/marketplace/types"
 )
@@ -11,7 +12,7 @@ import (
 type ProductRepository interface {
 	CreateProduct(ctx context.Context, product *types.Product) error
 	CreateProductWithCategory(ctx context.Context, product *types.Product, categoryID string) error
-	GetAllProducts(ctx context.Context, page, limit int) ([]types.Product, error)
+	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
 	GetProductByID(ctx context.Context, id string) (*types.Product, error)
 	DeleteProduct(ctx context.Context, id string) error
 	UpdateInventory(ctx context.Context, productID string, quantity int) error
@@ -91,14 +92,47 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 	return tx.Commit()
 }
 
-func (r *productRepository) GetAllProducts(ctx context.Context, page, limit int) ([]types.Product, error) {
+func (r *productRepository) GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error) {
 	var products []types.Product
-	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, name, price, description, created_at, updated_at, images
-		FROM mv_product
-		ORDER BY created_at DESC
-		LIMIT $1 OFFSET $2
-	`, limit, (page-1)*limit)
+
+	// FIXME: this will be called frequently,
+	// look to improve performance by reducing joins
+	// possibly eliminate categories table and simply use product_categories,
+	// where the category name is stored in the product_categories table
+	query := `
+		SELECT p.id, p.name, p.price, p.description, p.images
+		FROM mv_product p
+		LEFT JOIN product_categories pc ON p.id = pc.product_id
+		LEFT JOIN categories c ON pc.category_id = c.id
+		LEFT JOIN inventory i ON p.id = i.product_id
+		WHERE 1=1
+	`
+
+	args := []interface{}{}
+	argIndex := 1
+
+	if filter.Category != "" {
+		query += fmt.Sprintf(" AND c.name = $%d", argIndex)
+		args = append(args, filter.Category)
+		argIndex++
+	}
+
+	if filter.InStock {
+		query += " AND i.quantity > 0"
+	}
+
+	if filter.SortByPrice {
+		if filter.SortAsc {
+			query += " ORDER BY p.price ASC"
+		} else {
+			query += " ORDER BY p.price DESC"
+		}
+	}
+
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
+	args = append(args, filter.Limit, (filter.Page-1)*filter.Limit)
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -113,8 +147,6 @@ func (r *productRepository) GetAllProducts(ctx context.Context, page, limit int)
 			&product.Name,
 			&product.Price,
 			&product.Description,
-			&product.CreatedAt,
-			&product.UpdatedAt,
 			&imagesJSON,
 		); err != nil {
 			return nil, err
