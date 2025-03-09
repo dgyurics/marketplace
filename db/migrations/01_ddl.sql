@@ -53,19 +53,10 @@ CREATE INDEX idx_products_is_deleted_false
 ON products (id)
 WHERE is_deleted = FALSE;
 
-CREATE TYPE image_type_enum AS ENUM (
-    'main',      -- Primary image displayed on product pages
-    'thumbnail', -- Used in checkout/cart
-    'gallery',   -- Additional images for product views
-    'hero',      -- Large banner image (e.g., homepage spotlight)
-    'zoom'       -- High-resolution image for zooming
-);
 CREATE TABLE IF NOT EXISTS images (
     id BIGINT PRIMARY KEY DEFAULT gen_id(),
     product_id BIGINT NOT NULL,
-    image_url TEXT NOT NULL, -- Store a single high resolution image
-    image_type image_type_enum DEFAULT 'main',
-    format VARCHAR(10) CHECK (format IN ('jpg', 'png', 'webp', 'avif', 'gif')),
+    image_url TEXT NOT NULL,
     animated BOOLEAN DEFAULT FALSE,
     display_order INT DEFAULT 0,
     alt_text VARCHAR(255),
@@ -85,8 +76,6 @@ SELECT
             JSONB_BUILD_OBJECT(
                 'id', i.id::TEXT,
                 'image_url', i.image_url,
-                'image_type', i.image_type,
-                'format', i.format,
                 'animated', i.animated,
                 'display_order', i.display_order,
                 'alt_text', i.alt_text
@@ -261,7 +250,7 @@ SELECT
 FROM order_items oi
 JOIN products p ON oi.product_id = p.id
 LEFT JOIN images img ON img.product_id = p.id
-    AND img.image_type = 'thumbnail';
+    AND img.display_order = 0;
 
 -- Used for Stripe webhook events
 CREATE TABLE webhook_events (

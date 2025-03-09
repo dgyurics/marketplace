@@ -659,14 +659,6 @@ components:
           type: string
           format: uri
           example: "https://example.com/image.jpg"
-        image_type:
-          type: string
-          enum: ["main", "thumbnail", "gallery", "hero", "zoom"]
-          example: "main"
-        format:
-          type: string
-          enum: ["jpg", "png", "webp", "avif", "gif"]
-          example: "webp"
         animated:
           type: boolean
           example: false

@@ -14,8 +14,6 @@ type Image struct {
 	ID           string  `json:"id"`
 	ProductID    string  `json:"product_id"`
 	ImageURL     string  `json:"image_url"`
-	ImageType    string  `json:"image_type"`
-	Format       string  `json:"format"`
 	Animated     bool    `json:"animated"`
 	DisplayOrder int     `json:"display_order"`
 	AltText      *string `json:"alt_text,omitempty"`
