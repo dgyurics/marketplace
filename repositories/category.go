@@ -11,7 +11,6 @@ type CategoryRepository interface {
 	CreateCategory(ctx context.Context, category types.Category) (string, error)
 	GetAllCategories(ctx context.Context) ([]types.Category, error)
 	GetCategoryByID(ctx context.Context, id string) (*types.Category, error)
-	GetProductsByCategoryID(ctx context.Context, id string) ([]types.Product, error)
 }
 
 type categoryRepository struct {
@@ -85,38 +84,4 @@ func (r *categoryRepository) GetCategoryByID(ctx context.Context, id string) (*t
 		return nil, err
 	}
 	return &category, nil
-}
-
-func (r *categoryRepository) GetProductsByCategoryID(ctx context.Context, id string) ([]types.Product, error) {
-	var products []types.Product
-	rows, err := r.db.QueryContext(ctx, `
-		SELECT
-			p.id,
-			p.name,
-			p.description,
-			p.price,
-			p.created_at,
-			p.updated_at
-		FROM products p
-		JOIN product_categories pc ON p.id = pc.product_id
-		WHERE category_id = $1`, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var product types.Product
-		if err = rows.Scan(
-			&product.ID,
-			&product.Name,
-			&product.Description,
-			&product.Price,
-			&product.CreatedAt,
-			&product.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		products = append(products, product)
-	}
-	return products, nil
 }

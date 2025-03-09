@@ -30,11 +30,6 @@ func (m *MockCategoryRepository) GetCategoryByID(ctx context.Context, id string)
 	return args.Get(0).(*types.Category), args.Error(1)
 }
 
-func (m *MockCategoryRepository) GetProductsByCategoryID(ctx context.Context, id string) ([]types.Product, error) {
-	args := m.Called(ctx, id)
-	return args.Get(0).([]types.Product), args.Error(1)
-}
-
 func TestCategoryService_CreateCategory(t *testing.T) {
 	mockRepo := new(MockCategoryRepository)
 	service := services.NewCategoryService(mockRepo)
@@ -84,26 +79,6 @@ func TestCategoryService_GetCategoryByID(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedCategory, category)
-
-	mockRepo.AssertExpectations(t)
-}
-
-func TestCategoryService_GetProductsByCategoryID(t *testing.T) {
-	mockRepo := new(MockCategoryRepository)
-	service := services.NewCategoryService(mockRepo)
-
-	categoryID := "123"
-	expectedProducts := []types.Product{
-		{ID: "1", Name: "Product 1", Description: "Description 1"},
-		{ID: "2", Name: "Product 2", Description: "Description 2"},
-	}
-
-	mockRepo.On("GetProductsByCategoryID", mock.Anything, categoryID).Return(expectedProducts, nil)
-
-	products, err := service.GetProductsByCategoryID(context.Background(), categoryID)
-
-	assert.NoError(t, err)
-	assert.Equal(t, expectedProducts, products)
 
 	mockRepo.AssertExpectations(t)
 }

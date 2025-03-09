@@ -11,7 +11,6 @@ type CategoryService interface {
 	CreateCategory(ctx context.Context, category types.Category) (string, error)
 	GetAllCategories(ctx context.Context) ([]types.Category, error)
 	GetCategoryByID(ctx context.Context, id string) (*types.Category, error)
-	GetProductsByCategoryID(ctx context.Context, id string) ([]types.Product, error)
 }
 
 type categoryService struct {
@@ -32,8 +31,4 @@ func (s *categoryService) GetAllCategories(ctx context.Context) ([]types.Categor
 
 func (s *categoryService) GetCategoryByID(ctx context.Context, id string) (*types.Category, error) {
 	return s.repo.GetCategoryByID(ctx, id)
-}
-
-func (s *categoryService) GetProductsByCategoryID(ctx context.Context, id string) ([]types.Product, error) {
-	return s.repo.GetProductsByCategoryID(ctx, id)
 }

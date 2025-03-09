@@ -95,15 +95,9 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 func (r *productRepository) GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error) {
 	var products []types.Product
 
-	// FIXME: this will be called frequently,
-	// look to improve performance by reducing joins
-	// possibly eliminate categories table and simply use product_categories,
-	// where the category name is stored in the product_categories table
 	query := `
 		SELECT p.id, p.name, p.price, p.description, p.images
 		FROM mv_product p
-		LEFT JOIN product_categories pc ON p.id = pc.product_id
-		LEFT JOIN categories c ON pc.category_id = c.id
 		LEFT JOIN inventory i ON p.id = i.product_id
 		WHERE 1=1
 	`
@@ -112,7 +106,7 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 	argIndex := 1
 
 	if filter.Category != "" {
-		query += fmt.Sprintf(" AND c.name = $%d", argIndex)
+		query += fmt.Sprintf(" AND p.category_name = $%d", argIndex)
 		args = append(args, filter.Category)
 		argIndex++
 	}

@@ -80,8 +80,6 @@ SELECT
     p.name,
     p.price,
     p.description,
-    p.created_at,
-    p.updated_at,
     COALESCE(
         JSONB_AGG(
             JSONB_BUILD_OBJECT(
@@ -95,14 +93,30 @@ SELECT
             )
             ORDER BY i.display_order
         ) FILTER (WHERE i.id IS NOT NULL), '[]'
-    ) AS images
+    ) AS images,
+    c.name AS category_name
 FROM products p
 LEFT JOIN images i ON p.id = i.product_id
+LEFT JOIN product_categories pc ON p.id = pc.product_id
+LEFT JOIN categories c ON pc.category_id = c.id
 WHERE p.is_deleted = FALSE
-GROUP BY p.id;
+GROUP BY p.id, c.name;
 
-CREATE UNIQUE INDEX mv_product_id_idx
+-- Used when fetching a single product by ID
+CREATE UNIQUE INDEX idx_mv_product_id
 ON mv_product (id);
+
+-- Used when filtering products by category
+CREATE INDEX idx_mv_product_category_name
+ON mv_product (category_name);
+
+-- Used when sorting products by price
+CREATE INDEX idx_mv_product_price
+ON mv_product (price);
+
+-- Used when filtering products by category and sorting by price
+CREATE INDEX idx_mv_product_category_name_price
+ON mv_product (category_name, price);
 
 CREATE TABLE IF NOT EXISTS inventory (
     product_id BIGINT PRIMARY KEY,
@@ -110,6 +124,11 @@ CREATE TABLE IF NOT EXISTS inventory (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     CHECK (quantity >= 0)
 );
+
+-- Used to quickly find products in stock
+CREATE INDEX idx_inventory_in_stock
+ON inventory (product_id)
+WHERE quantity > 0;
 
 CREATE TABLE IF NOT EXISTS product_categories (
     product_id BIGINT NOT NULL,
