@@ -158,7 +158,7 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 
 func (r *productRepository) GetProductByID(ctx context.Context, id string) (*types.Product, error) {
 	query := `
-	SELECT id, name, price, description, created_at, updated_at, images
+	SELECT id, name, price, description, images
 	FROM mv_product
 	WHERE id = $1;
 	`
@@ -167,8 +167,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*typ
 	var imagesJSON []byte
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&product.ID, &product.Name, &product.Price, &product.Description, &product.CreatedAt, &product.UpdatedAt,
-		&imagesJSON,
+		&product.ID, &product.Name, &product.Price, &product.Description, &imagesJSON,
 	)
 	if err != nil {
 		return nil, err
