@@ -38,6 +38,43 @@ func TestStoreToken(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on user deletion")
 }
 
+func TestGetRefreshToken_GuestUser(t *testing.T) {
+	repo := NewRefreshRepository(dbPool)
+	ctx := context.Background()
+	now := time.Now()
+
+	// Create a unique guest user
+	userRepo := NewUserRepository(dbPool)
+	guestUser := createUniqueGuestUser(t, userRepo)
+
+	// Create a refresh token
+	refreshToken := types.RefreshToken{
+		User:      guestUser,
+		TokenHash: "testguesttokenhash",
+		ExpiresAt: now.Add(24 * time.Hour),
+		CreatedAt: now,
+		Revoked:   false,
+		LastUsed:  now,
+	}
+
+	// Store the refresh token
+	err := repo.StoreToken(ctx, refreshToken)
+	assert.NoError(t, err, "Expected no error on storing guest refresh token")
+
+	// Retrieve the refresh token
+	retrievedToken, err := repo.GetToken(ctx, refreshToken.TokenHash)
+	assert.NoError(t, err, "Expected no error on getting guest refresh token")
+	assert.NotNil(t, retrievedToken, "Expected the retrieved guest token to not be nil")
+	assert.Equal(t, refreshToken.User.ID, retrievedToken.User.ID, "Expected guest user ID to match")
+	assert.Equal(t, refreshToken.TokenHash, retrievedToken.TokenHash, "Expected token hash to match")
+
+	// Clean up
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM refresh_tokens WHERE user_id = $1", refreshToken.User.ID)
+	assert.NoError(t, err, "Expected no error on guest refresh token deletion")
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", guestUser.ID)
+	assert.NoError(t, err, "Expected no error on guest user deletion")
+}
+
 func TestGetRefreshToken(t *testing.T) {
 	repo := NewRefreshRepository(dbPool)
 	ctx := context.Background()

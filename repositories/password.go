@@ -48,11 +48,11 @@ func (r *passwordRepository) GetResetCode(ctx context.Context, email string) (*t
 			prc.updated_at,
 			u.id,
 			u.email,
-			u.admin,
+			u.role,
 			u.created_at,
 			u.updated_at
 		FROM password_reset_codes prc
-		JOIN users u ON prc.user_id = u.id
+		JOIN v_users u ON prc.user_id = u.id
 		WHERE u.email = $1
 		ORDER BY prc.created_at DESC
 		LIMIT 1
@@ -68,7 +68,7 @@ func (r *passwordRepository) GetResetCode(ctx context.Context, email string) (*t
 		&code.UpdatedAt,
 		&user.ID,
 		&user.Email,
-		&user.Admin,
+		&user.Role,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	); err != nil {

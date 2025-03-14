@@ -11,6 +11,8 @@ import (
 
 type UserService interface {
 	CreateUser(ctx context.Context, user *types.User) error
+	CreateGuest(ctx context.Context, user *types.User) error
+	ConvertGuestToUser(ctx context.Context, user *types.User) error
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	Login(ctx context.Context, credential *types.Credential) (*types.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
@@ -28,6 +30,10 @@ func NewUserService(repo repositories.UserRepository) UserService {
 	return &userService{repo: repo}
 }
 
+func (s *userService) CreateGuest(ctx context.Context, user *types.User) error {
+	return s.repo.CreateGuest(ctx, user)
+}
+
 func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
 	hashedPassword, err := generateFromPassword(user.Password)
 	if err != nil {
@@ -35,6 +41,16 @@ func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
 	}
 	user.PasswordHash = string(hashedPassword)
 	return s.repo.CreateUser(ctx, user)
+}
+
+func (s *userService) ConvertGuestToUser(ctx context.Context, user *types.User) error {
+	hashedPassword, err := generateFromPassword(user.Password)
+	if err != nil {
+		return err
+	}
+	user.ID = getUserID(ctx)
+	user.PasswordHash = string(hashedPassword)
+	return s.repo.ConvertGuestToUser(ctx, user)
 }
 
 // generateFromPassword generates a hashed password from a plaintext password

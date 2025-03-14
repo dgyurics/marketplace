@@ -60,6 +60,21 @@ func createUniqueTestUser(t *testing.T, userRepo UserRepository) *types.User {
 	return user
 }
 
+// Helper function to create a unique guest user
+func createUniqueGuestUser(t *testing.T, userRepo UserRepository) *types.User {
+	ctx := context.Background()
+
+	// Create a new guest user object
+	user := &types.User{}
+
+	// Insert the guest user into the database
+	err := userRepo.CreateGuest(ctx, user)
+	assert.NoError(t, err, "Expected no error on guest user creation")
+	assert.NotEmpty(t, user.ID, "Expected guest user ID to be set")
+
+	return user
+}
+
 func TestGetOrCreateCart(t *testing.T) {
 	repo := NewCartRepository(dbPool)
 	userRepo := NewUserRepository(dbPool)

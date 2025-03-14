@@ -59,7 +59,7 @@ func createJWTService() services.JWTService {
 
 func TestGenerateToken(t *testing.T) {
 	service := createJWTService()
-	user := types.User{ID: "123", Email: "user@example.com", Admin: true}
+	user := types.User{ID: "123", Email: "user@example.com", Role: "admin"}
 
 	token, err := service.GenerateToken(user)
 	assert.NoError(t, err)
@@ -68,7 +68,7 @@ func TestGenerateToken(t *testing.T) {
 
 func TestParseToken(t *testing.T) {
 	service := createJWTService()
-	user := types.User{ID: "123", Email: "user@example.com", Admin: true}
+	user := types.User{ID: "123", Email: "user@example.com", Role: "admin"}
 
 	token, _ := service.GenerateToken(user)
 	parsedUser, err := service.ParseToken(token)
@@ -77,7 +77,7 @@ func TestParseToken(t *testing.T) {
 	assert.NotNil(t, parsedUser)
 	assert.Equal(t, user.ID, parsedUser.ID)
 	assert.Equal(t, user.Email, parsedUser.Email)
-	assert.Equal(t, user.Admin, parsedUser.Admin)
+	assert.Equal(t, user.Role, parsedUser.Role)
 }
 
 func TestParseToken_InvalidSignature(t *testing.T) {
@@ -97,7 +97,7 @@ func TestParseToken_ExpiredToken(t *testing.T) {
 		Expiry:     1 * time.Second,
 	})
 
-	user := types.User{ID: "123", Email: "user@example.com", Admin: true}
+	user := types.User{ID: "123", Email: "user@example.com", Role: "admin"}
 
 	// Generate the token
 	token, err := shortLivedService.GenerateToken(user)

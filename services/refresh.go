@@ -17,7 +17,7 @@ import (
 type RefreshService interface {
 	GenerateToken() (string, error)
 	StoreToken(ctx context.Context, userID, token string) error
-	ParseToken(ctx context.Context, token string) (*types.User, error)
+	VerifyToken(ctx context.Context, token string) (*types.User, error)
 	RevokeTokens(ctx context.Context) error
 }
 
@@ -57,17 +57,25 @@ func (s *refreshService) StoreToken(ctx context.Context, userID, token string) e
 }
 
 // ValidateToken verifies the refresh token and returns the associated user if valid.
-func (s *refreshService) ParseToken(ctx context.Context, token string) (*types.User, error) {
+func (s *refreshService) VerifyToken(ctx context.Context, token string) (*types.User, error) {
 	now := time.Now()
 	tokenHash := hashString(token, s.config.HMACSecret)
-
 	refreshToken, err := s.repo.GetToken(ctx, tokenHash)
-	if err != nil || refreshToken == nil {
-		return nil, errors.New("invalid refresh token")
+
+	if err != nil {
+		return nil, err
 	}
 
-	if refreshToken.Revoked || refreshToken.ExpiresAt.Before(now) {
-		return nil, errors.New("refresh token is either revoked or expired")
+	if refreshToken == nil {
+		return nil, errors.New("refresh token not found")
+	}
+
+	if refreshToken.Revoked {
+		return nil, errors.New("refresh token has been revoked")
+	}
+
+	if refreshToken.ExpiresAt.Before(now) {
+		return nil, errors.New("refresh token has expired")
 	}
 
 	// Update the last used time

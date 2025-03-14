@@ -40,6 +40,9 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		u.RespondWithError(w, r, http.StatusBadRequest, "Address ID is required")
 		return
 	}
+
+	// TODO Validate address exists for user
+
 	// Create the order
 	res, err := h.orderService.CreateOrder(r.Context(), requestBody.AddressID)
 	if err != nil {

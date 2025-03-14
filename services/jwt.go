@@ -36,7 +36,7 @@ func (j *jwtService) GenerateToken(user types.User) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": user.ID,
 		"email":   user.Email,
-		"admin":   user.Admin,
+		"role":    user.Role,
 		"exp":     now.Add(j.expiry).Unix(),
 		"iat":     now.Unix(),
 	}
@@ -76,8 +76,8 @@ func (j *jwtService) ParseToken(token string) (*types.User, error) {
 	if email, ok := claims["email"].(string); ok {
 		user.Email = email
 	}
-	if admin, ok := claims["admin"].(bool); ok {
-		user.Admin = admin
+	if role, ok := claims["role"].(string); ok {
+		user.Role = role
 	}
 
 	return &user, nil

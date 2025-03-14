@@ -19,6 +19,7 @@ DECLARE
 BEGIN
     -- Get the next sequence value and modulo by 1024 to get a number between 0 and 1023
     -- Necessary for events where multiple IDs are generated at the same millisecond
+    -- FIXME: if more than 1024 IDs are generated in the same millisecond, this will fail
     SELECT nextval('table_id_seq') % 1024 INTO seq_id;
 
     -- Get the current time in milliseconds
@@ -127,14 +128,27 @@ CREATE TABLE IF NOT EXISTS product_categories (
     FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE CASCADE
 );
 
+CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest');
+
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY DEFAULT gen_id(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    admin BOOLEAN DEFAULT FALSE,
+    email VARCHAR(255) UNIQUE,
+    password_hash TEXT,
+    role user_role_enum DEFAULT 'guest' NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+
+CREATE OR REPLACE VIEW v_users AS
+SELECT
+    id,
+    COALESCE(email, '') AS email,
+    COALESCE(password_hash, '') AS password_hash,
+    role,
+    created_at,
+    updated_at
+FROM users;
+
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id BIGINT PRIMARY KEY DEFAULT gen_id(),

@@ -178,6 +178,66 @@ paths:
         "500":
           description: Internal server error
 
+  /users/guest:
+    post:
+      summary: Create a guest user
+      description: Creates a temporary guest user with minimal details.
+      tags:
+        - Auth
+      responses:
+        "201":
+          description: Guest user successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refresh_token:
+                    type: string
+                    example: 6ed52f4f-d7f1-4f64-b3a3-3b6ccebf0ebd
+        "500":
+          description: Internal server error
+
+    patch:
+      summary: Convert guest to registered user
+      description: Upgrades a guest account by assigning an email and password.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  example: securepassword
+      responses:
+        "200":
+          description: Guest user successfully converted to a registered user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refresh_token:
+                    type: string
+                    example: 6ed52f4f-d7f1-4f64-b3a3-3b6ccebf0ebd
+        "400":
+          description: Invalid request payload
+        "500":
+          description: Internal server error
+
   /users/addresses:
     get:
       summary: Get user addresses

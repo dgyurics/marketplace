@@ -49,7 +49,7 @@ func (a *authorizer) AuthenticateAdmin(next http.HandlerFunc) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		if !user.Admin {
+		if !user.IsAdmin() {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}

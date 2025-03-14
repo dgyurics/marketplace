@@ -35,6 +35,8 @@ func (r *refreshRepository) StoreToken(ctx context.Context, token types.RefreshT
 	return err
 }
 
+// FIXME - should pass in user ID (from expired JWT) too
+// otherwise it's possible for refresh token collisions to occur
 func (r *refreshRepository) GetToken(ctx context.Context, tokenHash string) (*types.RefreshToken, error) {
 	var refreshToken types.RefreshToken
 	var user types.User
@@ -51,14 +53,26 @@ func (r *refreshRepository) GetToken(ctx context.Context, tokenHash string) (*ty
 			u.id,
 			u.email,
 			u.password_hash,
-			u.admin,
+			u.role,
 			u.created_at,
 			u.updated_at
 		FROM refresh_tokens rt
-		JOIN users u ON rt.user_id = u.id
+		JOIN v_users u ON rt.user_id = u.id
 		WHERE rt.token_hash = $1
 	`
-	if err := r.db.QueryRowContext(ctx, query, tokenHash).Scan(
+
+	rows, err := r.db.QueryContext(ctx, query, tokenHash)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Check if a row exists before scanning
+	if !rows.Next() {
+		return nil, nil
+	}
+
+	err = rows.Scan(
 		&refreshToken.ID,
 		&refreshToken.TokenHash,
 		&refreshToken.ExpiresAt,
@@ -69,12 +83,14 @@ func (r *refreshRepository) GetToken(ctx context.Context, tokenHash string) (*ty
 		&user.ID,
 		&user.Email,
 		&user.PasswordHash,
-		&user.Admin,
+		&user.Role,
 		&user.CreatedAt,
 		&user.UpdatedAt,
-	); err != nil {
+	)
+	if err != nil {
 		return nil, err
 	}
+
 	refreshToken.User = &user
 	return &refreshToken, nil
 }

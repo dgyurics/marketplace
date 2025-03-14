@@ -76,7 +76,7 @@ func TestValidateRefreshToken(t *testing.T) {
 	// Mock the repository to return no error when storing the refresh token (service will update the LastUsed field)
 	repo.On("StoreToken", mock.Anything, mock.AnythingOfType("types.RefreshToken")).Return(nil)
 
-	valid, err := refreshService.ParseToken(context.Background(), refreshToken)
+	valid, err := refreshService.VerifyToken(context.Background(), refreshToken)
 	assert.NoError(t, err, "expected no error in validating refresh token")
 	assert.NotNil(t, valid, "expected a valid user object")
 }

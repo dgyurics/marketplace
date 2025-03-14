@@ -228,7 +228,7 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse the refresh token
-	usr, err := h.refreshService.ParseToken(r.Context(), requestBody.RefreshToken)
+	usr, err := h.refreshService.VerifyToken(r.Context(), requestBody.RefreshToken)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusUnauthorized, "Invalid or expired refresh token")
 		return
@@ -257,6 +257,102 @@ func (h *UserRoutes) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u.RespondSuccess(w)
+}
+
+func (h *UserRoutes) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Create guest user
+	usr := types.User{}
+	err := h.userService.CreateGuest(ctx, &usr)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Generate access token
+	accessToken, err := h.jwtService.GenerateToken(usr)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Generate refresh token
+	var token string
+	token, err = h.refreshService.GenerateToken()
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Store refresh token
+	err = h.refreshService.StoreToken(r.Context(), usr.ID, token)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	u.RespondWithJSON(w, http.StatusCreated, map[string]string{
+		"token":         accessToken,
+		"refresh_token": token,
+	})
+}
+
+func (h *UserRoutes) ConvertGuestToUser(w http.ResponseWriter, r *http.Request) {
+	// verify patch request contains email and password
+	var credentials types.Credential
+	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
+		return
+	}
+
+	if credentials.Email == "" || !isValidEmail(credentials.Email) {
+		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
+		return
+	}
+
+	if credentials.Password == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "Password is required")
+		return
+	}
+
+	// Convert guest to user
+	usr := types.User{
+		Email:    credentials.Email,
+		Password: credentials.Password,
+	}
+	err := h.userService.ConvertGuestToUser(r.Context(), &usr)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Generate access token
+	accessToken, err := h.jwtService.GenerateToken(usr)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Generate refresh token
+	var token string
+	token, err = h.refreshService.GenerateToken()
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Store refresh token
+	err = h.refreshService.StoreToken(r.Context(), usr.ID, token)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	u.RespondWithJSON(w, http.StatusCreated, map[string]string{
+		"token":         accessToken,
+		"refresh_token": token,
+	})
 }
 
 func (h *UserRoutes) GetAddresses(w http.ResponseWriter, r *http.Request) {
@@ -327,11 +423,17 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/users/logout", h.Logout).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/refresh-token", h.RefreshToken).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/exists", h.Exists).Methods(http.MethodPost)
+	h.muxRouter.HandleFunc("/users/guest", h.CreateGuestUser).Methods(http.MethodPost)
+	h.muxRouter.Handle("/users/guest", h.secure(h.ConvertGuestToUser)).Methods(http.MethodPatch)
+
+	// TODO refactor and move to addresses to separate file
 	h.muxRouter.Handle("/users/addresses", h.secure(h.GetAddresses)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/users/addresses", h.secure(h.CreateAddress)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/addresses/{id}", h.secure(h.RemoveAddress)).Methods(http.MethodDelete)
 	h.muxRouter.Handle("/users", h.secureAdmin(h.GetAllUsers)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/users/invite", h.secureAdmin(h.GenerateInviteCode)).Methods(http.MethodPost)
+
+	// TODO implement profile routes/functionality
 	// router.HandleFunc("/users/profile", GetProfile).Methods("GET")
 	// router.HandleFunc("/users/update-profile", UpdateProfile).Methods("POST")
 	// router.HandleFunc("/users/{id}", DeleteUser).Methods("DELETE")
