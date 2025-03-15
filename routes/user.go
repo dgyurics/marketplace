@@ -11,7 +11,6 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 type UserRoutes struct {
@@ -355,41 +354,6 @@ func (h *UserRoutes) ConvertGuestToUser(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-func (h *UserRoutes) GetAddresses(w http.ResponseWriter, r *http.Request) {
-	addresses, err := h.userService.GetAddresses(r.Context())
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	u.RespondWithJSON(w, http.StatusOK, addresses)
-}
-
-func (h *UserRoutes) CreateAddress(w http.ResponseWriter, r *http.Request) {
-	var address types.Address
-	if err := json.NewDecoder(r.Body).Decode(&address); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
-		return
-	}
-
-	if err := h.userService.CreateAddress(r.Context(), &address); err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	u.RespondWithJSON(w, http.StatusCreated, address)
-}
-
-func (h *UserRoutes) RemoveAddress(w http.ResponseWriter, r *http.Request) {
-	addressID := mux.Vars(r)["id"]
-	if err := h.userService.RemoveAddress(r.Context(), addressID); err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	u.RespondSuccess(w)
-}
-
 func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	params := u.ParsePaginationParams(r, 1, 100)
 	users, err := h.userService.GetAllUsers(r.Context(), params.Page, params.Limit)
@@ -425,16 +389,7 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/users/exists", h.Exists).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/guest", h.CreateGuestUser).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/guest", h.secure(h.ConvertGuestToUser)).Methods(http.MethodPatch)
-
-	// TODO refactor and move to addresses to separate file
-	h.muxRouter.Handle("/users/addresses", h.secure(h.GetAddresses)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/users/addresses", h.secure(h.CreateAddress)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users/addresses/{id}", h.secure(h.RemoveAddress)).Methods(http.MethodDelete)
+	// Admin routes
 	h.muxRouter.Handle("/users", h.secureAdmin(h.GetAllUsers)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/users/invite", h.secureAdmin(h.GenerateInviteCode)).Methods(http.MethodPost)
-
-	// TODO implement profile routes/functionality
-	// router.HandleFunc("/users/profile", GetProfile).Methods("GET")
-	// router.HandleFunc("/users/update-profile", UpdateProfile).Methods("POST")
-	// router.HandleFunc("/users/{id}", DeleteUser).Methods("DELETE")
 }

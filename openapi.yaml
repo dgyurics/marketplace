@@ -238,7 +238,7 @@ paths:
         "500":
           description: Internal server error
 
-  /users/addresses:
+  /addresses:
     get:
       summary: Get user addresses
       description: Retrieves all saved addresses for the authenticated user.
@@ -286,7 +286,7 @@ paths:
         "500":
           description: Internal server error
 
-  /users/addresses/{id}:
+  /addresses/{id}:
     delete:
       summary: Remove an address
       description: Deletes a saved address for the authenticated user.

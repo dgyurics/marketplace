@@ -16,10 +16,6 @@ type UserService interface {
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	Login(ctx context.Context, credential *types.Credential) (*types.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
-	// refactor, and move to address service
-	CreateAddress(ctx context.Context, address *types.Address) error
-	GetAddresses(ctx context.Context) ([]types.Address, error)
-	RemoveAddress(ctx context.Context, addressID string) error
 }
 
 type userService struct {
@@ -80,23 +76,4 @@ func (s *userService) verifyEmail(ctx context.Context, credentials *types.Creden
 
 func (s *userService) GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error) {
 	return s.repo.GetAllUsers(ctx, page, limit)
-}
-
-func (s *userService) CreateAddress(ctx context.Context, address *types.Address) error {
-	var userID = getUserID(ctx)
-	if address == nil || address.AddressLine1 == "" || address.City == "" || address.StateCode == "" || address.PostalCode == "" {
-		return errors.New("missing required fields for address")
-	}
-	address.UserID = userID
-	return s.repo.CreateAddress(ctx, address)
-}
-
-func (s *userService) GetAddresses(ctx context.Context) ([]types.Address, error) {
-	var userID = getUserID(ctx)
-	return s.repo.GetAddresses(ctx, userID)
-}
-
-func (s *userService) RemoveAddress(ctx context.Context, addressID string) error {
-	var userID = getUserID(ctx)
-	return s.repo.RemoveAddress(ctx, userID, addressID)
 }

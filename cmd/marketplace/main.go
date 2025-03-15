@@ -54,6 +54,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 
 	// create routes
 	routes.RegisterAllRoutes(
+		routes.NewAddressRoutes(services.Address, baseRouter),
 		routes.NewUserRoutes(services.User, services.Invite, services.JWT, services.Refresh, config.Auth, baseRouter),
 		routes.NewCategoryRoutes(services.Category, baseRouter),
 		routes.NewProductRoutes(services.Product, baseRouter),
@@ -78,6 +79,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 // initializeServices creates all services and repositories
 func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	// create database repositories
+	addressRepository := repositories.NewAddressRepository(db)
 	userRepository := repositories.NewUserRepository(db)
 	categoryRepository := repositories.NewCategoryRepository(db)
 	productRepository := repositories.NewProductRepository(db)
@@ -91,6 +93,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	httpClient := utilities.NewDefaultHTTPClient(10 * time.Second)
 
 	// create services
+	addressService := services.NewAddressService(addressRepository)
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
@@ -104,6 +107,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	templateService, _ := services.NewTemplateService(config.TemplatesDir)
 
 	return servicesContainer{
+		Address:  addressService,
 		User:     userService,
 		Category: categoryService,
 		Product:  productService,
@@ -120,6 +124,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 
 // servicesContainer holds all service dependencies
 type servicesContainer struct {
+	Address  services.AddressService
 	User     services.UserService
 	Category services.CategoryService
 	Product  services.ProductService
