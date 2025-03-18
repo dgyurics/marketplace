@@ -17,11 +17,12 @@ const (
 type Order struct {
 	ID              string      `json:"id"`
 	UserID          string      `json:"-"`
-	AddressID       string      `json:"address_id"`
-	PaymentIntentID string      `json:"-"` // stripe payment intent id
+	AddressID       string      `json:"address_id"` // TODO replace with address struct
+	PaymentIntentID string      `json:"-"`          // stripe payment intent id
 	Currency        string      `json:"currency"`
 	Amount          int64       `json:"amount"`
 	TaxAmount       int64       `json:"tax_amount"`
+	ShippingAmount  int64       `json:"shipping_amount"`
 	TotalAmount     int64       `json:"total_amount"`
 	Status          OrderStatus `json:"status"`
 	Items           []OrderItem `json:"items"`

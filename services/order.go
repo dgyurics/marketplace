@@ -355,6 +355,9 @@ func (os *orderService) CreateOrder(ctx context.Context, addressID string) (type
 		}()
 	}
 
+	// TODO: include taxes and shipping when creating order
+	// Must be performed using single transaction
+
 	// Create order
 	order, err := os.orderRepo.CreateOrder(ctx, userID, addressID)
 	if err != nil {

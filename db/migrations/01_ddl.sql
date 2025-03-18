@@ -180,19 +180,13 @@ CREATE TABLE IF NOT EXISTS invitation_codes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS carts (
-    user_id BIGINT PRIMARY KEY,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS cart_items (
     user_id BIGINT,
     product_id BIGINT,
     quantity INT NOT NULL,
     unit_price BIGINT NOT NULL,
     PRIMARY KEY (user_id, product_id),
-    FOREIGN KEY (user_id) REFERENCES carts(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
@@ -231,6 +225,7 @@ CREATE TABLE IF NOT EXISTS orders (
     currency VARCHAR(10) DEFAULT 'usd',
     amount BIGINT NOT NULL DEFAULT 0,
     tax_amount BIGINT NOT NULL DEFAULT 0,
+    shipping_amount BIGINT NOT NULL DEFAULT 0,
     total_amount BIGINT NOT NULL DEFAULT 0,
     status order_status_enum NOT NULL DEFAULT 'pending',
     payment_intent_id VARCHAR(255) NOT NULL DEFAULT '',
@@ -423,7 +418,7 @@ BEGIN
 
     -- 7) Update the total amount
     UPDATE orders
-    SET total_amount = amount + tax_amount
+    SET total_amount = amount
     WHERE id = existing_order_id;
 
     RETURN existing_order_id;    

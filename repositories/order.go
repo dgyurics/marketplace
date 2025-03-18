@@ -29,6 +29,9 @@ func NewOrderRepository(db *sql.DB) OrderRepository {
 }
 
 // CreateOrder creates a new order from the user's cart
+// TODO - implement shipping and tax calculation, possibly as a separate function
+// Most likely will need to implement update_or_create_order_from_cart in Go
+// if planning to move to different database as well...
 func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID string) (*types.Order, error) {
 	// 1) Create or update the order from the user's cart
 	query := "SELECT update_or_create_order_from_cart($1, $2)"
@@ -46,6 +49,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID str
 			currency,
 			amount,
 			tax_amount,
+			shipping_amount,
 			total_amount,
 			status,
 			payment_intent_id,
@@ -62,6 +66,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID str
 		&order.Currency,
 		&order.Amount,
 		&order.TaxAmount,
+		&order.ShippingAmount,
 		&order.TotalAmount,
 		&order.Status,
 		&order.PaymentIntentID,

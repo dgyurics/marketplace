@@ -591,6 +591,91 @@ paths:
         "500":
           description: Internal server error
 
+  /orders:
+    post:
+      summary: Create a new order
+      description: Creates a new order using the provided address and current cart items.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address_id:
+                  type: string
+                  example: "address-789"
+      responses:
+        "200":
+          description: Order successfully created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+    get:
+      summary: Retrieve user orders
+      description: Retrieves all orders for the authenticated user.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Successfully retrieved orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+
+  /orders/events:
+    post:
+      summary: Process Stripe webhook events for orders
+      description: Processes Stripe webhook events related to orders.
+      tags:
+        - Orders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StripeWebhookEvent"
+      responses:
+        "200":
+          description: Webhook event processed successfully
+        "400":
+          description: Invalid request payload
+        "500":
+          description: Internal server error
+
 components:
   securitySchemes:
     BearerAuth:
@@ -728,3 +813,106 @@ components:
           type: string
           nullable: true
           example: "A modern chair with a wooden frame."
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "order-123"
+        address_id:
+          type: string
+          example: "address-789"
+        currency:
+          type: string
+          example: "usd"
+        amount:
+          type: integer
+          example: 50000
+        tax_amount:
+          type: integer
+          example: 4000
+        shipping_amount:
+          type: integer
+          example: 1500
+        total_amount:
+          type: integer
+          example: 55500
+        status:
+          type: string
+          example: "pending"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
+
+    OrderItem:
+      type: object
+      properties:
+        product_id:
+          type: string
+          example: "123"
+        description:
+          type: string
+          example: "Product description"
+        thumbnail:
+          type: string
+          example: "https://example.com/image.jpg"
+        quantity:
+          type: integer
+          example: 2
+        unit_price:
+          type: integer
+          example: 1000
+
+
+    StripeWebhookEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "evt_1J2YfRA12D3f5Gx"
+        type:
+          type: string
+          example: "payment_intent.succeeded"
+        data:
+          $ref: "#/components/schemas/StripeWebhookData"
+        livemode:
+          type: boolean
+          example: false
+        created:
+          type: integer
+          example: 1710351234
+
+    StripeWebhookData:
+      type: object
+      properties:
+        object:
+          $ref: "#/components/schemas/StripeWebhookPaymentIntent"
+
+    StripeWebhookPaymentIntent:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pi_3J2WfRA12D3f5Gx"
+        status:
+          type: string
+          example: "succeeded"
+        amount:
+          type: integer
+          example: 5000
+        client_secret:
+          type: string
+          example: "secret_123"
+        currency:
+          type: string
+          example: "usd"
