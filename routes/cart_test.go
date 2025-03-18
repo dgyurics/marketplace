@@ -24,9 +24,9 @@ func (m *MockCartService) AddItemToCart(ctx context.Context, item *types.CartIte
 	return args.Error(0)
 }
 
-func (m *MockCartService) GetCart(ctx context.Context) (*types.Cart, error) {
+func (m *MockCartService) GetCart(ctx context.Context) ([]types.CartItem, error) {
 	args := m.Called(ctx)
-	return args.Get(0).(*types.Cart), args.Error(1)
+	return args.Get(0).([]types.CartItem), args.Error(1)
 }
 
 func (m *MockCartService) UpdateCartItem(ctx context.Context, item *types.CartItem) error {
@@ -129,14 +129,11 @@ func TestGetCart(t *testing.T) {
 		},
 	}
 
-	expectedCart := &types.Cart{
-		UserID: "test-user-id",
-		Items: []types.CartItem{
-			{
-				Product:   types.Product{ID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8"},
-				Quantity:  2,
-				UnitPrice: 1000, // Set an appropriate unit price
-			},
+	expectedCart := []types.CartItem{
+		{
+			Product:   types.Product{ID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8"},
+			Quantity:  2,
+			UnitPrice: 1000, // Set an appropriate unit price
 		},
 	}
 
@@ -159,12 +156,9 @@ func TestGetCart(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	// Decode the response body
-	var responseCart types.Cart
+	var responseCart []types.CartItem
 	err = json.NewDecoder(rr.Body).Decode(&responseCart)
 	require.NoError(t, err)
-
-	// Verify the cart details
-	require.Equal(t, expectedCart.UserID, responseCart.UserID)
 
 	// Assert that the mock's expectations were met
 	mockCartService.AssertExpectations(t)

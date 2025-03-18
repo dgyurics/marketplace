@@ -370,7 +370,7 @@ paths:
         "500":
           description: Internal server error
 
-  /carts/items:
+  /carts/items/{product_id}:
     post:
       summary: Add an item to the cart
       description: Adds a product to the authenticated user's cart.
@@ -378,6 +378,12 @@ paths:
         - Cart
       security:
         - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -385,12 +391,6 @@ paths:
             schema:
               type: object
               properties:
-                product:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      example: "123"
                 quantity:
                   type: integer
                   minimum: 1
@@ -412,6 +412,12 @@ paths:
         - Cart
       security:
         - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -419,12 +425,6 @@ paths:
             schema:
               type: object
               properties:
-                product:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      example: "123"
                 quantity:
                   type: integer
                   minimum: 1
@@ -443,7 +443,6 @@ paths:
         "500":
           description: Internal server error
 
-  /carts/items/{product_id}:
     delete:
       summary: Remove an item from the cart
       description: Deletes a specific product from the authenticated user's cart.
@@ -468,7 +467,7 @@ paths:
   /carts:
     get:
       summary: Get user's cart
-      description: Retrieves the authenticated user's cart along with the list of items and images.
+      description: Retrieves the authenticated user's cart items along with their respective images.
       tags:
         - Cart
       security:

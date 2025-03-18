@@ -62,9 +62,9 @@ func (m *MockCartRepository) AddItemToCart(ctx context.Context, userID string, i
 	return args.Error(0)
 }
 
-func (m *MockCartRepository) GetOrCreateCart(ctx context.Context, userID string) (*types.Cart, error) {
+func (m *MockCartRepository) GetCart(ctx context.Context, userID string) ([]types.CartItem, error) {
 	args := m.Called(ctx, userID)
-	return args.Get(0).(*types.Cart), args.Error(1)
+	return args.Get(0).([]types.CartItem), args.Error(1)
 }
 
 func (m *MockCartRepository) UpdateCartItem(ctx context.Context, userID string, item *types.CartItem) error {

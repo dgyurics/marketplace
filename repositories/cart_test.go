@@ -75,7 +75,7 @@ func createUniqueGuestUser(t *testing.T, userRepo UserRepository) *types.User {
 	return user
 }
 
-func TestGetOrCreateCart(t *testing.T) {
+func TestGetCart(t *testing.T) {
 	repo := NewCartRepository(dbPool)
 	userRepo := NewUserRepository(dbPool)
 	ctx := context.Background()
@@ -84,15 +84,9 @@ func TestGetOrCreateCart(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 
 	// Step 2: Try to get or create a new cart for the test user
-	cart, err := repo.GetOrCreateCart(ctx, user.ID) // Use the created test user's ID
+	cart, err := repo.GetCart(ctx, user.ID) // Use the created test user's ID
 	assert.NoError(t, err, "Expected no error on get or create cart")
 	assert.NotNil(t, cart, "Expected cart to be returned")
-	assert.Equal(t, user.ID, cart.UserID, "Expected the cart to belong to the test user")
-
-	// Step 3: Try to get the cart again to ensure it doesn't create a duplicate
-	existingCart, err := repo.GetOrCreateCart(ctx, user.ID)
-	assert.NoError(t, err, "Expected no error on fetching existing cart")
-	assert.Equal(t, cart.UserID, existingCart.UserID, "Expected the same cart to be fetched")
 
 	// Clean up the cart
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
@@ -112,7 +106,7 @@ func TestAddItemToCart(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 
 	// Step 1: Create a new cart for the test user
-	_, err := repo.GetOrCreateCart(ctx, user.ID) // Use the created test user's ID
+	_, err := repo.GetCart(ctx, user.ID) // Use the created test user's ID
 	assert.NoError(t, err, "Expected no error on cart creation")
 
 	// Step 2: Add a valid product to the inventory (simulate an existing product)
@@ -145,12 +139,12 @@ func TestAddItemToCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on adding item to cart")
 
 	// Step 4: Validate that the item was added
-	addedCart, err := repo.GetOrCreateCart(ctx, user.ID)
+	cart, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on fetching cart")
-	assert.Equal(t, 1, len(addedCart.Items), "Expected one item in the cart")
-	assert.Equal(t, item.Product.ID, addedCart.Items[0].Product.ID, "Expected the same product ID")
-	assert.Equal(t, item.Quantity, addedCart.Items[0].Quantity, "Expected the same quantity")
-	assert.Equal(t, item.UnitPrice, addedCart.Items[0].UnitPrice, "Expected the same unit price")
+	assert.Equal(t, 1, len(cart), "Expected one item in the cart")
+	assert.Equal(t, item.Product.ID, cart[0].Product.ID, "Expected the same product ID")
+	assert.Equal(t, item.Quantity, cart[0].Quantity, "Expected the same quantity")
+	assert.Equal(t, item.UnitPrice, cart[0].UnitPrice, "Expected the same unit price")
 
 	// Clean up the cart, product, and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
@@ -175,7 +169,7 @@ func TestUpdateCartItem(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 
 	// Step 1: Create a new cart for the test user
-	_, err := repo.GetOrCreateCart(ctx, user.ID)
+	_, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on cart creation")
 
 	// Step 2: Add a valid product to the inventory
@@ -213,10 +207,10 @@ func TestUpdateCartItem(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on updating cart item")
 
 	// Step 5: Validate that the item was updated
-	updatedCart, err := repo.GetOrCreateCart(ctx, user.ID)
+	updatedCart, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on fetching cart")
-	assert.Equal(t, 1, len(updatedCart.Items), "Expected one item in the cart")
-	assert.Equal(t, 2, updatedCart.Items[0].Quantity, "Expected the updated quantity")
+	assert.Equal(t, 1, len(updatedCart), "Expected one item in the cart")
+	assert.Equal(t, 2, updatedCart[0].Quantity, "Expected the updated quantity")
 
 	// Clean up the cart, product, and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
@@ -241,7 +235,7 @@ func TestRemoveItemFromCart(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 
 	// Step 1: Create a new cart for the test user
-	_, err := repo.GetOrCreateCart(ctx, user.ID)
+	_, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on cart creation")
 
 	// Step 2: Add a valid product to the inventory
@@ -278,9 +272,9 @@ func TestRemoveItemFromCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on removing item from cart")
 
 	// Step 5: Validate that the item was removed
-	updatedCart, err := repo.GetOrCreateCart(ctx, user.ID)
+	updatedCart, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on fetching cart")
-	assert.Equal(t, 0, len(updatedCart.Items), "Expected no items in the cart")
+	assert.Equal(t, 0, len(updatedCart), "Expected no items in the cart")
 
 	// Clean up the cart, product, and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
@@ -302,7 +296,7 @@ func TestClearCart(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 
 	// Step 1: Create a new cart for the test user
-	_, err := repo.GetOrCreateCart(ctx, user.ID)
+	_, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on cart creation")
 
 	// Step 2: Add a valid product to the inventory
@@ -339,9 +333,9 @@ func TestClearCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on clearing cart")
 
 	// Step 5: Validate that the cart is empty
-	updatedCart, err := repo.GetOrCreateCart(ctx, user.ID)
+	updatedCart, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on fetching cart")
-	assert.Equal(t, 0, len(updatedCart.Items), "Expected no items in the cart")
+	assert.Equal(t, 0, len(updatedCart), "Expected no items in the cart")
 
 	// Clean up the cart, product, and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
@@ -363,7 +357,7 @@ func TestGetCartWithImages(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 
 	// Step 1: Create a new cart for the test user
-	_, err := repo.GetOrCreateCart(ctx, user.ID)
+	_, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on cart creation")
 
 	// Step 2: Add a valid product to the inventory
@@ -408,12 +402,12 @@ func TestGetCartWithImages(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on adding item to cart")
 
 	// Step 5: Retrieve the cart and verify images
-	cart, err := repo.GetOrCreateCart(ctx, user.ID)
+	cart, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on fetching cart")
-	assert.Equal(t, 1, len(cart.Items), "Expected one item in the cart")
+	assert.Equal(t, 1, len(cart), "Expected one item in the cart")
 
 	// Verify that product images are included
-	fetchedProduct := cart.Items[0].Product
+	fetchedProduct := cart[0].Product
 	assert.Equal(t, productID, fetchedProduct.ID, "Expected correct product ID")
 	assert.GreaterOrEqual(t, len(fetchedProduct.Images), 2, "Expected at least 2 images for the product")
 	assert.Equal(t, imageURLs[0], fetchedProduct.Images[0].ImageURL, "Expected correct image URL")

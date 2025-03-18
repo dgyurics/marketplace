@@ -11,7 +11,7 @@ import (
 
 type CartRepository interface {
 	AddItemToCart(ctx context.Context, userID string, item *types.CartItem) error
-	GetOrCreateCart(ctx context.Context, userID string) (*types.Cart, error)
+	GetCart(ctx context.Context, userID string) ([]types.CartItem, error)
 	UpdateCartItem(ctx context.Context, userID string, item *types.CartItem) error
 	RemoveItemFromCart(ctx context.Context, userID, productID string) error
 	ClearCart(ctx context.Context, userID string) error
@@ -25,24 +25,17 @@ func NewCartRepository(db *sql.DB) CartRepository {
 	return &cartRepository{db: db}
 }
 
-func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*types.Cart, error) {
-	cart := &types.Cart{
-		UserID: userID,
-	}
-
-	// Use ON CONFLICT to insert a new cart if it doesn't already exist
-	query := `
-		INSERT INTO carts (user_id)
-		VALUES ($1)
-		ON CONFLICT (user_id) DO NOTHING`
-	if _, err := r.db.ExecContext(ctx, query, userID); err != nil {
-		return nil, err
-	}
-
+func (r *cartRepository) GetCart(ctx context.Context, userID string) ([]types.CartItem, error) {
 	// Fetch cart items using the materialized view (contains product and images)
 	itemsQuery := `
-		SELECT ci.product_id, ci.quantity, ci.unit_price,
-		       pv.name, pv.price, pv.description, pv.images
+		SELECT
+			ci.product_id,
+			ci.quantity,
+			ci.unit_price,
+		  pv.name,
+			pv.price,
+			pv.description,
+			pv.images
 		FROM cart_items ci
 		JOIN mv_product pv ON ci.product_id = pv.id
 		WHERE ci.user_id = $1`
@@ -77,17 +70,25 @@ func (r *cartRepository) GetOrCreateCart(ctx context.Context, userID string) (*t
 
 		items = append(items, item)
 	}
-	cart.Items = items
-	return cart, nil
+
+	return items, nil
 }
 
 func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item *types.CartItem) error {
-	// Check inventory availability
+	// Fetch the current quantity in the cart
+	var existingQuantity int
+	err := r.db.QueryRowContext(ctx, "SELECT quantity FROM cart_items WHERE user_id = $1 AND product_id = $2", userID, item.Product.ID).Scan(&existingQuantity)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+
+	// Check inventory availability considering existing cart quantity
 	var availableQuantity int
 	if err := r.db.QueryRowContext(ctx, "SELECT quantity FROM inventory WHERE product_id = $1", item.Product.ID).Scan(&availableQuantity); err != nil {
 		return err
 	}
-	if availableQuantity < item.Quantity {
+
+	if availableQuantity < (existingQuantity + item.Quantity) {
 		return fmt.Errorf("insufficient inventory for product %s", item.Product.ID)
 	}
 
@@ -101,9 +102,9 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 		INSERT INTO cart_items (user_id, product_id, quantity, unit_price)
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (user_id, product_id) DO UPDATE
-		SET quantity = EXCLUDED.quantity,
+		SET quantity = cart_items.quantity + EXCLUDED.quantity,
 		    unit_price = EXCLUDED.unit_price`
-	_, err := r.db.ExecContext(ctx, query, userID, item.Product.ID, item.Quantity, item.UnitPrice)
+	_, err = r.db.ExecContext(ctx, query, userID, item.Product.ID, item.Quantity, item.UnitPrice)
 	return err
 }
 

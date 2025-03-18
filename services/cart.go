@@ -9,7 +9,7 @@ import (
 
 type CartService interface {
 	AddItemToCart(ctx context.Context, item *types.CartItem) error
-	GetCart(ctx context.Context) (*types.Cart, error)
+	GetCart(ctx context.Context) ([]types.CartItem, error)
 	UpdateCartItem(ctx context.Context, item *types.CartItem) error
 	RemoveItemFromCart(ctx context.Context, productID string) error
 	ClearCart(ctx context.Context) error
@@ -28,8 +28,8 @@ func (s *cartService) AddItemToCart(ctx context.Context, item *types.CartItem) e
 	return s.cartRepo.AddItemToCart(ctx, getUserID(ctx), item)
 }
 
-func (s *cartService) GetCart(ctx context.Context) (*types.Cart, error) {
-	return s.cartRepo.GetOrCreateCart(ctx, getUserID(ctx))
+func (s *cartService) GetCart(ctx context.Context) ([]types.CartItem, error) {
+	return s.cartRepo.GetCart(ctx, getUserID(ctx))
 }
 
 func (s *cartService) UpdateCartItem(ctx context.Context, item *types.CartItem) error {
