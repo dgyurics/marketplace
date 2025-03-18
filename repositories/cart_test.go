@@ -88,10 +88,6 @@ func TestGetCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on get or create cart")
 	assert.NotNil(t, cart, "Expected cart to be returned")
 
-	// Clean up the cart
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
-	assert.NoError(t, err, "Expected no error on cart deletion")
-
 	// Clean up the test user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
 	assert.NoError(t, err, "Expected no error on user deletion")
@@ -149,9 +145,6 @@ func TestAddItemToCart(t *testing.T) {
 	// Clean up the cart, product, and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
 	assert.NoError(t, err, "Expected no error on deleting cart items")
-
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
-	assert.NoError(t, err, "Expected no error on deleting cart")
 
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", productID)
 	assert.NoError(t, err, "Expected no error on deleting product")
@@ -216,9 +209,6 @@ func TestUpdateCartItem(t *testing.T) {
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
 	assert.NoError(t, err, "Expected no error on deleting cart items")
 
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
-	assert.NoError(t, err, "Expected no error on deleting cart")
-
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", productID)
 	assert.NoError(t, err, "Expected no error on deleting product")
 
@@ -276,10 +266,7 @@ func TestRemoveItemFromCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on fetching cart")
 	assert.Equal(t, 0, len(updatedCart), "Expected no items in the cart")
 
-	// Clean up the cart, product, and user
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
-	assert.NoError(t, err, "Expected no error on deleting cart")
-
+	// Clean up the product and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", productID)
 	assert.NoError(t, err, "Expected no error on deleting product")
 
@@ -337,10 +324,7 @@ func TestClearCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on fetching cart")
 	assert.Equal(t, 0, len(updatedCart), "Expected no items in the cart")
 
-	// Clean up the cart, product, and user
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
-	assert.NoError(t, err, "Expected no error on deleting cart")
-
+	// Clean up the product, and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", productID)
 	assert.NoError(t, err, "Expected no error on deleting product")
 
@@ -416,9 +400,6 @@ func TestGetCartWithImages(t *testing.T) {
 	// Cleanup
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
 	assert.NoError(t, err, "Expected no error on deleting cart items")
-
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", user.ID)
-	assert.NoError(t, err, "Expected no error on deleting cart")
 
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM images WHERE product_id = $1", productID)
 	assert.NoError(t, err, "Expected no error on deleting images")
