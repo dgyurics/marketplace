@@ -259,6 +259,32 @@ paths:
           description: Unauthorized - Missing or invalid token
         "500":
           description: Internal server error
+    put:
+      summary: Update an address
+      description: Updates a saved address for the authenticated user.
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Address"
+      responses:
+        "200":
+          description: Address successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
     post:
       summary: Add a new address
       description: Saves a new address for the authenticated user.
@@ -271,14 +297,73 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Address"
+              type: object
+              properties:
+                addressee:
+                  type: string
+                  example: "John Doe"
+                address_line1:
+                  type: string
+                  example: "123 Main St"
+                address_line2:
+                  type: string
+                  nullable: true
+                  example: "Apt 4B"
+                city:
+                  type: string
+                  example: "New York"
+                state_code:
+                  type: string
+                  example: "NY"
+                postal_code:
+                  type: string
+                  example: "10001"
+                phone:
+                  type: string
+                  nullable: true
+                  example: "+1-555-123-4567"
       responses:
         "201":
           description: Address successfully added
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Address"
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "abc123"
+                  addressee:
+                    type: string
+                    example: "John Doe"
+                  address_line1:
+                    type: string
+                    example: "123 Main St"
+                  address_line2:
+                    type: string
+                    nullable: true
+                    example: "Apt 4B"
+                  city:
+                    type: string
+                    example: "New York"
+                  state_code:
+                    type: string
+                    example: "NY"
+                  postal_code:
+                    type: string
+                    example: "10001"
+                  phone:
+                    type: string
+                    nullable: true
+                    example: "+1-555-123-4567"
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2025-03-04T12:00:00Z"
+                  updated_at:
+                    type: string
+                    format: date-time
+                    example: "2025-03-04T12:00:00Z"
         "400":
           description: Invalid request payload
         "401":
@@ -704,24 +789,37 @@ components:
         id:
           type: string
           example: "abc123"
-        user_id:
+        addressee:
           type: string
-          example: "user-456"
-        street:
+          example: "John Doe"
+        address_line1:
           type: string
           example: "123 Main St"
+        address_line2:
+          type: string
+          nullable: true
+          example: "Apt 4B"
         city:
           type: string
           example: "New York"
-        state:
+        state_code:
           type: string
           example: "NY"
         postal_code:
           type: string
           example: "10001"
-        country:
+        phone:
           type: string
-          example: "USA"
+          nullable: true
+          example: "+1-555-123-4567"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
 
     Cart:
       type: object

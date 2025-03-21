@@ -10,12 +10,42 @@ import (
 
 type AddressRepository interface {
 	CreateAddress(ctx context.Context, address *types.Address) error
+	UpdateAddress(ctx context.Context, address *types.Address) error
 	GetAddresses(ctx context.Context, userID string) ([]types.Address, error)
 	RemoveAddress(ctx context.Context, userID, addressID string) error
 }
 
 type addressRepository struct {
 	db *sql.DB
+}
+
+func (r *addressRepository) UpdateAddress(ctx context.Context, address *types.Address) error {
+	query := `
+		UPDATE addresses
+		SET
+			addressee = $1,
+			address_line1 = $2,
+			address_line2 = $3,
+			city = $4,
+			state_code = $5,
+			postal_code = $6,
+			phone = $7,
+			updated_at = NOW()
+		WHERE id = $8 AND user_id = $9
+		RETURNING updated_at
+	`
+
+	return r.db.QueryRowContext(ctx, query,
+		address.Addressee,
+		address.AddressLine1,
+		address.AddressLine2,
+		address.City,
+		address.StateCode,
+		address.PostalCode,
+		address.Phone,
+		address.ID,
+		address.UserID,
+	).Scan(&address.UpdatedAt)
 }
 
 func NewAddressRepository(db *sql.DB) AddressRepository {
