@@ -1,0 +1,1039 @@
+openapi: 3.0.0
+info:
+  title: Marketplace API
+  description: API documentation for the Marketplace backend
+  version: 1.0.0
+
+servers:
+  # - url: https://api.marketplace.com
+  #   description: Production Server
+  - url: http://localhost:8000
+    description: Local Development Server
+    x-cors: true
+
+security:
+  - BearerAuth: []
+
+paths:
+  /users/register:
+    post:
+      summary: Register a new user
+      description: Creates a new user account with email and password.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  example: securepassword
+                invite_code:
+                  type: string
+                  example: 123456
+      responses:
+        "201":
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User registered successfully
+        "400":
+          description: Invalid request
+        "500":
+          description: Internal server error
+
+  /users/login:
+    post:
+      summary: Authenticate user
+      description: Logs in a user with email and password, returning an access token and refresh token.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  example: securepassword
+      responses:
+        "200":
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refresh_token:
+                    type: string
+                    example: 6ed52f4f-d7f1-4f64-b3a3-3b6ccebf0ebd
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Invalid credentials
+        "500":
+          description: Internal server error
+
+  /users/logout:
+    post:
+      summary: Log out user
+      description: Revokes all active refresh tokens for the authenticated user, effectively logging them out.
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Successfully logged out
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+
+  /users/refresh-token:
+    post:
+      summary: Refresh access token
+      description: Generates a new access token using a valid refresh token.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  example: 6ed52f4f-d7f1-4f64-b3a3-3b6ccebf0ebd
+      responses:
+        "200":
+          description: Successfully refreshed token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refresh_token:
+                    type: string
+                    example: 6ed52f4f-d7f1-4f64-b3a3-3b6ccebf0ebd
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Invalid or expired refresh token
+        "500":
+          description: Internal server error
+
+  /users/exists:
+    post:
+      summary: Check if a user exists
+      description: Verifies whether a user with the given email exists in the system.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+      responses:
+        "200":
+          description: User existence check completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                    example: true
+        "400":
+          description: Invalid request payload
+        "500":
+          description: Internal server error
+
+  /users/guest:
+    post:
+      summary: Create a guest user
+      description: Creates a temporary guest user with minimal details.
+      tags:
+        - Auth
+      responses:
+        "201":
+          description: Guest user successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refresh_token:
+                    type: string
+                    example: 6ed52f4f-d7f1-4f64-b3a3-3b6ccebf0ebd
+        "500":
+          description: Internal server error
+
+    patch:
+      summary: Convert guest to registered user
+      description: Upgrades a guest account by assigning an email and password.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  example: securepassword
+      responses:
+        "200":
+          description: Guest user successfully converted to a registered user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refresh_token:
+                    type: string
+                    example: 6ed52f4f-d7f1-4f64-b3a3-3b6ccebf0ebd
+        "400":
+          description: Invalid request payload
+        "500":
+          description: Internal server error
+
+  /addresses:
+    get:
+      summary: Get user addresses
+      description: Retrieves all saved addresses for the authenticated user.
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Successfully retrieved addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Address"
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+    put:
+      summary: Update an address
+      description: Updates a saved address for the authenticated user.
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Address"
+      responses:
+        "200":
+          description: Address successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+    post:
+      summary: Add a new address
+      description: Saves a new address for the authenticated user.
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addressee:
+                  type: string
+                  example: "John Doe"
+                address_line1:
+                  type: string
+                  example: "123 Main St"
+                address_line2:
+                  type: string
+                  nullable: true
+                  example: "Apt 4B"
+                city:
+                  type: string
+                  example: "New York"
+                state_code:
+                  type: string
+                  example: "NY"
+                postal_code:
+                  type: string
+                  example: "10001"
+                phone:
+                  type: string
+                  nullable: true
+                  example: "+1-555-123-4567"
+      responses:
+        "201":
+          description: Address successfully added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "abc123"
+                  addressee:
+                    type: string
+                    example: "John Doe"
+                  address_line1:
+                    type: string
+                    example: "123 Main St"
+                  address_line2:
+                    type: string
+                    nullable: true
+                    example: "Apt 4B"
+                  city:
+                    type: string
+                    example: "New York"
+                  state_code:
+                    type: string
+                    example: "NY"
+                  postal_code:
+                    type: string
+                    example: "10001"
+                  phone:
+                    type: string
+                    nullable: true
+                    example: "+1-555-123-4567"
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2025-03-04T12:00:00Z"
+                  updated_at:
+                    type: string
+                    format: date-time
+                    example: "2025-03-04T12:00:00Z"
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+
+  /addresses/{id}:
+    delete:
+      summary: Remove an address
+      description: Deletes a saved address for the authenticated user.
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Address successfully removed
+        "400":
+          description: Invalid address ID
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+
+  /users:
+    get:
+      summary: Get all users
+      description: Retrieves a paginated list of all users. Requires admin privileges.
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 100
+      responses:
+        "200":
+          description: Successfully retrieved users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "403":
+          description: Forbidden - Admin access required
+        "500":
+          description: Internal server error
+
+  /users/invite:
+    post:
+      summary: Generate an invite code
+      description: Generates a new invite code for user registration. Requires admin privileges.
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      responses:
+        "201":
+          description: Successfully generated invite code
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "A1B2C3"
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "403":
+          description: Forbidden - Admin access required
+        "500":
+          description: Internal server error
+
+  /carts/items/{product_id}:
+    post:
+      summary: Add an item to the cart
+      description: Adds a product to the authenticated user's cart.
+      tags:
+        - Cart
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  example: 2
+      responses:
+        "200":
+          description: Item successfully added to the cart
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+    patch:
+      summary: Update an item in the cart
+      description: Updates the quantity of an existing item in the user's cart.
+      tags:
+        - Cart
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  example: 3
+      responses:
+        "200":
+          description: Item successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartItem"
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+    delete:
+      summary: Remove an item from the cart
+      description: Deletes a specific product from the authenticated user's cart.
+      tags:
+        - Cart
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Item successfully removed
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /carts:
+    get:
+      summary: Get user's cart
+      description: Retrieves the authenticated user's cart items along with their respective images.
+      tags:
+        - Cart
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Successfully retrieved cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /products:
+    post:
+      summary: Create a new product
+      description: Adds a new product to the catalog.
+      tags:
+        - Products
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Nordic Lounge Chair"
+                price:
+                  type: number
+                  example: 29999
+                description:
+                  type: string
+                  example: "A stylish and comfortable lounge chair with minimalist design."
+      responses:
+        "201":
+          description: Product successfully created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized - Admin access required
+        "500":
+          description: Internal server error
+
+    get:
+      summary: Get all products
+      description: Retrieves a paginated list of products with optional filtering and sorting.
+      tags:
+        - Products
+      parameters:
+        - name: category
+          in: query
+          description: Filter products by category ID
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Sort products by price (price_asc, price_desc)
+          schema:
+            type: string
+            enum: [price_asc, price_desc]
+        - name: in_stock
+          in: query
+          description: Filter products that are in stock only (true/false)
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Successfully retrieved products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "500":
+          description: Internal server error
+
+  /products/{id}:
+    get:
+      summary: Get product by ID
+      description: Retrieves a single product by its ID.
+      tags:
+        - Products
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "123"
+      responses:
+        "200":
+          description: Successfully retrieved product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Product not found
+        "500":
+          description: Internal server error
+
+  /orders:
+    post:
+      summary: Create a new order
+      description: Creates a new order using the provided address and current cart items, returning a Stripe PaymentIntent.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address_id:
+                  type: string
+                  example: "address-789"
+      responses:
+        "200":
+          description: PaymentIntent created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentIntent"
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+    get:
+      summary: Retrieve user orders
+      description: Retrieves all orders for the authenticated user.
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Successfully retrieved orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "401":
+          description: Unauthorized - Missing or invalid token
+        "500":
+          description: Internal server error
+
+  /orders/events:
+    post:
+      summary: Process Stripe events for orders
+      description: Processes Stripe events related to orders.
+      tags:
+        - Orders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StripeEvent"
+      responses:
+        "200":
+          description: Event processed successfully
+        "400":
+          description: Invalid request payload
+        "500":
+          description: Internal server error
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "user-123"
+        email:
+          type: string
+          example: "user@example.com"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-03-04T12:00:00Z"
+
+    Address:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "abc123"
+        addressee:
+          type: string
+          example: "John Doe"
+        address_line1:
+          type: string
+          example: "123 Main St"
+        address_line2:
+          type: string
+          nullable: true
+          example: "Apt 4B"
+        city:
+          type: string
+          example: "New York"
+        state_code:
+          type: string
+          example: "NY"
+        postal_code:
+          type: string
+          example: "10001"
+        phone:
+          type: string
+          nullable: true
+          example: "+1-555-123-4567"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
+
+    Cart:
+      type: object
+      properties:
+        user_id:
+          type: string
+          example: "user-456"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
+
+    CartItem:
+      type: object
+      properties:
+        product:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "123"
+            name:
+              type: string
+              example: "Product Name"
+            description:
+              type: string
+              example: "Product description"
+            images:
+              type: array
+              items:
+                $ref: "#/components/schemas/Image"
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        unit_price:
+          type: number
+          example: 1000
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "123"
+        name:
+          type: string
+          example: "Nordic Lounge Chair"
+        price:
+          type: integer
+          example: 29999
+          description: "Price in cents (e.g., 29999 represents $299.99)"
+        description:
+          type: string
+          example: "A stylish and comfortable lounge chair with minimalist design."
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/Image"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
+
+    Image:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "image-123"
+        product_id:
+          type: string
+          example: "123"
+        image_url:
+          type: string
+          format: uri
+          example: "https://example.com/image.jpg"
+        animated:
+          type: boolean
+          example: false
+        display_order:
+          type: integer
+          example: 0
+        alt_text:
+          type: string
+          nullable: true
+          example: "A modern chair with a wooden frame."
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "order-123"
+        address_id:
+          type: string
+          example: "address-789"
+        currency:
+          type: string
+          example: "usd"
+        amount:
+          type: integer
+          example: 50000
+        tax_amount:
+          type: integer
+          example: 4000
+        shipping_amount:
+          type: integer
+          example: 1500
+        total_amount:
+          type: integer
+          example: 55500
+        status:
+          type: string
+          example: "pending"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
+
+    OrderItem:
+      type: object
+      properties:
+        product_id:
+          type: string
+          example: "123"
+        description:
+          type: string
+          example: "Product description"
+        thumbnail:
+          type: string
+          example: "https://example.com/image.jpg"
+        quantity:
+          type: integer
+          example: 2
+        unit_price:
+          type: integer
+          example: 1000
+
+
+    StripeEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "evt_1J2YfRA12D3f5Gx"
+        type:
+          type: string
+          example: "payment_intent.succeeded"
+        data:
+          $ref: "#/components/schemas/StripeEventData"
+        livemode:
+          type: boolean
+          example: false
+        created:
+          type: integer
+          example: 1710351234
+
+    StripeEventData:
+      type: object
+      properties:
+        object:
+          $ref: "#/components/schemas/StripePaymentIntent"
+
+    StripePaymentIntent:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pi_3J2WfRA12D3f5Gx"
+        status:
+          type: string
+          example: "succeeded"
+        amount:
+          type: integer
+          example: 5000
+        client_secret:
+          type: string
+          example: "secret_123"
+        currency:
+          type: string
+          example: "usd"
+
+    PaymentIntent:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pi_3J2WfRA12D3f5Gx"
+        amount:
+          type: integer
+          example: 5000
+        currency:
+          type: string
+          example: "usd"
+        status:
+          type: string
+          example: "requires_payment_method"
+        client_secret:
+          type: string
+          example: "secret_123"
+        error:
+          type: string
+          nullable: true
+          example: "Error message if any"

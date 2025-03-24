@@ -1,0 +1,7 @@
+/bin/
+.DS_Store
+private.pem
+public.pem
+.env
+*.log
+*.out

@@ -1,0 +1,3 @@
+The tests in this directory are technically integration tests, not pure unit tests, as they run against a live database. By default, they use a database URL defined in the docker-compose.yml file, pointing to a local instance.
+
+As of this writing, the rest of the project’s tests are unit tests. However, for the repository layer, mocking the database proved overly complex and impractical. Another approach considered was testing the implementation details and database calls, but this too became cumbersome. In most cases, it’s more effective to focus on testing outputs rather than implementation details.
