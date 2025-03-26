@@ -22,8 +22,10 @@
   <li><strong>Search and Filtering:</strong> Advanced search capabilities, allowing users to find products through keyword and fuzzy searches.</li>
   <li><strong>Caching:</strong> Implement API caching to improve performance.</li>
   <li><strong>Rate Limiting:</strong> Protect the API from abuse with rate limiting.</li>
-  <li><strong>PostgreSQL & CockroachDB support:</strong> Allow users to choose between either database, with zero effort.</li>
+  <li><strong>Database-agnostic:</strong> Full support for PostgreSQL and CockroachDB with no additional setup.</li>
   <li><strong>Cart Item Limits:</strong> Implement cart item limits to prevent abuse.</li>
+  <li><strong>Product Variants:</strong> Support product variants (e.g., size, color) and manage inventory for each variant (SKU).</li>
+  <li><strong>Product Meta-Data:</strong> Support product meta-data (e.g., material, weight, dimensions) to enhance product details.</li>
 </ul>
 
 <h2>Future Considerations</h2>
