@@ -82,6 +82,9 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID str
 
 // CreateStripeEvent saves a Stripe event to the database
 func (r *orderRepository) CreateStripeEvent(ctx context.Context, event types.StripeEvent) error {
+	if event.Data != nil {
+		event.Data.Object.ClientSecret = ""
+	}
 	query := `
 		INSERT INTO stripe_events (
 			id,

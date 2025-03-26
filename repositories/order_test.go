@@ -308,7 +308,7 @@ func TestOrderRepository_CreateStripeEvent(t *testing.T) {
 			"id": "pi_test_123",
 			"status": "succeeded",
 			"amount": 1000,
-			"client_secret": "secret_test_123",
+			"client_secret": "",
 			"currency": "usd"
 		}`, string(payload), "Payload should match the event data object")
 
