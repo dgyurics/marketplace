@@ -84,6 +84,9 @@ func TestCreateProductWithImages(t *testing.T) {
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
 	require.NoError(t, err, "Expected no error on product deletion")
+
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM categories WHERE id = $1", categoryID)
+	require.NoError(t, err, "Expected no error on category deletion")
 }
 
 func TestCreateProductWithCategory(t *testing.T) {
@@ -115,6 +118,9 @@ func TestCreateProductWithCategory(t *testing.T) {
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
 	assert.NoError(t, err, "Expected no error on product deletion")
+
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM categories WHERE id = $1", categoryID)
+	assert.NoError(t, err, "Expected no error on category deletion")
 }
 
 func TestGetProducts(t *testing.T) {
