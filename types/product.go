@@ -10,6 +10,17 @@ type Product struct {
 	UpdatedAt   string  `json:"updated_at"`
 }
 
+type ProductWithInventory struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Price       int64   `json:"price"`
+	Description string  `json:"description"`
+	Images      []Image `json:"images"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+	Quantity    int     `json:"quantity"`
+}
+
 type Image struct {
 	ID           string  `json:"id"`
 	ProductID    string  `json:"product_id"`

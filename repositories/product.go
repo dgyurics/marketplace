@@ -13,7 +13,7 @@ type ProductRepository interface {
 	CreateProduct(ctx context.Context, product *types.Product) error
 	CreateProductWithCategory(ctx context.Context, product *types.Product, categoryID string) error
 	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
-	GetProductByID(ctx context.Context, id string) (*types.Product, error)
+	GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error)
 	DeleteProduct(ctx context.Context, id string) error
 	UpdateInventory(ctx context.Context, productID string, quantity int) error
 }
@@ -166,18 +166,23 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 	return products, nil
 }
 
-func (r *productRepository) GetProductByID(ctx context.Context, id string) (*types.Product, error) {
+func (r *productRepository) GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error) {
 	query := `
-	SELECT id, name, price, description, images
+	SELECT id, name, price, description, images, quantity
 	FROM mv_product
 	WHERE id = $1;
 	`
 
-	var product types.Product
+	var product types.ProductWithInventory
 	var imagesJSON []byte
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&product.ID, &product.Name, &product.Price, &product.Description, &imagesJSON,
+		&product.ID,
+		&product.Name,
+		&product.Price,
+		&product.Description,
+		&imagesJSON,
+		&product.Quantity,
 	)
 	if err != nil {
 		return nil, err

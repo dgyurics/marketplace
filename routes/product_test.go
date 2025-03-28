@@ -34,9 +34,9 @@ func (m *MockProductService) GetProducts(ctx context.Context, filter types.Produ
 	return args.Get(0).([]types.Product), args.Error(1)
 }
 
-func (m *MockProductService) GetProductByID(ctx context.Context, id string) (*types.Product, error) {
+func (m *MockProductService) GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error) {
 	args := m.Called(ctx, id)
-	return args.Get(0).(*types.Product), args.Error(1)
+	return args.Get(0).(*types.ProductWithInventory), args.Error(1)
 }
 
 func (m *MockProductService) UpdateInventory(ctx context.Context, productID string, quantity int) error {
@@ -113,11 +113,12 @@ func TestGetProductByID(t *testing.T) {
 	}
 
 	// Create a sample product that will be returned by the mock service
-	product := &types.Product{
+	product := &types.ProductWithInventory{
 		ID:          "1",
 		Name:        "Test Product",
 		Price:       100000,
 		Description: "This is a test product",
+		Quantity:    10,
 	}
 
 	// Set up the expected behavior of the mock service

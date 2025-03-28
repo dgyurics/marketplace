@@ -84,13 +84,15 @@ SELECT
             ORDER BY i.display_order
         ) FILTER (WHERE i.id IS NOT NULL), '[]'
     ) AS images,
-    c.name AS category_name
+    c.name AS category_name,
+    LEAST(inv.quantity, 100) AS quantity
 FROM products p
 LEFT JOIN images i ON p.id = i.product_id
 LEFT JOIN product_categories pc ON p.id = pc.product_id
 LEFT JOIN categories c ON pc.category_id = c.id
+LEFT JOIN inventory inv ON p.id = inv.product_id
 WHERE p.is_deleted = FALSE
-GROUP BY p.id, c.name;
+GROUP BY p.id, c.name, inv.quantity;
 
 -- Used when fetching a single product by ID
 CREATE UNIQUE INDEX idx_mv_product_id

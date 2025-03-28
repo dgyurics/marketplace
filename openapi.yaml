@@ -670,7 +670,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Product"
+                $ref: "#/components/schemas/ProductWithInventory"
         "404":
           description: Product not found
         "500":
@@ -887,6 +887,15 @@ components:
           type: string
           format: date-time
           example: "2025-03-04T12:00:00Z"
+
+    ProductWithInventory:
+      allOf:
+        - $ref: "#/components/schemas/Product"
+        - type: object
+          properties:
+            quantity:
+              type: integer
+              example: 12
 
     Image:
       type: object
