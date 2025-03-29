@@ -11,8 +11,9 @@ import (
 
 type ProductRepository interface {
 	CreateProduct(ctx context.Context, product *types.Product) error
-	CreateProductWithCategory(ctx context.Context, product *types.Product, categoryID string) error
+	CreateProductWithCategory(ctx context.Context, product *types.Product, categorySlug string) error
 	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
+	GetProductsByCategory(ctx context.Context, categorySlug string, filter types.ProductFilter) ([]types.Product, error)
 	GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error)
 	DeleteProduct(ctx context.Context, id string) error
 	UpdateInventory(ctx context.Context, productID string, quantity int) error
@@ -45,12 +46,10 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		return err
 	}
 
-	// Refresh the materialized view to include the new product
-	_, err := r.db.ExecContext(ctx, "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product")
-	return err
+	return nil
 }
 
-func (r *productRepository) CreateProductWithCategory(ctx context.Context, product *types.Product, categoryID string) error {
+func (r *productRepository) CreateProductWithCategory(ctx context.Context, product *types.Product, categorySlug string) error {
 	// Begin a transaction
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -71,8 +70,8 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 	// Associate the product with the category
 	associationQuery := `
 		INSERT INTO product_categories (product_id, category_id)
-		VALUES ($1, $2)`
-	if _, err = tx.ExecContext(ctx, associationQuery, product.ID, categoryID); err != nil {
+		VALUES ($1, (SELECT id FROM categories WHERE slug = $2))`
+	if _, err = tx.ExecContext(ctx, associationQuery, product.ID, categorySlug); err != nil {
 		return err
 	}
 
@@ -94,11 +93,6 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 		return err
 	}
 
-	// Refresh the materialized view within the transaction
-	if _, err := tx.ExecContext(ctx, "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product"); err != nil {
-		return err
-	}
-
 	return tx.Commit()
 }
 
@@ -107,19 +101,12 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 
 	query := `
 		SELECT p.id, p.name, p.price, p.description, p.images
-		FROM mv_product p
-		LEFT JOIN inventory i ON p.id = i.product_id
-		WHERE 1=1
+		FROM v_product p
+		WHERE true
 	`
 
 	args := []interface{}{}
 	argIndex := 1
-
-	if filter.Category != "" {
-		query += fmt.Sprintf(" AND p.category_name = $%d", argIndex)
-		args = append(args, filter.Category)
-		argIndex++
-	}
 
 	if filter.InStock {
 		query += " AND i.quantity > 0"
@@ -166,10 +153,65 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 	return products, nil
 }
 
+func (r *productRepository) GetProductsByCategory(ctx context.Context, categorySlug string, filter types.ProductFilter) ([]types.Product, error) {
+	var products []types.Product
+	query := `
+		SELECT p.id, p.name, p.price, p.description, p.images
+		FROM v_product p
+		JOIN product_categories pc ON p.id = pc.product_id
+		JOIN categories c ON pc.category_id = c.id
+		WHERE c.slug = $1
+	`
+	args := []interface{}{categorySlug}
+	argIndex := 2
+
+	if filter.InStock {
+		query += " AND i.quantity > 0"
+	}
+
+	if filter.SortByPrice {
+		if filter.SortAsc {
+			query += " ORDER BY p.price ASC"
+		} else {
+			query += " ORDER BY p.price DESC"
+		}
+	}
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
+	args = append(args, filter.Limit, (filter.Page-1)*filter.Limit)
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var product types.Product
+		var imagesJSON []byte
+		if err = rows.Scan(
+			&product.ID,
+			&product.Name,
+			&product.Price,
+			&product.Description,
+			&imagesJSON,
+		); err != nil {
+			return nil, err
+		}
+
+		// Convert JSONB array to Go struct
+		if err := json.Unmarshal(imagesJSON, &product.Images); err != nil {
+			return nil, err
+		}
+
+		products = append(products, product)
+	}
+	return products, nil
+}
+
 func (r *productRepository) GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error) {
 	query := `
 	SELECT id, name, price, description, images, quantity
-	FROM mv_product
+	FROM v_product
 	WHERE id = $1;
 	`
 
@@ -205,10 +247,7 @@ func (r *productRepository) DeleteProduct(ctx context.Context, id string) error 
 	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
 		return sql.ErrNoRows
 	}
-
-	// Refresh the materialized view to include the new product
-	_, err = r.db.ExecContext(ctx, "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product")
-	return err
+	return nil
 }
 
 func (r *productRepository) UpdateInventory(ctx context.Context, productID string, quantity int) error {

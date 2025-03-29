@@ -36,10 +36,20 @@ $$;
 CREATE TABLE IF NOT EXISTS categories (
     id BIGINT PRIMARY KEY DEFAULT gen_id(),
     name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
     description TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+
+CREATE INDEX idx_categories_is_deleted_false
+ON categories (id)
+WHERE is_deleted = FALSE;
+
+CREATE INDEX idx_categories_slug_is_deleted_false
+ON categories (slug)
+WHERE is_deleted = FALSE;
 
 CREATE TABLE IF NOT EXISTS products (
     id BIGINT PRIMARY KEY DEFAULT gen_id(),
@@ -66,49 +76,30 @@ CREATE TABLE IF NOT EXISTS images (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
-CREATE MATERIALIZED VIEW mv_product AS
+CREATE OR REPLACE VIEW v_product AS
 SELECT
     p.id,
     p.name,
     p.price,
     p.description,
-    COALESCE(
-        JSONB_AGG(
-            JSONB_BUILD_OBJECT(
-                'id', i.id::TEXT,
-                'image_url', i.image_url,
-                'animated', i.animated,
-                'display_order', i.display_order,
-                'alt_text', i.alt_text
-            )
-            ORDER BY i.display_order
-        ) FILTER (WHERE i.id IS NOT NULL), '[]'
-    ) AS images,
-    c.name AS category_name,
+    COALESCE(imgs.images, '[]') AS images,
     LEAST(inv.quantity, 100) AS quantity
 FROM products p
-LEFT JOIN images i ON p.id = i.product_id
-LEFT JOIN product_categories pc ON p.id = pc.product_id
-LEFT JOIN categories c ON pc.category_id = c.id
 LEFT JOIN inventory inv ON p.id = inv.product_id
-WHERE p.is_deleted = FALSE
-GROUP BY p.id, c.name, inv.quantity;
-
--- Used when fetching a single product by ID
-CREATE UNIQUE INDEX idx_mv_product_id
-ON mv_product (id);
-
--- Used when filtering products by category
-CREATE INDEX idx_mv_product_category_name
-ON mv_product (category_name);
-
--- Used when sorting products by price
-CREATE INDEX idx_mv_product_price
-ON mv_product (price);
-
--- Used when filtering products by category and sorting by price
-CREATE INDEX idx_mv_product_category_name_price
-ON mv_product (category_name, price);
+LEFT JOIN LATERAL (
+    SELECT JSONB_AGG(
+        JSONB_BUILD_OBJECT(
+            'id', i.id::TEXT,
+            'image_url', i.image_url,
+            'animated', i.animated,
+            'display_order', i.display_order,
+            'alt_text', i.alt_text
+        ) ORDER BY i.display_order
+    ) AS images
+    FROM images i
+    WHERE i.product_id = p.id
+) imgs ON TRUE
+WHERE p.is_deleted = FALSE;
 
 CREATE TABLE IF NOT EXISTS inventory (
     product_id BIGINT PRIMARY KEY,

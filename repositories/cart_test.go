@@ -121,10 +121,6 @@ func TestAddItemToCart(t *testing.T) {
 		productID)
 	assert.NoError(t, err, "Expected no error on inserting inventory")
 
-	_, err = dbPool.ExecContext(ctx, `
-		REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product`)
-	assert.NoError(t, err, "Expected no error on refreshing materialized view")
-
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
 		Product:   types.Product{ID: productID},
@@ -180,10 +176,6 @@ func TestUpdateCartItem(t *testing.T) {
 		VALUES ($1, 10)`,
 		productID)
 	assert.NoError(t, err, "Expected no error on inserting inventory")
-
-	_, err = dbPool.ExecContext(ctx, `
-		REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product`)
-	assert.NoError(t, err, "Expected no error on refreshing materialized view")
 
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
@@ -244,10 +236,6 @@ func TestRemoveItemFromCart(t *testing.T) {
 		productID)
 	assert.NoError(t, err, "Expected no error on inserting inventory")
 
-	_, err = dbPool.ExecContext(ctx, `
-		REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product`)
-	assert.NoError(t, err, "Expected no error on refreshing materialized view")
-
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
 		Product:   types.Product{ID: productID},
@@ -301,10 +289,6 @@ func TestClearCart(t *testing.T) {
 		VALUES ($1, 10)`,
 		productID)
 	assert.NoError(t, err, "Expected no error on inserting inventory")
-
-	_, err = dbPool.ExecContext(ctx, `
-		REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product`)
-	assert.NoError(t, err, "Expected no error on refreshing materialized view")
 
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
@@ -371,10 +355,6 @@ func TestGetCartWithImages(t *testing.T) {
 			imageID, productID, imageURLs[i], i)
 		assert.NoError(t, err, "Expected no error on inserting product images")
 	}
-
-	// Refresh the materialized view
-	_, err = dbPool.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY mv_product`)
-	assert.NoError(t, err, "Expected no error on refreshing materialized view")
 
 	// Step 4: Add an item to the cart
 	item := &types.CartItem{

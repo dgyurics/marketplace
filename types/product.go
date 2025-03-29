@@ -31,7 +31,6 @@ type Image struct {
 }
 
 type ProductFilter struct {
-	Category    string
 	SortByPrice bool
 	SortAsc     bool
 	InStock     bool

@@ -1,9 +1,9 @@
 INSERT INTO categories (id, name, description) VALUES
-('526402777421709313', 'Category 1', 'This is category 1'),
-('526403107899310082', 'Category 2', 'This is category 2'),
-('526403265579974659', 'Category 3', 'This is category 3'),
-('526403439761031172', 'Category 4', 'This is category 4'),
-('526403643973304325', 'Category 5', 'This is category 5');
+('526402777421709313', 'Category 1', 'category-1', 'This is category 1'),
+('526403107899310082', 'Category 2', 'category-2', 'This is category 2'),
+('526403265579974659', 'Category 3', 'category-3', 'This is category 3'),
+('526403439761031172', 'Category 4', 'category-4', 'This is category 4'),
+('526403643973304325', 'Category 5', 'category-5', 'This is category 5');
 
 INSERT INTO products (id, name, price, description) VALUES
 ('526403779902308358', 'Product 1', 1000, 'This is product 1'),

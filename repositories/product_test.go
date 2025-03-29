@@ -47,6 +47,7 @@ func TestCreateProductWithImages(t *testing.T) {
 	catRepo := NewCategoryRepository(dbPool)
 	categoryID, err := catRepo.CreateCategory(ctx, types.Category{
 		Name:        "Test Category for Images",
+		Slug:        "test-category-images",
 		Description: "A test category for images",
 	})
 	require.NoError(t, err, "Expected no error on category creation")
@@ -61,7 +62,7 @@ func TestCreateProductWithImages(t *testing.T) {
 		},
 	}
 
-	err = repo.CreateProductWithCategory(ctx, product, categoryID)
+	err = repo.CreateProductWithCategory(ctx, product, "test-category-images")
 	require.NoError(t, err, "Expected no error on product creation with images")
 	require.NotEmpty(t, product.ID, "Expected product ID to be set")
 
@@ -103,11 +104,12 @@ func TestCreateProductWithCategory(t *testing.T) {
 	catRepo := NewCategoryRepository(dbPool)
 	categoryID, err := catRepo.CreateCategory(ctx, types.Category{
 		Name:        "Test Category",
+		Slug:        "test-category",
 		Description: "A test category",
 	})
 	assert.NoError(t, err, "Expected no error on category creation")
 
-	err = repo.CreateProductWithCategory(ctx, product, categoryID)
+	err = repo.CreateProductWithCategory(ctx, product, "test-category")
 	assert.NoError(t, err, "Expected no error on product creation with category")
 	assert.NotEmpty(t, product.ID, "Expected product ID to be set")
 	assert.Equal(t, "Test Product with Category", product.Name, "Expected product name to match")
@@ -136,6 +138,7 @@ func TestGetProducts(t *testing.T) {
 
 	err := repo.CreateProduct(ctx, product)
 	assert.NoError(t, err, "Expected no error on product creation")
+	assert.NotEmpty(t, product.ID, "Expected product ID to be set")
 
 	// Get all products
 	products, err := repo.GetProducts(ctx, types.ProductFilter{Limit: 100, Page: 1})
@@ -153,8 +156,8 @@ func TestGetProducts(t *testing.T) {
 	assert.True(t, found, "Expected to find the created product in the products list")
 
 	// Clean up
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
-	assert.NoError(t, err, "Expected no error on product deletion")
+	// _, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
+	// assert.NoError(t, err, "Expected no error on product deletion")
 }
 
 func TestGetProductByID(t *testing.T) {
@@ -175,6 +178,7 @@ func TestGetProductByID(t *testing.T) {
 	retrievedProduct, err := repo.GetProductByID(ctx, product.ID)
 	assert.NoError(t, err, "Expected no error on getting product by ID")
 	assert.NotNil(t, retrievedProduct, "Expected retrieved product to not be nil")
+	assert.NotEmpty(t, retrievedProduct.ID, "Expected retrieved product ID to not be empty")
 	assert.Equal(t, product.ID, retrievedProduct.ID, "Expected product ID to match")
 	assert.Equal(t, product.Name, retrievedProduct.Name, "Expected product name to match")
 	assert.Equal(t, product.Description, retrievedProduct.Description, "Expected product description to match")

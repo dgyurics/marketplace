@@ -761,6 +761,87 @@ paths:
         "500":
           description: Internal server error
 
+  /products/categories/{category}:
+    get:
+      summary: Get products by category
+      description: Retrieves a paginated list of products filtered by the provided category slug.
+      tags:
+        - Products
+      parameters:
+        - name: category
+          in: path
+          required: true
+          description: Category slug used to filter products
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Sort products by price (price_asc, price_desc)
+          schema:
+            type: string
+            enum: [price_asc, price_desc]
+        - name: in_stock
+          in: query
+          description: Filter products that are in stock only (true/false)
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Successfully retrieved products by category
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid category slug
+        "500":
+          description: Internal server error
+    post:
+      summary: Create product with category
+      description: Creates a new product with the specified category.
+      tags:
+        - Products
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: path
+          required: true
+          description: Category slug for the product
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+      responses:
+        "201":
+          description: Product successfully created with category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized - Admin access required
+        "500":
+          description: Internal server error
+
 components:
   securitySchemes:
     BearerAuth:

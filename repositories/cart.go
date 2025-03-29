@@ -37,7 +37,7 @@ func (r *cartRepository) GetCart(ctx context.Context, userID string) ([]types.Ca
 			pv.description,
 			pv.images
 		FROM cart_items ci
-		JOIN mv_product pv ON ci.product_id = pv.id
+		JOIN v_product pv ON ci.product_id = pv.id
 		WHERE ci.user_id = $1`
 
 	rows, err := r.db.QueryContext(ctx, itemsQuery, userID)

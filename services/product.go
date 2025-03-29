@@ -9,9 +9,10 @@ import (
 
 type ProductService interface {
 	CreateProduct(ctx context.Context, product *types.Product) error
-	CreateProductWithCategory(ctx context.Context, product *types.Product, categoryID string) error
+	CreateProductWithCategory(ctx context.Context, product *types.Product, categorySlug string) error
 	RemoveProduct(ctx context.Context, id string) error
 	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
+	GetProductsByCategory(ctx context.Context, categorySlug string, filter types.ProductFilter) ([]types.Product, error)
 	GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error)
 	UpdateInventory(ctx context.Context, productID string, quantity int) error
 }
@@ -28,12 +29,16 @@ func (s *productService) CreateProduct(ctx context.Context, product *types.Produ
 	return s.repo.CreateProduct(ctx, product)
 }
 
-func (s *productService) CreateProductWithCategory(ctx context.Context, product *types.Product, categoryID string) error {
-	return s.repo.CreateProductWithCategory(ctx, product, categoryID)
+func (s *productService) CreateProductWithCategory(ctx context.Context, product *types.Product, categorySlug string) error {
+	return s.repo.CreateProductWithCategory(ctx, product, categorySlug)
 }
 
 func (s *productService) GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error) {
 	return s.repo.GetProducts(ctx, filter)
+}
+
+func (s *productService) GetProductsByCategory(ctx context.Context, categorySlug string, filter types.ProductFilter) ([]types.Product, error) {
+	return s.repo.GetProductsByCategory(ctx, categorySlug, filter)
 }
 
 func (s *productService) GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error) {

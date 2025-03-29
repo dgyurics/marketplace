@@ -23,8 +23,8 @@ func NewCategoryRepository(db *sql.DB) CategoryRepository {
 
 func (r *categoryRepository) CreateCategory(ctx context.Context, category types.Category) (string, error) {
 	var newID string
-	query := `INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING id`
-	err := r.db.QueryRowContext(ctx, query, category.Name, category.Description).Scan(&newID)
+	query := `INSERT INTO categories (name, slug, description) VALUES ($1, $2, $3) RETURNING id`
+	err := r.db.QueryRowContext(ctx, query, category.Name, category.Slug, category.Description).Scan(&newID)
 	if err != nil {
 		return "", err
 	}

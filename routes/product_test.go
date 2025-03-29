@@ -34,6 +34,11 @@ func (m *MockProductService) GetProducts(ctx context.Context, filter types.Produ
 	return args.Get(0).([]types.Product), args.Error(1)
 }
 
+func (m *MockProductService) GetProductsByCategory(ctx context.Context, categorySlug string, filter types.ProductFilter) ([]types.Product, error) {
+	args := m.Called(ctx, categorySlug, filter)
+	return args.Get(0).([]types.Product), args.Error(1)
+}
+
 func (m *MockProductService) GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error) {
 	args := m.Called(ctx, id)
 	return args.Get(0).(*types.ProductWithInventory), args.Error(1)
@@ -239,19 +244,17 @@ func TestGetProductsUsingCategory(t *testing.T) {
 	}
 
 	// Set up the expected behavior of the mock service with filter check
-	mockService.On("GetProducts", mock.Anything, mock.MatchedBy(func(filter types.ProductFilter) bool {
-		return filter.Category == "Electronics"
-	})).Return(expectedProducts, nil)
+	mockService.On("GetProductsByCategory", mock.Anything, "electronics", mock.Anything).Return(expectedProducts, nil)
 
 	// Create a new HTTP request with category filter
-	req, err := http.NewRequest(http.MethodGet, "/products?category=Electronics", nil)
+	req, err := http.NewRequest(http.MethodGet, "/products/categories/electronics", nil)
 	require.NoError(t, err)
 
 	// Create a response recorder
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	routes.muxRouter.HandleFunc("/products", routes.GetProducts).Methods(http.MethodGet)
+	routes.muxRouter.HandleFunc("/products/categories/{category}", routes.GetProductsByCategory).Methods(http.MethodGet)
 
 	// Serve the request via the router
 	routes.muxRouter.ServeHTTP(rr, req)
