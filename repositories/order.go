@@ -44,22 +44,30 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID str
 	// 2) Retrieve the new or updated order
 	query = `
 	  SELECT
-			id,
-			user_id,
-			currency,
-			amount,
-			tax_amount,
-			shipping_amount,
-			total_amount,
-			status,
-			payment_intent_id,
-			address_id,
-			created_at,
-			updated_at
-		FROM orders
-		WHERE id = $1
+			o.id,
+			o.user_id,
+			o.currency,
+			o.amount,
+			o.tax_amount,
+			o.shipping_amount,
+			o.total_amount,
+			o.status,
+			o.payment_intent_id,
+			a.id AS address_id,
+			a.addressee,
+			a.address_line1,
+			a.address_line2,
+			a.city,
+			a.state_code,
+			a.postal_code,
+			o.created_at,
+			o.updated_at
+		FROM orders o
+		JOIN addresses a ON o.address_id = a.id
+		WHERE o.id = $1
 	`
 	order := &types.Order{}
+	order.Address = &types.Address{}
 	err = r.db.QueryRowContext(ctx, query, orderID).Scan(
 		&order.ID,
 		&order.UserID,
@@ -70,7 +78,13 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID str
 		&order.TotalAmount,
 		&order.Status,
 		&order.PaymentIntentID,
-		&order.AddressID,
+		&order.Address.ID,
+		&order.Address.Addressee,
+		&order.Address.AddressLine1,
+		&order.Address.AddressLine2,
+		&order.Address.City,
+		&order.Address.StateCode,
+		&order.Address.PostalCode,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
@@ -150,20 +164,27 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, limit int) ([]types.Order, error) {
 	query := `
 		SELECT
-			id,
-			user_id,
-			currency,
-			amount,
-			tax_amount,
-			total_amount,
-			status,
-			payment_intent_id,
-			address_id,
-			created_at,
-			updated_at
-		FROM orders
-		WHERE user_id = $1 AND status != 'pending'
-		ORDER BY created_at DESC
+			o.id,
+			o.user_id,
+			o.currency,
+			o.amount,
+			o.tax_amount,
+			o.total_amount,
+			o.status,
+			o.payment_intent_id,
+			a.id AS address_id,
+			a.addressee,
+			a.address_line1,
+			a.address_line2,
+			a.city,
+			a.state_code,
+			a.postal_code,
+			o.created_at,
+			o.updated_at
+		FROM orders o
+		JOIN addresses a ON o.address_id = a.id
+		WHERE o.user_id = $1 AND o.status != 'pending'
+		ORDER BY o.created_at DESC
 		LIMIT $2 OFFSET $3
 	`
 	rows, err := r.db.QueryContext(ctx, query, userID, limit, (page-1)*limit)
@@ -174,6 +195,8 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 	result := []types.Order{}
 	for rows.Next() {
 		order := types.Order{}
+		order.Address = &types.Address{}
+		// Scan the order details
 		err := rows.Scan(
 			&order.ID,
 			&order.UserID,
@@ -183,7 +206,13 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 			&order.TotalAmount,
 			&order.Status,
 			&order.PaymentIntentID,
-			&order.AddressID,
+			&order.Address.ID,
+			&order.Address.Addressee,
+			&order.Address.AddressLine1,
+			&order.Address.AddressLine2,
+			&order.Address.City,
+			&order.Address.StateCode,
+			&order.Address.PostalCode,
 			&order.CreatedAt,
 			&order.UpdatedAt,
 		)
@@ -272,31 +301,38 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 
 	query := `
 		SELECT
-			id,
-			user_id,
-			currency,
-			amount,
-			tax_amount,
-			total_amount,
-			status,
-			payment_intent_id,
-			address_id,
-			created_at,
-			updated_at
-		FROM orders
+			o.id,
+			o.user_id,
+			o.currency,
+			o.amount,
+			o.tax_amount,
+			o.total_amount,
+			o.status,
+			o.payment_intent_id,
+			a.id AS address_id,
+			a.addressee,
+			a.address_line1,
+			a.address_line2,
+			a.city,
+			a.state_code,
+			a.postal_code,
+			o.created_at,
+			o.updated_at
+		FROM orders o
+		JOIN addresses a ON o.address_id = a.id
 	`
 	args := []interface{}{}
 	var whereClause string
 
 	// Build the WHERE clause based on provided fields
 	if order.ID != "" {
-		whereClause = "WHERE id = $1"
+		whereClause = "WHERE o.id = $1"
 		args = append(args, order.ID)
 	} else if order.UserID != "" {
-		whereClause = "WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1"
+		whereClause = "WHERE o.user_id = $1 ORDER BY o.created_at DESC LIMIT 1"
 		args = append(args, order.UserID)
 	} else if order.PaymentIntentID != "" {
-		whereClause = "WHERE payment_intent_id = $1"
+		whereClause = "WHERE o.payment_intent_id = $1"
 		args = append(args, order.PaymentIntentID)
 	}
 
@@ -304,6 +340,7 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 	query += whereClause
 
 	// Execute the query
+	order.Address = &types.Address{}
 	err := r.db.QueryRowContext(ctx, query, args...).Scan(
 		&order.ID,
 		&order.UserID,
@@ -313,7 +350,13 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 		&order.TotalAmount,
 		&order.Status,
 		&order.PaymentIntentID,
-		&order.AddressID,
+		&order.Address.ID,
+		&order.Address.Addressee,
+		&order.Address.AddressLine1,
+		&order.Address.AddressLine2,
+		&order.Address.City,
+		&order.Address.StateCode,
+		&order.Address.PostalCode,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)

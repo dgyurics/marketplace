@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -397,4 +398,57 @@ func (os *orderService) CreateOrder(ctx context.Context, addressID string) (type
 	}
 
 	return *pi, err
+}
+
+// PLACEHOLDER: TODO
+func (os *orderService) sendDummyTaxCalculation(ctx context.Context) error {
+	form := url.Values{}
+	form.Set("currency", "usd")
+
+	// Line item 1
+	form.Set("line_items[0][amount]", "2000") // $20.00
+	form.Set("line_items[0][quantity]", "1")
+	form.Set("line_items[0][reference]", "chair-001")
+	form.Set("line_items[0][tax_behavior]", "exclusive")
+	form.Set("line_items[0][tax_code]", "txcd_99999999")
+
+	// Line item 2
+	form.Set("line_items[1][amount]", "1500") // $15.00
+	form.Set("line_items[1][quantity]", "2")
+	form.Set("line_items[1][reference]", "lamp-002")
+	form.Set("line_items[1][tax_behavior]", "exclusive")
+	form.Set("line_items[1][tax_code]", "txcd_99999999")
+
+	// Customer address
+	form.Set("customer_details[address_source]", "shipping")
+	form.Set("customer_details[address][country]", "US")
+	form.Set("customer_details[address][state]", "CA")
+	form.Set("customer_details[address][postal_code]", "94107")
+
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.stripe.com/v1/tax/calculations", bytes.NewBufferString(form.Encode()))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+os.stripeSecretKey)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := os.HttpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Stripe returned status %d", resp.StatusCode)
+	}
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	out, _ := json.MarshalIndent(result, "", "  ")
+	slog.Info("Stripe tax calculation result", "response", string(out))
+	return nil
 }

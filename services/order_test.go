@@ -211,9 +211,11 @@ func TestOrderService_GetOrders_Success(t *testing.T) {
 	// Mock orders returned by the repository
 	mockOrders := []types.Order{
 		{
-			ID:          "order1",
-			UserID:      user.ID,
-			AddressID:   "address123",
+			ID:     "order1",
+			UserID: user.ID,
+			Address: &types.Address{
+				ID: "address123",
+			},
 			Currency:    "usd",
 			TotalAmount: 1500,
 			Status:      types.OrderPaid,
@@ -222,9 +224,11 @@ func TestOrderService_GetOrders_Success(t *testing.T) {
 			UpdatedAt:   time.Now(),
 		},
 		{
-			ID:          "order2",
-			UserID:      user.ID,
-			AddressID:   "address456",
+			ID:     "order2",
+			UserID: user.ID,
+			Address: &types.Address{
+				ID: "address456",
+			},
 			Currency:    "usd",
 			TotalAmount: 2500,
 			Status:      types.OrderShipped,

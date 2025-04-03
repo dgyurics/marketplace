@@ -79,7 +79,7 @@ func TestOrderRepository_CreateOrder(t *testing.T) {
 	assert.NoError(t, err, "CreateOrder should not return an error")
 	assert.NotNil(t, order, "Order should not be nil")
 	assert.Equal(t, user.ID, order.UserID, "Order UserID should match")
-	assert.Equal(t, AddressID, order.AddressID, "Order AddressID should match")
+	assert.Equal(t, AddressID, order.Address.ID, "Order AddressID should match")
 	assert.Equal(t, types.OrderPending, order.Status, "Order status should be 'pending'")
 	assert.EqualValues(t, 2*1000, order.Amount, "Order amount should match expected value")
 
@@ -125,21 +125,21 @@ func TestOrderRepository_GetOrder(t *testing.T) {
 	assert.NoError(t, err, "GetOrder by ID should not return an error")
 	assert.Equal(t, order.ID, retrievedOrder.ID, "The retrieved order ID should match")
 	assert.Equal(t, order.UserID, retrievedOrder.UserID, "The retrieved order UserID should match")
-	assert.Equal(t, order.AddressID, retrievedOrder.AddressID, "The retrieved order AddressID should match")
+	assert.Equal(t, order.Address.ID, retrievedOrder.Address.ID, "The retrieved order AddressID should match")
 
 	// 7. Test retrieving the order by UserID (latest order)
 	retrievedOrder = &types.Order{UserID: user.ID}
 	err = orderRepo.GetOrder(ctx, retrievedOrder)
 	assert.NoError(t, err, "GetOrder by UserID should not return an error")
 	assert.Equal(t, order.ID, retrievedOrder.ID, "The latest order ID should match the created order")
-	assert.Equal(t, order.AddressID, retrievedOrder.AddressID, "The retrieved order AddressID should match")
+	assert.Equal(t, order.Address.ID, retrievedOrder.Address.ID, "The retrieved order AddressID should match")
 
 	// 8. Test retrieving the order by PaymentIntentID
 	retrievedOrder = &types.Order{PaymentIntentID: mockPaymentIntentID}
 	err = orderRepo.GetOrder(ctx, retrievedOrder)
 	assert.NoError(t, err, "GetOrder by PaymentIntentID should not return an error")
 	assert.Equal(t, order.ID, retrievedOrder.ID, "The retrieved order ID should match the created order's ID")
-	assert.Equal(t, order.AddressID, retrievedOrder.AddressID, "The retrieved order AddressID should match")
+	assert.Equal(t, order.Address.ID, retrievedOrder.Address.ID, "The retrieved order AddressID should match")
 
 	// 9. Cleanup
 	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
@@ -224,18 +224,18 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 	if orders[0].ID == order2.ID {
 		// Validate order2
 		assert.Equal(t, types.OrderShipped, orders[0].Status, "The first order's status should be 'shipped'")
-		assert.Equal(t, AddressID, orders[0].AddressID, "The first order's AddressID should match")
+		assert.Equal(t, AddressID, orders[0].Address.ID, "The first order's AddressID should match")
 		assert.Equal(t, order1.ID, orders[1].ID, "The second order ID should match")
 		assert.Equal(t, types.OrderPaid, orders[1].Status, "The second order's status should be 'paid'")
-		assert.Equal(t, AddressID, orders[1].AddressID, "The second order's AddressID should match")
+		assert.Equal(t, AddressID, orders[1].Address.ID, "The second order's AddressID should match")
 	} else {
 		// Validate order1
 		assert.Equal(t, order1.ID, orders[0].ID, "The first order ID should match")
 		assert.Equal(t, types.OrderPaid, orders[0].Status, "The first order's status should be 'paid'")
-		assert.Equal(t, AddressID, orders[0].AddressID, "The first order's AddressID should match")
+		assert.Equal(t, AddressID, orders[0].Address.ID, "The first order's AddressID should match")
 		assert.Equal(t, order2.ID, orders[1].ID, "The second order ID should match")
 		assert.Equal(t, types.OrderShipped, orders[1].Status, "The second order's status should be 'shipped'")
-		assert.Equal(t, AddressID, orders[1].AddressID, "The second order's AddressID should match")
+		assert.Equal(t, AddressID, orders[1].Address.ID, "The second order's AddressID should match")
 	}
 
 	// 7. Cleanup

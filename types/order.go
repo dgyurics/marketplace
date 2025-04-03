@@ -17,8 +17,8 @@ const (
 type Order struct {
 	ID              string      `json:"id"`
 	UserID          string      `json:"-"`
-	AddressID       string      `json:"address_id"` // TODO replace with address struct
-	PaymentIntentID string      `json:"-"`          // stripe payment intent id
+	Address         *Address    `json:"address"`
+	PaymentIntentID string      `json:"-"` // stripe payment intent id
 	Currency        string      `json:"currency"`
 	Amount          int64       `json:"amount"`
 	TaxAmount       int64       `json:"tax_amount"`
