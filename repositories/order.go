@@ -15,7 +15,7 @@ type OrderRepository interface {
 	GetOrder(ctx context.Context, order *types.Order) error
 	GetOrders(ctx context.Context, userID string, page, limit int) ([]types.Order, error)
 	PopulateOrderItems(ctx context.Context, orders *[]types.Order) error
-	CreateOrder(ctx context.Context, userID, addressID string) (*types.Order, error)
+	CreateOrder(ctx context.Context, userID, addressID string) (types.Order, error)
 	UpdateOrder(ctx context.Context, order *types.Order) error
 	CreateStripeEvent(ctx context.Context, event types.StripeEvent) error
 }
@@ -32,13 +32,13 @@ func NewOrderRepository(db *sql.DB) OrderRepository {
 // TODO - implement shipping and tax calculation, possibly as a separate function
 // Most likely will need to implement update_or_create_order_from_cart in Go
 // if planning to move to different database as well...
-func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID string) (*types.Order, error) {
+func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID string) (order types.Order, err error) {
 	// 1) Create or update the order from the user's cart
 	query := "SELECT update_or_create_order_from_cart($1, $2)"
 	var orderID string
-	err := r.db.QueryRowContext(ctx, query, userID, addressID).Scan(&orderID)
+	err = r.db.QueryRowContext(ctx, query, userID, addressID).Scan(&orderID)
 	if err != nil {
-		return nil, err
+		return order, err
 	}
 
 	// 2) Retrieve the new or updated order
@@ -52,7 +52,6 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID str
 			o.shipping_amount,
 			o.total_amount,
 			o.status,
-			o.payment_intent_id,
 			a.id AS address_id,
 			a.addressee,
 			a.address_line1,
@@ -66,7 +65,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID str
 		JOIN addresses a ON o.address_id = a.id
 		WHERE o.id = $1
 	`
-	order := &types.Order{}
+	// Execute the query
 	order.Address = &types.Address{}
 	err = r.db.QueryRowContext(ctx, query, orderID).Scan(
 		&order.ID,
@@ -77,7 +76,6 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID str
 		&order.ShippingAmount,
 		&order.TotalAmount,
 		&order.Status,
-		&order.PaymentIntentID,
 		&order.Address.ID,
 		&order.Address.Addressee,
 		&order.Address.AddressLine1,
@@ -88,10 +86,8 @@ func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID str
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve order: %w", err)
-	}
-	return order, nil
+
+	return order, err
 }
 
 // CreateStripeEvent saves a Stripe event to the database
@@ -127,10 +123,7 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 		return fmt.Errorf("missing order ID")
 	}
 
-	query := `
-		UPDATE orders
-		SET updated_at = CURRENT_TIMESTAMP
-	`
+	query := `UPDATE orders SET updated_at = CURRENT_TIMESTAMP`
 	args := []interface{}{}
 	argCount := 1
 
@@ -140,22 +133,23 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 		argCount++
 	}
 
-	if order.PaymentIntentID != "" {
-		query += fmt.Sprintf(", payment_intent_id = $%d", argCount)
-		args = append(args, order.PaymentIntentID)
+	if order.StripePaymentIntent != nil {
+		intentJSON, err := json.Marshal(order.StripePaymentIntent)
+		if err != nil {
+			return fmt.Errorf("failed to encode stripe payment intent: %w", err)
+		}
+		query += fmt.Sprintf(", stripe_payment_intent = $%d", argCount)
+		args = append(args, intentJSON)
 		argCount++
 	}
 
-	// Ensure there's something to update
 	if len(args) == 0 {
 		return fmt.Errorf("no fields to update")
 	}
 
-	// Add the WHERE clause
 	query += fmt.Sprintf(" WHERE id = $%d", argCount)
 	args = append(args, order.ID)
 
-	// Execute the query
 	_, err := r.db.ExecContext(ctx, query, args...)
 	return err
 }
@@ -171,7 +165,7 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 			o.tax_amount,
 			o.total_amount,
 			o.status,
-			o.payment_intent_id,
+			o.stripe_payment_intent,
 			a.id AS address_id,
 			a.addressee,
 			a.address_line1,
@@ -192,11 +186,14 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 		return nil, err
 	}
 	defer rows.Close()
-	result := []types.Order{}
+
+	var result []types.Order
 	for rows.Next() {
-		order := types.Order{}
-		order.Address = &types.Address{}
-		// Scan the order details
+		var rawIntent []byte
+		order := types.Order{
+			Address: &types.Address{},
+		}
+
 		err := rows.Scan(
 			&order.ID,
 			&order.UserID,
@@ -205,7 +202,7 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 			&order.TaxAmount,
 			&order.TotalAmount,
 			&order.Status,
-			&order.PaymentIntentID,
+			&rawIntent,
 			&order.Address.ID,
 			&order.Address.Addressee,
 			&order.Address.AddressLine1,
@@ -219,8 +216,18 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 		if err != nil {
 			return nil, err
 		}
+
+		if len(rawIntent) > 0 {
+			var spi types.StripePaymentIntent
+			if err := json.Unmarshal(rawIntent, &spi); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal Stripe payment intent: %w", err)
+			}
+			order.StripePaymentIntent = &spi
+		}
+
 		result = append(result, order)
 	}
+
 	return result, nil
 }
 
@@ -292,11 +299,16 @@ func (r *orderRepository) PopulateOrderItems(ctx context.Context, orders *[]type
 	return nil
 }
 
+// isEmptyOrderLookup checks if the order lookup is empty
+func isEmptyOrderLookup(order *types.Order) bool {
+	return order.ID == "" && order.UserID == "" && (order.StripePaymentIntent == nil || order.StripePaymentIntent.ID == "")
+}
+
 // GetOrder retrieves an order by ID, user ID, or payment intent ID
 func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) error {
 	// Validate input
-	if order.ID == "" && order.UserID == "" && order.PaymentIntentID == "" {
-		return fmt.Errorf("at least one of order.ID, order.UserID, or order.PaymentIntentID must be provided")
+	if isEmptyOrderLookup(order) {
+		return fmt.Errorf("missing identifier: provide order.ID, order.UserID, or StripePaymentIntent.ID")
 	}
 
 	query := `
@@ -308,7 +320,7 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 			o.tax_amount,
 			o.total_amount,
 			o.status,
-			o.payment_intent_id,
+			o.stripe_payment_intent,
 			a.id AS address_id,
 			a.addressee,
 			a.address_line1,
@@ -331,9 +343,9 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 	} else if order.UserID != "" {
 		whereClause = "WHERE o.user_id = $1 ORDER BY o.created_at DESC LIMIT 1"
 		args = append(args, order.UserID)
-	} else if order.PaymentIntentID != "" {
-		whereClause = "WHERE o.payment_intent_id = $1"
-		args = append(args, order.PaymentIntentID)
+	} else if order.StripePaymentIntent != nil && order.StripePaymentIntent.ID != "" {
+		whereClause = "WHERE o.stripe_payment_intent->>'id' = $1"
+		args = append(args, order.StripePaymentIntent.ID)
 	}
 
 	// Combine query and where clause
@@ -341,6 +353,8 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 
 	// Execute the query
 	order.Address = &types.Address{}
+	order.StripePaymentIntent = &types.StripePaymentIntent{} // Avoid overwriting the existing pointer
+	var rawIntent []byte
 	err := r.db.QueryRowContext(ctx, query, args...).Scan(
 		&order.ID,
 		&order.UserID,
@@ -349,7 +363,7 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 		&order.TaxAmount,
 		&order.TotalAmount,
 		&order.Status,
-		&order.PaymentIntentID,
+		&rawIntent,
 		&order.Address.ID,
 		&order.Address.Addressee,
 		&order.Address.AddressLine1,
@@ -365,6 +379,16 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 			return fmt.Errorf("order not found")
 		}
 		return err
+	}
+
+	// Unmarshal the Stripe payment intent if it exists
+	if len(rawIntent) > 0 {
+		var spi types.StripePaymentIntent
+		err = json.Unmarshal(rawIntent, &spi)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal Stripe payment intent: %w", err)
+		}
+		order.StripePaymentIntent = &spi
 	}
 
 	return nil

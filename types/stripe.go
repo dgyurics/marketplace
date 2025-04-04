@@ -1,14 +1,5 @@
 package types
 
-type PaymentIntent struct {
-	ID           string `json:"id"`
-	Amount       int64  `json:"amount"`
-	Currency     string `json:"currency"`
-	Status       string `json:"status"`
-	ClientSecret string `json:"client_secret"`
-	Error        string `json:"error,omitempty"`
-}
-
 type StripeEvent struct {
 	ID       string      `json:"id"`
 	Type     string      `json:"type"`
@@ -28,4 +19,5 @@ type StripePaymentIntent struct {
 	Amount       int64  `json:"amount"`
 	ClientSecret string `json:"client_secret"`
 	Currency     string `json:"currency"`
+	Error        string `json:"error,omitempty"`
 }

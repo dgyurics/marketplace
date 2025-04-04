@@ -44,17 +44,13 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	// TODO Validate address exists for user
 
 	// Create the order
-	res, err := h.orderService.CreateOrder(r.Context(), requestBody.AddressID)
+	order, err := h.orderService.CreateOrder(r.Context(), requestBody.AddressID)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if res.Error != "" {
-		u.RespondWithError(w, r, http.StatusInternalServerError, res.Error)
-		return
-	}
 
-	u.RespondWithJSON(w, http.StatusOK, res)
+	u.RespondWithJSON(w, http.StatusOK, order)
 }
 
 func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {

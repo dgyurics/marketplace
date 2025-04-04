@@ -113,10 +113,10 @@ func TestOrderRepository_GetOrder(t *testing.T) {
 	order, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
 	assert.NoError(t, err, "CreateOrder should not return an error")
 
-	// 5. Mock the PaymentIntentID and update the order
-	mockPaymentIntentID := "pi_mocked_payment_intent_id"
-	order.PaymentIntentID = mockPaymentIntentID
-	err = orderRepo.UpdateOrder(ctx, order)
+	// 5. Update the order with the mocked PaymentIntentID
+	mockPaymentIntent := &types.StripePaymentIntent{ID: "pi_mocked_payment_intent_id"}
+	order.StripePaymentIntent = mockPaymentIntent
+	err = orderRepo.UpdateOrder(ctx, &order)
 	assert.NoError(t, err, "UpdateOrder should not return an error")
 
 	// 6. Test retrieving the order by ID
@@ -135,7 +135,7 @@ func TestOrderRepository_GetOrder(t *testing.T) {
 	assert.Equal(t, order.Address.ID, retrievedOrder.Address.ID, "The retrieved order AddressID should match")
 
 	// 8. Test retrieving the order by PaymentIntentID
-	retrievedOrder = &types.Order{PaymentIntentID: mockPaymentIntentID}
+	retrievedOrder = &types.Order{StripePaymentIntent: mockPaymentIntent}
 	err = orderRepo.GetOrder(ctx, retrievedOrder)
 	assert.NoError(t, err, "GetOrder by PaymentIntentID should not return an error")
 	assert.Equal(t, order.ID, retrievedOrder.ID, "The retrieved order ID should match the created order's ID")
@@ -144,6 +144,7 @@ func TestOrderRepository_GetOrder(t *testing.T) {
 	// 9. Cleanup
 	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, order.ID)
+	dbPool.ExecContext(ctx, `DELETE FROM stripe_payment_intents WHERE id = $1`, mockPaymentIntent.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM inventory WHERE product_id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, productID)
@@ -169,7 +170,7 @@ func TestOrderRepository_GetOrder_MissingOrder(t *testing.T) {
 	assert.Contains(t, err.Error(), "order not found", "The error message should indicate that the order was not found")
 
 	// Test case 3: Missing Order by PaymentIntentID
-	missingOrder = &types.Order{PaymentIntentID: "nonexistent_payment_intent_id"}
+	missingOrder = &types.Order{StripePaymentIntent: &types.StripePaymentIntent{ID: "pi_missing_payment_intent_id"}}
 	err = orderRepo.GetOrder(ctx, missingOrder)
 	assert.Error(t, err, "GetOrder by PaymentIntentID should return an error for a nonexistent PaymentIntentID")
 	assert.Contains(t, err.Error(), "order not found", "The error message should indicate that the order was not found")
@@ -178,7 +179,7 @@ func TestOrderRepository_GetOrder_MissingOrder(t *testing.T) {
 	missingOrder = &types.Order{} // No ID, UserID, or PaymentIntentID provided
 	err = orderRepo.GetOrder(ctx, missingOrder)
 	assert.Error(t, err, "GetOrder should return an error if no identifiers are provided")
-	assert.Contains(t, err.Error(), "at least one of order.ID, order.UserID, or order.PaymentIntentID must be provided", "The error message should indicate missing identifiers")
+	assert.Contains(t, err.Error(), "missing identifier: provide order.ID, order.UserID, or StripePaymentIntent.ID", "The error message should indicate missing identifiers")
 }
 
 func TestOrderRepository_GetOrders(t *testing.T) {
@@ -204,7 +205,7 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 	order1, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
 	assert.NoError(t, err, "CreateOrder should not return an error")
 	order1.Status = types.OrderPaid
-	err = orderRepo.UpdateOrder(ctx, order1)
+	err = orderRepo.UpdateOrder(ctx, &order1)
 	assert.NoError(t, err, "UpdateOrder for order1 should not return an error")
 
 	// Add another order
@@ -212,7 +213,7 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 	order2, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
 	assert.NoError(t, err, "CreateOrder should not return an error")
 	order2.Status = types.OrderShipped
-	err = orderRepo.UpdateOrder(ctx, order2)
+	err = orderRepo.UpdateOrder(ctx, &order2)
 	assert.NoError(t, err, "UpdateOrder for order2 should not return an error")
 
 	// 5. Retrieve all orders for the user
@@ -344,7 +345,7 @@ func TestOrderRepository_PopulateOrderItems(t *testing.T) {
 	assert.NoError(t, err, "CreateOrder should not return an error")
 
 	// 5. Prepare orders for PopulateOrderItems
-	orders := []types.Order{*order}
+	orders := []types.Order{order}
 
 	// 6. Call PopulateOrderItems
 	err = orderRepo.PopulateOrderItems(ctx, &orders)

@@ -28,7 +28,7 @@ const (
 )
 
 type OrderService interface {
-	CreateOrder(ctx context.Context, addressID string) (types.PaymentIntent, error)
+	CreateOrder(ctx context.Context, addressID string) (types.Order, error)
 	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
 	VerifyStripeEventSignature(payload []byte, sigHeader string) error
 	ProcessStripeEvent(ctx context.Context, event types.StripeEvent) error
@@ -77,7 +77,7 @@ func (os *orderService) GetOrders(ctx context.Context, page, limit int) ([]types
 }
 
 // Call Stripe API to create a payment intent
-func (os *orderService) createPaymentIntent(ctx context.Context, pi *types.PaymentIntent) error {
+func (os *orderService) createPaymentIntent(ctx context.Context, pi *types.StripePaymentIntent) error {
 	if pi.Currency == "" {
 		return errors.New("missing currency")
 	}
@@ -114,7 +114,7 @@ func (os *orderService) createPaymentIntent(ctx context.Context, pi *types.Payme
 	return json.NewDecoder(resp.Body).Decode(pi)
 }
 
-func (os *orderService) mockPaymentRequest(ctx context.Context, pi *types.PaymentIntent) error {
+func (os *orderService) mockPaymentRequest(ctx context.Context, pi *types.StripePaymentIntent) error {
 	// Simulate network delay with context handling
 	select {
 	case <-ctx.Done():
@@ -216,8 +216,11 @@ func (os *orderService) ProcessStripeEvent(ctx context.Context, event types.Stri
 // paymentIntentCreated is called when a Stripe event is received for a payment intent creation.
 // A matching payment entry should be found in the orders table
 func (os *orderService) paymentIntentCreated(ctx context.Context, event types.StripeEvent) error {
+	paymentIntent := event.Data.Object
 	// verify event has matching entry in payment table
-	order := &types.Order{PaymentIntentID: event.Data.Object.ID}
+	order := &types.Order{
+		StripePaymentIntent: &paymentIntent,
+	}
 	err := os.orderRepo.GetOrder(ctx, order)
 	if err != nil {
 		return err
@@ -225,10 +228,10 @@ func (os *orderService) paymentIntentCreated(ctx context.Context, event types.St
 	if order.Status != types.OrderPending {
 		return nil // do nothing if order not pending
 	}
-	if order.TotalAmount != event.Data.Object.Amount {
+	if order.TotalAmount != paymentIntent.Amount {
 		return fmt.Errorf("payment intent amount does not match expected amount")
 	}
-	if order.Currency != event.Data.Object.Currency {
+	if order.Currency != paymentIntent.Currency {
 		return fmt.Errorf("payment intent currency does not match expected currency")
 	}
 	return nil
@@ -238,7 +241,9 @@ func (os *orderService) paymentIntentCreated(ctx context.Context, event types.St
 // A matching payment entry should be found in the orders table
 func (os *orderService) paymentIntentSucceeded(ctx context.Context, event types.StripeEvent) error {
 	paymentIntent := event.Data.Object
-	order := &types.Order{PaymentIntentID: paymentIntent.ID}
+	order := &types.Order{
+		StripePaymentIntent: &paymentIntent,
+	}
 	err := os.orderRepo.GetOrder(ctx, order)
 	if err != nil {
 		return err
@@ -255,8 +260,9 @@ func (os *orderService) paymentIntentSucceeded(ctx context.Context, event types.
 		return fmt.Errorf("payment intent currency does not match expected currency")
 	}
 
-	// mark order as paid
+	// mark order as paid & update payment intent
 	order.Status = types.OrderPaid
+	order.StripePaymentIntent = &paymentIntent
 	if err = os.orderRepo.UpdateOrder(ctx, order); err != nil {
 		slog.Error("Error updating order", "order_id", order.ID, "error", err)
 		return err
@@ -344,15 +350,15 @@ func ComputeSignature(t time.Time, payload []byte, secret string) []byte {
 	return mac.Sum(nil)
 }
 
-func (os *orderService) CreateOrder(ctx context.Context, addressID string) (types.PaymentIntent, error) {
+func (os *orderService) CreateOrder(ctx context.Context, addressID string) (types.Order, error) {
 	var userID = getUserID(ctx)
 
 	// Cancel open/unpaid payment intent, if any
-	order := &types.Order{UserID: userID}
-	os.orderRepo.GetOrder(ctx, order)
-	if order.Status == types.OrderPending && order.PaymentIntentID != "" {
+	order := types.Order{UserID: userID}
+	os.orderRepo.GetOrder(ctx, &order)
+	if order.Status == types.OrderPending && order.StripePaymentIntent != nil {
 		go func() {
-			os.cancelPaymentIntent(ctx, order.PaymentIntentID)
+			os.cancelPaymentIntent(ctx, order.StripePaymentIntent.ID)
 		}()
 	}
 
@@ -363,7 +369,7 @@ func (os *orderService) CreateOrder(ctx context.Context, addressID string) (type
 	order, err := os.orderRepo.CreateOrder(ctx, userID, addressID)
 	if err != nil {
 		slog.Error("Error creating order", "user_id", userID, "error", err)
-		return types.PaymentIntent{}, err
+		return types.Order{}, err
 	}
 
 	slog.Info("Order created",
@@ -375,29 +381,34 @@ func (os *orderService) CreateOrder(ctx context.Context, addressID string) (type
 	)
 
 	// Create payment intent
-	pi := &types.PaymentIntent{
+	pi := &types.StripePaymentIntent{
 		Amount:   order.TotalAmount,
 		Currency: "usd",
 	}
+	// Create payment intent in Stripe
 	if err = os.createPaymentIntent(ctx, pi); err != nil {
-		return types.PaymentIntent{}, err
+		return types.Order{}, err
 	}
 
-	// Update order payment intent ID
-	order.Status = "" // reset status
-	order.PaymentIntentID = pi.ID
-	if err = os.orderRepo.UpdateOrder(ctx, order); err != nil {
+	clientSecret := pi.ClientSecret
+	pi.ClientSecret = "" // unset client secret, it is not needed in the database
+
+	// Update order without client_secret
+	order.StripePaymentIntent = pi
+	if err = os.orderRepo.UpdateOrder(ctx, &order); err != nil {
 		slog.Error(
 			"Error updating order",
 			"order_id", order.ID,
 			"status", order.Status,
-			"payment_intent_id", pi.ID,
+			"stripe_payment_intent_id", pi.ID,
 			"error", err,
 		)
-		return types.PaymentIntent{}, err
+		return types.Order{}, err
 	}
 
-	return *pi, err
+	// Restore client_secret only in the returned struct
+	order.StripePaymentIntent.ClientSecret = clientSecret
+	return order, err
 }
 
 // PLACEHOLDER: TODO

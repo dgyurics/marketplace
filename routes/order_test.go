@@ -28,9 +28,9 @@ func (m *MockOrderService) ProcessStripeEvent(ctx context.Context, event types.S
 	return args.Error(0)
 }
 
-func (m *MockOrderService) CreateOrder(ctx context.Context, addressID string) (types.PaymentIntent, error) {
+func (m *MockOrderService) CreateOrder(ctx context.Context, addressID string) (types.Order, error) {
 	args := m.Called(ctx, addressID)
-	return args.Get(0).(types.PaymentIntent), args.Error(1)
+	return args.Get(0).(types.Order), args.Error(1)
 }
 
 func (m *MockOrderService) GetOrders(ctx context.Context, page, limit int) ([]types.Order, error) {
@@ -50,11 +50,11 @@ func TestCreateOrder(t *testing.T) {
 
 	// Prepare mock data for the request and expected response
 	expectedAddressID := "address123"
-	expectedResponse := types.PaymentIntent{
-		Status: "pending",
+	expectedResponse := types.Order{
+		Status: types.OrderPending,
 	}
 
-	// Mock the CreateOrder method to return a successful PaymentIntentResponse
+	// Mock the CreateOrder method
 	mockOrderService.On("CreateOrder", mock.Anything, expectedAddressID).Return(expectedResponse, nil)
 
 	// Create a new HTTP POST request with a JSON body containing the addressID
@@ -81,7 +81,7 @@ func TestCreateOrder(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	// Decode the response body
-	var response types.PaymentIntent
+	var response types.Order
 	err = json.NewDecoder(rr.Body).Decode(&response)
 	require.NoError(t, err)
 

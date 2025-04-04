@@ -156,8 +156,8 @@ func TestGetProducts(t *testing.T) {
 	assert.True(t, found, "Expected to find the created product in the products list")
 
 	// Clean up
-	// _, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
-	// assert.NoError(t, err, "Expected no error on product deletion")
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
+	assert.NoError(t, err, "Expected no error on product deletion")
 }
 
 func TestGetProductByID(t *testing.T) {

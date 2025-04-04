@@ -679,7 +679,7 @@ paths:
   /orders:
     post:
       summary: Create a new order
-      description: Creates a new order using the provided address and current cart items, returning a Stripe PaymentIntent.
+      description: Creates a new order using the provided address and current cart items, returning a full Order object.
       tags:
         - Orders
       security:
@@ -696,11 +696,11 @@ paths:
                   example: "address-789"
       responses:
         "200":
-          description: PaymentIntent created
+          description: Order created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaymentIntent"
+                $ref: "#/components/schemas/Order"
         "400":
           description: Invalid request payload
         "401":
@@ -1011,6 +1011,8 @@ components:
         address_id:
           type: string
           example: "address-789"
+        stripe_payment_intent:
+          $ref: "#/components/schemas/StripePaymentIntent"
         currency:
           type: string
           example: "usd"

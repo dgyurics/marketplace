@@ -15,6 +15,9 @@ clean:
 test:
 	go test ./...
 
+test-no-cache:
+	go test -count=1 ./...
+
 # View test coverage
 test-coverage:
 	go test -cover ./...
