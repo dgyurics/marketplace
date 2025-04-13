@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -15,9 +16,10 @@ type OrderRepository interface {
 	GetOrder(ctx context.Context, order *types.Order) error
 	GetOrders(ctx context.Context, userID string, page, limit int) ([]types.Order, error)
 	PopulateOrderItems(ctx context.Context, orders *[]types.Order) error
-	CreateOrder(ctx context.Context, userID, addressID string) (types.Order, error)
+	CreateOrder(ctx context.Context, order *types.Order) error
 	UpdateOrder(ctx context.Context, order *types.Order) error
 	CreateStripeEvent(ctx context.Context, event types.StripeEvent) error
+	CancelPendingOrders(ctx context.Context, userID string) error
 }
 
 type orderRepository struct {
@@ -28,66 +30,199 @@ func NewOrderRepository(db *sql.DB) OrderRepository {
 	return &orderRepository{db: db}
 }
 
-// CreateOrder creates a new order from the user's cart
-// TODO - implement shipping and tax calculation, possibly as a separate function
-// Most likely will need to implement update_or_create_order_from_cart in Go
-// if planning to move to different database as well...
-func (r *orderRepository) CreateOrder(ctx context.Context, userID, addressID string) (order types.Order, err error) {
-	// 1) Create or update the order from the user's cart
-	query := "SELECT update_or_create_order_from_cart($1, $2)"
-	var orderID string
-	err = r.db.QueryRowContext(ctx, query, userID, addressID).Scan(&orderID)
+func (r *orderRepository) CancelPendingOrders(ctx context.Context, userID string) error {
+	query := `
+		UPDATE orders
+		SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+		WHERE status = 'pending' AND user_id = $1
+		RETURNING id
+	`
+	if _, err := r.db.ExecContext(ctx, query, userID); err != nil {
+		return err
+	}
+	return r.restockCanceledOrderItems(ctx)
+}
+
+func (r *orderRepository) restockCanceledOrderItems(ctx context.Context) error {
+	query := `
+		WITH deleted_items AS (
+			DELETE FROM order_items oi
+			USING orders o
+			WHERE o.id = oi.order_id AND o.status = 'cancelled'
+			RETURNING oi.product_id, oi.quantity
+		)
+		UPDATE inventory i
+		SET quantity = i.quantity + di.quantity
+		FROM deleted_items di
+		WHERE i.product_id = di.product_id;
+	`
+	_, err := r.db.ExecContext(ctx, query)
+	return err
+}
+
+func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) error {
+	// Begin a transaction
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return order, err
+		return err
+	}
+	defer tx.Rollback()
+
+	// Verify addr is valid
+	if order == nil || order.Address == nil {
+		return errors.New("Order.Address.ID required when creating an order")
+	}
+	// verify userID provided
+	if order.UserID == "" {
+		return errors.New("Order.UserID required when creating an order")
 	}
 
-	// 2) Retrieve the new or updated order
-	query = `
-	  SELECT
-			o.id,
-			o.user_id,
-			o.currency,
-			o.amount,
-			o.tax_amount,
-			o.shipping_amount,
-			o.total_amount,
-			o.status,
-			a.id AS address_id,
-			a.addressee,
-			a.address_line1,
-			a.address_line2,
-			a.city,
-			a.state_code,
-			a.postal_code,
-			o.created_at,
-			o.updated_at
-		FROM orders o
-		JOIN addresses a ON o.address_id = a.id
-		WHERE o.id = $1
+	addr := order.Address
+	if err := tx.QueryRowContext(ctx, `
+		SELECT
+			id,
+			user_id,
+			addressee,
+			address_line1,
+			address_line2,
+			city,
+			state_code,
+			postal_code,
+			country_code,
+			phone,
+			created_at,
+			updated_at
+		FROM addresses
+		WHERE id = $1 AND
+			user_id = $2 AND
+			is_deleted = FALSE
+	`, order.Address.ID, order.UserID).Scan(
+		&addr.ID,
+		&addr.UserID,
+		&addr.Addressee,
+		&addr.AddressLine1,
+		&addr.AddressLine2,
+		&addr.City,
+		&addr.StateCode,
+		&addr.PostalCode,
+		&addr.CountryCode,
+		&addr.Phone,
+		&addr.CreatedAt,
+		&addr.UpdatedAt,
+	); err != nil {
+		return err
+	}
+
+	// Retrieve cart cartItems
+	var cartItems []types.CartItem
+	query := `
+		SELECT product_id, quantity, unit_price
+		FROM cart_items
+		WHERE user_id = $1
 	`
-	// Execute the query
-	order.Address = &types.Address{}
-	err = r.db.QueryRowContext(ctx, query, orderID).Scan(
+	rows, err := tx.QueryContext(ctx, query, order.UserID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var item types.CartItem
+		item.Product = types.Product{}
+		if err = rows.Scan(&item.Product.ID, &item.Quantity, &item.UnitPrice); err != nil {
+			return err
+		}
+		cartItems = append(cartItems, item)
+	}
+	if err = rows.Err(); err != nil {
+		return err
+	}
+
+	// Calculate cart total (excluding tax + shipping)
+	amount := calculateOrderAmount(cartItems)
+	if amount == 0 {
+		return errors.New("order cart is empty")
+	}
+
+	// Reduce inventory
+	if err = reduceInventory(ctx, tx, cartItems); err != nil {
+		return err
+	}
+
+	// create a new order with pending status
+	query = `
+		INSERT INTO orders (user_id, address_id, currency, amount) VALUES ($1, $2, $3, $4)
+		RETURNING id, user_id, currency, amount, status, created_at
+	`
+	if err = tx.QueryRowContext(
+		ctx, query,
+		order.UserID,
+		order.Address.ID,
+		order.Currency,
+		amount,
+	).Scan(
 		&order.ID,
 		&order.UserID,
 		&order.Currency,
 		&order.Amount,
-		&order.TaxAmount,
-		&order.ShippingAmount,
-		&order.TotalAmount,
 		&order.Status,
-		&order.Address.ID,
-		&order.Address.Addressee,
-		&order.Address.AddressLine1,
-		&order.Address.AddressLine2,
-		&order.Address.City,
-		&order.Address.StateCode,
-		&order.Address.PostalCode,
 		&order.CreatedAt,
-		&order.UpdatedAt,
-	)
+	); err != nil {
+		return err
+	}
 
-	return order, err
+	// Populate order_items table
+	query = `
+		INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+		VALUES ($1, $2, $3, $4)
+	`
+	order.Items = make([]types.OrderItem, 0, len(cartItems))
+	for _, item := range cartItems {
+		if _, err = tx.ExecContext(ctx, query,
+			order.ID,
+			item.Product.ID,
+			item.Quantity,
+			item.UnitPrice,
+		); err != nil {
+			return err
+		}
+		order.Items = append(order.Items, types.OrderItem{
+			ProductID: item.Product.ID,
+			Quantity:  item.Quantity,
+			UnitPrice: item.UnitPrice,
+		})
+	}
+
+	return tx.Commit()
+}
+
+func reduceInventory(ctx context.Context, tx *sql.Tx, items []types.CartItem) error {
+	for _, item := range items {
+		result, err := tx.ExecContext(ctx, `
+			UPDATE inventory
+			SET quantity = quantity - $1
+			WHERE quantity >= $1 AND product_id = $2
+		`, item.Quantity, item.Product.ID)
+		if err != nil {
+			return err
+		}
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rowsAffected == 0 {
+			return fmt.Errorf("%s is out of stock or insufficient quantity remains", item.Product.ID)
+		}
+	}
+	return nil
+}
+
+func calculateOrderAmount(items []types.CartItem) int64 {
+	var total int64
+	for _, item := range items {
+		total += item.UnitPrice * int64(item.Quantity)
+	}
+	return total
 }
 
 // CreateStripeEvent saves a Stripe event to the database
@@ -119,7 +254,7 @@ func (r *orderRepository) CreateStripeEvent(ctx context.Context, event types.Str
 
 // UpdateOrder updates an order with new status and/or payment intent ID
 func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) error {
-	if order.ID == "" {
+	if order == nil || order.ID == "" {
 		return fmt.Errorf("missing order ID")
 	}
 
@@ -130,6 +265,24 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	if order.Status != "" {
 		query += fmt.Sprintf(", status = $%d", argCount)
 		args = append(args, order.Status)
+		argCount++
+	}
+
+	if order.TaxAmount != 0 {
+		query += fmt.Sprintf(", tax_amount = $%d", argCount)
+		args = append(args, order.TaxAmount)
+		argCount++
+	}
+
+	if order.ShippingAmount != 0 {
+		query += fmt.Sprintf(", shipping_amount = $%d", argCount)
+		args = append(args, order.ShippingAmount)
+		argCount++
+	}
+
+	if order.TotalAmount != 0 {
+		query += fmt.Sprintf(", total_amount = $%d", argCount)
+		args = append(args, order.TotalAmount)
 		argCount++
 	}
 
@@ -310,7 +463,6 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 	if isEmptyOrderLookup(order) {
 		return fmt.Errorf("missing identifier: provide order.ID, order.UserID, or StripePaymentIntent.ID")
 	}
-
 	query := `
 		SELECT
 			o.id,

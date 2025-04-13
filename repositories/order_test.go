@@ -75,7 +75,13 @@ func TestOrderRepository_CreateOrder(t *testing.T) {
 	addToCart(t, dbPool, user.ID, productID, 2)
 
 	// Create the order
-	order, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
+	order := &types.Order{
+		UserID: user.ID,
+		Address: &types.Address{
+			ID: AddressID,
+		},
+	}
+	err := orderRepo.CreateOrder(ctx, order)
 	assert.NoError(t, err, "CreateOrder should not return an error")
 	assert.NotNil(t, order, "Order should not be nil")
 	assert.Equal(t, user.ID, order.UserID, "Order UserID should match")
@@ -110,13 +116,19 @@ func TestOrderRepository_GetOrder(t *testing.T) {
 	addToCart(t, dbPool, user.ID, productID, 2)
 
 	// 4. Create an order for the user
-	order, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
+	order := &types.Order{
+		UserID: user.ID,
+		Address: &types.Address{
+			ID: AddressID,
+		},
+	}
+	err := orderRepo.CreateOrder(ctx, order)
 	assert.NoError(t, err, "CreateOrder should not return an error")
 
 	// 5. Update the order with the mocked PaymentIntentID
 	mockPaymentIntent := &types.StripePaymentIntent{ID: "pi_mocked_payment_intent_id"}
 	order.StripePaymentIntent = mockPaymentIntent
-	err = orderRepo.UpdateOrder(ctx, &order)
+	err = orderRepo.UpdateOrder(ctx, order)
 	assert.NoError(t, err, "UpdateOrder should not return an error")
 
 	// 6. Test retrieving the order by ID
@@ -202,18 +214,30 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 	addToCart(t, dbPool, user.ID, productID2, 3)
 
 	// 4. Create multiple orders for the user
-	order1, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
+	order1 := &types.Order{
+		UserID: user.ID,
+		Address: &types.Address{
+			ID: AddressID,
+		},
+	}
+	err := orderRepo.CreateOrder(ctx, order1)
 	assert.NoError(t, err, "CreateOrder should not return an error")
 	order1.Status = types.OrderPaid
-	err = orderRepo.UpdateOrder(ctx, &order1)
+	err = orderRepo.UpdateOrder(ctx, order1)
 	assert.NoError(t, err, "UpdateOrder for order1 should not return an error")
 
 	// Add another order
 	addToCart(t, dbPool, user.ID, productID1, 1)
-	order2, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
+	order2 := &types.Order{
+		UserID: user.ID,
+		Address: &types.Address{
+			ID: AddressID,
+		},
+	}
+	err = orderRepo.CreateOrder(ctx, order2)
 	assert.NoError(t, err, "CreateOrder should not return an error")
 	order2.Status = types.OrderShipped
-	err = orderRepo.UpdateOrder(ctx, &order2)
+	err = orderRepo.UpdateOrder(ctx, order2)
 	assert.NoError(t, err, "UpdateOrder for order2 should not return an error")
 
 	// 5. Retrieve all orders for the user
@@ -341,11 +365,17 @@ func TestOrderRepository_PopulateOrderItems(t *testing.T) {
 	addToCart(t, dbPool, user.ID, productID2, 3)
 
 	// 4. Create an order for the user
-	order, err := orderRepo.CreateOrder(ctx, user.ID, AddressID)
+	order := &types.Order{
+		UserID: user.ID,
+		Address: &types.Address{
+			ID: AddressID,
+		},
+	}
+	err := orderRepo.CreateOrder(ctx, order)
 	assert.NoError(t, err, "CreateOrder should not return an error")
 
 	// 5. Prepare orders for PopulateOrderItems
-	orders := []types.Order{order}
+	orders := []types.Order{*order}
 
 	// 6. Call PopulateOrderItems
 	err = orderRepo.PopulateOrderItems(ctx, &orders)

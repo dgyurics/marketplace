@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -28,26 +29,30 @@ const (
 )
 
 type OrderService interface {
-	CreateOrder(ctx context.Context, addressID string) (types.Order, error)
+	CreateOrder(ctx context.Context, order *types.Order) error
 	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
+	// TOD0 create custom error struct (message and code)
+	// which would allow service layer to return errors with
+	// a status code when necessary
 	VerifyStripeEventSignature(payload []byte, sigHeader string) error
 	ProcessStripeEvent(ctx context.Context, event types.StripeEvent) error
 }
 
 type orderService struct {
-	orderRepo                  repositories.OrderRepository
-	cartRepo                   repositories.CartRepository
+	orderRepo  repositories.OrderRepository
+	cartRepo   repositories.CartRepository
+	HttpClient utilities.HTTPClient
+	// TODO replace below with OrderConfig
 	environment                types.Environment
 	stripeBaseURL              string
 	stripeSecretKey            string
 	stripeWebhookSigningSecret string
-	HttpClient                 utilities.HTTPClient
 }
 
 func NewOrderService(
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository,
-	config types.StripeConfig,
+	config types.StripeConfig, // FIXME replace this with OrderConfig
 	httpClient utilities.HTTPClient, // Optional: added to allow dependency injection during testing // FIXME make it required somehow
 ) OrderService {
 	if httpClient == nil {
@@ -98,6 +103,8 @@ func (os *orderService) createPaymentIntent(ctx context.Context, pi *types.Strip
 	}
 	reqStripe.SetBasicAuth(os.stripeSecretKey, "")
 	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	// FIXME include this once order ID is accessible in function signature
+	// reqStripe.Header.Add("Idempotency-Key", orderID)
 	resp, err := os.HttpClient.Do(reqStripe)
 	if err != nil {
 		slog.Error("Error sending request to Stripe API", "url", stripeURL, "error", err)
@@ -350,52 +357,74 @@ func ComputeSignature(t time.Time, payload []byte, secret string) []byte {
 	return mac.Sum(nil)
 }
 
-func (os *orderService) CreateOrder(ctx context.Context, addressID string) (types.Order, error) {
+func (os *orderService) CreateOrder(ctx context.Context, order *types.Order) error {
 	var userID = getUserID(ctx)
+	order.UserID = userID
 
-	// Cancel open/unpaid payment intent, if any
-	order := types.Order{UserID: userID}
-	os.orderRepo.GetOrder(ctx, &order)
+	// Cancel open/unpaid payment intents, if any
+	os.orderRepo.GetOrder(ctx, order) // FIXME: this is hacky since a user can have multiple orders
 	if order.Status == types.OrderPending && order.StripePaymentIntent != nil {
 		go func() {
-			os.cancelPaymentIntent(ctx, order.StripePaymentIntent.ID)
+			bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := os.cancelPaymentIntent(bgCtx, order.StripePaymentIntent.ID); err != nil {
+				slog.Error("Error canceling payment intent", "user_id", userID, "error", err)
+			}
 		}()
 	}
 
-	// TODO: include taxes and shipping when creating order
-	// Must be performed using single transaction
+	// Cancel open/unpaid orders, if any
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := os.orderRepo.CancelPendingOrders(bgCtx, userID); err != nil {
+			slog.Error("Error canceling open orders", "user_id", userID, "error", err)
+		}
+	}()
 
-	// Create order
-	order, err := os.orderRepo.CreateOrder(ctx, userID, addressID)
-	if err != nil {
+	// Create pending order
+	if err := os.orderRepo.CreateOrder(ctx, order); err != nil {
 		slog.Error("Error creating order", "user_id", userID, "error", err)
-		return types.Order{}, err
+		return err
 	}
 
 	slog.Info("Order created",
 		"order_id", order.ID,
 		"user_id", order.UserID,
+		"currency", order.Currency,
 		"amount", order.Amount,
+		"address", fmt.Sprintf("%v\n", order.Address),
+		"shipping_amount", order.ShippingAmount,
 		"tax_amount", order.TaxAmount,
 		"total_amount", order.TotalAmount,
 	)
 
-	// Create payment intent
+	// TODO calculate shipping
+
+	// Calculate tax
+	if err := os.calculateTax(ctx, order); err != nil {
+		slog.Error("Error calculating taxes", "order_id", order.ID, "error", err)
+		return err
+	}
+	order.TotalAmount = order.Amount + order.ShippingAmount + order.TaxAmount
+
+	// Create payment intent for Stripe
 	pi := &types.StripePaymentIntent{
 		Amount:   order.TotalAmount,
-		Currency: "usd",
+		Currency: order.Currency,
 	}
-	// Create payment intent in Stripe
-	if err = os.createPaymentIntent(ctx, pi); err != nil {
-		return types.Order{}, err
+	if err := os.createPaymentIntent(ctx, pi); err != nil {
+		return err
 	}
 
+	// unset client secret to avoid storing it in the database
+	// store original value in variable so we can re-apply/reset it before returning order (secret is needed by UI)
 	clientSecret := pi.ClientSecret
-	pi.ClientSecret = "" // unset client secret, it is not needed in the database
+	pi.ClientSecret = ""
 
-	// Update order without client_secret
+	// Update order payment intent
 	order.StripePaymentIntent = pi
-	if err = os.orderRepo.UpdateOrder(ctx, &order); err != nil {
+	if err := os.orderRepo.UpdateOrder(ctx, order); err != nil {
 		slog.Error(
 			"Error updating order",
 			"order_id", order.ID,
@@ -403,63 +432,85 @@ func (os *orderService) CreateOrder(ctx context.Context, addressID string) (type
 			"stripe_payment_intent_id", pi.ID,
 			"error", err,
 		)
-		return types.Order{}, err
+		return err
 	}
 
-	// Restore client_secret only in the returned struct
 	order.StripePaymentIntent.ClientSecret = clientSecret
-	return order, err
+	return nil
 }
 
-// PLACEHOLDER: TODO
-func (os *orderService) sendDummyTaxCalculation(ctx context.Context) error {
+func (os *orderService) calculateTax(ctx context.Context, order *types.Order) error {
 	form := url.Values{}
-	form.Set("currency", "usd")
+	form.Set("currency", order.Currency)
 
-	// Line item 1
-	form.Set("line_items[0][amount]", "2000") // $20.00
-	form.Set("line_items[0][quantity]", "1")
-	form.Set("line_items[0][reference]", "chair-001")
-	form.Set("line_items[0][tax_behavior]", "exclusive")
-	form.Set("line_items[0][tax_code]", "txcd_99999999")
+	if len(order.Items) == 0 {
+		return errors.New("order has no items")
+	}
+	if order.Address.CountryCode == "" {
+		return errors.New("missing country code")
+	}
 
-	// Line item 2
-	form.Set("line_items[1][amount]", "1500") // $15.00
-	form.Set("line_items[1][quantity]", "2")
-	form.Set("line_items[1][reference]", "lamp-002")
-	form.Set("line_items[1][tax_behavior]", "exclusive")
-	form.Set("line_items[1][tax_code]", "txcd_99999999")
+	// Line Items
+	for i, item := range order.Items {
+		itmQty := int64(item.Quantity)
+		form.Set(fmt.Sprintf("line_items[%d][amount]", i), strconv.FormatInt(item.UnitPrice*itmQty, 10))
+		form.Set(fmt.Sprintf("line_items[%d][quantity]", i), strconv.FormatInt(itmQty, 10))
+		form.Set(fmt.Sprintf("line_items[%d][reference]", i), fmt.Sprintf("%s-%s", order.ID, item.ProductID))
+		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), "exclusive") // TODO make configurable (exclusive/inclusive)
+		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), "txcd_99999999") // TODO make configurable
+	}
 
-	// Customer address
-	form.Set("customer_details[address_source]", "shipping")
-	form.Set("customer_details[address][country]", "US")
-	form.Set("customer_details[address][state]", "CA")
-	form.Set("customer_details[address][postal_code]", "94107")
+	// Customer Address
+	form.Set("customer_details[address_source]", "shipping") // FIXME make configurable (need way to retrieve billing address)
+	form.Set("customer_details[address][country]", order.Address.CountryCode)
+	form.Set("customer_details[address][city]", order.Address.City)
+	form.Set("customer_details[address][line1]", order.Address.AddressLine1)
+	if line2 := order.Address.AddressLine2; line2 != nil && *line2 != "" {
+		form.Set("customer_details[address][line2]", *line2)
+	}
+	form.Set("customer_details[address][state]", order.Address.StateCode)
+	form.Set("customer_details[address][postal_code]", order.Address.PostalCode)
 
+	// TODO make url configurable
 	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.stripe.com/v1/tax/calculations", bytes.NewBufferString(form.Encode()))
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		if errors.Is(err, context.Canceled) {
+			return fmt.Errorf("tax calculation canceled: %w", err)
+		}
+		return err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+os.stripeSecretKey)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Idempotency-Key", order.ID)
 
 	resp, err := os.HttpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
+		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Stripe returned status %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("stripe returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return fmt.Errorf("failed to decode response: %w", err)
+	var tax types.StripeTaxCalculationResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tax); err != nil {
+		return err
 	}
 
-	out, _ := json.MarshalIndent(result, "", "  ")
-	slog.Info("Stripe tax calculation result", "response", string(out))
+	slog.Debug("Tax estimate retrieved",
+		"order_id", order.ID,
+		"order_tax_amount_exclusing", tax.TaxAmountExclusive,
+		"order_tax_amount_inclusive", tax.TaxAmountInclusive,
+		"order_total_amount", tax.AmountTotal,
+	)
+	if tax.TaxAmountExclusive == 0 {
+		order.TaxAmount = tax.TaxAmountInclusive
+	} else {
+		order.TaxAmount = tax.TaxAmountExclusive
+	}
+	order.TotalAmount = tax.AmountTotal
 	return nil
 }

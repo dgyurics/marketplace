@@ -28,9 +28,9 @@ func (m *MockOrderService) ProcessStripeEvent(ctx context.Context, event types.S
 	return args.Error(0)
 }
 
-func (m *MockOrderService) CreateOrder(ctx context.Context, addressID string) (types.Order, error) {
-	args := m.Called(ctx, addressID)
-	return args.Get(0).(types.Order), args.Error(1)
+func (m *MockOrderService) CreateOrder(ctx context.Context, order *types.Order) error {
+	args := m.Called(ctx, order)
+	return args.Error(0)
 }
 
 func (m *MockOrderService) GetOrders(ctx context.Context, page, limit int) ([]types.Order, error) {
@@ -50,16 +50,18 @@ func TestCreateOrder(t *testing.T) {
 
 	// Prepare mock data for the request and expected response
 	expectedAddressID := "address123"
-	expectedResponse := types.Order{
-		Status: types.OrderPending,
+	expectedOrder := &types.Order{
+		Address:  &types.Address{ID: expectedAddressID},
+		Currency: "USD",
 	}
 
 	// Mock the CreateOrder method
-	mockOrderService.On("CreateOrder", mock.Anything, expectedAddressID).Return(expectedResponse, nil)
+	mockOrderService.On("CreateOrder", mock.Anything, expectedOrder).Return(nil)
 
 	// Create a new HTTP POST request with a JSON body containing the addressID
 	requestBody := map[string]string{
 		"address_id": expectedAddressID,
+		"currency":   "USD",
 	}
 	body, err := json.Marshal(requestBody)
 	require.NoError(t, err)
@@ -84,9 +86,6 @@ func TestCreateOrder(t *testing.T) {
 	var response types.Order
 	err = json.NewDecoder(rr.Body).Decode(&response)
 	require.NoError(t, err)
-
-	// Verify that the response matches the expected response
-	require.Equal(t, expectedResponse.Status, response.Status)
 
 	// Assert that the mock's expectations were met
 	mockOrderService.AssertExpectations(t)

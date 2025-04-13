@@ -79,6 +79,14 @@ const (
 	Production  Environment = "production"
 )
 
+// TODO implement this in order service
+type OrderConfig struct {
+	Envirnment         Environment
+	DefaultTaxCode     string
+	DefaultTaxBehavior string
+	// StripeConfig
+}
+
 type StripeConfig struct {
 	Envirnment           Environment // FIXME remove this as it already exists in the config
 	BaseURL              string      // https://api.stripe.com

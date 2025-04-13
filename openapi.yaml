@@ -679,7 +679,10 @@ paths:
   /orders:
     post:
       summary: Create a new order
-      description: Creates a new order using the provided address and current cart items, returning a full Order object.
+      description: |
+        Creates a new order using the provided address and current cart items, returning a full Order object.
+        This endpoint should be called before the customer enters their credit card information and sends it to the payment handler.
+        It creates a pending order with computed totals for tax and shipping, allowing the customer to review the final amount before proceeding with payment.
       tags:
         - Orders
       security:
@@ -694,6 +697,9 @@ paths:
                 address_id:
                   type: string
                   example: "address-789"
+                currency:
+                  type: string
+                  example: "usd"
       responses:
         "200":
           description: Order created

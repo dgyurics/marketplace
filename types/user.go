@@ -29,9 +29,10 @@ func (u *User) IsGuest() bool {
 type Address struct {
 	ID           string    `json:"id"`
 	UserID       string    `json:"user_id"`
+	CountryCode  string    `json:"country_code"`
 	Addressee    *string   `json:"addressee"`
-	AddressLine1 string    `json:"address_line1"`
-	AddressLine2 *string   `json:"address_line2"`
+	AddressLine1 string    `json:"address_line1"` // rename to line1
+	AddressLine2 *string   `json:"address_line2"` // rename to line2
 	City         string    `json:"city"`
 	StateCode    string    `json:"state_code"`
 	PostalCode   string    `json:"postal_code"`

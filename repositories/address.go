@@ -62,9 +62,10 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 			city,
 			state_code,
 			postal_code,
+			country_code,
 			phone
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, user_id, created_at, updated_at
 	`
 
@@ -76,13 +77,27 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 		address.City,
 		address.StateCode,
 		address.PostalCode,
+		address.CountryCode,
 		address.Phone,
 	).Scan(&address.ID, &address.UserID, &address.CreatedAt, &address.UpdatedAt)
 }
 
 func (r *addressRepository) GetAddresses(ctx context.Context, userID string) ([]types.Address, error) {
 	query := `
-		SELECT id, user_id, addressee, address_line1, address_line2, city, state_code, postal_code, phone, is_deleted, created_at, updated_at
+		SELECT
+			id,
+			user_id,
+			addressee,
+			address_line1,
+			address_line2,
+			city,
+			state_code,
+			postal_code,
+			country_code,
+			phone,
+			is_deleted,
+			created_at,
+			updated_at
 		FROM addresses
 		WHERE user_id = $1 AND is_deleted = FALSE
 	`
@@ -105,6 +120,7 @@ func (r *addressRepository) GetAddresses(ctx context.Context, userID string) ([]
 			&address.City,
 			&address.StateCode,
 			&address.PostalCode,
+			&address.CountryCode,
 			&address.Phone,
 			&address.IsDeleted,
 			&address.CreatedAt,
