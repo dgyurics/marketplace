@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/types/stripe"
 )
 
 type OrderRepository interface {
@@ -18,7 +19,7 @@ type OrderRepository interface {
 	PopulateOrderItems(ctx context.Context, orders *[]types.Order) error
 	CreateOrder(ctx context.Context, order *types.Order) error
 	UpdateOrder(ctx context.Context, order *types.Order) error
-	CreateStripeEvent(ctx context.Context, event types.StripeEvent) error
+	CreateStripeEvent(ctx context.Context, event stripe.Event) error
 	CancelPendingOrders(ctx context.Context, userID string) error
 }
 
@@ -226,7 +227,7 @@ func calculateOrderAmount(items []types.CartItem) int64 {
 }
 
 // CreateStripeEvent saves a Stripe event to the database
-func (r *orderRepository) CreateStripeEvent(ctx context.Context, event types.StripeEvent) error {
+func (r *orderRepository) CreateStripeEvent(ctx context.Context, event stripe.Event) error {
 	if event.Data != nil {
 		event.Data.Object.ClientSecret = ""
 	}
@@ -371,7 +372,7 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 		}
 
 		if len(rawIntent) > 0 {
-			var spi types.StripePaymentIntent
+			var spi stripe.PaymentIntent
 			if err := json.Unmarshal(rawIntent, &spi); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal Stripe payment intent: %w", err)
 			}
@@ -505,7 +506,7 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 
 	// Execute the query
 	order.Address = &types.Address{}
-	order.StripePaymentIntent = &types.StripePaymentIntent{} // Avoid overwriting the existing pointer
+	order.StripePaymentIntent = &stripe.PaymentIntent{} // Avoid overwriting the existing pointer
 	var rawIntent []byte
 	err := r.db.QueryRowContext(ctx, query, args...).Scan(
 		&order.ID,
@@ -535,7 +536,7 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 
 	// Unmarshal the Stripe payment intent if it exists
 	if len(rawIntent) > 0 {
-		var spi types.StripePaymentIntent
+		var spi stripe.PaymentIntent
 		err = json.Unmarshal(rawIntent, &spi)
 		if err != nil {
 			return fmt.Errorf("failed to unmarshal Stripe payment intent: %w", err)

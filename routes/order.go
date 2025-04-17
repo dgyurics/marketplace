@@ -7,6 +7,7 @@ import (
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/types/stripe"
 	u "github.com/dgyurics/marketplace/utilities"
 )
 
@@ -36,19 +37,17 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate that the addressID is provided
+	// Validate addressID is provided
 	if requestBody.AddressID == "" {
 		u.RespondWithError(w, r, http.StatusBadRequest, "Address ID is required")
 		return
 	}
 
-	// TODO Validate that the currency is provided
+	// Validate that the currency is provided
 	if requestBody.Currency == "" {
 		u.RespondWithError(w, r, http.StatusBadRequest, "Currency is required")
 		return
 	}
-
-	// TODO Validate address exists for user
 
 	// Create the order
 	order := types.Order{
@@ -70,7 +69,7 @@ func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var event types.StripeEvent
+	var event stripe.Event
 	if err := json.Unmarshal(body, &event); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
 		return

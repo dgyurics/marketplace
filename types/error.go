@@ -4,14 +4,18 @@ package types
 type HTTPError struct {
 	Message    string
 	StatusCode int
-	Error      error
+	err        error
 }
 
-func NewAPIError(statusCode int, message string, err error) *HTTPError {
-	return &HTTPError{
+func (h HTTPError) Error() string {
+	return ""
+}
+
+func NewAPIError(statusCode int, message string, err error) HTTPError {
+	return HTTPError{
 		StatusCode: statusCode,
 		Message:    message,
-		Error:      err,
+		err:        err,
 	}
 }
 

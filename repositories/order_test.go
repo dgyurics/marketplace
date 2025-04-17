@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/types/stripe"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -126,7 +127,7 @@ func TestOrderRepository_GetOrder(t *testing.T) {
 	assert.NoError(t, err, "CreateOrder should not return an error")
 
 	// 5. Update the order with the mocked PaymentIntentID
-	mockPaymentIntent := &types.StripePaymentIntent{ID: "pi_mocked_payment_intent_id"}
+	mockPaymentIntent := &stripe.PaymentIntent{ID: "pi_mocked_payment_intent_id"}
 	order.StripePaymentIntent = mockPaymentIntent
 	err = orderRepo.UpdateOrder(ctx, order)
 	assert.NoError(t, err, "UpdateOrder should not return an error")
@@ -182,7 +183,7 @@ func TestOrderRepository_GetOrder_MissingOrder(t *testing.T) {
 	assert.Contains(t, err.Error(), "order not found", "The error message should indicate that the order was not found")
 
 	// Test case 3: Missing Order by PaymentIntentID
-	missingOrder = &types.Order{StripePaymentIntent: &types.StripePaymentIntent{ID: "pi_missing_payment_intent_id"}}
+	missingOrder = &types.Order{StripePaymentIntent: &stripe.PaymentIntent{ID: "pi_missing_payment_intent_id"}}
 	err = orderRepo.GetOrder(ctx, missingOrder)
 	assert.Error(t, err, "GetOrder by PaymentIntentID should return an error for a nonexistent PaymentIntentID")
 	assert.Contains(t, err.Error(), "order not found", "The error message should indicate that the order was not found")
@@ -297,11 +298,11 @@ func TestOrderRepository_CreateStripeEvent(t *testing.T) {
 	orderRepo := NewOrderRepository(dbPool)
 
 	// 1. Define a test Stripe event
-	event := types.StripeEvent{
+	event := stripe.Event{
 		ID:   "evt_test_123",
 		Type: "payment_intent.succeeded",
-		Data: &types.StripeData{
-			Object: types.StripePaymentIntent{
+		Data: &stripe.Data{
+			Object: stripe.PaymentIntent{
 				ID:           "pi_test_123",
 				Status:       "succeeded",
 				Amount:       1000,

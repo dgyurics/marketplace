@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/types/stripe"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,7 @@ func (m *MockOrderService) VerifyStripeEventSignature(payload []byte, sigHeader 
 	return args.Error(0)
 }
 
-func (m *MockOrderService) ProcessStripeEvent(ctx context.Context, event types.StripeEvent) error {
+func (m *MockOrderService) ProcessStripeEvent(ctx context.Context, event stripe.Event) error {
 	args := m.Called(ctx, event)
 	return args.Error(0)
 }

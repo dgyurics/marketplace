@@ -21,7 +21,7 @@ func LoadConfig() types.Config {
 		Database:     loadDBConfig(),
 		Email:        loadMailConfig(),
 		Logger:       LoadLoggerConfig(),
-		Stripe:       loadStripeConfig(),
+		Order:        loadOrderConfig(),
 		JWT:          loadJWTConfig(),
 		TemplatesDir: loadTemplatesDir(),
 		BaseURL:      loadBaseURL(),
@@ -74,9 +74,16 @@ func loadJWTConfig() types.JWTConfig {
 	}
 }
 
+func loadOrderConfig() types.OrderConfig {
+	return types.OrderConfig{
+		DefaultTaxCode:     getEnv("ORDER_DEFAULT_TAX_CODE"),
+		DefaultTaxBehavior: getEnv("ORDER_DEFAULT_TAX_BEHAVIOR"),
+		StripeConfig:       loadStripeConfig(),
+	}
+}
+
 func loadStripeConfig() types.StripeConfig {
 	return types.StripeConfig{
-		Envirnment:           loadEnvironment(), // FIXME remove this as it already exists in the config
 		BaseURL:              getEnv("STRIPE_BASE_URL"),
 		SecretKey:            getEnv("STRIPE_SECRET_KEY"),
 		WebhookSigningSecret: getEnv("STRIPE_WEBHOOK_SIGNING_SECRET"),

@@ -2,9 +2,21 @@ package utilities
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
+
+	"github.com/dgyurics/marketplace/types"
 )
+
+func HandleError(w http.ResponseWriter, r *http.Request, err error) {
+	var httpErr *types.HTTPError
+	if errors.As(err, &httpErr) {
+		RespondWithError(w, r, httpErr.StatusCode, httpErr.Message)
+		return
+	}
+	RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+}
 
 // RespondWithError logs the error and responds with a generic error message
 // Exposing the actual error to the client can be a security risk
@@ -17,7 +29,6 @@ func RespondWithError(w http.ResponseWriter, r *http.Request, code int, message 
 		"ip", getIPAddress(r),
 		"user_agent", r.UserAgent(),
 		"referer", r.Referer(),
-		"request_body", r.Body,
 	)
 	// Respond with a generic error message
 	switch code {

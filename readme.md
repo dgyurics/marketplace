@@ -7,12 +7,12 @@
 </p>
 <h2>Features</h2>
 <ul>
-  <li><strong>Product Management:</strong> CRUD operations for products, including categorization and basic inventory management.</li>
-  <li><strong>User Authentication:</strong> JWT-based user authentication, supporting registration and login functionalities.</li>
   <li><strong>Shopping Cart:</strong> Manage user shopping carts, calculate totals, and track item quantities.</li>
-  <li><strong>Logging:</strong> Structured logging for monitoring and debugging.</li>
+  <li><strong>Payments:</strong> Stripe integration for calculating tax and processing payments.</li>
+  <li><strong>User Authentication:</strong> JWT-based user authorization and authentication.</li>
+  <li><strong>Logging:</strong> Structured logging for monitoring and debugging in a distributed environment.</li>
   <li><strong>Order Management:</strong> Create and manage orders, including order status tracking.</li>
-  <li><strong>Payments:</strong> Stripe integration for processing payments.</li>
+  <li><strong>Product Management:</strong> CRUD operations for products, including categorization and basic inventory management.</li>
 </ul>
 
 <h2>Planned Enhancements</h2>
@@ -22,7 +22,6 @@
   <li><strong>Search and Filtering:</strong> Advanced search capabilities, allowing users to find products through keyword and fuzzy searches.</li>
   <li><strong>Caching:</strong> Implement API caching to improve performance.</li>
   <li><strong>Rate Limiting:</strong> Protect the API from abuse with rate limiting.</li>
-  <li><strong>Database-agnostic:</strong> Full support for PostgreSQL and CockroachDB with no additional setup.</li>
   <li><strong>Cart Item Limits:</strong> Implement cart item limits to prevent abuse.</li>
   <li><strong>Product Variants:</strong> Support product variants (e.g., size, color) and manage inventory for each variant (SKU).</li>
   <li><strong>Product Meta-Data:</strong> Support product meta-data (e.g., material, weight, dimensions) to enhance product details.</li>
@@ -42,5 +41,5 @@
 <h2>Prerequisites</h2>
 <ul>
   <li>Go 1.22 or higher</li>
-  <li>Docker and Docker Compose</li>
+  <li>Docker</li>
 </ul>

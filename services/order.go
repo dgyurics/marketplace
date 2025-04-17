@@ -17,10 +17,9 @@ import (
 	"strings"
 	"time"
 
-	mathrand "math/rand"
-
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/types/stripe"
 	"github.com/dgyurics/marketplace/utilities"
 )
 
@@ -31,41 +30,31 @@ const (
 type OrderService interface {
 	CreateOrder(ctx context.Context, order *types.Order) error
 	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
-	// TOD0 create custom error struct (message and code)
-	// which would allow service layer to return errors with
-	// a status code when necessary
 	VerifyStripeEventSignature(payload []byte, sigHeader string) error
-	ProcessStripeEvent(ctx context.Context, event types.StripeEvent) error
+	ProcessStripeEvent(ctx context.Context, event stripe.Event) error
 }
 
 type orderService struct {
 	orderRepo  repositories.OrderRepository
 	cartRepo   repositories.CartRepository
 	HttpClient utilities.HTTPClient
-	// TODO replace below with OrderConfig
-	environment                types.Environment
-	stripeBaseURL              string
-	stripeSecretKey            string
-	stripeWebhookSigningSecret string
+	config     types.OrderConfig
 }
 
 func NewOrderService(
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository,
-	config types.StripeConfig, // FIXME replace this with OrderConfig
-	httpClient utilities.HTTPClient, // Optional: added to allow dependency injection during testing // FIXME make it required somehow
+	config types.OrderConfig,
+	httpClient utilities.HTTPClient,
 ) OrderService {
 	if httpClient == nil {
 		httpClient = utilities.NewDefaultHTTPClient(10 * time.Second)
 	}
 	return &orderService{
-		orderRepo:                  orderRepo,
-		cartRepo:                   cartRepo,
-		environment:                config.Envirnment,
-		stripeBaseURL:              config.BaseURL,
-		stripeSecretKey:            config.SecretKey,
-		stripeWebhookSigningSecret: config.WebhookSigningSecret,
-		HttpClient:                 httpClient,
+		orderRepo:  orderRepo,
+		cartRepo:   cartRepo,
+		HttpClient: httpClient,
+		config:     config,
 	}
 }
 
@@ -82,7 +71,8 @@ func (os *orderService) GetOrders(ctx context.Context, page, limit int) ([]types
 }
 
 // Call Stripe API to create a payment intent
-func (os *orderService) createPaymentIntent(ctx context.Context, pi *types.StripePaymentIntent) error {
+// for a given order
+func (os *orderService) createOrderPaymentIntent(ctx context.Context, orderID string, pi *stripe.PaymentIntent) error {
 	if pi.Currency == "" {
 		return errors.New("missing currency")
 	}
@@ -90,21 +80,17 @@ func (os *orderService) createPaymentIntent(ctx context.Context, pi *types.Strip
 		return errors.New("missing or invalid amount")
 	}
 
-	if os.environment != "production" {
-		return os.mockPaymentRequest(ctx, pi)
-	}
-
-	stripeURL := fmt.Sprintf("%s/payment_intents", os.stripeBaseURL)
+	stripeURL := fmt.Sprintf("%s/payment_intents", os.config.BaseURL)
 	data := fmt.Sprintf("amount=%d&currency=%s&payment_method_types[]=card", pi.Amount, pi.Currency)
 	reqBody := bytes.NewBufferString(data)
 	reqStripe, err := http.NewRequestWithContext(ctx, "POST", stripeURL, reqBody)
 	if err != nil {
 		return err
 	}
-	reqStripe.SetBasicAuth(os.stripeSecretKey, "")
+
+	reqStripe.SetBasicAuth(os.config.SecretKey, "")
 	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	// FIXME include this once order ID is accessible in function signature
-	// reqStripe.Header.Add("Idempotency-Key", orderID)
+	reqStripe.Header.Add("Idempotency-Key", fmt.Sprintf("pi-%s", orderID))
 	resp, err := os.HttpClient.Do(reqStripe)
 	if err != nil {
 		slog.Error("Error sending request to Stripe API", "url", stripeURL, "error", err)
@@ -119,29 +105,6 @@ func (os *orderService) createPaymentIntent(ctx context.Context, pi *types.Strip
 	}
 
 	return json.NewDecoder(resp.Body).Decode(pi)
-}
-
-func (os *orderService) mockPaymentRequest(ctx context.Context, pi *types.StripePaymentIntent) error {
-	// Simulate network delay with context handling
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(2 * time.Second):
-	}
-
-	// Simulate failure or success
-	failure := mathrand.Intn(10) == 0 // 10% chance of failure
-	if failure {
-		pi.Status = "failed"
-		pi.Error = "incorrect_payment_details"
-	} else {
-		pi.Status = "pending"
-		pi.Error = ""
-		pi.ID = fmt.Sprintf("fake_payment_intent_%d", mathrand.Intn(1000000))
-		pi.ClientSecret = fmt.Sprintf("%s-%d", "fake_secret", mathrand.Intn(1000000))
-	}
-
-	return nil
 }
 
 // [payload] raw request body
@@ -188,7 +151,7 @@ func (os *orderService) VerifyStripeEventSignature(payload []byte, sigHeader str
 	// Compare expected signature with provided signatures
 	// Use a constant-time comparison function to mitigate timing attacks
 	// If a matching signature is found, return nil
-	expectedSignature := ComputeSignature(ts, payload, os.stripeWebhookSigningSecret)
+	expectedSignature := ComputeSignature(ts, payload, os.config.WebhookSigningSecret)
 	for _, signature := range signatures {
 		if hmac.Equal(signature, expectedSignature) {
 			return nil
@@ -200,7 +163,7 @@ func (os *orderService) VerifyStripeEventSignature(payload []byte, sigHeader str
 }
 
 // ProcessStripeEvent processes a Stripe event. It is idompotent
-func (os *orderService) ProcessStripeEvent(ctx context.Context, event types.StripeEvent) error {
+func (os *orderService) ProcessStripeEvent(ctx context.Context, event stripe.Event) error {
 	// save raw event data
 	if err := os.orderRepo.CreateStripeEvent(ctx, event); err != nil {
 		return err
@@ -222,7 +185,7 @@ func (os *orderService) ProcessStripeEvent(ctx context.Context, event types.Stri
 
 // paymentIntentCreated is called when a Stripe event is received for a payment intent creation.
 // A matching payment entry should be found in the orders table
-func (os *orderService) paymentIntentCreated(ctx context.Context, event types.StripeEvent) error {
+func (os *orderService) paymentIntentCreated(ctx context.Context, event stripe.Event) error {
 	paymentIntent := event.Data.Object
 	// verify event has matching entry in payment table
 	order := &types.Order{
@@ -246,7 +209,7 @@ func (os *orderService) paymentIntentCreated(ctx context.Context, event types.St
 
 // paymentIntentSucceeded is called when a Stripe event is received for a payment intent success
 // A matching payment entry should be found in the orders table
-func (os *orderService) paymentIntentSucceeded(ctx context.Context, event types.StripeEvent) error {
+func (os *orderService) paymentIntentSucceeded(ctx context.Context, event stripe.Event) error {
 	paymentIntent := event.Data.Object
 	order := &types.Order{
 		StripePaymentIntent: &paymentIntent,
@@ -297,18 +260,14 @@ func (os *orderService) cancelPaymentIntent(ctx context.Context, paymentIntentID
 		return errors.New("missing payment intent ID")
 	}
 
-	if os.environment != "production" {
-		return nil // no-op in development
-	}
-
-	stripeURL := fmt.Sprintf("%s/payment_intents/%s/cancel", os.stripeBaseURL, paymentIntentID)
+	stripeURL := fmt.Sprintf("%s/payment_intents/%s/cancel", os.config.BaseURL, paymentIntentID)
 	client := &http.Client{}
 
 	reqStripe, err := http.NewRequestWithContext(ctx, "POST", stripeURL, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create Stripe cancel request: %w", err)
 	}
-	reqStripe.SetBasicAuth(os.stripeSecretKey, "")
+	reqStripe.SetBasicAuth(os.config.SecretKey, "")
 	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := client.Do(reqStripe)
@@ -409,11 +368,11 @@ func (os *orderService) CreateOrder(ctx context.Context, order *types.Order) err
 	order.TotalAmount = order.Amount + order.ShippingAmount + order.TaxAmount
 
 	// Create payment intent for Stripe
-	pi := &types.StripePaymentIntent{
+	pi := &stripe.PaymentIntent{
 		Amount:   order.TotalAmount,
 		Currency: order.Currency,
 	}
-	if err := os.createPaymentIntent(ctx, pi); err != nil {
+	if err := os.createOrderPaymentIntent(ctx, order.ID, pi); err != nil {
 		return err
 	}
 
@@ -456,8 +415,8 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 		form.Set(fmt.Sprintf("line_items[%d][amount]", i), strconv.FormatInt(item.UnitPrice*itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][quantity]", i), strconv.FormatInt(itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][reference]", i), fmt.Sprintf("%s-%s", order.ID, item.ProductID))
-		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), "exclusive") // TODO make configurable (exclusive/inclusive)
-		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), "txcd_99999999") // TODO make configurable
+		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), os.config.DefaultTaxBehavior)
+		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), os.config.DefaultTaxCode)
 	}
 
 	// Customer Address
@@ -471,8 +430,8 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 	form.Set("customer_details[address][state]", order.Address.StateCode)
 	form.Set("customer_details[address][postal_code]", order.Address.PostalCode)
 
-	// TODO make url configurable
-	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.stripe.com/v1/tax/calculations", bytes.NewBufferString(form.Encode()))
+	url := fmt.Sprintf("%s/tax/calculations", os.config.BaseURL)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBufferString(form.Encode()))
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return fmt.Errorf("tax calculation canceled: %w", err)
@@ -480,7 +439,7 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 		return err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+os.stripeSecretKey)
+	req.Header.Set("Authorization", "Bearer "+os.config.SecretKey)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Idempotency-Key", order.ID)
 
@@ -495,7 +454,7 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 		return fmt.Errorf("stripe returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var tax types.StripeTaxCalculationResponse
+	var tax stripe.TaxCalculationResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tax); err != nil {
 		return err
 	}

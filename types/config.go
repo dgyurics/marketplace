@@ -16,7 +16,7 @@ type Config struct {
 	JWT          JWTConfig
 	Logger       LoggerConfig
 	Server       ServerConfig
-	Stripe       StripeConfig
+	Order        OrderConfig
 	TemplatesDir string // path to the directory containing email templates
 }
 
@@ -79,17 +79,14 @@ const (
 	Production  Environment = "production"
 )
 
-// TODO implement this in order service
 type OrderConfig struct {
-	Envirnment         Environment
 	DefaultTaxCode     string
 	DefaultTaxBehavior string
-	// StripeConfig
+	StripeConfig
 }
 
 type StripeConfig struct {
-	Envirnment           Environment // FIXME remove this as it already exists in the config
-	BaseURL              string      // https://api.stripe.com
-	SecretKey            string      // sk_test_xxxxxxxxxxxxxxxxxxxxxxxx
-	WebhookSigningSecret string      // whsec_xxxxxxxxxxxxxxxxxxxxxxxx
+	BaseURL              string // https://api.stripe.com
+	SecretKey            string // sk_test_xxxxxxxxxxxxxxxxxxxxxxxx
+	WebhookSigningSecret string // whsec_xxxxxxxxxxxxxxxxxxxxxxxx
 }
