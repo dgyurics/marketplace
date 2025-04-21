@@ -317,3 +317,86 @@ func TestUnixTimestampToTime_Invalid(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 }
+
+func TestCancelPaymentIntent_Success(t *testing.T) {
+	httpClient := &MockHTTPClient{}
+	orderSvc := &orderService{
+		HttpClient: httpClient,
+		config: types.OrderConfig{
+			StripeConfig: types.StripeConfig{
+				BaseURL:   "https://api.stripe.com/v1",
+				SecretKey: "sk_test_123",
+			},
+		},
+	}
+
+	intentID := "pi_123"
+	response := `{"id":"pi_123","status":"canceled"}`
+
+	httpClient.On("Do", mock.Anything).Return(&http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(response)),
+	}, nil)
+
+	ctx := context.Background()
+	err := orderSvc.cancelPaymentIntent(ctx, intentID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	httpClient.AssertExpectations(t)
+}
+
+func TestCancelPaymentIntent_FailedCancel(t *testing.T) {
+	httpClient := &MockHTTPClient{}
+	orderSvc := &orderService{
+		HttpClient: httpClient,
+		config: types.OrderConfig{
+			StripeConfig: types.StripeConfig{
+				BaseURL:   "https://api.stripe.com/v1",
+				SecretKey: "sk_test_123",
+			},
+		},
+	}
+
+	intentID := "pi_123"
+	response := `{"id":"pi_123","status":"requires_payment_method"}`
+
+	httpClient.On("Do", mock.Anything).Return(&http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(response)),
+	}, nil)
+
+	ctx := context.Background()
+	err := orderSvc.cancelPaymentIntent(ctx, intentID)
+	if err == nil || !strings.Contains(err.Error(), "was not canceled") {
+		t.Fatalf("expected error for non-canceled intent, got %v", err)
+	}
+	httpClient.AssertExpectations(t)
+}
+
+func TestCancelPaymentIntent_BadStatus(t *testing.T) {
+	httpClient := &MockHTTPClient{}
+	orderSvc := &orderService{
+		HttpClient: httpClient,
+		config: types.OrderConfig{
+			StripeConfig: types.StripeConfig{
+				BaseURL:   "https://api.stripe.com/v1",
+				SecretKey: "sk_test_123",
+			},
+		},
+	}
+
+	intentID := "pi_123"
+
+	httpClient.On("Do", mock.Anything).Return(&http.Response{
+		StatusCode: http.StatusBadRequest,
+		Body:       io.NopCloser(strings.NewReader(`{}`)),
+	}, nil)
+
+	ctx := context.Background()
+	err := orderSvc.cancelPaymentIntent(ctx, intentID)
+	if err == nil {
+		t.Fatal("expected error for bad status code, got nil")
+	}
+	httpClient.AssertExpectations(t)
+}

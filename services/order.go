@@ -70,41 +70,55 @@ func (os *orderService) GetOrders(ctx context.Context, page, limit int) ([]types
 	return orders, nil
 }
 
-// Call Stripe API to create a payment intent
-// for a given order
+// Call Stripe API to create a payment intent for a given order
 func (os *orderService) createOrderPaymentIntent(ctx context.Context, orderID string, pi *stripe.PaymentIntent) error {
+	// Validate input
 	if pi.Currency == "" {
 		return errors.New("missing currency")
 	}
 	if pi.Amount <= 0 {
-		return errors.New("missing or invalid amount")
+		return errors.New("invalid amount")
 	}
 
-	stripeURL := fmt.Sprintf("%s/payment_intents", os.config.BaseURL)
-	data := fmt.Sprintf("amount=%d&currency=%s&payment_method_types[]=card", pi.Amount, pi.Currency)
-	reqBody := bytes.NewBufferString(data)
-	reqStripe, err := http.NewRequestWithContext(ctx, "POST", stripeURL, reqBody)
+	// Prepare request
+	stripeURL := fmt.Sprintf("%s/payment_intents", os.config.StripeConfig.BaseURL)
+	payload := url.Values{
+		"amount":                 {strconv.FormatInt(pi.Amount, 10)},
+		"currency":               {pi.Currency},
+		"payment_method_types[]": {"card"},
+	}
+	reqBody := strings.NewReader(payload.Encode())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, stripeURL, reqBody)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	reqStripe.SetBasicAuth(os.config.SecretKey, "")
-	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	reqStripe.Header.Add("Idempotency-Key", fmt.Sprintf("pi-%s", orderID))
-	resp, err := os.HttpClient.Do(reqStripe)
+	// Set headers
+	req.SetBasicAuth(os.config.StripeConfig.SecretKey, "")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Idempotency-Key", fmt.Sprintf("pi-%s", orderID))
+
+	// Execute request
+	resp, err := os.HttpClient.Do(req)
 	if err != nil {
-		slog.Error("Error sending request to Stripe API", "url", stripeURL, "error", err)
-		return err
+		slog.Error("Failed to send request to Stripe API", "url", stripeURL, "error", err)
+		return fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Handle Stripe API response
+	// Handle response
 	if resp.StatusCode != http.StatusOK {
-		slog.Error("Stripe API returned status", "status", resp.StatusCode, "url", stripeURL)
-		return fmt.Errorf("stripe API returned status %d", resp.StatusCode)
+		slog.Error("Stripe API returned non-OK status", "status", resp.StatusCode, "url", stripeURL)
+		return fmt.Errorf("stripe API returned status: %d", resp.StatusCode)
 	}
 
-	return json.NewDecoder(resp.Body).Decode(pi)
+	// Decode response
+	if err := json.NewDecoder(resp.Body).Decode(pi); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return nil
 }
 
 // [payload] raw request body
@@ -260,17 +274,19 @@ func (os *orderService) cancelPaymentIntent(ctx context.Context, paymentIntentID
 		return errors.New("missing payment intent ID")
 	}
 
-	stripeURL := fmt.Sprintf("%s/payment_intents/%s/cancel", os.config.BaseURL, paymentIntentID)
-	client := &http.Client{}
+	stripeURL := fmt.Sprintf("%s/payment_intents/%s/cancel",
+		os.config.StripeConfig.BaseURL,
+		paymentIntentID,
+	)
 
 	reqStripe, err := http.NewRequestWithContext(ctx, "POST", stripeURL, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create Stripe cancel request: %w", err)
 	}
-	reqStripe.SetBasicAuth(os.config.SecretKey, "")
+	reqStripe.SetBasicAuth(os.config.StripeConfig.SecretKey, "")
 	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := client.Do(reqStripe)
+	resp, err := os.HttpClient.Do(reqStripe)
 	if err != nil {
 		slog.Error("Error sending cancel request to Stripe API", "url", stripeURL, "error", err)
 		return fmt.Errorf("failed to send Stripe cancel request: %w", err)
@@ -317,33 +333,35 @@ func ComputeSignature(t time.Time, payload []byte, secret string) []byte {
 }
 
 func (os *orderService) CreateOrder(ctx context.Context, order *types.Order) error {
-	var userID = getUserID(ctx)
+	userID := getUserID(ctx)
 	order.UserID = userID
 
-	// Cancel open/unpaid payment intents, if any
-	os.orderRepo.GetOrder(ctx, order) // FIXME: this is hacky since a user can have multiple orders
-	if order.Status == types.OrderPending && order.StripePaymentIntent != nil {
-		go func() {
-			bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			if err := os.cancelPaymentIntent(bgCtx, order.StripePaymentIntent.ID); err != nil {
-				slog.Error("Error canceling payment intent", "user_id", userID, "error", err)
-			}
-		}()
+	if err := os.handlePreviousOrderState(ctx, *order, userID); err != nil {
+		return err
 	}
 
-	// Cancel open/unpaid orders, if any
-	go func() {
-		bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := os.orderRepo.CancelPendingOrders(bgCtx, userID); err != nil {
-			slog.Error("Error canceling open orders", "user_id", userID, "error", err)
-		}
-	}()
+	if err := os.createAndLogOrder(ctx, order); err != nil {
+		return err
+	}
 
-	// Create pending order
+	if err := os.calculateTax(ctx, order); err != nil {
+		slog.Error("Error calculating taxes", "order_id", order.ID, "error", err)
+		return err
+	}
+	order.TotalAmount = order.Amount + order.ShippingAmount + order.TaxAmount
+
+	clientSecret, err := os.setupStripePayment(ctx, order)
+	if err != nil {
+		return err
+	}
+
+	order.StripePaymentIntent.ClientSecret = clientSecret
+	return nil
+}
+
+func (os *orderService) createAndLogOrder(ctx context.Context, order *types.Order) error {
 	if err := os.orderRepo.CreateOrder(ctx, order); err != nil {
-		slog.Error("Error creating order", "user_id", userID, "error", err)
+		slog.Error("Error creating order", "user_id", order.UserID, "error", err)
 		return err
 	}
 
@@ -358,44 +376,33 @@ func (os *orderService) CreateOrder(ctx context.Context, order *types.Order) err
 		"total_amount", order.TotalAmount,
 	)
 
-	// TODO calculate shipping
+	return nil
+}
 
-	// Calculate tax
-	if err := os.calculateTax(ctx, order); err != nil {
-		slog.Error("Error calculating taxes", "order_id", order.ID, "error", err)
-		return err
-	}
-	order.TotalAmount = order.Amount + order.ShippingAmount + order.TaxAmount
-
-	// Create payment intent for Stripe
+func (os *orderService) setupStripePayment(ctx context.Context, order *types.Order) (string, error) {
 	pi := &stripe.PaymentIntent{
 		Amount:   order.TotalAmount,
 		Currency: order.Currency,
 	}
 	if err := os.createOrderPaymentIntent(ctx, order.ID, pi); err != nil {
-		return err
+		return "", err
 	}
 
-	// unset client secret to avoid storing it in the database
-	// store original value in variable so we can re-apply/reset it before returning order (secret is needed by UI)
 	clientSecret := pi.ClientSecret
 	pi.ClientSecret = ""
 
-	// Update order payment intent
 	order.StripePaymentIntent = pi
 	if err := os.orderRepo.UpdateOrder(ctx, order); err != nil {
-		slog.Error(
-			"Error updating order",
+		slog.Error("Error updating order",
 			"order_id", order.ID,
 			"status", order.Status,
 			"stripe_payment_intent_id", pi.ID,
 			"error", err,
 		)
-		return err
+		return "", err
 	}
 
-	order.StripePaymentIntent.ClientSecret = clientSecret
-	return nil
+	return clientSecret, nil
 }
 
 func (os *orderService) calculateTax(ctx context.Context, order *types.Order) error {
@@ -430,7 +437,7 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 	form.Set("customer_details[address][state]", order.Address.StateCode)
 	form.Set("customer_details[address][postal_code]", order.Address.PostalCode)
 
-	url := fmt.Sprintf("%s/tax/calculations", os.config.BaseURL)
+	url := fmt.Sprintf("%s/tax/calculations", os.config.StripeConfig.BaseURL)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBufferString(form.Encode()))
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
@@ -439,7 +446,7 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 		return err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+os.config.SecretKey)
+	req.Header.Set("Authorization", "Bearer "+os.config.StripeConfig.SecretKey)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Idempotency-Key", order.ID)
 
@@ -472,4 +479,33 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 	}
 	order.TotalAmount = tax.AmountTotal
 	return nil
+}
+
+func (os *orderService) handlePreviousOrderState(ctx context.Context, order types.Order, userID string) error {
+	_ = os.orderRepo.GetOrder(ctx, &order) // FIXME: hacky because it's possible to have multiple pending orders
+
+	if order.Status == types.OrderPending && order.StripePaymentIntent != nil {
+		go os.cancelStalePaymentIntent(userID, order.StripePaymentIntent.ID)
+	}
+
+	go os.cancelStaleOrders(userID)
+	return nil
+}
+
+func (os *orderService) cancelStalePaymentIntent(userID, intentID string) {
+	bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := os.cancelPaymentIntent(bgCtx, intentID); err != nil {
+		slog.Error("Error canceling payment intent", "user_id", userID, "error", err)
+	}
+}
+
+func (os *orderService) cancelStaleOrders(userID string) {
+	bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := os.orderRepo.CancelPendingOrders(bgCtx, userID); err != nil {
+		slog.Error("Error canceling open orders", "user_id", userID, "error", err)
+	}
 }
