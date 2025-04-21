@@ -29,9 +29,8 @@ func (r *addressRepository) UpdateAddress(ctx context.Context, address *types.Ad
 			city = $4,
 			state_code = $5,
 			postal_code = $6,
-			phone = $7,
 			updated_at = NOW()
-		WHERE id = $8 AND user_id = $9
+		WHERE id = $7 AND user_id = $8
 		RETURNING updated_at
 	`
 
@@ -42,7 +41,6 @@ func (r *addressRepository) UpdateAddress(ctx context.Context, address *types.Ad
 		address.City,
 		address.StateCode,
 		address.PostalCode,
-		address.Phone,
 		address.ID,
 		address.UserID,
 	).Scan(&address.UpdatedAt)
@@ -62,10 +60,9 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 			city,
 			state_code,
 			postal_code,
-			country_code,
-			phone
+			country_code
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, user_id, created_at, updated_at
 	`
 
@@ -78,7 +75,6 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 		address.StateCode,
 		address.PostalCode,
 		address.CountryCode,
-		address.Phone,
 	).Scan(&address.ID, &address.UserID, &address.CreatedAt, &address.UpdatedAt)
 }
 
@@ -94,7 +90,6 @@ func (r *addressRepository) GetAddresses(ctx context.Context, userID string) ([]
 			state_code,
 			postal_code,
 			country_code,
-			phone,
 			is_deleted,
 			created_at,
 			updated_at
@@ -121,7 +116,6 @@ func (r *addressRepository) GetAddresses(ctx context.Context, userID string) ([]
 			&address.StateCode,
 			&address.PostalCode,
 			&address.CountryCode,
-			&address.Phone,
 			&address.IsDeleted,
 			&address.CreatedAt,
 			&address.UpdatedAt,

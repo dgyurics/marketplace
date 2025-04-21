@@ -90,7 +90,6 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 			state_code,
 			postal_code,
 			country_code,
-			phone,
 			created_at,
 			updated_at
 		FROM addresses
@@ -107,7 +106,6 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		&addr.StateCode,
 		&addr.PostalCode,
 		&addr.CountryCode,
-		&addr.Phone,
 		&addr.CreatedAt,
 		&addr.UpdatedAt,
 	); err != nil {

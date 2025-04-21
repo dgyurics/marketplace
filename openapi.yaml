@@ -318,10 +318,6 @@ paths:
                 postal_code:
                   type: string
                   example: "10001"
-                phone:
-                  type: string
-                  nullable: true
-                  example: "+1-555-123-4567"
       responses:
         "201":
           description: Address successfully added
@@ -352,10 +348,6 @@ paths:
                   postal_code:
                     type: string
                     example: "10001"
-                  phone:
-                    type: string
-                    nullable: true
-                    example: "+1-555-123-4567"
                   created_at:
                     type: string
                     format: date-time
@@ -895,10 +887,6 @@ components:
         postal_code:
           type: string
           example: "10001"
-        phone:
-          type: string
-          nullable: true
-          example: "+1-555-123-4567"
         created_at:
           type: string
           format: date-time

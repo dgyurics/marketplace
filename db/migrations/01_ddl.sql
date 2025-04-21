@@ -192,7 +192,6 @@ CREATE TABLE IF NOT EXISTS addresses (
     city VARCHAR(255) NOT NULL,
     state_code CHAR(2) NOT NULL,
     postal_code VARCHAR(20) NOT NULL,
-    phone VARCHAR(20),
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
     country_code CHAR(2) NOT NULL DEFAULT 'US',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,

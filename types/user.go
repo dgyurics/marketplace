@@ -36,7 +36,6 @@ type Address struct {
 	City         string    `json:"city"`
 	StateCode    string    `json:"state_code"`
 	PostalCode   string    `json:"postal_code"`
-	Phone        *string   `json:"phone"`
 	IsDeleted    bool      `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`

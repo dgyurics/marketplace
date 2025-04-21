@@ -18,7 +18,6 @@ func TestCreateAddress(t *testing.T) {
 
 	// Nullable fields
 	addressLine2 := "Apt 456"
-	phone := "123-456-7890"
 
 	// Create a test address
 	addressee := "John Doe"
@@ -30,7 +29,6 @@ func TestCreateAddress(t *testing.T) {
 		City:         "Testville",
 		StateCode:    "TS",
 		PostalCode:   "12345",
-		Phone:        &phone,
 	}
 
 	err := repo.CreateAddress(ctx, address)
@@ -59,7 +57,6 @@ func TestUpdateAddress(t *testing.T) {
 	// Create an initial address
 	originalAddressee := "Original Name"
 	originalAddressLine2 := "Suite 100"
-	originalPhone := "555-000-1111"
 	address := &types.Address{
 		UserID:       user.ID,
 		Addressee:    &originalAddressee,
@@ -68,7 +65,6 @@ func TestUpdateAddress(t *testing.T) {
 		City:         "Original City",
 		StateCode:    "OS",
 		PostalCode:   "11111",
-		Phone:        &originalPhone,
 	}
 
 	err := repo.CreateAddress(ctx, address)
@@ -82,7 +78,6 @@ func TestUpdateAddress(t *testing.T) {
 	newCity := "Updated City"
 	newStateCode := "US"
 	newPostalCode := "22222"
-	newPhone := "555-222-3333"
 
 	address.Addressee = &newAddressee
 	address.AddressLine1 = newAddressLine1
@@ -90,7 +85,6 @@ func TestUpdateAddress(t *testing.T) {
 	address.City = newCity
 	address.StateCode = newStateCode
 	address.PostalCode = newPostalCode
-	address.Phone = &newPhone
 
 	err = repo.UpdateAddress(ctx, address)
 	assert.NoError(t, err, "Expected no error while updating address")
@@ -122,11 +116,6 @@ func TestUpdateAddress(t *testing.T) {
 	assert.Equal(t, newCity, found.City, "Expected city to be updated")
 	assert.Equal(t, newStateCode, found.StateCode, "Expected state_code to be updated")
 	assert.Equal(t, newPostalCode, found.PostalCode, "Expected postal_code to be updated")
-	if found.Phone == nil {
-		assert.Fail(t, "Expected phone not to be nil")
-	} else {
-		assert.Equal(t, newPhone, *found.Phone, "Expected phone to be updated")
-	}
 
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM addresses WHERE id = $1", address.ID)
@@ -145,7 +134,6 @@ func TestGetAddresses(t *testing.T) {
 
 	// Nullable fields
 	addressLine2 := "Apt 456"
-	phone := "123-456-7890"
 
 	// Create multiple addresses for the user
 	addressee1 := "John Doe"
@@ -157,7 +145,6 @@ func TestGetAddresses(t *testing.T) {
 		City:         "Testville",
 		StateCode:    "TS",
 		PostalCode:   "12345",
-		Phone:        &phone,
 	}
 	addressee2 := "Jane Doe"
 	address2 := &types.Address{
@@ -196,7 +183,6 @@ func TestRemoveAddress(t *testing.T) {
 
 	// Nullable fields
 	addressLine2 := "Apt 456"
-	phone := "123-456-7890"
 
 	// Create a test address
 	addressee := "John Doe"
@@ -208,7 +194,6 @@ func TestRemoveAddress(t *testing.T) {
 		City:         "Testville",
 		StateCode:    "TS",
 		PostalCode:   "12345",
-		Phone:        &phone,
 	}
 
 	err := repo.CreateAddress(ctx, address)
@@ -237,7 +222,7 @@ func TestGetAddressWithEmptyFields(t *testing.T) {
 	userRepo := NewUserRepository(dbPool)
 	user := createUniqueTestUser(t, userRepo)
 
-	// Create an address with empty addressee, and nil for address_line2 and phone
+	// Create an address with empty addressee, and nil for address_line2
 	addressee := ""
 	address := &types.Address{
 		UserID:       user.ID,
@@ -247,7 +232,6 @@ func TestGetAddressWithEmptyFields(t *testing.T) {
 		City:         "Emptyville",
 		StateCode:    "EM",
 		PostalCode:   "00000",
-		Phone:        nil, // nil phone
 	}
 
 	err := repo.CreateAddress(ctx, address)
@@ -275,7 +259,6 @@ func TestGetAddressWithEmptyFields(t *testing.T) {
 		assert.Equal(t, "", *found.Addressee, "Expected empty addressee")
 	}
 	assert.Nil(t, found.AddressLine2, "Expected address_line2 to be nil")
-	assert.Nil(t, found.Phone, "Expected phone to be nil")
 
 	// Clean up: remove created address and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM addresses WHERE id = $1", address.ID)
