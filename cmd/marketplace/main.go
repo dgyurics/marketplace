@@ -22,12 +22,15 @@ import (
 )
 
 func main() {
+	// Root context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Load configuration
 	config := utilities.LoadConfig()
 
 	// Initialize logger
 	utilities.InitLogger(config.Logger)
-	defer utilities.CloseLogger()
 
 	// Initialize database
 	db := db.Connect(config.Database)
@@ -35,10 +38,17 @@ func main() {
 	// Initialize services
 	services := initializeServices(db, config)
 
+	// Start schedule service
+	go services.Schedule.Start(ctx)
+
 	// Initialize and start server
 	server := initializeServer(config, services)
-	server.ListenAndServe()
-	gracefulShutdown(server)
+	go func() {
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			slog.Error("Server error", "error", err)
+		}
+	}()
+	gracefulShutdown(server, cancel)
 }
 
 // initializeServer sets up the database, services, and HTTP server
@@ -87,10 +97,11 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	orderRepository := repositories.NewOrderRepository(db)
 	inviteRepository := repositories.NewInviteRepository(db)
 	passwordRepository := repositories.NewPasswordRepository(db)
+	scheduleRepository := repositories.NewScheduleRepository(db)
 	refreshTokenRepository := repositories.NewRefreshRepository(db)
 
 	// create http client required by certain services
-	httpClient := utilities.NewDefaultHTTPClient(10 * time.Second)
+	httpClient := utilities.NewDefaultHTTPClient(10 * time.Second) // TODO make this configurable
 
 	// create services
 	addressService := services.NewAddressService(addressRepository)
@@ -104,6 +115,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	emailService := services.NewMailjetSender(config.Email)
 	jwtService := services.NewJWTService(config.JWT)
+	scheduleService := services.NewScheduleService(orderService, scheduleRepository)
 	templateService, _ := services.NewTemplateService(config.TemplatesDir)
 
 	return servicesContainer{
@@ -118,6 +130,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		Refresh:  refreshService,
 		Email:    emailService,
 		JWT:      jwtService,
+		Schedule: scheduleService,
 		Template: templateService,
 	}
 }
@@ -135,13 +148,14 @@ type servicesContainer struct {
 	Refresh  services.RefreshService
 	Email    services.EmailSender
 	JWT      services.JWTService
+	Schedule services.ScheduleService
 	Template services.TemplateService
 }
 
 // gracefulShutdown handles termination signals and gracefully shuts down the server.
 // It does so by waiting for all active connections to finish, or until a timeout is reached.
 // If the timeout is reached, the server is forcefully shut down.
-func gracefulShutdown(server *http.Server) {
+func gracefulShutdown(server *http.Server, cancel context.CancelFunc) {
 	// Listen for OS signals
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
@@ -150,14 +164,19 @@ func gracefulShutdown(server *http.Server) {
 	<-stop
 	slog.Info("Shutdown signal received")
 
+	// Cancel root context
+	cancel()
+
 	// Create a context with timeout for shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	ctx, cancelShutdown := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelShutdown()
 
 	// Gracefully shutdown the server
 	if err := server.Shutdown(ctx); err != nil {
-		slog.Error("Server shutdown failed", "error", err.Error())
+		slog.Error("Server shutdown failed", "error", err)
 	} else {
 		slog.Info("Server gracefully stopped")
 	}
+
+	utilities.CloseLogger() // flush buffer
 }

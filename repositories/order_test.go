@@ -140,21 +140,14 @@ func TestOrderRepository_GetOrder(t *testing.T) {
 	assert.Equal(t, order.UserID, retrievedOrder.UserID, "The retrieved order UserID should match")
 	assert.Equal(t, order.Address.ID, retrievedOrder.Address.ID, "The retrieved order AddressID should match")
 
-	// 7. Test retrieving the order by UserID (latest order)
-	retrievedOrder = &types.Order{UserID: user.ID}
-	err = orderRepo.GetOrder(ctx, retrievedOrder)
-	assert.NoError(t, err, "GetOrder by UserID should not return an error")
-	assert.Equal(t, order.ID, retrievedOrder.ID, "The latest order ID should match the created order")
-	assert.Equal(t, order.Address.ID, retrievedOrder.Address.ID, "The retrieved order AddressID should match")
-
-	// 8. Test retrieving the order by PaymentIntentID
+	// 7. Test retrieving the order by PaymentIntentID
 	retrievedOrder = &types.Order{StripePaymentIntent: mockPaymentIntent}
 	err = orderRepo.GetOrder(ctx, retrievedOrder)
 	assert.NoError(t, err, "GetOrder by PaymentIntentID should not return an error")
 	assert.Equal(t, order.ID, retrievedOrder.ID, "The retrieved order ID should match the created order's ID")
 	assert.Equal(t, order.Address.ID, retrievedOrder.Address.ID, "The retrieved order AddressID should match")
 
-	// 9. Cleanup
+	// 8. Cleanup
 	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM stripe_payment_intents WHERE id = $1`, mockPaymentIntent.ID)
@@ -176,23 +169,17 @@ func TestOrderRepository_GetOrder_MissingOrder(t *testing.T) {
 	assert.Error(t, err, "GetOrder by ID should return an error for a nonexistent order")
 	assert.Contains(t, err.Error(), "order not found", "The error message should indicate that the order was not found")
 
-	// Test case 2: Missing Order by UserID
-	missingOrder = &types.Order{UserID: "999999999999999"} // Use a valid BIGINT format
-	err = orderRepo.GetOrder(ctx, missingOrder)
-	assert.Error(t, err, "GetOrder by UserID should return an error for a nonexistent user")
-	assert.Contains(t, err.Error(), "order not found", "The error message should indicate that the order was not found")
-
-	// Test case 3: Missing Order by PaymentIntentID
+	// Test case 2: Missing Order by PaymentIntentID
 	missingOrder = &types.Order{StripePaymentIntent: &stripe.PaymentIntent{ID: "pi_missing_payment_intent_id"}}
 	err = orderRepo.GetOrder(ctx, missingOrder)
 	assert.Error(t, err, "GetOrder by PaymentIntentID should return an error for a nonexistent PaymentIntentID")
 	assert.Contains(t, err.Error(), "order not found", "The error message should indicate that the order was not found")
 
-	// Test case 4: No Identifiers Provided
+	// Test case 3: No Identifiers Provided
 	missingOrder = &types.Order{} // No ID, UserID, or PaymentIntentID provided
 	err = orderRepo.GetOrder(ctx, missingOrder)
 	assert.Error(t, err, "GetOrder should return an error if no identifiers are provided")
-	assert.Contains(t, err.Error(), "missing identifier: provide order.ID, order.UserID, or StripePaymentIntent.ID", "The error message should indicate missing identifiers")
+	assert.Contains(t, err.Error(), "missing identifier: provide order.ID or StripePaymentIntent.ID", "The error message should indicate missing identifiers")
 }
 
 func TestOrderRepository_GetOrders(t *testing.T) {

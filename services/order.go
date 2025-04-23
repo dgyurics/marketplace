@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dgyurics/marketplace/repositories"
@@ -32,6 +33,7 @@ type OrderService interface {
 	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
 	VerifyStripeEventSignature(payload []byte, sigHeader string) error
 	ProcessStripeEvent(ctx context.Context, event stripe.Event) error
+	CancelStaleOrders(ctx context.Context)
 }
 
 type orderService struct {
@@ -56,6 +58,29 @@ func NewOrderService(
 		HttpClient: httpClient,
 		config:     config,
 	}
+}
+
+func (os *orderService) CancelStaleOrders(ctx context.Context) {
+	slog.Debug("Cancelling stale orders", "ctx", ctx)
+
+	interval := 10 * time.Minute // Cancel orders older than 10 minutes with status "pending"
+	pymtIntentIDs, err := os.orderRepo.CancelPendingOrders(ctx, interval)
+	if err != nil {
+		slog.Error("Error canceling stale orders", "error", err)
+	}
+
+	var wg sync.WaitGroup
+	for _, id := range pymtIntentIDs {
+		wg.Add(1)
+		go func(pID string) {
+			defer wg.Done()
+			slog.Debug("Cancelling payment intent", "id", id)
+			if err := os.cancelPaymentIntent(ctx, pID); err != nil {
+				slog.Error("Error canceling payment intent", "id", pID)
+			}
+		}(id)
+	}
+	wg.Wait()
 }
 
 func (os *orderService) GetOrders(ctx context.Context, page, limit int) ([]types.Order, error) {
@@ -336,10 +361,6 @@ func (os *orderService) CreateOrder(ctx context.Context, order *types.Order) err
 	userID := getUserID(ctx)
 	order.UserID = userID
 
-	if err := os.handlePreviousOrderState(ctx, *order, userID); err != nil {
-		return err
-	}
-
 	if err := os.createAndLogOrder(ctx, order); err != nil {
 		return err
 	}
@@ -479,33 +500,4 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 	}
 	order.TotalAmount = tax.AmountTotal
 	return nil
-}
-
-func (os *orderService) handlePreviousOrderState(ctx context.Context, order types.Order, userID string) error {
-	_ = os.orderRepo.GetOrder(ctx, &order) // FIXME: hacky because it's possible to have multiple pending orders
-
-	if order.Status == types.OrderPending && order.StripePaymentIntent != nil {
-		go os.cancelStalePaymentIntent(userID, order.StripePaymentIntent.ID)
-	}
-
-	go os.cancelStaleOrders(userID)
-	return nil
-}
-
-func (os *orderService) cancelStalePaymentIntent(userID, intentID string) {
-	bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := os.cancelPaymentIntent(bgCtx, intentID); err != nil {
-		slog.Error("Error canceling payment intent", "user_id", userID, "error", err)
-	}
-}
-
-func (os *orderService) cancelStaleOrders(userID string) {
-	bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := os.orderRepo.CancelPendingOrders(bgCtx, userID); err != nil {
-		slog.Error("Error canceling open orders", "user_id", userID, "error", err)
-	}
 }

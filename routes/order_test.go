@@ -39,6 +39,10 @@ func (m *MockOrderService) GetOrders(ctx context.Context, page, limit int) ([]ty
 	return args.Get(0).([]types.Order), args.Error(1)
 }
 
+func (m *MockOrderService) CancelStaleOrders(ctx context.Context) {
+	m.Called(ctx)
+}
+
 func TestCreateOrder(t *testing.T) {
 	mockOrderService := new(MockOrderService)
 	routes := &OrderRoutes{

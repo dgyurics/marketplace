@@ -20,7 +20,7 @@ type OrderRepository interface {
 	CreateOrder(ctx context.Context, order *types.Order) error
 	UpdateOrder(ctx context.Context, order *types.Order) error
 	CreateStripeEvent(ctx context.Context, event stripe.Event) error
-	CancelPendingOrders(ctx context.Context, userID string) error
+	CancelPendingOrders(ctx context.Context, interval time.Duration) ([]string, error)
 }
 
 type orderRepository struct {
@@ -31,17 +31,32 @@ func NewOrderRepository(db *sql.DB) OrderRepository {
 	return &orderRepository{db: db}
 }
 
-func (r *orderRepository) CancelPendingOrders(ctx context.Context, userID string) error {
+func (r *orderRepository) CancelPendingOrders(ctx context.Context, interval time.Duration) ([]string, error) {
+	intervalStr := fmt.Sprintf("%d seconds", int(interval.Seconds()))
 	query := `
 		UPDATE orders
 		SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
-		WHERE status = 'pending' AND user_id = $1
-		RETURNING id
+		WHERE status = 'pending' AND updated_at < NOW() - ($1)::INTERVAL
+		RETURNING stripe_payment_intent->>'id' AS payment_intent_id
 	`
-	if _, err := r.db.ExecContext(ctx, query, userID); err != nil {
-		return err
+	rows, err := r.db.QueryContext(ctx, query, intervalStr)
+	if err != nil {
+		return nil, err
 	}
-	return r.restockCanceledOrderItems(ctx)
+	var stripeIDs []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		if id != "" {
+			stripeIDs = append(stripeIDs, id)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return stripeIDs, r.restockCanceledOrderItems(ctx)
 }
 
 func (r *orderRepository) restockCanceledOrderItems(ctx context.Context) error {
@@ -453,14 +468,17 @@ func (r *orderRepository) PopulateOrderItems(ctx context.Context, orders *[]type
 
 // isEmptyOrderLookup checks if the order lookup is empty
 func isEmptyOrderLookup(order *types.Order) bool {
-	return order.ID == "" && order.UserID == "" && (order.StripePaymentIntent == nil || order.StripePaymentIntent.ID == "")
+	return order.ID == "" && (order.StripePaymentIntent == nil || order.StripePaymentIntent.ID == "")
 }
 
-// GetOrder retrieves an order by ID, user ID, or payment intent ID
+// GetOrder retrieves an order by ID or payment intent ID
+// FIXME refactor split into two functions,
+// GetOrderByID
+// GetOrderByPaymentIntent
 func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) error {
 	// Validate input
 	if isEmptyOrderLookup(order) {
-		return fmt.Errorf("missing identifier: provide order.ID, order.UserID, or StripePaymentIntent.ID")
+		return fmt.Errorf("missing identifier: provide order.ID or StripePaymentIntent.ID")
 	}
 	query := `
 		SELECT

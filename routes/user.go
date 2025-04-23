@@ -105,7 +105,7 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 
 	// Mark the invite code as used
 	if err := h.inviteService.StoreCode(r.Context(), credentials.InviteCode, true); err != nil {
-		slog.Error("Failed to update invite code", "code", credentials.InviteCode, "error", err.Error())
+		slog.Error("Failed to update invite code", "code", credentials.InviteCode, "error", err)
 	}
 
 	// Generate access token

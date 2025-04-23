@@ -264,3 +264,9 @@ CREATE TABLE stripe_events (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 REVOKE UPDATE, DELETE ON stripe_events FROM PUBLIC; -- make stripe_events insert only
+
+-- required for schedule service
+CREATE TABLE IF NOT EXISTS job_schedules (
+    job_name     TEXT PRIMARY KEY,
+    last_run_at  TIMESTAMP NOT NULL
+);

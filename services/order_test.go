@@ -271,8 +271,8 @@ func (m *mockOrderRepo) CreateStripeEvent(ctx context.Context, event stripe.Even
 	return nil
 }
 
-func (m *mockOrderRepo) CancelPendingOrders(ctx context.Context, userID string) error {
-	return nil
+func (m *mockOrderRepo) CancelPendingOrders(ctx context.Context, interval time.Duration) ([]string, error) {
+	return nil, nil
 }
 
 func TestComputeSignature(t *testing.T) {
