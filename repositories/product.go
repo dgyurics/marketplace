@@ -174,6 +174,8 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 		} else {
 			queryBuilder.WriteString(" ORDER BY p.price DESC")
 		}
+	} else {
+		queryBuilder.WriteString(" ORDER BY category_slug")
 	}
 
 	queryBuilder.WriteString(fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1))
@@ -184,7 +186,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 
 func (r *productRepository) GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error) {
 	query := `
-	SELECT id, name, price, description, images, quantity
+	SELECT id, name, price, description, details, images, quantity
 	FROM v_product
 	WHERE id = $1;
 	`
@@ -197,6 +199,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*typ
 		&product.Name,
 		&product.Price,
 		&product.Description,
+		&product.Details,
 		&imagesJSON,
 		&product.Quantity,
 	)
@@ -204,6 +207,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*typ
 		return nil, err
 	}
 
+	// FIXME store as raw json
 	// Convert JSONB to Go struct
 	if err := json.Unmarshal(imagesJSON, &product.Images); err != nil {
 		return nil, err

@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS products (
     name VARCHAR(255) NOT NULL,
     price BIGINT NOT NULL,
     description TEXT NOT NULL,
+    details JSONB DEFAULT '{}'::jsonb NOT NULL,
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
@@ -83,9 +84,13 @@ SELECT
     p.name,
     p.price,
     p.description,
+    p.details,
+    c.slug AS category_slug,
     COALESCE(imgs.images, '[]') AS images,
     LEAST(inv.quantity, 100) AS quantity
 FROM products p
+LEFT JOIN product_categories pc ON p.id = pc.product_id
+LEFT JOIN categories c ON pc.category_id = c.id
 LEFT JOIN inventory inv ON p.id = inv.product_id
 LEFT JOIN LATERAL (
     SELECT JSONB_AGG(

@@ -1,5 +1,7 @@
 package types
 
+import "encoding/json"
+
 type Product struct {
 	ID          string  `json:"id"`
 	Name        string  `json:"name"`
@@ -11,14 +13,15 @@ type Product struct {
 }
 
 type ProductWithInventory struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Price       int64   `json:"price"`
-	Description string  `json:"description"`
-	Images      []Image `json:"images"`
-	CreatedAt   string  `json:"created_at"`
-	UpdatedAt   string  `json:"updated_at"`
-	Quantity    int     `json:"quantity"`
+	ID          string          `json:"id"`
+	Name        string          `json:"name"`
+	Price       int64           `json:"price"`
+	Description string          `json:"description"`
+	Details     json.RawMessage `json:"details"`
+	Images      []Image         `json:"images"` // FIXME store as raw json
+	CreatedAt   string          `json:"created_at"`
+	UpdatedAt   string          `json:"updated_at"`
+	Quantity    int             `json:"quantity"`
 }
 
 type Image struct {
