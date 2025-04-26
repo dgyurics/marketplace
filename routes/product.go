@@ -64,29 +64,10 @@ func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 		InStock:     r.URL.Query().Get("in_stock") == "true",
 		SortByPrice: r.URL.Query().Get("sort_by") == "price",
 		SortAsc:     r.URL.Query().Get("sort_order") == "asc",
+		Categories:  r.URL.Query()["category"],
 	}
 
 	products, err := h.productService.GetProducts(r.Context(), filters)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	u.RespondWithJSON(w, http.StatusOK, products)
-}
-
-func (h *ProductRoutes) GetProductsByCategory(w http.ResponseWriter, r *http.Request) {
-	params := u.ParsePaginationParams(r, 1, 25)
-	filters := types.ProductFilter{
-		Page:        params.Page,
-		Limit:       params.Limit,
-		InStock:     r.URL.Query().Get("in_stock") == "true",
-		SortByPrice: r.URL.Query().Get("sort_by") == "price",
-		SortAsc:     r.URL.Query().Get("sort_order") == "asc",
-	}
-
-	// Get products using the category-slug and optional filters
-	products, err := h.productService.GetProductsByCategory(r.Context(), mux.Vars(r)["category"], filters)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -145,7 +126,6 @@ func (h *ProductRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/products/{id}", h.GetProduct).Methods(http.MethodGet)
 	h.muxRouter.Handle("/products", h.secureAdmin(h.CreateProduct)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/products/categories/{category}", h.secureAdmin(h.CreateProductWithCategory)).Methods(http.MethodPost)
-	h.muxRouter.HandleFunc("/products/categories/{category}", h.GetProductsByCategory).Methods(http.MethodGet)
 	h.muxRouter.Handle("/products/{id}", h.secureAdmin(h.RemoveProduct)).Methods(http.MethodDelete)
 	h.muxRouter.Handle("/products/{id}/inventory", h.secureAdmin(h.UpdateInventory)).Methods(http.MethodPut)
 	// router.HandleFunc("/products/{id}", h.UpdateProduct).Methods("PUT")

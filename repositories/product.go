@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/dgyurics/marketplace/types"
 )
@@ -13,7 +14,6 @@ type ProductRepository interface {
 	CreateProduct(ctx context.Context, product *types.Product) error
 	CreateProductWithCategory(ctx context.Context, product *types.Product, categorySlug string) error
 	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
-	GetProductsByCategory(ctx context.Context, categorySlug string, filter types.ProductFilter) ([]types.Product, error)
 	GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error)
 	DeleteProduct(ctx context.Context, id string) error
 	UpdateInventory(ctx context.Context, productID string, quantity int) error
@@ -98,30 +98,7 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 
 func (r *productRepository) GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error) {
 	var products []types.Product
-
-	query := `
-		SELECT p.id, p.name, p.price, p.description, p.images
-		FROM v_product p
-		WHERE true
-	`
-
-	args := []interface{}{}
-	argIndex := 1
-
-	if filter.InStock {
-		query += " AND i.quantity > 0"
-	}
-
-	if filter.SortByPrice {
-		if filter.SortAsc {
-			query += " ORDER BY p.price ASC"
-		} else {
-			query += " ORDER BY p.price DESC"
-		}
-	}
-
-	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
-	args = append(args, filter.Limit, (filter.Page-1)*filter.Limit)
+	query, args := generateGetProductsQuery(filter)
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -153,59 +130,56 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 	return products, nil
 }
 
-func (r *productRepository) GetProductsByCategory(ctx context.Context, categorySlug string, filter types.ProductFilter) ([]types.Product, error) {
-	var products []types.Product
-	query := `
-		SELECT p.id, p.name, p.price, p.description, p.images
-		FROM v_product p
-		JOIN product_categories pc ON p.id = pc.product_id
-		JOIN categories c ON pc.category_id = c.id
-		WHERE c.slug = $1
-	`
-	args := []interface{}{categorySlug}
-	argIndex := 2
+// generateGetProductsQuery generates the SQL query to get products based on the filter
+// and returns the query string and arguments to be used with db.QueryContext
+func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}) {
+	args := []interface{}{}
+	var queryBuilder strings.Builder
+	if len(filter.Categories) == 0 {
+		queryBuilder.WriteString(`
+			SELECT p.id, p.name, p.price, p.description, p.images
+			FROM v_product p
+			WHERE true
+		`)
+	} else {
+		placeholders := make([]string, 0, len(filter.Categories))
+		for i, slug := range filter.Categories {
+			placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
+			args = append(args, slug)
+		}
+		queryBuilder.WriteString(fmt.Sprintf(`
+			WITH RECURSIVE category_tree AS (
+				SELECT id FROM categories WHERE slug IN (%s)
+				UNION ALL
+				SELECT c.id FROM categories c
+				JOIN category_tree ct ON c.parent_id = ct.id
+			)
+			SELECT p.id, p.name, p.price, p.description, p.images
+			FROM v_product p
+			JOIN product_categories pc ON p.id = pc.product_id
+			JOIN category_tree ct ON ct.id = pc.category_id
+			WHERE true
+		`, strings.Join(placeholders, ", ")))
+	}
+
+	argIndex := len(args) + 1
 
 	if filter.InStock {
-		query += " AND i.quantity > 0"
+		queryBuilder.WriteString(" AND p.quantity > 0")
 	}
 
 	if filter.SortByPrice {
 		if filter.SortAsc {
-			query += " ORDER BY p.price ASC"
+			queryBuilder.WriteString(" ORDER BY p.price ASC")
 		} else {
-			query += " ORDER BY p.price DESC"
+			queryBuilder.WriteString(" ORDER BY p.price DESC")
 		}
 	}
-	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
+
+	queryBuilder.WriteString(fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1))
 	args = append(args, filter.Limit, (filter.Page-1)*filter.Limit)
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var product types.Product
-		var imagesJSON []byte
-		if err = rows.Scan(
-			&product.ID,
-			&product.Name,
-			&product.Price,
-			&product.Description,
-			&imagesJSON,
-		); err != nil {
-			return nil, err
-		}
-
-		// Convert JSONB array to Go struct
-		if err := json.Unmarshal(imagesJSON, &product.Images); err != nil {
-			return nil, err
-		}
-
-		products = append(products, product)
-	}
-	return products, nil
+	return queryBuilder.String(), args
 }
 
 func (r *productRepository) GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error) {

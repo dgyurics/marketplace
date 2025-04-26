@@ -160,6 +160,57 @@ func TestGetProducts(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on product deletion")
 }
 
+func TestGetProductsByCategory(t *testing.T) {
+	repo := NewProductRepository(dbPool)
+	ctx := context.Background()
+
+	// Create a test category
+	catRepo := NewCategoryRepository(dbPool)
+	category := types.Category{
+		Name:        "Test Category for Filtering",
+		Slug:        "test-category-filtering",
+		Description: "Category for testing product filtering",
+	}
+	categoryID, err := catRepo.CreateCategory(ctx, category)
+	require.NoError(t, err, "Expected no error on category creation")
+
+	// Create a product linked to that category
+	product := &types.Product{
+		Name:        "Test Product with Category",
+		Price:       200000,
+		Description: "A test product with a category",
+	}
+	err = repo.CreateProductWithCategory(ctx, product, "test-category-filtering")
+	require.NoError(t, err, "Expected no error on product creation with category")
+	require.NotEmpty(t, product.ID, "Expected product ID to be set")
+
+	// Get products filtered by the category slug
+	products, err := repo.GetProducts(ctx, types.ProductFilter{
+		Categories: []string{"test-category-filtering"},
+		Limit:      100,
+		Page:       1,
+	})
+	require.NoError(t, err, "Expected no error on getting products by category")
+	require.NotEmpty(t, products, "Expected products list to not be empty")
+
+	// Verify that the product exists in the list
+	var found bool
+	for _, p := range products {
+		if p.ID == product.ID {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "Expected to find the created product in the filtered products list")
+
+	// Clean up
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
+	assert.NoError(t, err, "Expected no error on product deletion")
+
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM categories WHERE id = $1", categoryID)
+	assert.NoError(t, err, "Expected no error on category deletion")
+}
+
 func TestGetProductByID(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()

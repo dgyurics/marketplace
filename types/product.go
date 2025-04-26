@@ -36,4 +36,5 @@ type ProductFilter struct {
 	InStock     bool
 	Page        int
 	Limit       int
+	Categories  []string // category slugs
 }
