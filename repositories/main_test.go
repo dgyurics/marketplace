@@ -9,6 +9,7 @@ import (
 
 	"github.com/dgyurics/marketplace/db"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 	"github.com/joho/godotenv"
 )
 
@@ -31,6 +32,9 @@ func TestMain(m *testing.M) {
 
 	dbPool = db.Connect(dbConfig)
 	defer dbPool.Close()
+
+	// Initialize ID generator
+	utilities.InitIDGenerator(99)
 
 	// Run tests
 	code := m.Run()

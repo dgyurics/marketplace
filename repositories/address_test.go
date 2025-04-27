@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,6 +23,7 @@ func TestCreateAddress(t *testing.T) {
 	// Create a test address
 	addressee := "John Doe"
 	address := &types.Address{
+		ID:           utilities.MustGenerateIDString(),
 		UserID:       user.ID,
 		Addressee:    &addressee,
 		AddressLine1: "123 Test St",
@@ -58,6 +60,7 @@ func TestUpdateAddress(t *testing.T) {
 	originalAddressee := "Original Name"
 	originalAddressLine2 := "Suite 100"
 	address := &types.Address{
+		ID:           utilities.MustGenerateIDString(),
 		UserID:       user.ID,
 		Addressee:    &originalAddressee,
 		AddressLine1: "100 Original St",
@@ -138,6 +141,7 @@ func TestGetAddresses(t *testing.T) {
 	// Create multiple addresses for the user
 	addressee1 := "John Doe"
 	address1 := &types.Address{
+		ID:           utilities.MustGenerateIDString(),
 		UserID:       user.ID,
 		Addressee:    &addressee1,
 		AddressLine1: "123 Test St",
@@ -148,6 +152,7 @@ func TestGetAddresses(t *testing.T) {
 	}
 	addressee2 := "Jane Doe"
 	address2 := &types.Address{
+		ID:           utilities.MustGenerateIDString(),
 		UserID:       user.ID,
 		Addressee:    &addressee2,
 		AddressLine1: "456 Test Ave",
@@ -187,6 +192,7 @@ func TestRemoveAddress(t *testing.T) {
 	// Create a test address
 	addressee := "John Doe"
 	address := &types.Address{
+		ID:           utilities.MustGenerateIDString(),
 		UserID:       user.ID,
 		Addressee:    &addressee,
 		AddressLine1: "123 Test St",
@@ -225,6 +231,7 @@ func TestGetAddressWithEmptyFields(t *testing.T) {
 	// Create an address with empty addressee, and nil for address_line2
 	addressee := ""
 	address := &types.Address{
+		ID:           utilities.MustGenerateIDString(),
 		UserID:       user.ID,
 		Addressee:    &addressee, // empty addressee
 		AddressLine1: "789 Test Blvd",

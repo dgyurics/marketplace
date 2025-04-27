@@ -31,12 +31,11 @@ func (h *CategoryRoutes) CreateCategory(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	categoryId, err := h.categoryService.CreateCategory(r.Context(), category)
-	if err != nil {
+	if err := h.categoryService.CreateCategory(r.Context(), &category); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	category.ID = categoryId
+
 	u.RespondWithJSON(w, http.StatusCreated, category)
 }
 

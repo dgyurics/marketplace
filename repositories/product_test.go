@@ -2,9 +2,11 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,6 +21,7 @@ func TestCreateProduct(t *testing.T) {
 		Price:       100000,
 		Description: "A test product description",
 	}
+	product.ID, _ = utilities.GenerateIDString()
 
 	err := repo.CreateProduct(ctx, product)
 	require.NoError(t, err, "Failed to create product")
@@ -45,11 +48,14 @@ func TestCreateProductWithImages(t *testing.T) {
 
 	// Create a test category for associating images with the product
 	catRepo := NewCategoryRepository(dbPool)
-	categoryID, err := catRepo.CreateCategory(ctx, types.Category{
+	categoryID, _ := utilities.GenerateIDString()
+	category := types.Category{
+		ID:          categoryID,
 		Name:        "Test Category for Images",
 		Slug:        "test-category-images",
 		Description: "A test category for images",
-	})
+	}
+	err := catRepo.CreateCategory(ctx, &category)
 	require.NoError(t, err, "Expected no error on category creation")
 
 	product := &types.Product{
@@ -57,10 +63,11 @@ func TestCreateProductWithImages(t *testing.T) {
 		Price:       100000,
 		Description: "Product with images for testing",
 		Images: []types.Image{
-			{ImageURL: "http://example.com/image1.jpg", Animated: false, AltText: func(s string) *string { return &s }("Image 1")},
-			{ImageURL: "http://example.com/image2.gif", Animated: true, AltText: func(s string) *string { return &s }("Image 2 animated")},
+			{ID: utilities.MustGenerateIDString(), ImageURL: "http://example.com/image1.jpg", Animated: false, AltText: func(s string) *string { return &s }("Image 1")},
+			{ID: utilities.MustGenerateIDString(), ImageURL: "http://example.com/image2.gif", Animated: true, AltText: func(s string) *string { return &s }("Image 2 animated")},
 		},
 	}
+	product.ID, _ = utilities.GenerateIDString()
 
 	err = repo.CreateProductWithCategory(ctx, product, "test-category-images")
 	require.NoError(t, err, "Expected no error on product creation with images")
@@ -71,16 +78,18 @@ func TestCreateProductWithImages(t *testing.T) {
 	require.NoError(t, err, "Expected no error on fetching product by ID")
 	require.NotNil(t, retrievedProduct, "Expected retrieved product to not be nil")
 
-	// Verify that the images were inserted correctly
-	assert.Len(t, retrievedProduct.Images, 2, "Expected two images to be associated with the product")
+	var images []types.Image
+	err = json.Unmarshal(retrievedProduct.Images, &images)
+	require.NoError(t, err, "Expected no error on unmarshaling images")
+	assert.Equal(t, 2, len(images), "Expected two images to be present")
 
-	assert.Equal(t, "http://example.com/image1.jpg", retrievedProduct.Images[0].ImageURL, "Expected image URL to match for first image")
-	assert.Equal(t, false, retrievedProduct.Images[0].Animated, "Expected animated flag to be false for first image")
-	assert.Equal(t, "Image 1", *retrievedProduct.Images[0].AltText, "Expected alt text to match for first image")
+	assert.Equal(t, "http://example.com/image1.jpg", images[0].ImageURL, "Expected image URL to match for first image")
+	assert.Equal(t, false, images[0].Animated, "Expected animated flag to be false for first image")
+	assert.Equal(t, "Image 1", *images[0].AltText, "Expected alt text to match for first image")
 
-	assert.Equal(t, "http://example.com/image2.gif", retrievedProduct.Images[1].ImageURL, "Expected image URL to match for second image")
-	assert.Equal(t, true, retrievedProduct.Images[1].Animated, "Expected animated flag to be true for second image")
-	assert.Equal(t, "Image 2 animated", *retrievedProduct.Images[1].AltText, "Expected alt text to match for second image")
+	assert.Equal(t, "http://example.com/image2.gif", images[1].ImageURL, "Expected image URL to match for second image")
+	assert.Equal(t, true, images[1].Animated, "Expected animated flag to be true for second image")
+	assert.Equal(t, "Image 2 animated", *images[1].AltText, "Expected alt text to match for second image")
 
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
@@ -99,14 +108,18 @@ func TestCreateProductWithCategory(t *testing.T) {
 		Price:       150000,
 		Description: "A test product with category description",
 	}
+	product.ID, _ = utilities.GenerateIDString()
 
 	// create category
 	catRepo := NewCategoryRepository(dbPool)
-	categoryID, err := catRepo.CreateCategory(ctx, types.Category{
+	categoryID, _ := utilities.GenerateIDString()
+	category := types.Category{
+		ID:          categoryID,
 		Name:        "Test Category",
 		Slug:        "test-category",
 		Description: "A test category",
-	})
+	}
+	err := catRepo.CreateCategory(ctx, &category)
 	assert.NoError(t, err, "Expected no error on category creation")
 
 	err = repo.CreateProductWithCategory(ctx, product, "test-category")
@@ -135,6 +148,7 @@ func TestGetProducts(t *testing.T) {
 		Price:       200000,
 		Description: "A test product for get all",
 	}
+	product.ID, _ = utilities.GenerateIDString()
 
 	err := repo.CreateProduct(ctx, product)
 	assert.NoError(t, err, "Expected no error on product creation")
@@ -166,12 +180,14 @@ func TestGetProductsByCategory(t *testing.T) {
 
 	// Create a test category
 	catRepo := NewCategoryRepository(dbPool)
+	categoryID, _ := utilities.GenerateIDString()
 	category := types.Category{
+		ID:          categoryID,
 		Name:        "Test Category for Filtering",
 		Slug:        "test-category-filtering",
 		Description: "Category for testing product filtering",
 	}
-	categoryID, err := catRepo.CreateCategory(ctx, category)
+	err := catRepo.CreateCategory(ctx, &category)
 	require.NoError(t, err, "Expected no error on category creation")
 
 	// Create a product linked to that category
@@ -180,6 +196,8 @@ func TestGetProductsByCategory(t *testing.T) {
 		Price:       200000,
 		Description: "A test product with a category",
 	}
+	product.ID, _ = utilities.GenerateIDString()
+
 	err = repo.CreateProductWithCategory(ctx, product, "test-category-filtering")
 	require.NoError(t, err, "Expected no error on product creation with category")
 	require.NotEmpty(t, product.ID, "Expected product ID to be set")
@@ -221,6 +239,7 @@ func TestGetProductByID(t *testing.T) {
 		Price:       250000,
 		Description: "A test product for get by ID",
 	}
+	product.ID, _ = utilities.GenerateIDString()
 
 	err := repo.CreateProduct(ctx, product)
 	assert.NoError(t, err, "Expected no error on product creation")
@@ -250,6 +269,7 @@ func TestDeleteProduct(t *testing.T) {
 		Price:       300000,
 		Description: "A test product for deletion",
 	}
+	product.ID, _ = utilities.GenerateIDString()
 
 	err := repo.CreateProduct(ctx, product)
 	assert.NoError(t, err, "Expected no error on product creation")

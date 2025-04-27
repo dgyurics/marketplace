@@ -1,40 +1,5 @@
-CREATE SEQUENCE table_id_seq
-    START 1
-    INCREMENT 1
-    MINVALUE 1
-    CACHE 1;
-
--- Generate 64-bit IDs with parts for timestamp, shard ID, and sequence number.
--- Useful for distributed systems where multiple databases generate IDs
-CREATE OR REPLACE FUNCTION gen_id()
-RETURNS BIGINT
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    our_epoch bigint := 1672531200000; -- custom epoch, 2023-01-01T00:00:00Z in milliseconds
-    seq_id bigint; -- sequence ID
-    now_millis bigint; -- current time in milliseconds
-    shard_id int := 0; -- custom shard ID
-    result bigint; -- final ID
-BEGIN
-    -- Get the next sequence value and modulo by 1024 to get a number between 0 and 1023
-    -- Necessary for events where multiple IDs are generated at the same millisecond
-    -- FIXME: if more than 1024 IDs are generated in the same millisecond, this will fail
-    SELECT nextval('table_id_seq') % 1024 INTO seq_id;
-
-    -- Get the current time in milliseconds
-    SELECT FLOOR(EXTRACT(EPOCH FROM clock_timestamp()) * 1000) INTO now_millis;
-
-    -- Construct the ID
-    result := (now_millis - our_epoch) << 23; -- 41 bits for timestamp
-    result := result | (shard_id << 10); -- 13 bits for shard ID
-    result := result | (seq_id); -- 10 bits for sequence id
-    RETURN result; -- FIXME: if most significant bit is 1, this will return a negative number
-END;
-$$;
-
 CREATE TABLE IF NOT EXISTS categories (
-    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    id BIGINT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(255) UNIQUE NOT NULL,
     parent_id BIGINT REFERENCES categories(id) ON DELETE SET NULL,
@@ -53,7 +18,7 @@ ON categories (slug)
 WHERE is_deleted = FALSE;
 
 CREATE TABLE IF NOT EXISTS products (
-    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    id BIGINT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     price BIGINT NOT NULL,
     description TEXT NOT NULL,
@@ -67,7 +32,7 @@ ON products (id)
 WHERE is_deleted = FALSE;
 
 CREATE TABLE IF NOT EXISTS images (
-    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    id BIGINT PRIMARY KEY,
     product_id BIGINT NOT NULL,
     image_url TEXT NOT NULL,
     animated BOOLEAN DEFAULT FALSE,
@@ -130,7 +95,7 @@ CREATE TABLE IF NOT EXISTS product_categories (
 CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest');
 
 CREATE TABLE IF NOT EXISTS users (
-    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    id BIGINT PRIMARY KEY,
     email VARCHAR(255) UNIQUE,
     password_hash TEXT,
     role user_role_enum DEFAULT 'guest' NOT NULL,
@@ -150,19 +115,19 @@ FROM users;
 
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     token_hash TEXT NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     revoked BOOLEAN DEFAULT FALSE,
-    last_used TIMESTAMP,
+    last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS password_reset_codes (
-    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     code_hash TEXT NOT NULL,
     expires_at TIMESTAMP NOT NULL,
@@ -190,7 +155,7 @@ CREATE TABLE IF NOT EXISTS cart_items (
 );
 
 CREATE TABLE IF NOT EXISTS addresses (
-    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     addressee VARCHAR(255),
     address_line1 VARCHAR(255) NOT NULL,
@@ -218,7 +183,7 @@ CREATE TYPE order_status_enum AS ENUM (
     'cancelled'
 );
 CREATE TABLE IF NOT EXISTS orders (
-    id BIGINT PRIMARY KEY DEFAULT gen_id(),
+    id BIGINT PRIMARY KEY,
     user_id BIGINT,
     address_id BIGINT,
     currency VARCHAR(10) DEFAULT 'usd',

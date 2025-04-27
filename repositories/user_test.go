@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -80,7 +81,7 @@ func TestCreateGuest(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a guest user
-	guestUser := &types.User{Email: ""}
+	guestUser := &types.User{ID: utilities.MustGenerateIDString(), Email: ""}
 	err := repo.CreateGuest(ctx, guestUser)
 	assert.NoError(t, err, "Expected no error while creating a guest user")
 	assert.NotEmpty(t, guestUser.ID, "Expected guest user ID to be set")

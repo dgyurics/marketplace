@@ -8,7 +8,7 @@ import (
 )
 
 type CategoryRepository interface {
-	CreateCategory(ctx context.Context, category types.Category) (string, error)
+	CreateCategory(ctx context.Context, category *types.Category) error
 	GetAllCategories(ctx context.Context) ([]types.Category, error)
 	GetCategoryByID(ctx context.Context, id string) (*types.Category, error)
 }
@@ -21,14 +21,19 @@ func NewCategoryRepository(db *sql.DB) CategoryRepository {
 	return &categoryRepository{db: db}
 }
 
-func (r *categoryRepository) CreateCategory(ctx context.Context, category types.Category) (string, error) {
-	var newID string
-	query := `INSERT INTO categories (name, slug, description) VALUES ($1, $2, $3) RETURNING id`
-	err := r.db.QueryRowContext(ctx, query, category.Name, category.Slug, category.Description).Scan(&newID)
-	if err != nil {
-		return "", err
-	}
-	return newID, nil
+func (r *categoryRepository) CreateCategory(ctx context.Context, category *types.Category) error {
+	query := `
+		INSERT INTO categories (id, name, slug, description, parent_id)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING created_at, updated_at
+	`
+	return r.db.QueryRowContext(ctx, query,
+		category.ID,
+		category.Name,
+		category.Slug,
+		category.Description,
+		category.ParentID,
+	).Scan(&category.CreatedAt, &category.UpdatedAt)
 }
 
 func (r *categoryRepository) GetAllCategories(ctx context.Context) ([]types.Category, error) {
@@ -38,6 +43,8 @@ func (r *categoryRepository) GetAllCategories(ctx context.Context) ([]types.Cate
 			id,
 			name,
 			description,
+			slug,
+			parent_id,
 			created_at,
 			updated_at
 		FROM categories`
@@ -52,12 +59,18 @@ func (r *categoryRepository) GetAllCategories(ctx context.Context) ([]types.Cate
 			&category.ID,
 			&category.Name,
 			&category.Description,
+			&category.Slug,
+			&category.ParentID,
 			&category.CreatedAt,
 			&category.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
 		categories = append(categories, category)
+	}
+	// Check for errors from iterating over rows.
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	return categories, nil
 }

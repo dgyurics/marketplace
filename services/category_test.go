@@ -15,9 +15,9 @@ type MockCategoryRepository struct {
 	mock.Mock
 }
 
-func (m *MockCategoryRepository) CreateCategory(ctx context.Context, category types.Category) (string, error) {
+func (m *MockCategoryRepository) CreateCategory(ctx context.Context, category *types.Category) error {
 	args := m.Called(ctx, category)
-	return args.String(0), args.Error(1)
+	return args.Error(0)
 }
 
 func (m *MockCategoryRepository) GetAllCategories(ctx context.Context) ([]types.Category, error) {
@@ -35,15 +35,12 @@ func TestCategoryService_CreateCategory(t *testing.T) {
 	service := services.NewCategoryService(mockRepo)
 
 	category := types.Category{Name: "Test Category", Description: "A test category"}
-	expectedID := "1"
 
-	mockRepo.On("CreateCategory", mock.Anything, category).Return(expectedID, nil)
-
-	newID, err := service.CreateCategory(context.Background(), category)
+	mockRepo.On("CreateCategory", mock.Anything, mock.Anything).Return(nil)
+	err := service.CreateCategory(context.Background(), &category)
 
 	assert.NoError(t, err)
-	assert.Equal(t, expectedID, newID)
-
+	assert.NotEmpty(t, category.ID, "expected generated ID to be non-empty")
 	mockRepo.AssertExpectations(t)
 }
 

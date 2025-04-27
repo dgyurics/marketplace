@@ -28,6 +28,8 @@ func NewScheduleService(orderSrv OrderService, schedRepo repositories.ScheduleRe
 	}
 }
 
+// TODO cleanup expired refresh tokens
+
 // Start starts the scheduling service.
 // Pass it root context to allow for clean shutdown.
 func (s *scheduleService) Start(ctx context.Context) {

@@ -37,21 +37,21 @@ func (r *userRepository) ConvertGuestToUser(ctx context.Context, user *types.Use
 
 func (r *userRepository) CreateGuest(ctx context.Context, user *types.User) error {
 	query := `
-		INSERT INTO users (role)
-		VALUES ('guest')
+		INSERT INTO users (id, role)
+		VALUES ($1, 'guest')
 		RETURNING id, role, updated_at
 	`
-	return r.db.QueryRowContext(ctx, query).
+	return r.db.QueryRowContext(ctx, query, user.ID).
 		Scan(&user.ID, &user.Role, &user.UpdatedAt)
 }
 
 func (r *userRepository) CreateUser(ctx context.Context, user *types.User) error {
 	query := `
-		INSERT INTO users (email, password_hash, role)
-		VALUES ($1, $2, 'user')
+		INSERT INTO users (id, email, password_hash, role)
+		VALUES ($1, $2, $3, 'user')
 		RETURNING id, email, role, updated_at
 	`
-	return r.db.QueryRowContext(ctx, query, user.Email, user.PasswordHash).
+	return r.db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash).
 		Scan(&user.ID, &user.Email, &user.Role, &user.UpdatedAt)
 }
 
@@ -91,6 +91,11 @@ func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]ty
 			return nil, err
 		}
 		users = append(users, user)
+	}
+
+	// Check for errors from iterating over rows.
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	return users, nil
 }

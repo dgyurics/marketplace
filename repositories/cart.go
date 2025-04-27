@@ -71,6 +71,11 @@ func (r *cartRepository) GetCart(ctx context.Context, userID string) ([]types.Ca
 		items = append(items, item)
 	}
 
+	// Check for errors from iterating over rows.
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return items, nil
 }
 

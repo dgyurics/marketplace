@@ -18,9 +18,9 @@ type MockCategoryService struct {
 	mock.Mock
 }
 
-func (m *MockCategoryService) CreateCategory(ctx context.Context, category types.Category) (string, error) {
+func (m *MockCategoryService) CreateCategory(ctx context.Context, category *types.Category) error {
 	args := m.Called(ctx, category)
-	return args.String(0), args.Error(1)
+	return args.Error(0)
 }
 
 func (m *MockCategoryService) GetAllCategories(ctx context.Context) ([]types.Category, error) {
@@ -47,7 +47,7 @@ func TestCreateCategory(t *testing.T) {
 	}
 
 	// Set up the expected behavior of the mock service
-	mockService.On("CreateCategory", mock.Anything, mock.AnythingOfType("types.Category")).Return("1", nil)
+	mockService.On("CreateCategory", mock.Anything, mock.Anything).Return(nil)
 
 	// Create a new category as the request payload
 	category := types.Category{
@@ -72,8 +72,6 @@ func TestCreateCategory(t *testing.T) {
 	var responseCategory types.Category
 	err = json.NewDecoder(rr.Body).Decode(&responseCategory)
 	require.NoError(t, err)
-
-	require.Equal(t, "1", responseCategory.ID)
 	require.Equal(t, category.Name, responseCategory.Name)
 
 	// Assert that the mock's expectations were met

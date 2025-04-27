@@ -38,6 +38,11 @@ func (m *MockRefreshRepository) RevokeTokens(ctx context.Context, tokenHash stri
 	return args.Error(0)
 }
 
+func (m *MockRefreshRepository) UpdateLastUsed(ctx context.Context, tokenID string, lastUsed time.Time) error {
+	args := m.Called(ctx, tokenID, lastUsed)
+	return args.Error(0)
+}
+
 // Helper function to create an AuthService with configuration
 func createRefreshService(repo *MockRefreshRepository) services.RefreshService {
 	return services.NewRefreshService(repo, types.AuthConfig{
@@ -73,8 +78,8 @@ func TestValidateRefreshToken(t *testing.T) {
 		LastUsed:  now.UTC(),
 		CreatedAt: now.UTC(),
 	}, nil)
-	// Mock the repository to return no error when storing the refresh token (service will update the LastUsed field)
-	repo.On("StoreToken", mock.Anything, mock.AnythingOfType("types.RefreshToken")).Return(nil)
+	// Mock the repository to return no error when updating the refresh token last used time
+	repo.On("UpdateLastUsed", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	valid, err := refreshService.VerifyToken(context.Background(), refreshToken)
 	assert.NoError(t, err, "expected no error in validating refresh token")

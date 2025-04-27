@@ -11,6 +11,7 @@ import (
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 )
 
 // RefreshService handles the creation, validation, and revocation of refresh tokens.
@@ -18,6 +19,7 @@ type RefreshService interface {
 	GenerateToken() (string, error)
 	StoreToken(ctx context.Context, userID, token string) error
 	VerifyToken(ctx context.Context, token string) (*types.User, error)
+	// VerifyToken(ctx context.Context, userID, token string) (*types.User, error) // TODO replace with this
 	RevokeTokens(ctx context.Context) error
 }
 
@@ -43,16 +45,18 @@ func (s *refreshService) GenerateToken() (string, error) {
 	return hex.EncodeToString(token), nil
 }
 
-// StoreToken stores the refresh token in the database, associating it with a user.
+// StoreToken creates a new refresh token and stores it in the database, associating it with a user.
 func (s *refreshService) StoreToken(ctx context.Context, userID, token string) error {
 	now := time.Now().UTC()
+	tokenID, err := utilities.GenerateIDString()
+	if err != nil {
+		return err
+	}
 	return s.repo.StoreToken(ctx, types.RefreshToken{
+		ID:        tokenID,
 		User:      &types.User{ID: userID},
 		TokenHash: hashString(token, s.config.HMACSecret),
-		Revoked:   false,
 		ExpiresAt: now.Add(s.config.RefreshExpiry),
-		CreatedAt: now,
-		LastUsed:  now,
 	})
 }
 
@@ -60,7 +64,7 @@ func (s *refreshService) StoreToken(ctx context.Context, userID, token string) e
 func (s *refreshService) VerifyToken(ctx context.Context, token string) (*types.User, error) {
 	now := time.Now()
 	tokenHash := hashString(token, s.config.HMACSecret)
-	refreshToken, err := s.repo.GetToken(ctx, tokenHash)
+	refreshToken, err := s.repo.GetToken(ctx, tokenHash) // FIXME
 
 	if err != nil {
 		return nil, err
@@ -78,9 +82,7 @@ func (s *refreshService) VerifyToken(ctx context.Context, token string) (*types.
 		return nil, errors.New("refresh token has expired")
 	}
 
-	// Update the last used time
-	refreshToken.LastUsed = now.UTC()
-	if err := s.repo.StoreToken(ctx, *refreshToken); err != nil {
+	if err := s.repo.UpdateLastUsed(ctx, refreshToken.ID, now.UTC()); err != nil {
 		return nil, errors.New("failed to update refresh token usage")
 	}
 

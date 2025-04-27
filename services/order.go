@@ -381,6 +381,11 @@ func (os *orderService) CreateOrder(ctx context.Context, order *types.Order) err
 }
 
 func (os *orderService) createAndLogOrder(ctx context.Context, order *types.Order) error {
+	orderID, err := utilities.GenerateIDString()
+	if err != nil {
+		return err
+	}
+	order.ID = orderID
 	if err := os.orderRepo.CreateOrder(ctx, order); err != nil {
 		slog.Error("Error creating order", "user_id", order.UserID, "error", err)
 		return err

@@ -28,25 +28,42 @@ func NewProductRepository(db *sql.DB) ProductRepository {
 }
 
 func (r *productRepository) CreateProduct(ctx context.Context, product *types.Product) error {
-	query := `
-		INSERT INTO products (name, price, description)
-		VALUES ($1, $2, $3)
-		RETURNING id, name, price, description`
+	// Begin a transaction
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-	if err := r.db.QueryRowContext(ctx, query, product.Name, product.Price, product.Description).
+	// Insert the product
+	query := `
+		INSERT INTO products (id, name, price, description)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, name, price, description`
+	if err := tx.QueryRowContext(ctx, query, product.ID, product.Name, product.Price, product.Description).
 		Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
 		return err
 	}
 
-	// Create an inventory record for the product
+	// Insert associated images
+	for _, image := range product.Images {
+		imageQuery := `
+			INSERT INTO images (id, product_id, image_url, animated, display_order, alt_text)
+			VALUES ($1, $2, $3, $4, $5, $6)`
+		if _, err = tx.ExecContext(ctx, imageQuery, image.ID, product.ID, image.ImageURL, image.Animated, image.DisplayOrder, image.AltText); err != nil {
+			return err
+		}
+	}
+
+	// Insert inventory record
 	inventoryQuery := `
 		INSERT INTO inventory (product_id, quantity)
 		VALUES ($1, 0)`
-	if _, err := r.db.ExecContext(ctx, inventoryQuery, product.ID); err != nil {
+	if _, err := tx.ExecContext(ctx, inventoryQuery, product.ID); err != nil {
 		return err
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 func (r *productRepository) CreateProductWithCategory(ctx context.Context, product *types.Product, categorySlug string) error {
@@ -59,10 +76,10 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 
 	// Create the product
 	query := `
-		INSERT INTO products (name, price, description)
-		VALUES ($1, $2, $3)
+		INSERT INTO products (id, name, price, description)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id, name, price, description`
-	if err = tx.QueryRowContext(ctx, query, product.Name, product.Price, product.Description).
+	if err = tx.QueryRowContext(ctx, query, product.ID, product.Name, product.Price, product.Description).
 		Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
 		return err
 	}
@@ -76,11 +93,11 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 	}
 
 	// Create any images associated with the product
-	for idx, image := range product.Images {
+	for _, image := range product.Images {
 		imageQuery := `
-			INSERT INTO images (product_id, image_url, animated, display_order, alt_text)
-			VALUES ($1, $2, $3, $4, $5)`
-		if _, err = tx.ExecContext(ctx, imageQuery, product.ID, image.ImageURL, image.Animated, idx, image.AltText); err != nil {
+			INSERT INTO images (id, product_id, image_url, animated, display_order, alt_text)
+			VALUES ($1, $2, $3, $4, $5, $6)`
+		if _, err = tx.ExecContext(ctx, imageQuery, image.ID, product.ID, image.ImageURL, image.Animated, image.DisplayOrder, image.AltText); err != nil {
 			return err
 		}
 	}
@@ -127,6 +144,12 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 
 		products = append(products, product)
 	}
+
+	// Check for errors from iterating over rows.
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return products, nil
 }
 
@@ -192,24 +215,16 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*typ
 	`
 
 	var product types.ProductWithInventory
-	var imagesJSON []byte
-
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&product.ID,
 		&product.Name,
 		&product.Price,
 		&product.Description,
 		&product.Details,
-		&imagesJSON,
+		&product.Images,
 		&product.Quantity,
 	)
 	if err != nil {
-		return nil, err
-	}
-
-	// FIXME store as raw json
-	// Convert JSONB to Go struct
-	if err := json.Unmarshal(imagesJSON, &product.Images); err != nil {
 		return nil, err
 	}
 

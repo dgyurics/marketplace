@@ -82,6 +82,15 @@ func GenerateIDString() (string, error) {
 	return strconv.FormatUint(id, 10), nil
 }
 
+// Used only for tests
+func MustGenerateIDString() string {
+	id, err := GenerateIDString()
+	if err != nil {
+		panic(fmt.Sprintf("failed to generate ID: %v", err))
+	}
+	return id
+}
+
 func DecodeID(id uint64) (timestamp time.Time, machineID, seqID uint8) {
 	seqID = uint8(id & 0xFF)            // bits 0-7
 	machineID = uint8((id >> 8) & 0xFF) // bits 8-15

@@ -15,6 +15,74 @@ security:
   - BearerAuth: []
 
 paths:
+  /categories:
+    get:
+      summary: Get all categories
+      description: Retrieves a list of all product categories.
+      tags:
+        - Categories
+      responses:
+        "200":
+          description: Successfully retrieved categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        "500":
+          description: Internal server error
+
+    post:
+      summary: Create a new category
+      description: Creates a new product category. Requires admin privileges.
+      tags:
+        - Categories
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Category"
+      responses:
+        "201":
+          description: Category successfully created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          description: Invalid request payload
+        "401":
+          description: Unauthorized - Admin access required
+        "500":
+          description: Internal server error
+
+  /categories/{id}:
+    get:
+      summary: Get category by ID
+      description: Retrieves a specific category by its ID.
+      tags:
+        - Categories
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successfully retrieved category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "404":
+          description: Category not found
+        "500":
+          description: Internal server error
   /users/register:
     post:
       summary: Register a new user
@@ -206,6 +274,8 @@ paths:
       description: Upgrades a guest account by assigning an email and password.
       tags:
         - Auth
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -607,7 +677,7 @@ paths:
       parameters:
         - name: category
           in: query
-          description: Filter products by one or more category slugs (repeat the query param: categories=chairs&categories=sofas)
+          description: Filter products by one or more category slugs (e.g., category=chairs&category=sofas)
           schema:
             type: array
             items:
@@ -1081,3 +1151,30 @@ components:
           type: string
           nullable: true
           example: "Error message if any"
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "cat-123"
+        name:
+          type: string
+          example: "Furniture"
+        slug:
+          type: string
+          example: "furniture"
+        description:
+          type: string
+          example: "Various types of furniture."
+        parent_id:
+          type: string
+          nullable: true
+          example: "cat-001"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-03-04T12:00:00Z"

@@ -8,13 +8,14 @@ import (
 
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/types/stripe"
+	"github.com/dgyurics/marketplace/utilities"
 	"github.com/stretchr/testify/assert"
 )
 
 // Helper function to insert a test address for a user
 func createTestAddress(t *testing.T, db *sql.DB, userID string) string {
 	ctx := context.Background()
-	addressID := genID()
+	addressID := utilities.MustGenerateIDString()
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO addresses (id, user_id, address_line1, city, state_code, postal_code)
@@ -29,7 +30,7 @@ func createTestAddress(t *testing.T, db *sql.DB, userID string) string {
 func createTestProductAndInventory(t *testing.T, db *sql.DB, quantity int) string {
 	ctx := context.Background()
 
-	productID := genID()
+	productID := utilities.MustGenerateIDString()
 
 	var err error
 	_, err = db.ExecContext(ctx, `
@@ -77,6 +78,7 @@ func TestOrderRepository_CreateOrder(t *testing.T) {
 
 	// Create the order
 	order := &types.Order{
+		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
 		Address: &types.Address{
 			ID: AddressID,
@@ -118,6 +120,7 @@ func TestOrderRepository_GetOrder(t *testing.T) {
 
 	// 4. Create an order for the user
 	order := &types.Order{
+		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
 		Address: &types.Address{
 			ID: AddressID,
@@ -203,6 +206,7 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 
 	// 4. Create multiple orders for the user
 	order1 := &types.Order{
+		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
 		Address: &types.Address{
 			ID: AddressID,
@@ -217,6 +221,7 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 	// Add another order
 	addToCart(t, dbPool, user.ID, productID1, 1)
 	order2 := &types.Order{
+		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
 		Address: &types.Address{
 			ID: AddressID,
@@ -354,6 +359,7 @@ func TestOrderRepository_PopulateOrderItems(t *testing.T) {
 
 	// 4. Create an order for the user
 	order := &types.Order{
+		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
 		Address: &types.Address{
 			ID: AddressID,

@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,6 +28,11 @@ func NewUserService(repo repositories.UserRepository) UserService {
 }
 
 func (s *userService) CreateGuest(ctx context.Context, user *types.User) error {
+	userID, err := utilities.GenerateIDString()
+	if err != nil {
+		return err
+	}
+	user.ID = userID
 	return s.repo.CreateGuest(ctx, user)
 }
 
@@ -36,6 +42,12 @@ func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
 		return err
 	}
 	user.PasswordHash = string(hashedPassword)
+
+	userID, err := utilities.GenerateIDString()
+	if err != nil {
+		return err
+	}
+	user.ID = userID
 	return s.repo.CreateUser(ctx, user)
 }
 

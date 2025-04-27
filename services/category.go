@@ -5,10 +5,11 @@ import (
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 )
 
 type CategoryService interface {
-	CreateCategory(ctx context.Context, category types.Category) (string, error)
+	CreateCategory(ctx context.Context, category *types.Category) error
 	GetAllCategories(ctx context.Context) ([]types.Category, error)
 	GetCategoryByID(ctx context.Context, id string) (*types.Category, error)
 }
@@ -21,7 +22,12 @@ func NewCategoryService(repo repositories.CategoryRepository) CategoryService {
 	return &categoryService{repo: repo}
 }
 
-func (s *categoryService) CreateCategory(ctx context.Context, category types.Category) (string, error) {
+func (s *categoryService) CreateCategory(ctx context.Context, category *types.Category) error {
+	categoryID, err := utilities.GenerateIDString()
+	if err != nil {
+		return err
+	}
+	category.ID = categoryID
 	return s.repo.CreateCategory(ctx, category)
 }
 

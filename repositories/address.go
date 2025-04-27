@@ -53,6 +53,7 @@ func NewAddressRepository(db *sql.DB) AddressRepository {
 func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Address) error {
 	query := `
 		INSERT INTO addresses (
+			id,
 			user_id,
 			addressee,
 			address_line1,
@@ -62,11 +63,12 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 			postal_code,
 			country_code
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, user_id, created_at, updated_at
 	`
 
 	return r.db.QueryRowContext(ctx, query,
+		address.ID,
 		address.UserID,
 		address.Addressee,
 		address.AddressLine1,

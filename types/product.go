@@ -18,7 +18,7 @@ type ProductWithInventory struct {
 	Price       int64           `json:"price"`
 	Description string          `json:"description"`
 	Details     json.RawMessage `json:"details"`
-	Images      []Image         `json:"images"` // FIXME store as raw json
+	Images      json.RawMessage `json:"images"`
 	CreatedAt   string          `json:"created_at"`
 	UpdatedAt   string          `json:"updated_at"`
 	Quantity    int             `json:"quantity"`

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/dgyurics/marketplace/types"
 )
@@ -12,6 +13,8 @@ import (
 type RefreshRepository interface {
 	StoreToken(ctx context.Context, refreshToken types.RefreshToken) error
 	GetToken(ctx context.Context, tokenHash string) (*types.RefreshToken, error)
+	// GetToken(ctx context.Context, userID, tokenHash string) (*types.RefreshToken, error) // TODO replace with this
+	UpdateLastUsed(ctx context.Context, tokenID string, lastUsed time.Time) error
 	RevokeTokens(ctx context.Context, userID string) error
 }
 
@@ -28,19 +31,18 @@ func (r *refreshRepository) StoreToken(ctx context.Context, token types.RefreshT
 		return errors.New("user.id is required")
 	}
 	query := `
-		INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at, revoked, last_used)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at)
+		VALUES ($1, $2, $3, $4)
 	`
-	_, err := r.db.ExecContext(ctx, query, token.User.ID, token.TokenHash, token.ExpiresAt, token.CreatedAt, token.Revoked, token.LastUsed)
+	_, err := r.db.ExecContext(ctx, query, token.ID, token.User.ID, token.TokenHash, token.ExpiresAt)
 	return err
 }
 
-// FIXME - should pass in user ID (from expired JWT) too
-// otherwise it's possible for refresh token collisions to occur
 func (r *refreshRepository) GetToken(ctx context.Context, tokenHash string) (*types.RefreshToken, error) {
 	var refreshToken types.RefreshToken
 	var user types.User
 
+	// FIXME last used should be updated
 	query := `
 		SELECT
 			rt.id,
@@ -61,18 +63,7 @@ func (r *refreshRepository) GetToken(ctx context.Context, tokenHash string) (*ty
 		WHERE rt.token_hash = $1
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, tokenHash)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	// Check if a row exists before scanning
-	if !rows.Next() {
-		return nil, nil
-	}
-
-	err = rows.Scan(
+	err := r.db.QueryRowContext(ctx, query, tokenHash).Scan(
 		&refreshToken.ID,
 		&refreshToken.TokenHash,
 		&refreshToken.ExpiresAt,
@@ -87,6 +78,9 @@ func (r *refreshRepository) GetToken(ctx context.Context, tokenHash string) (*ty
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -98,5 +92,15 @@ func (r *refreshRepository) GetToken(ctx context.Context, tokenHash string) (*ty
 func (r *refreshRepository) RevokeTokens(ctx context.Context, userID string) error {
 	query := `UPDATE refresh_tokens SET revoked = true WHERE user_id = $1`
 	_, err := r.db.ExecContext(ctx, query, userID)
+	return err
+}
+
+func (r *refreshRepository) UpdateLastUsed(ctx context.Context, tokenID string, lastUsed time.Time) error {
+	query := `
+		UPDATE refresh_tokens
+		SET last_used = $2
+		WHERE id = $1
+	`
+	_, err := r.db.ExecContext(ctx, query, tokenID, lastUsed)
 	return err
 }

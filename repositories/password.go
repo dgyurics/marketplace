@@ -30,10 +30,10 @@ func (r *passwordRepository) StoreResetCode(ctx context.Context, code *types.Pas
 		return errors.New("user.id is required")
 	}
 	query := `
-		INSERT INTO password_reset_codes (user_id, code_hash, expires_at)
-		VALUES ($1, $2, $3)
+		INSERT INTO password_reset_codes (id, user_id, code_hash, expires_at)
+		VALUES ($1, $2, $3, $4)
 	`
-	_, err := r.db.ExecContext(ctx, query, code.User.ID, code.CodeHash, code.ExpiresAt)
+	_, err := r.db.ExecContext(ctx, query, code.ID, code.User.ID, code.CodeHash, code.ExpiresAt)
 	return err
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 )
 
 type AddressService interface {
@@ -29,6 +30,12 @@ func (s *addressService) CreateAddress(ctx context.Context, address *types.Addre
 		return errors.New("missing required fields for address")
 	}
 	address.UserID = userID
+
+	addressID, err := utilities.GenerateIDString()
+	if err != nil {
+		return err
+	}
+	address.ID = addressID
 	return s.repo.CreateAddress(ctx, address)
 }
 

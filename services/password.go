@@ -9,6 +9,7 @@ import (
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 )
 
 // PasswordService is the interface for password reset operations
@@ -47,7 +48,13 @@ func (s *passwordService) GenerateResetCode(ctx context.Context) (string, error)
 
 // StoreResetCode stores a password reset code in the database
 func (s *passwordService) StoreResetCode(ctx context.Context, code string, userID string) error {
+	pwdResetID, err := utilities.GenerateIDString()
+	if err != nil {
+		return err
+	}
+
 	return s.repo.StoreResetCode(ctx, &types.PasswordReset{
+		ID:        pwdResetID,
 		User:      &types.User{ID: userID},
 		CodeHash:  hashString(code, s.hmacKey),
 		ExpiresAt: time.Now().UTC().Add(time.Minute * 15),

@@ -165,11 +165,12 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 
 	// create a new order with pending status
 	query = `
-		INSERT INTO orders (user_id, address_id, currency, amount) VALUES ($1, $2, $3, $4)
+		INSERT INTO orders (id, user_id, address_id, currency, amount) VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, user_id, currency, amount, status, created_at
 	`
 	if err = tx.QueryRowContext(
 		ctx, query,
+		order.ID,
 		order.UserID,
 		order.Address.ID,
 		order.Currency,
@@ -395,6 +396,11 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 		result = append(result, order)
 	}
 
+	// Check for errors from iterating over rows.
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return result, nil
 }
 
@@ -454,6 +460,11 @@ func (r *orderRepository) PopulateOrderItems(ctx context.Context, orders *[]type
 			return err
 		}
 		itemMap[orderID] = append(itemMap[orderID], item)
+	}
+
+	// Check for errors from iterating over rows.
+	if err = rows.Err(); err != nil {
+		return err
 	}
 
 	// Populate the orders with their items
