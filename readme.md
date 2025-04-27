@@ -3,28 +3,27 @@
 </p>
 <h1 align="center">Marketplace</h1>
 <p align="center">
-  An e-commerce API built with Go, designed to handle essential operations such as product and order management, user authentication, and shopping carts. This headless backend aims to serve as a robust foundation for any e-commerce application. Dependencies have been kept to a minimum.
+  Marketplace is a self-hosted e-commerce framework built with Go, designed to help developers build and customize their own online stores. Dependencies have been kept to a minimum.
 </p>
 <h2>Features</h2>
 <ul>
+  <li><strong>Product Management:</strong> CRUD operations for products, including categorization, basic inventory management, and support for product meta-data (e.g., material, weight, dimensions).</li>
+  <li><strong>Order Management:</strong> Create and manage orders, including order status tracking.</li>
+  <li><strong>User Authentication:</strong> JWT-based user authorization and authentication.</li>
   <li><strong>Shopping Cart:</strong> Manage user shopping carts, calculate totals, and track item quantities.</li>
   <li><strong>Payments:</strong> Stripe integration for calculating tax and processing payments.</li>
-  <li><strong>User Authentication:</strong> JWT-based user authorization and authentication.</li>
   <li><strong>Logging:</strong> Structured logging for monitoring and debugging in a distributed environment.</li>
-  <li><strong>Order Management:</strong> Create and manage orders, including order status tracking.</li>
-  <li><strong>Product Management:</strong> CRUD operations for products, including categorization and basic inventory management.</li>
 </ul>
 
 <h2>Planned Enhancements</h2>
 <ul>
   <li><strong>Chat Support:</strong> Connect customers with a live support agent.</li>
   <li><strong>Email Notifications:</strong> Send order status emails to users.</li>
-  <li><strong>Search and Filtering:</strong> Advanced search capabilities, allowing users to find products through keyword and fuzzy searches.</li>
+  <li><strong>Search:</strong> Advanced search capabilities, allowing users to find products through keyword and fuzzy searches.</li>
   <li><strong>Caching:</strong> Implement API caching to improve performance.</li>
   <li><strong>Rate Limiting:</strong> Protect the API from abuse with rate limiting.</li>
-  <li><strong>Cart Item Limits:</strong> Implement cart item limits to prevent abuse.</li>
+  <li><strong>Extensible payment provider:</strong> Stripe by default, others pluggable.</li>
   <li><strong>Product Variants:</strong> Support product variants (e.g., size, color) and manage inventory for each variant (SKU).</li>
-  <li><strong>Product Meta-Data:</strong> Support product meta-data (e.g., material, weight, dimensions) to enhance product details.</li>
 </ul>
 
 <h2>Future Considerations</h2>
@@ -43,3 +42,6 @@
   <li>Go 1.22 or higher</li>
   <li>Docker</li>
 </ul>
+
+<h2>Installation</h2>
+<a href="https://github.com/dgyurics/marketplace/wiki">This guide</a> will walk you through setting up Marketplace on a machine running Ubuntu Linux. Although installing Marketplace is relatively straightforward, we recommend working knowledge of Go if you plan to modify the source code.
