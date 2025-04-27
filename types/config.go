@@ -15,6 +15,7 @@ type Config struct {
 	Environment  Environment
 	JWT          JWTConfig
 	Logger       LoggerConfig
+	MachineID    uint8
 	Server       ServerConfig
 	Order        OrderConfig
 	TemplatesDir string // path to the directory containing email templates

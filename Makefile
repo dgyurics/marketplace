@@ -52,6 +52,16 @@ confirm-payment-intent:
 refund-payment-intent:
 	go run ./cmd/stripe -cmd=refund -pi=$(PI)
 
+# Generate unique IDs
+generate-id:
+	go run ./cmd/id -cmd=generate-id
+
+generate-ids:
+	go run ./cmd/id -cmd=generate-id -n=$(n)
+
+decode-id:
+	go run ./cmd/id -cmd=decode-id $(id)
+
 # Generate RSA keys (private and public PEM files)
 generate-keys:
 	@echo "Generating RSA private and public keys..."

@@ -21,6 +21,7 @@ func LoadConfig() types.Config {
 		Database:     loadDBConfig(),
 		Email:        loadMailConfig(),
 		Logger:       LoadLoggerConfig(),
+		MachineID:    loadMachineID(),
 		Order:        loadOrderConfig(),
 		JWT:          loadJWTConfig(),
 		TemplatesDir: loadTemplatesDir(),
@@ -80,6 +81,16 @@ func loadOrderConfig() types.OrderConfig {
 		DefaultTaxBehavior: getEnv("ORDER_DEFAULT_TAX_BEHAVIOR"),
 		StripeConfig:       loadStripeConfig(),
 	}
+}
+
+func loadMachineID() uint8 {
+	envVar := getEnv("MACHINE_ID")
+	val, err := strconv.ParseUint(envVar, 10, 8)
+	if err != nil {
+		slog.Error("Invalid integer", "key", "MACHINE_ID", "error", err)
+		os.Exit(1)
+	}
+	return uint8(val)
 }
 
 func loadStripeConfig() types.StripeConfig {

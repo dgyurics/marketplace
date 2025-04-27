@@ -32,6 +32,9 @@ func main() {
 	// Initialize logger
 	utilities.InitLogger(config.Logger)
 
+	// Initialize unique ID generator
+	utilities.InitIDGenerator(config.MachineID)
+
 	// Initialize database
 	db := db.Connect(config.Database)
 
