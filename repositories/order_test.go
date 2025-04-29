@@ -80,6 +80,7 @@ func TestOrderRepository_CreateOrder(t *testing.T) {
 	order := &types.Order{
 		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
+		Email:  "test@example.com",
 		Address: &types.Address{
 			ID: AddressID,
 		},
@@ -122,6 +123,7 @@ func TestOrderRepository_GetOrder(t *testing.T) {
 	order := &types.Order{
 		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
+		Email:  "test@example.com",
 		Address: &types.Address{
 			ID: AddressID,
 		},
@@ -208,6 +210,7 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 	order1 := &types.Order{
 		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
+		Email:  "test@example.com",
 		Address: &types.Address{
 			ID: AddressID,
 		},
@@ -223,6 +226,7 @@ func TestOrderRepository_GetOrders(t *testing.T) {
 	order2 := &types.Order{
 		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
+		Email:  "test@example.com",
 		Address: &types.Address{
 			ID: AddressID,
 		},
@@ -361,6 +365,7 @@ func TestOrderRepository_PopulateOrderItems(t *testing.T) {
 	order := &types.Order{
 		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
+		Email:  "test@example.com",
 		Address: &types.Address{
 			ID: AddressID,
 		},

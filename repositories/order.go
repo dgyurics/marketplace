@@ -93,6 +93,10 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		return errors.New("Order.UserID required when creating an order")
 	}
 
+	if order.Email == "" {
+		return errors.New("Order.Email required when creating an order")
+	}
+
 	addr := order.Address
 	if err := tx.QueryRowContext(ctx, `
 		SELECT
@@ -165,19 +169,21 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 
 	// create a new order with pending status
 	query = `
-		INSERT INTO orders (id, user_id, address_id, currency, amount) VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, user_id, currency, amount, status, created_at
+		INSERT INTO orders (id, user_id, email, address_id, currency, amount) VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, user_id, email, currency, amount, status, created_at
 	`
 	if err = tx.QueryRowContext(
 		ctx, query,
 		order.ID,
 		order.UserID,
+		order.Email,
 		order.Address.ID,
 		order.Currency,
 		amount,
 	).Scan(
 		&order.ID,
 		&order.UserID,
+		&order.Email,
 		&order.Currency,
 		&order.Amount,
 		&order.Status,
@@ -268,6 +274,7 @@ func (r *orderRepository) CreateStripeEvent(ctx context.Context, event stripe.Ev
 }
 
 // UpdateOrder updates an order with new status and/or payment intent ID
+// FIXME break this up into two sep functions
 func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) error {
 	if order == nil || order.ID == "" {
 		return fmt.Errorf("missing order ID")
@@ -328,6 +335,7 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 		SELECT
 			o.id,
 			o.user_id,
+			o.email,
 			o.currency,
 			o.amount,
 			o.tax_amount,
@@ -365,6 +373,7 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 		err := rows.Scan(
 			&order.ID,
 			&order.UserID,
+			&order.Email,
 			&order.Currency,
 			&order.Amount,
 			&order.TaxAmount,
@@ -495,6 +504,7 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 		SELECT
 			o.id,
 			o.user_id,
+			o.email,
 			o.currency,
 			o.amount,
 			o.tax_amount,
@@ -538,6 +548,7 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 	err := r.db.QueryRowContext(ctx, query, args...).Scan(
 		&order.ID,
 		&order.UserID,
+		&order.Email,
 		&order.Currency,
 		&order.Amount,
 		&order.TaxAmount,

@@ -184,6 +184,7 @@ CREATE TYPE order_status_enum AS ENUM (
 CREATE TABLE IF NOT EXISTS orders (
     id BIGINT PRIMARY KEY,
     user_id BIGINT,
+    email VARCHAR(255) NOT NULL,
     address_id BIGINT,
     currency VARCHAR(10) DEFAULT 'usd',
     amount BIGINT NOT NULL DEFAULT 0,

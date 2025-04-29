@@ -58,6 +58,7 @@ func TestCreateOrder(t *testing.T) {
 	expectedOrder := &types.Order{
 		Address:  &types.Address{ID: expectedAddressID},
 		Currency: "USD",
+		Email:    "testemail@email.com",
 	}
 
 	// Mock the CreateOrder method
@@ -67,6 +68,7 @@ func TestCreateOrder(t *testing.T) {
 	requestBody := map[string]string{
 		"address_id": expectedAddressID,
 		"currency":   "USD",
+		"email":      "testemail@email.com",
 	}
 	body, err := json.Marshal(requestBody)
 	require.NoError(t, err)
