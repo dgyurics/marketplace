@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dgyurics/marketplace/repositories"
+	"github.com/dgyurics/marketplace/types"
 )
 
 // FIXME replace orderService with servicesContainer,
@@ -45,11 +46,12 @@ func (s *scheduleService) Start(ctx context.Context) {
 			slog.Info("Scheduling service stopped")
 			return
 		case <-ticker.C:
-			ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
-			// TODO call RScheduleRepository.RunJOb(ctx, types.StaleOrders, 10*time.Minute)
-			// to ensure other instances have to done this already
-			s.orderSrv.CancelStaleOrders(ctxTimeout)
-			cancel()
+			// run job only once each 10 minutes
+			if s.schedRepo.RunJob(ctx, types.StaleOrders, 10*time.Minute) {
+				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+				s.orderSrv.CancelStaleOrders(ctxTimeout)
+				cancel()
+			}
 		}
 	}
 }
