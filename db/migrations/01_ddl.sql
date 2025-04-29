@@ -43,35 +43,6 @@ CREATE TABLE IF NOT EXISTS images (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
-CREATE OR REPLACE VIEW v_product AS
-SELECT
-    p.id,
-    p.name,
-    p.price,
-    p.description,
-    p.details,
-    c.slug AS category_slug,
-    COALESCE(imgs.images, '[]') AS images,
-    LEAST(inv.quantity, 100) AS quantity
-FROM products p
-LEFT JOIN product_categories pc ON p.id = pc.product_id
-LEFT JOIN categories c ON pc.category_id = c.id
-LEFT JOIN inventory inv ON p.id = inv.product_id
-LEFT JOIN LATERAL (
-    SELECT JSONB_AGG(
-        JSONB_BUILD_OBJECT(
-            'id', i.id::TEXT,
-            'image_url', i.image_url,
-            'animated', i.animated,
-            'display_order', i.display_order,
-            'alt_text', i.alt_text
-        ) ORDER BY i.display_order
-    ) AS images
-    FROM images i
-    WHERE i.product_id = p.id
-) imgs ON TRUE
-WHERE p.is_deleted = FALSE;
-
 CREATE TABLE IF NOT EXISTS inventory (
     product_id BIGINT PRIMARY KEY,
     quantity INT NOT NULL DEFAULT 0,
@@ -103,6 +74,35 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
+CREATE OR REPLACE VIEW v_product AS
+SELECT
+    p.id,
+    p.name,
+    p.price,
+    p.description,
+    p.details,
+    c.slug AS category_slug,
+    COALESCE(imgs.images, '[]') AS images,
+    LEAST(inv.quantity, 100) AS quantity
+FROM products p
+LEFT JOIN product_categories pc ON p.id = pc.product_id
+LEFT JOIN categories c ON pc.category_id = c.id
+LEFT JOIN inventory inv ON p.id = inv.product_id
+LEFT JOIN LATERAL (
+    SELECT JSONB_AGG(
+        JSONB_BUILD_OBJECT(
+            'id', i.id::TEXT,
+            'image_url', i.image_url,
+            'animated', i.animated,
+            'display_order', i.display_order,
+            'alt_text', i.alt_text
+        ) ORDER BY i.display_order
+    ) AS images
+    FROM images i
+    WHERE i.product_id = p.id
+) imgs ON TRUE
+WHERE p.is_deleted = FALSE;
+
 CREATE OR REPLACE VIEW v_users AS
 SELECT
     id,
@@ -112,7 +112,6 @@ SELECT
     created_at,
     updated_at
 FROM users;
-
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id BIGINT PRIMARY KEY,

@@ -1,4 +1,4 @@
-INSERT INTO categories (id, name, description) VALUES
+INSERT INTO categories (id, name, slug, description) VALUES
 ('526402777421709313', 'Category 1', 'category-1', 'This is category 1'),
 ('526403107899310082', 'Category 2', 'category-2', 'This is category 2'),
 ('526403265579974659', 'Category 3', 'category-3', 'This is category 3'),
@@ -43,7 +43,7 @@ INSERT INTO images (id, product_id, image_url, animated, display_order, alt_text
 ('576264336620650520', '526404888909840398', 'https://picsum.photos/seed/product9-thumb/150/150', false, 1, 'Thumbnail image of Product 9'),
 ('576264336620650521', '526404888909840398', 'https://picsum.photos/seed/product9-zoom/1600/1200', false, 2, 'Zoom image of Product 9'),
 ('576264336620650522', '526404991661899791', 'https://picsum.photos/seed/product10-main/800/600', false, 0, 'Main image of Product 10'),
-('576264336620650523', '526404991661899791', 'https://picsum.photos/seed/product10-thumb/150/150', false, 1, 'Thumbnail image of Product 10'),
+('576264336620650523', '526404991661899791', 'https://picsum.photos/seed/product10-thumb/150/150', false, 1, 'Thumbnail image of Product 10');
 
 INSERT INTO inventory (product_id, quantity) VALUES
 ('526403779902308358', 100),

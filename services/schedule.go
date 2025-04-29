@@ -30,6 +30,8 @@ func NewScheduleService(orderSrv OrderService, schedRepo repositories.ScheduleRe
 
 // TODO cleanup expired refresh tokens
 
+// TODO cleanup expired password reset codes
+
 // Start starts the scheduling service.
 // Pass it root context to allow for clean shutdown.
 func (s *scheduleService) Start(ctx context.Context) {
@@ -44,6 +46,8 @@ func (s *scheduleService) Start(ctx context.Context) {
 			return
 		case <-ticker.C:
 			ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+			// TODO call RScheduleRepository.RunJOb(ctx, types.StaleOrders, 10*time.Minute)
+			// to ensure other instances have to done this already
 			s.orderSrv.CancelStaleOrders(ctxTimeout)
 			cancel()
 		}
