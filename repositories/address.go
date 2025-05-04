@@ -10,7 +10,6 @@ import (
 
 type AddressRepository interface {
 	CreateAddress(ctx context.Context, address *types.Address) error
-	UpdateAddress(ctx context.Context, address *types.Address) error
 	GetAddresses(ctx context.Context, userID string) ([]types.Address, error)
 	RemoveAddress(ctx context.Context, userID, addressID string) error
 }
@@ -19,38 +18,64 @@ type addressRepository struct {
 	db *sql.DB
 }
 
-func (r *addressRepository) UpdateAddress(ctx context.Context, address *types.Address) error {
-	query := `
-		UPDATE addresses
-		SET
-			addressee = $1,
-			address_line1 = $2,
-			address_line2 = $3,
-			city = $4,
-			state_code = $5,
-			postal_code = $6,
-			updated_at = NOW()
-		WHERE id = $7 AND user_id = $8
-		RETURNING updated_at
-	`
+func NewAddressRepository(db *sql.DB) AddressRepository {
+	return &addressRepository{db: db}
+}
 
-	return r.db.QueryRowContext(ctx, query,
+func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Address) error {
+	// Begin a transaction
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Check if existing address exists
+	var addressID string
+	err = tx.QueryRowContext(ctx, `
+		SELECT id
+		FROM addresses
+		WHERE user_id = $1 AND
+			addressee = $2 AND
+			address_line1 = $3 AND
+			address_line2 = $4 AND
+			city = $5 AND
+			state_code = $6 AND
+			postal_code = $7 AND
+			country_code = $8 AND
+			is_deleted = FALSE
+	`,
+		address.UserID,
 		address.Addressee,
 		address.AddressLine1,
 		address.AddressLine2,
 		address.City,
 		address.StateCode,
 		address.PostalCode,
-		address.ID,
-		address.UserID,
-	).Scan(&address.UpdatedAt)
+		address.CountryCode,
+	).Scan(&addressID)
+	if err == sql.ErrNoRows {
+		addressID = ""
+	} else if err != nil {
+		return err
+	}
+
+	// if true, return existing address
+	if addressID != "" {
+		address.ID = addressID
+		return tx.Commit()
+	}
+
+	// if false, create new address
+	if err := r.createAddress(ctx, tx, address); err != nil {
+		return err
+	}
+
+	// Commit the transaction
+	return tx.Commit()
 }
 
-func NewAddressRepository(db *sql.DB) AddressRepository {
-	return &addressRepository{db: db}
-}
-
-func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Address) error {
+func (r *addressRepository) createAddress(ctx context.Context, tx *sql.Tx, address *types.Address) error {
 	query := `
 		INSERT INTO addresses (
 			id,
@@ -67,7 +92,7 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 		RETURNING id, user_id, created_at, updated_at
 	`
 
-	return r.db.QueryRowContext(ctx, query,
+	return tx.QueryRowContext(ctx, query,
 		address.ID,
 		address.UserID,
 		address.Addressee,

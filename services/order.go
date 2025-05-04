@@ -61,8 +61,6 @@ func NewOrderService(
 }
 
 func (os *orderService) CancelStaleOrders(ctx context.Context) {
-	slog.Debug("Cancelling stale orders", "ctx", ctx)
-
 	interval := 10 * time.Minute // Cancel orders older than 10 minutes with status "pending"
 	pymtIntentIDs, err := os.orderRepo.CancelPendingOrders(ctx, interval)
 	if err != nil {

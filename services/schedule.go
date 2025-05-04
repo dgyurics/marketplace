@@ -30,8 +30,8 @@ func NewScheduleService(orderSrv OrderService, schedRepo repositories.ScheduleRe
 }
 
 // TODO cleanup expired refresh tokens
-
 // TODO cleanup expired password reset codes
+// TODO cleanup unused addresses
 
 // Start starts the scheduling service.
 // Pass it root context to allow for clean shutdown.

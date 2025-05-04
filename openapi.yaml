@@ -329,32 +329,6 @@ paths:
           description: Unauthorized - Missing or invalid token
         "500":
           description: Internal server error
-    put:
-      summary: Update an address
-      description: Updates a saved address for the authenticated user.
-      tags:
-        - Addresses
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Address"
-      responses:
-        "200":
-          description: Address successfully updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Address"
-        "400":
-          description: Invalid request payload
-        "401":
-          description: Unauthorized - Missing or invalid token
-        "500":
-          description: Internal server error
     post:
       summary: Add a new address
       description: Saves a new address for the authenticated user.

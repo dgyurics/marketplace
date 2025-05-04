@@ -48,7 +48,7 @@ func TestCreateAddress(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on user deletion")
 }
 
-func TestUpdateAddress(t *testing.T) {
+func TestCreateAddressWhenDuplicateExists(t *testing.T) {
 	repo := NewAddressRepository(dbPool)
 	ctx := context.Background()
 
@@ -56,75 +56,51 @@ func TestUpdateAddress(t *testing.T) {
 	userRepo := NewUserRepository(dbPool)
 	user := createUniqueTestUser(t, userRepo)
 
-	// Create an initial address
-	originalAddressee := "Original Name"
-	originalAddressLine2 := "Suite 100"
+	// Nullable fields
+	addressLine2 := "Apt 456"
+	addressee := "John Doe"
+
+	// Define address fields
 	address := &types.Address{
 		ID:           utilities.MustGenerateIDString(),
 		UserID:       user.ID,
-		Addressee:    &originalAddressee,
-		AddressLine1: "100 Original St",
-		AddressLine2: &originalAddressLine2,
-		City:         "Original City",
-		StateCode:    "OS",
-		PostalCode:   "11111",
+		Addressee:    &addressee,
+		AddressLine1: "123 Test St",
+		AddressLine2: &addressLine2,
+		City:         "Testville",
+		StateCode:    "TS",
+		PostalCode:   "12345",
+		CountryCode:  "US",
 	}
 
+	// Create the first address
 	err := repo.CreateAddress(ctx, address)
-	assert.NoError(t, err, "Expected no error while creating an address")
-	assert.NotEmpty(t, address.ID, "Expected address ID to be set")
+	assert.NoError(t, err, "Expected no error while creating the initial address")
 
-	// Update the address fields
-	newAddressee := "Updated Name"
-	newAddressLine1 := "200 Updated Ave"
-	newAddressLine2 := "Suite 200"
-	newCity := "Updated City"
-	newStateCode := "US"
-	newPostalCode := "22222"
+	originalID := address.ID
 
-	address.Addressee = &newAddressee
-	address.AddressLine1 = newAddressLine1
-	address.AddressLine2 = &newAddressLine2
-	address.City = newCity
-	address.StateCode = newStateCode
-	address.PostalCode = newPostalCode
-
-	err = repo.UpdateAddress(ctx, address)
-	assert.NoError(t, err, "Expected no error while updating address")
-
-	// Retrieve addresses and find the updated one
-	addresses, err := repo.GetAddresses(ctx, user.ID)
-	assert.NoError(t, err, "Expected no error while retrieving addresses")
-
-	var found *types.Address
-	for i, addr := range addresses {
-		if addr.ID == address.ID {
-			found = &addresses[i]
-			break
-		}
+	// Create another address with the same fields (simulating a duplicate)
+	dupAddress := &types.Address{
+		ID:           utilities.MustGenerateIDString(), // different ID
+		UserID:       user.ID,
+		Addressee:    &addressee,
+		AddressLine1: "123 Test St",
+		AddressLine2: &addressLine2,
+		City:         "Testville",
+		StateCode:    "TS",
+		PostalCode:   "12345",
+		CountryCode:  "US",
 	}
-	assert.NotNil(t, found, "Expected to find the updated address")
 
-	if found.Addressee == nil {
-		assert.Fail(t, "Expected addressee not to be nil")
-	} else {
-		assert.Equal(t, newAddressee, *found.Addressee, "Expected addressee to be updated")
-	}
-	assert.Equal(t, newAddressLine1, found.AddressLine1, "Expected address_line1 to be updated")
-	if found.AddressLine2 == nil {
-		assert.Fail(t, "Expected address_line2 not to be nil")
-	} else {
-		assert.Equal(t, newAddressLine2, *found.AddressLine2, "Expected address_line2 to be updated")
-	}
-	assert.Equal(t, newCity, found.City, "Expected city to be updated")
-	assert.Equal(t, newStateCode, found.StateCode, "Expected state_code to be updated")
-	assert.Equal(t, newPostalCode, found.PostalCode, "Expected postal_code to be updated")
+	err = repo.CreateAddress(ctx, dupAddress)
+	assert.NoError(t, err, "Expected no error when creating a duplicate address")
+	assert.Equal(t, originalID, dupAddress.ID, "Expected existing address ID to be returned for duplicate")
 
 	// Clean up
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM addresses WHERE id = $1", address.ID)
-	assert.NoError(t, err, "Expected no error on address deletion")
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM addresses WHERE user_id = $1", user.ID)
+	assert.NoError(t, err, "Expected no error on address cleanup")
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
-	assert.NoError(t, err, "Expected no error on user deletion")
+	assert.NoError(t, err, "Expected no error on user cleanup")
 }
 
 func TestGetAddresses(t *testing.T) {

@@ -13,7 +13,6 @@ type AddressService interface {
 	CreateAddress(ctx context.Context, address *types.Address) error
 	GetAddresses(ctx context.Context) ([]types.Address, error)
 	RemoveAddress(ctx context.Context, addressID string) error
-	UpdateAddress(ctx context.Context, address *types.Address) error
 }
 
 type addressService struct {
@@ -31,21 +30,14 @@ func (s *addressService) CreateAddress(ctx context.Context, address *types.Addre
 	}
 	address.UserID = userID
 
+	// if an existing/matching address is found,
+	// this newly generated ID will not be used.
 	addressID, err := utilities.GenerateIDString()
 	if err != nil {
 		return err
 	}
 	address.ID = addressID
 	return s.repo.CreateAddress(ctx, address)
-}
-
-func (s *addressService) UpdateAddress(ctx context.Context, address *types.Address) error {
-	var userID = getUserID(ctx)
-	if address == nil || address.AddressLine1 == "" || address.City == "" || address.StateCode == "" || address.PostalCode == "" {
-		return errors.New("missing required fields for address")
-	}
-	address.UserID = userID
-	return s.repo.UpdateAddress(ctx, address)
 }
 
 func (s *addressService) GetAddresses(ctx context.Context) ([]types.Address, error) {

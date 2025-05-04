@@ -132,6 +132,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	}
 
 	// Retrieve cart cartItems
+	// TODO populate description and thumbnail - needed for order summary/review component
 	var cartItems []types.CartItem
 	query := `
 		SELECT product_id, quantity, unit_price
