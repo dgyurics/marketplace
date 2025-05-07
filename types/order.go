@@ -22,7 +22,7 @@ type Order struct {
 	ID                  string                `json:"id"`
 	UserID              string                `json:"-"`
 	Email               string                `json:"email"`
-	Address             *Address              `json:"address"` // TODO change to BillingAddress
+	Address             *Address              `json:"address"` // TODO change to shipping address
 	StripePaymentIntent *stripe.PaymentIntent `json:"stripe_payment_intent"`
 	Currency            string                `json:"currency"`
 	Amount              int64                 `json:"amount"`

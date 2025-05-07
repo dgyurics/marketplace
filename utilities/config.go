@@ -1,8 +1,8 @@
 package utilities
 
 import (
+	"fmt"
 	"log"
-	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -32,94 +32,91 @@ func LoadConfig() types.Config {
 
 func loadCORSConfig() types.CORSConfig {
 	return types.CORSConfig{
-		AllowedOrigins:   strings.Split(getEnv("CORS_ALLOWED_ORIGINS"), ","),
-		AllowedMethods:   strings.Split(getEnv("CORS_ALLOWED_METHODS"), ","),
-		AllowedHeaders:   strings.Split(getEnv("CORS_ALLOWED_HEADERS"), ","),
+		AllowedOrigins:   strings.Split(mustLookupEnv("CORS_ALLOWED_ORIGINS"), ","),
+		AllowedMethods:   strings.Split(mustLookupEnv("CORS_ALLOWED_METHODS"), ","),
+		AllowedHeaders:   strings.Split(mustLookupEnv("CORS_ALLOWED_HEADERS"), ","),
 		AllowCredentials: isFeatureEnabled("CORS_ALLOW_CREDENTIALS"),
 	}
 }
 
 func loadServerConfig() types.ServerConfig {
 	return types.ServerConfig{
-		Addr:           getEnv("SERVER_ADDR"),
-		ReadTimeout:    parseDuration("SERVER_READ_TIMEOUT"),
-		WriteTimeout:   parseDuration("SERVER_WRITE_TIMEOUT"),
-		IdleTimeout:    parseDuration("SERVER_IDLE_TIMEOUT"),
-		MaxHeaderBytes: parseInt("SERVER_MAX_HEADER_BYTES"),
+		Addr:           mustLookupEnv("SERVER_ADDR"),
+		ReadTimeout:    mustParseDuration("SERVER_READ_TIMEOUT"),
+		WriteTimeout:   mustParseDuration("SERVER_WRITE_TIMEOUT"),
+		IdleTimeout:    mustParseDuration("SERVER_IDLE_TIMEOUT"),
+		MaxHeaderBytes: mustAtoI("SERVER_MAX_HEADER_BYTES"),
 		ErrorLog:       log.New(&ErrorLog{}, "", 0),
 	}
 }
 
 func loadAuthConfig() types.AuthConfig {
 	return types.AuthConfig{
-		HMACSecret:    []byte(getEnv("HMAC_SECRET")),
-		RefreshExpiry: parseDuration("REFRESH_EXPIRY"),
+		HMACSecret:    []byte(mustLookupEnv("HMAC_SECRET")),
+		RefreshExpiry: mustParseDuration("REFRESH_EXPIRY"),
 		InviteReq:     isFeatureEnabled("INVITE_REQUIRED"),
 	}
 }
 
 func loadDBConfig() types.DBConfig {
 	return types.DBConfig{
-		URL:             getEnv("DATABASE_URL"),
-		MaxOpenConns:    parseInt("DATABASE_MAX_CONNECTIONS"),
-		MaxIdleConns:    parseInt("DATABASE_MAX_IDLE_CONNECTIONS"),
-		ConnMaxLifetime: parseDuration("DATABASE_CONNECTION_MAX_LIFETIME"),
-		ConnMaxIdleTime: parseDuration("DATABASE_CONNECTION_MAX_IDLE_TIME"),
+		URL:             mustLookupEnv("DATABASE_URL"),
+		MaxOpenConns:    mustAtoI("DATABASE_MAX_CONNECTIONS"),
+		MaxIdleConns:    mustAtoI("DATABASE_MAX_IDLE_CONNECTIONS"),
+		ConnMaxLifetime: mustParseDuration("DATABASE_CONNECTION_MAX_LIFETIME"),
+		ConnMaxIdleTime: mustParseDuration("DATABASE_CONNECTION_MAX_IDLE_TIME"),
 	}
 }
 
 func loadJWTConfig() types.JWTConfig {
 	return types.JWTConfig{
-		PrivateKey: getKey("private.pem"),
-		PublicKey:  getKey("public.pem"),
-		Expiry:     parseDuration("JWT_EXPIRY"),
+		PrivateKey: mustReadFile("private.pem"),
+		PublicKey:  mustReadFile("public.pem"),
+		Expiry:     mustParseDuration("JWT_EXPIRY"),
 	}
 }
 
 func loadOrderConfig() types.OrderConfig {
 	return types.OrderConfig{
-		DefaultTaxCode:     getEnv("ORDER_DEFAULT_TAX_CODE"),
-		DefaultTaxBehavior: getEnv("ORDER_DEFAULT_TAX_BEHAVIOR"),
+		DefaultTaxCode:     mustLookupEnv("ORDER_DEFAULT_TAX_CODE"),
+		DefaultTaxBehavior: mustLookupEnv("ORDER_DEFAULT_TAX_BEHAVIOR"),
 		StripeConfig:       loadStripeConfig(),
 	}
 }
 
 func loadMachineID() uint8 {
-	envVar := getEnv("MACHINE_ID")
+	envVar := mustLookupEnv("MACHINE_ID")
 	val, err := strconv.ParseUint(envVar, 10, 8)
 	if err != nil {
-		slog.Error("Invalid integer", "key", "MACHINE_ID", "error", err)
-		os.Exit(1)
+		panic(fmt.Sprintf("Invalid integer for MACHINE_ID: %s", envVar))
 	}
 	return uint8(val)
 }
 
 func loadLocaleConfig() types.LocaleConfig {
 	config := types.LocaleConfig{
-		CurrencyCode: getEnv("CURRENCY_CODE"),
-		CountryCode:  getEnv("COUNTRY_CODE"),
+		CurrencyCode: mustLookupEnv("CURRENCY_CODE"),
+		CountryCode:  mustLookupEnv("COUNTRY_CODE"),
 	}
 	if _, ok := SupportedCountries[config.CountryCode]; !ok {
-		slog.Error("Unsupported country code", "country_code", config.CountryCode)
-		os.Exit(1)
+		panic(fmt.Sprintf("Unsupported country code: %s", config.CountryCode))
 	}
 	if _, ok := SupportedCurrencies[config.CurrencyCode]; !ok {
-		slog.Error("Unsupported currency code", "currency_code", config.CurrencyCode)
-		os.Exit(1)
+		panic(fmt.Sprintf("Unsupported currency code: %s", config.CurrencyCode))
 	}
 	return config
 }
 
 func loadStripeConfig() types.StripeConfig {
 	return types.StripeConfig{
-		BaseURL:              getEnv("STRIPE_BASE_URL"),
-		SecretKey:            getEnv("STRIPE_SECRET_KEY"),
-		WebhookSigningSecret: getEnv("STRIPE_WEBHOOK_SIGNING_SECRET"),
+		BaseURL:              mustLookupEnv("STRIPE_BASE_URL"),
+		SecretKey:            mustLookupEnv("STRIPE_SECRET_KEY"),
+		WebhookSigningSecret: mustLookupEnv("STRIPE_WEBHOOK_SIGNING_SECRET"),
 	}
 }
 
 func loadEnvironment() types.Environment {
-	env := getEnv("ENVIRONMENT")
+	env := mustLookupEnv("ENVIRONMENT")
 	switch env {
 	case string(types.Development):
 		return types.Development
@@ -135,63 +132,59 @@ func loadTemplatesDir() string {
 }
 
 func loadBaseURL() string {
-	return getEnv("BASE_URL")
+	return mustLookupEnv("BASE_URL")
 }
 
 func loadMailConfig() types.EmailConfig {
 	return types.EmailConfig{
 		Enabled:   isFeatureEnabled("MAIL_ENABLED"),
-		APIKey:    getEnv("MAIL_API_KEY"),
-		APISecret: getEnv("MAIL_API_SECRET"),
-		FromEmail: getEnv("MAIL_FROM_EMAIL"),
-		FromName:  getEnv("MAIL_FROM_NAME"),
+		APIKey:    mustLookupEnv("MAIL_API_KEY"),
+		APISecret: mustLookupEnv("MAIL_API_SECRET"),
+		FromEmail: mustLookupEnv("MAIL_FROM_EMAIL"),
+		FromName:  mustLookupEnv("MAIL_FROM_NAME"),
 	}
 }
 
-// FIXME: rename to mustGetKey
-// getKey reads a key file and exits if an error occurs.
-func getKey(filename string) []byte {
+// mustReadFile reads the named file and returns the contents.
+// It panics if there is an error reading the file.
+func mustReadFile(filename string) []byte {
 	bytes, err := os.ReadFile(filename)
 	if err != nil {
-		slog.Error("Error reading key file", "filename", filename, "error", err)
-		os.Exit(1)
+		panic(fmt.Sprintf("Error reading key file: %s error: %v", filename, err))
 	}
 	return bytes
 }
 
-// FIXME: rename to mustGetEnv
-// also change os.Exit to panic
-// getEnv retrieves an environment variable and exits if an error occurs.
-func getEnv(key string) string {
+// mustLookupEnv retrieves the value of the environment variable named by the key.
+// It panics if the variable is not present.
+func mustLookupEnv(key string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
-	slog.Error("Environment variable is required", "key", key)
-	os.Exit(1)
-	return ""
+	panic(fmt.Sprintf("Environment variable %s is required", key))
 }
 
-// parseDuration parses a duration from the environment variable and exits if an error occurs.
-func parseDuration(key string) time.Duration {
-	duration, err := time.ParseDuration(getEnv(key))
+// mustParseDuration parses a duration string from the environment variable.
+// It panics if there is an error parsing the duration.
+func mustParseDuration(key string) time.Duration {
+	duration, err := time.ParseDuration(mustLookupEnv(key))
 	if err != nil {
-		slog.Error("Invalid duration", "key", key, "error", err)
-		os.Exit(1)
+		panic(fmt.Sprintf("Error parsing duration for %s: %v", key, err))
 	}
 	return duration
 }
 
-// parseInt parses an integer from the environment variable and exits if an error occurs.
-func parseInt(key string) int {
-	value, err := strconv.Atoi(getEnv(key))
+// mustAtoI converts a string to an integer.
+// It panics if there is an error converting the string.
+func mustAtoI(key string) int {
+	value, err := strconv.Atoi(mustLookupEnv(key))
 	if err != nil {
-		slog.Error("Invalid integer", "key", key, "error", err)
-		os.Exit(1)
+		panic(fmt.Sprintf("Error converting %s to int: %v", key, err))
 	}
 	return value
 }
 
-// isFeatureEnabled returns whether a feature is enabled (case-insensitive).
+// isFeatureEnabled returns true if the feature is enabled.
 func isFeatureEnabled(feature string) bool {
 	return strings.EqualFold(os.Getenv(feature), "true")
 }

@@ -9,7 +9,7 @@ import (
 // GeneratePasswordResetEmail emails a link to reset a user's password
 func GeneratePasswordResetEmail(recipient string, code string) (string, error) {
 	data := map[string]string{
-		"ResetLink": fmt.Sprintf("%s/users/password-reset/confirm?email=%s&code=%s", getEnv("BASE_URL"), recipient, code),
+		"ResetLink": fmt.Sprintf("%s/users/password-reset/confirm?email=%s&code=%s", mustLookupEnv("BASE_URL"), recipient, code),
 	}
 	tmpl, err := template.ParseFiles("utilities/templates/password_reset.html")
 	if err != nil {

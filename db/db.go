@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"log/slog"
-	"os"
 
 	"github.com/dgyurics/marketplace/types"
 	_ "github.com/lib/pq"
@@ -15,12 +14,10 @@ import (
 func Connect(c types.DBConfig) *sql.DB {
 	db, err := sql.Open("postgres", c.URL)
 	if err != nil {
-		slog.Error("Failed to connect to database", "error", err)
-		os.Exit(1)
+		panic("Failed to connect to database: " + err.Error())
 	}
 	if err := db.Ping(); err != nil {
-		slog.Error("Failed to ping database", "error", err)
-		os.Exit(1)
+		panic("Failed to ping database: " + err.Error())
 	}
 
 	db.SetMaxOpenConns(c.MaxOpenConns)
