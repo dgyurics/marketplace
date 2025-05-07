@@ -13,12 +13,17 @@ import (
 type AddressRoutes struct {
 	router
 	userService services.AddressService
+	config      types.LocaleConfig
 }
 
-func NewAddressRoutes(addressService services.AddressService, router router) *AddressRoutes {
+func NewAddressRoutes(
+	addressService services.AddressService,
+	config types.LocaleConfig,
+	router router) *AddressRoutes {
 	return &AddressRoutes{
 		router:      router,
 		userService: addressService,
+		config:      config,
 	}
 }
 
@@ -36,6 +41,16 @@ func (h *AddressRoutes) CreateAddress(w http.ResponseWriter, r *http.Request) {
 	var address types.Address
 	if err := json.NewDecoder(r.Body).Decode(&address); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
+		return
+	}
+
+	if address.AddressLine1 == "" || address.City == "" || address.StateCode == "" || address.PostalCode == "" || address.CountryCode == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "missing required fields for address")
+		return
+	}
+
+	if !u.PostalCodePatterns[h.config.CountryCode].MatchString(address.PostalCode) {
+		u.RespondWithError(w, r, http.StatusBadRequest, "invalid postal code format")
 		return
 	}
 

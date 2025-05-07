@@ -29,7 +29,7 @@ func (u *User) IsGuest() bool {
 type Address struct {
 	ID           string    `json:"id"`
 	UserID       string    `json:"user_id"`
-	CountryCode  string    `json:"country_code"`
+	CountryCode  string    `json:"country_code"` // ISO 3166-1 alpha-2
 	Addressee    *string   `json:"addressee"`
 	AddressLine1 string    `json:"address_line1"` // rename to line1
 	AddressLine2 *string   `json:"address_line2"` // rename to line2

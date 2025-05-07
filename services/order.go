@@ -40,13 +40,15 @@ type orderService struct {
 	orderRepo  repositories.OrderRepository
 	cartRepo   repositories.CartRepository
 	HttpClient utilities.HTTPClient
-	config     types.OrderConfig
+	ordConfig  types.OrderConfig
+	locConfig  types.LocaleConfig
 }
 
 func NewOrderService(
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository,
-	config types.OrderConfig,
+	ordConfig types.OrderConfig,
+	locConfig types.LocaleConfig,
 	httpClient utilities.HTTPClient,
 ) OrderService {
 	if httpClient == nil {
@@ -56,7 +58,8 @@ func NewOrderService(
 		orderRepo:  orderRepo,
 		cartRepo:   cartRepo,
 		HttpClient: httpClient,
-		config:     config,
+		ordConfig:  ordConfig,
+		locConfig:  locConfig,
 	}
 }
 
@@ -96,15 +99,12 @@ func (os *orderService) GetOrders(ctx context.Context, page, limit int) ([]types
 // Call Stripe API to create a payment intent for a given order
 func (os *orderService) createOrderPaymentIntent(ctx context.Context, orderID string, pi *stripe.PaymentIntent) error {
 	// Validate input
-	if pi.Currency == "" {
-		return errors.New("missing currency")
-	}
 	if pi.Amount <= 0 {
 		return errors.New("invalid amount")
 	}
 
 	// Prepare request
-	stripeURL := fmt.Sprintf("%s/payment_intents", os.config.StripeConfig.BaseURL)
+	stripeURL := fmt.Sprintf("%s/payment_intents", os.ordConfig.StripeConfig.BaseURL)
 	payload := url.Values{
 		"amount":                 {strconv.FormatInt(pi.Amount, 10)},
 		"currency":               {pi.Currency},
@@ -118,7 +118,7 @@ func (os *orderService) createOrderPaymentIntent(ctx context.Context, orderID st
 	}
 
 	// Set headers
-	req.SetBasicAuth(os.config.StripeConfig.SecretKey, "")
+	req.SetBasicAuth(os.ordConfig.StripeConfig.SecretKey, "")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Idempotency-Key", fmt.Sprintf("pi-%s", orderID))
 
@@ -188,7 +188,7 @@ func (os *orderService) VerifyStripeEventSignature(payload []byte, sigHeader str
 	// Compare expected signature with provided signatures
 	// Use a constant-time comparison function to mitigate timing attacks
 	// If a matching signature is found, return nil
-	expectedSignature := ComputeSignature(ts, payload, os.config.WebhookSigningSecret)
+	expectedSignature := ComputeSignature(ts, payload, os.ordConfig.WebhookSigningSecret)
 	for _, signature := range signatures {
 		if hmac.Equal(signature, expectedSignature) {
 			return nil
@@ -298,7 +298,7 @@ func (os *orderService) cancelPaymentIntent(ctx context.Context, paymentIntentID
 	}
 
 	stripeURL := fmt.Sprintf("%s/payment_intents/%s/cancel",
-		os.config.StripeConfig.BaseURL,
+		os.ordConfig.StripeConfig.BaseURL,
 		paymentIntentID,
 	)
 
@@ -306,7 +306,7 @@ func (os *orderService) cancelPaymentIntent(ctx context.Context, paymentIntentID
 	if err != nil {
 		return fmt.Errorf("failed to create Stripe cancel request: %w", err)
 	}
-	reqStripe.SetBasicAuth(os.config.StripeConfig.SecretKey, "")
+	reqStripe.SetBasicAuth(os.ordConfig.StripeConfig.SecretKey, "")
 	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := os.HttpClient.Do(reqStripe)
@@ -384,6 +384,7 @@ func (os *orderService) createAndLogOrder(ctx context.Context, order *types.Orde
 		return err
 	}
 	order.ID = orderID
+	order.Currency = os.locConfig.CurrencyCode
 	if err := os.orderRepo.CreateOrder(ctx, order); err != nil {
 		slog.Error("Error creating order", "user_id", order.UserID, "error", err)
 		return err
@@ -394,7 +395,6 @@ func (os *orderService) createAndLogOrder(ctx context.Context, order *types.Orde
 		"user_id", order.UserID,
 		"currency", order.Currency,
 		"amount", order.Amount,
-		"address", fmt.Sprintf("%v\n", order.Address),
 		"shipping_amount", order.ShippingAmount,
 		"tax_amount", order.TaxAmount,
 		"total_amount", order.TotalAmount,
@@ -446,8 +446,8 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 		form.Set(fmt.Sprintf("line_items[%d][amount]", i), strconv.FormatInt(item.UnitPrice*itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][quantity]", i), strconv.FormatInt(itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][reference]", i), fmt.Sprintf("%s-%s", order.ID, item.ProductID))
-		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), os.config.DefaultTaxBehavior)
-		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), os.config.DefaultTaxCode)
+		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), os.ordConfig.DefaultTaxBehavior)
+		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), os.ordConfig.DefaultTaxCode) // FIXME need per item tax code
 	}
 
 	// Customer Address
@@ -461,7 +461,7 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 	form.Set("customer_details[address][state]", order.Address.StateCode)
 	form.Set("customer_details[address][postal_code]", order.Address.PostalCode)
 
-	url := fmt.Sprintf("%s/tax/calculations", os.config.StripeConfig.BaseURL)
+	url := fmt.Sprintf("%s/tax/calculations", os.ordConfig.StripeConfig.BaseURL)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBufferString(form.Encode()))
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
@@ -470,7 +470,7 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 		return err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+os.config.StripeConfig.SecretKey)
+	req.Header.Set("Authorization", "Bearer "+os.ordConfig.StripeConfig.SecretKey)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Idempotency-Key", order.ID)
 
@@ -490,17 +490,18 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 		return err
 	}
 
-	slog.Debug("Tax estimate retrieved",
+	slog.DebugContext(ctx,
+		"Tax estimate retrieved",
 		"order_id", order.ID,
-		"order_tax_amount_exclusing", tax.TaxAmountExclusive,
-		"order_tax_amount_inclusive", tax.TaxAmountInclusive,
-		"order_total_amount", tax.AmountTotal,
+		"tax_amount_exclusive", tax.TaxAmountExclusive,
+		"tax_amount_inclusive", tax.TaxAmountInclusive,
+		"total_amount", tax.AmountTotal,
+		"country", tax.CustomerDetails.Address.Country,
+		"state", tax.CustomerDetails.Address.State,
+		"breakdown", tax.TaxBreakdown,
 	)
-	if tax.TaxAmountExclusive == 0 {
-		order.TaxAmount = tax.TaxAmountInclusive
-	} else {
-		order.TaxAmount = tax.TaxAmountExclusive
-	}
+
+	order.TaxAmount = tax.TaxAmountInclusive + tax.TaxAmountExclusive
 	order.TotalAmount = tax.AmountTotal
 	return nil
 }

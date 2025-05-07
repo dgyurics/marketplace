@@ -29,7 +29,6 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	// Parse the JSON body to extract addressID
 	var requestBody struct {
 		AddressID string `json:"address_id"`
-		Currency  string `json:"currency"`
 		Email     string `json:"email"`
 	}
 
@@ -44,12 +43,6 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate that the currency is provided
-	if requestBody.Currency == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Currency is required")
-		return
-	}
-
 	// Validate that the email is provided
 	if requestBody.Email == "" {
 		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
@@ -58,9 +51,8 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Create the order
 	order := types.Order{
-		Address:  &types.Address{ID: requestBody.AddressID},
-		Currency: requestBody.Currency,
-		Email:    requestBody.Email,
+		Address: &types.Address{ID: requestBody.AddressID},
+		Email:   requestBody.Email,
 	}
 	if err := h.orderService.CreateOrder(r.Context(), &order); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())

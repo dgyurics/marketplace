@@ -14,6 +14,7 @@ type Config struct {
 	Email        EmailConfig
 	Environment  Environment
 	JWT          JWTConfig
+	Locale       LocaleConfig
 	Logger       LoggerConfig
 	MachineID    uint8
 	Server       ServerConfig
@@ -71,6 +72,11 @@ type LoggerConfig struct {
 	LogFilePath string // path to the log file
 	AppID       string // unique identifier for the application
 	Level       slog.Level
+}
+
+type LocaleConfig struct {
+	CountryCode  string // ISO 3166-1 alpha-2 country code
+	CurrencyCode string // ISO 4217 currency code
 }
 
 type Environment string

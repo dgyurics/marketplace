@@ -67,7 +67,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 
 	// create routes
 	routes.RegisterAllRoutes(
-		routes.NewAddressRoutes(services.Address, baseRouter),
+		routes.NewAddressRoutes(services.Address, config.Locale, baseRouter),
 		routes.NewUserRoutes(services.User, services.Invite, services.JWT, services.Refresh, config.Auth, baseRouter),
 		routes.NewCategoryRoutes(services.Category, baseRouter),
 		routes.NewProductRoutes(services.Product, baseRouter),
@@ -107,12 +107,12 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	httpClient := utilities.NewDefaultHTTPClient(10 * time.Second) // TODO make this configurable
 
 	// create services
-	addressService := services.NewAddressService(addressRepository)
+	addressService := services.NewAddressService(addressRepository, config.Locale)
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
 	cartService := services.NewCartService(cartRepository)
-	orderService := services.NewOrderService(orderRepository, cartRepository, config.Order, httpClient)
+	orderService := services.NewOrderService(orderRepository, cartRepository, config.Order, config.Locale, httpClient)
 	inviteService := services.NewInviteService(inviteRepository, config.Auth.HMACSecret)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)

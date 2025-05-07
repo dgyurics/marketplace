@@ -20,7 +20,8 @@ func LoadConfig() types.Config {
 		Auth:         loadAuthConfig(),
 		Database:     loadDBConfig(),
 		Email:        loadMailConfig(),
-		Logger:       LoadLoggerConfig(),
+		Locale:       loadLocaleConfig(),
+		Logger:       loadLoggerConfig(),
 		MachineID:    loadMachineID(),
 		Order:        loadOrderConfig(),
 		JWT:          loadJWTConfig(),
@@ -93,6 +94,22 @@ func loadMachineID() uint8 {
 	return uint8(val)
 }
 
+func loadLocaleConfig() types.LocaleConfig {
+	config := types.LocaleConfig{
+		CurrencyCode: getEnv("CURRENCY_CODE"),
+		CountryCode:  getEnv("COUNTRY_CODE"),
+	}
+	if _, ok := SupportedCountries[config.CountryCode]; !ok {
+		slog.Error("Unsupported country code", "country_code", config.CountryCode)
+		os.Exit(1)
+	}
+	if _, ok := SupportedCurrencies[config.CurrencyCode]; !ok {
+		slog.Error("Unsupported currency code", "currency_code", config.CurrencyCode)
+		os.Exit(1)
+	}
+	return config
+}
+
 func loadStripeConfig() types.StripeConfig {
 	return types.StripeConfig{
 		BaseURL:              getEnv("STRIPE_BASE_URL"),
@@ -131,6 +148,7 @@ func loadMailConfig() types.EmailConfig {
 	}
 }
 
+// FIXME: rename to mustGetKey
 // getKey reads a key file and exits if an error occurs.
 func getKey(filename string) []byte {
 	bytes, err := os.ReadFile(filename)
@@ -141,6 +159,8 @@ func getKey(filename string) []byte {
 	return bytes
 }
 
+// FIXME: rename to mustGetEnv
+// also change os.Exit to panic
 // getEnv retrieves an environment variable and exits if an error occurs.
 func getEnv(key string) string {
 	if value, ok := os.LookupEnv(key); ok {

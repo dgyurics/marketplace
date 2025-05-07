@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
@@ -16,22 +15,23 @@ type AddressService interface {
 }
 
 type addressService struct {
-	repo repositories.AddressRepository
+	repo   repositories.AddressRepository
+	config types.LocaleConfig
 }
 
-func NewAddressService(repo repositories.AddressRepository) AddressService {
-	return &addressService{repo: repo}
+func NewAddressService(repo repositories.AddressRepository, config types.LocaleConfig) AddressService {
+	return &addressService{
+		config: config,
+		repo:   repo,
+	}
 }
 
 func (s *addressService) CreateAddress(ctx context.Context, address *types.Address) error {
 	var userID = getUserID(ctx)
-	if address == nil || address.AddressLine1 == "" || address.City == "" || address.StateCode == "" || address.PostalCode == "" {
-		return errors.New("missing required fields for address")
-	}
 	address.UserID = userID
+	address.CountryCode = s.config.CountryCode
 
-	// if an existing/matching address is found,
-	// this newly generated ID will not be used.
+	// if a duplicate address is found, addressID will not be used
 	addressID, err := utilities.GenerateIDString()
 	if err != nil {
 		return err

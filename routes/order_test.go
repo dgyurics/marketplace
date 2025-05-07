@@ -56,9 +56,8 @@ func TestCreateOrder(t *testing.T) {
 	// Prepare mock data for the request and expected response
 	expectedAddressID := "address123"
 	expectedOrder := &types.Order{
-		Address:  &types.Address{ID: expectedAddressID},
-		Currency: "USD",
-		Email:    "testemail@email.com",
+		Address: &types.Address{ID: expectedAddressID},
+		Email:   "testemail@email.com",
 	}
 
 	// Mock the CreateOrder method
@@ -67,7 +66,6 @@ func TestCreateOrder(t *testing.T) {
 	// Create a new HTTP POST request with a JSON body containing the addressID
 	requestBody := map[string]string{
 		"address_id": expectedAddressID,
-		"currency":   "USD",
 		"email":      "testemail@email.com",
 	}
 	body, err := json.Marshal(requestBody)
