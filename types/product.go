@@ -8,6 +8,7 @@ type Product struct {
 	Price       int64   `json:"price"`
 	Description string  `json:"description"`
 	Images      []Image `json:"images"`
+	TaxCode     string  `json:"tax_code"`
 	CreatedAt   string  `json:"created_at"`
 	UpdatedAt   string  `json:"updated_at"`
 }

@@ -385,7 +385,7 @@ func TestOrderRepository_PopulateOrderItems(t *testing.T) {
 	// Validate items without assuming order
 	itemMap := make(map[string]int)
 	for _, item := range orders[0].Items {
-		itemMap[item.ProductID] = item.Quantity
+		itemMap[item.Product.ID] = item.Quantity
 	}
 	assert.Equal(t, 2, itemMap[productID1], "Expected quantity for productID1 to be 2")
 	assert.Equal(t, 3, itemMap[productID2], "Expected quantity for productID2 to be 3")

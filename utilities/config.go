@@ -23,7 +23,7 @@ func LoadConfig() types.Config {
 		Locale:       loadLocaleConfig(),
 		Logger:       loadLoggerConfig(),
 		MachineID:    loadMachineID(),
-		Order:        loadOrderConfig(),
+		Stripe:       loadStripeConfig(),
 		JWT:          loadJWTConfig(),
 		TemplatesDir: loadTemplatesDir(),
 		BaseURL:      loadBaseURL(),
@@ -73,14 +73,6 @@ func loadJWTConfig() types.JWTConfig {
 		PrivateKey: mustReadFile("private.pem"),
 		PublicKey:  mustReadFile("public.pem"),
 		Expiry:     mustParseDuration("JWT_EXPIRY"),
-	}
-}
-
-func loadOrderConfig() types.OrderConfig {
-	return types.OrderConfig{
-		DefaultTaxCode:     mustLookupEnv("ORDER_DEFAULT_TAX_CODE"),
-		DefaultTaxBehavior: mustLookupEnv("ORDER_DEFAULT_TAX_BEHAVIOR"),
-		StripeConfig:       loadStripeConfig(),
 	}
 }
 

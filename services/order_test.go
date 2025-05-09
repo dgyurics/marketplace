@@ -35,7 +35,7 @@ func TestCalculateTax_Success(t *testing.T) {
 			AddressLine1: "123 Main St",
 		},
 		Items: []types.OrderItem{
-			{ProductID: "prod-1", Quantity: 2, UnitPrice: 500},
+			{Product: types.Product{ID: "prod-1"}, Quantity: 2, UnitPrice: 500},
 		},
 	}
 
@@ -61,16 +61,14 @@ func TestCalculateTax_Success(t *testing.T) {
 	svc := &orderService{
 		HttpClient: httpClient,
 		locConfig: types.LocaleConfig{
-			CountryCode:  "US",
-			CurrencyCode: "USD",
+			CountryCode:     "US",
+			CurrencyCode:    "USD",
+			FallbackTaxCode: "txcd_99999999",
+			TaxBehavior:     "exclusive",
 		},
-		ordConfig: types.OrderConfig{
-			DefaultTaxBehavior: "exclusive",
-			DefaultTaxCode:     "txcd_99999999",
-			StripeConfig: types.StripeConfig{
-				BaseURL:   "https://api.stripe.com/v1",
-				SecretKey: "sk_test_123",
-			},
+		strpConfig: types.StripeConfig{
+			BaseURL:   "https://api.stripe.com/v1",
+			SecretKey: "sk_test_123",
 		},
 	}
 
@@ -93,10 +91,8 @@ func TestVerifyStripeEventSignature_Valid(t *testing.T) {
 	sigHeader := fmt.Sprintf("t=%d,v1=%s", timestamp.Unix(), hex.EncodeToString(expectedSig))
 
 	svc := &orderService{
-		ordConfig: types.OrderConfig{
-			StripeConfig: types.StripeConfig{
-				WebhookSigningSecret: secret,
-			},
+		strpConfig: types.StripeConfig{
+			WebhookSigningSecret: secret,
 		},
 	}
 
@@ -113,10 +109,8 @@ func TestVerifyStripeEventSignature_InvalidSignature(t *testing.T) {
 	sigHeader := fmt.Sprintf("t=%d,v1=deadbeef", timestamp.Unix())
 
 	svc := &orderService{
-		ordConfig: types.OrderConfig{
-			StripeConfig: types.StripeConfig{
-				WebhookSigningSecret: secret,
-			},
+		strpConfig: types.StripeConfig{
+			WebhookSigningSecret: secret,
 		},
 	}
 
@@ -153,11 +147,9 @@ func TestCreateOrderPaymentIntent_Success(t *testing.T) {
 	}, nil)
 
 	svc := &orderService{
-		ordConfig: types.OrderConfig{
-			StripeConfig: types.StripeConfig{
-				BaseURL:   "https://api.stripe.com/v1",
-				SecretKey: "sk_test_123",
-			},
+		strpConfig: types.StripeConfig{
+			BaseURL:   "https://api.stripe.com/v1",
+			SecretKey: "sk_test_123",
 		},
 		HttpClient: httpClient,
 	}
@@ -187,11 +179,9 @@ func TestCreateOrderPaymentIntent_ErrorStatus(t *testing.T) {
 	}, nil)
 
 	svc := &orderService{
-		ordConfig: types.OrderConfig{
-			StripeConfig: types.StripeConfig{
-				BaseURL:   "https://api.stripe.com/v1",
-				SecretKey: "sk_test_123",
-			},
+		strpConfig: types.StripeConfig{
+			BaseURL:   "https://api.stripe.com/v1",
+			SecretKey: "sk_test_123",
 		},
 		HttpClient: httpClient,
 	}
@@ -333,11 +323,9 @@ func TestCancelPaymentIntent_Success(t *testing.T) {
 	httpClient := &MockHTTPClient{}
 	orderSvc := &orderService{
 		HttpClient: httpClient,
-		ordConfig: types.OrderConfig{
-			StripeConfig: types.StripeConfig{
-				BaseURL:   "https://api.stripe.com/v1",
-				SecretKey: "sk_test_123",
-			},
+		strpConfig: types.StripeConfig{
+			BaseURL:   "https://api.stripe.com/v1",
+			SecretKey: "sk_test_123",
 		},
 	}
 
@@ -361,11 +349,9 @@ func TestCancelPaymentIntent_FailedCancel(t *testing.T) {
 	httpClient := &MockHTTPClient{}
 	orderSvc := &orderService{
 		HttpClient: httpClient,
-		ordConfig: types.OrderConfig{
-			StripeConfig: types.StripeConfig{
-				BaseURL:   "https://api.stripe.com/v1",
-				SecretKey: "sk_test_123",
-			},
+		strpConfig: types.StripeConfig{
+			BaseURL:   "https://api.stripe.com/v1",
+			SecretKey: "sk_test_123",
 		},
 	}
 
@@ -389,11 +375,9 @@ func TestCancelPaymentIntent_BadStatus(t *testing.T) {
 	httpClient := &MockHTTPClient{}
 	orderSvc := &orderService{
 		HttpClient: httpClient,
-		ordConfig: types.OrderConfig{
-			StripeConfig: types.StripeConfig{
-				BaseURL:   "https://api.stripe.com/v1",
-				SecretKey: "sk_test_123",
-			},
+		strpConfig: types.StripeConfig{
+			BaseURL:   "https://api.stripe.com/v1",
+			SecretKey: "sk_test_123",
 		},
 	}
 

@@ -40,14 +40,14 @@ type orderService struct {
 	orderRepo  repositories.OrderRepository
 	cartRepo   repositories.CartRepository
 	HttpClient utilities.HTTPClient
-	ordConfig  types.OrderConfig
+	strpConfig types.StripeConfig
 	locConfig  types.LocaleConfig
 }
 
 func NewOrderService(
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository,
-	ordConfig types.OrderConfig,
+	strpConfig types.StripeConfig,
 	locConfig types.LocaleConfig,
 	httpClient utilities.HTTPClient,
 ) OrderService {
@@ -58,7 +58,7 @@ func NewOrderService(
 		orderRepo:  orderRepo,
 		cartRepo:   cartRepo,
 		HttpClient: httpClient,
-		ordConfig:  ordConfig,
+		strpConfig: strpConfig,
 		locConfig:  locConfig,
 	}
 }
@@ -104,7 +104,7 @@ func (os *orderService) createOrderPaymentIntent(ctx context.Context, orderID st
 	}
 
 	// Prepare request
-	stripeURL := fmt.Sprintf("%s/payment_intents", os.ordConfig.StripeConfig.BaseURL)
+	stripeURL := fmt.Sprintf("%s/payment_intents", os.strpConfig.BaseURL)
 	payload := url.Values{
 		"amount":                 {strconv.FormatInt(pi.Amount, 10)},
 		"currency":               {pi.Currency},
@@ -118,7 +118,7 @@ func (os *orderService) createOrderPaymentIntent(ctx context.Context, orderID st
 	}
 
 	// Set headers
-	req.SetBasicAuth(os.ordConfig.StripeConfig.SecretKey, "")
+	req.SetBasicAuth(os.strpConfig.SecretKey, "")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Idempotency-Key", fmt.Sprintf("pi-%s", orderID))
 
@@ -188,7 +188,7 @@ func (os *orderService) VerifyStripeEventSignature(payload []byte, sigHeader str
 	// Compare expected signature with provided signatures
 	// Use a constant-time comparison function to mitigate timing attacks
 	// If a matching signature is found, return nil
-	expectedSignature := ComputeSignature(ts, payload, os.ordConfig.WebhookSigningSecret)
+	expectedSignature := ComputeSignature(ts, payload, os.strpConfig.WebhookSigningSecret)
 	for _, signature := range signatures {
 		if hmac.Equal(signature, expectedSignature) {
 			return nil
@@ -298,7 +298,7 @@ func (os *orderService) cancelPaymentIntent(ctx context.Context, paymentIntentID
 	}
 
 	stripeURL := fmt.Sprintf("%s/payment_intents/%s/cancel",
-		os.ordConfig.StripeConfig.BaseURL,
+		os.strpConfig.BaseURL,
 		paymentIntentID,
 	)
 
@@ -306,7 +306,7 @@ func (os *orderService) cancelPaymentIntent(ctx context.Context, paymentIntentID
 	if err != nil {
 		return fmt.Errorf("failed to create Stripe cancel request: %w", err)
 	}
-	reqStripe.SetBasicAuth(os.ordConfig.StripeConfig.SecretKey, "")
+	reqStripe.SetBasicAuth(os.strpConfig.SecretKey, "")
 	reqStripe.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := os.HttpClient.Do(reqStripe)
@@ -445,9 +445,13 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 		itmQty := int64(item.Quantity)
 		form.Set(fmt.Sprintf("line_items[%d][amount]", i), strconv.FormatInt(item.UnitPrice*itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][quantity]", i), strconv.FormatInt(itmQty, 10))
-		form.Set(fmt.Sprintf("line_items[%d][reference]", i), fmt.Sprintf("%s-%s", order.ID, item.ProductID))
-		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), os.ordConfig.DefaultTaxBehavior)
-		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), os.ordConfig.DefaultTaxCode) // FIXME need per item tax code
+		form.Set(fmt.Sprintf("line_items[%d][reference]", i), fmt.Sprintf("%s-%s", order.ID, item.Product.ID))
+		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), string(os.locConfig.TaxBehavior))
+		if item.Product.TaxCode == "" {
+			form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), os.locConfig.FallbackTaxCode)
+		} else {
+			form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), item.Product.TaxCode)
+		}
 	}
 
 	// Customer Address
@@ -461,7 +465,7 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 	form.Set("customer_details[address][state]", order.Address.StateCode)
 	form.Set("customer_details[address][postal_code]", order.Address.PostalCode)
 
-	url := fmt.Sprintf("%s/tax/calculations", os.ordConfig.StripeConfig.BaseURL)
+	url := fmt.Sprintf("%s/tax/calculations", os.strpConfig.BaseURL)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBufferString(form.Encode()))
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
@@ -470,7 +474,7 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 		return err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+os.ordConfig.StripeConfig.SecretKey)
+	req.Header.Set("Authorization", "Bearer "+os.strpConfig.SecretKey)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Idempotency-Key", order.ID)
 

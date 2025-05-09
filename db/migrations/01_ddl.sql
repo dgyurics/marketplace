@@ -3,16 +3,17 @@ CREATE TABLE IF NOT EXISTS categories (
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(255) UNIQUE NOT NULL,
     parent_id BIGINT REFERENCES categories(id) ON DELETE SET NULL,
-    is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
+    is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- TODO delete this column
     description TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-
+-- TODO delete this index
 CREATE INDEX idx_categories_is_deleted_false
 ON categories (id)
 WHERE is_deleted = FALSE;
 
+-- TODO update this to remove the is_deleted condition
 CREATE INDEX idx_categories_slug_is_deleted_false
 ON categories (slug)
 WHERE is_deleted = FALSE;
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS products (
     price BIGINT NOT NULL,
     description TEXT NOT NULL,
     details JSONB DEFAULT '{}'::jsonb NOT NULL,
+    tax_code VARCHAR(50),
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
@@ -162,7 +164,7 @@ CREATE TABLE IF NOT EXISTS addresses (
     city VARCHAR(255) NOT NULL,
     state_code CHAR(2) NOT NULL,
     postal_code VARCHAR(20) NOT NULL,
-    is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
+    is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- If an order references the address, it will only be soft-deleted
     country_code CHAR(2) NOT NULL DEFAULT 'US',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -226,6 +228,8 @@ FROM order_items oi
 JOIN products p ON oi.product_id = p.id
 LEFT JOIN images img ON img.product_id = p.id
     AND img.display_order = 0;
+-- FIXME this assumes the first image is the thumbnail
+-- However this is not defined anywhere
 
 CREATE TABLE stripe_events (
     id VARCHAR(255) UNIQUE NOT NULL,

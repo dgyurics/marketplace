@@ -18,8 +18,8 @@ type Config struct {
 	Logger       LoggerConfig
 	MachineID    uint8
 	Server       ServerConfig
-	Order        OrderConfig
-	TemplatesDir string // path to the directory containing email templates
+	Stripe       StripeConfig
+	TemplatesDir string // path to directory containing email templates
 }
 
 // ServerConfig is based on net/http.Server.
@@ -74,9 +74,18 @@ type LoggerConfig struct {
 	Level       slog.Level
 }
 
+type TaxBehavior string
+
+const (
+	Inclusive TaxBehavior = "inclusive"
+	Exclusive TaxBehavior = "exclusive"
+)
+
 type LocaleConfig struct {
-	CountryCode  string // ISO 3166-1 alpha-2 country code
-	CurrencyCode string // ISO 4217 currency code
+	CountryCode     string // ISO 3166-1 alpha-2 country code
+	CurrencyCode    string // ISO 4217 currency code
+	FallbackTaxCode string // Default tax code when item/product level tax code not provided
+	TaxBehavior     TaxBehavior
 }
 
 type Environment string
@@ -85,12 +94,6 @@ const (
 	Development Environment = "development"
 	Production  Environment = "production"
 )
-
-type OrderConfig struct {
-	DefaultTaxCode     string
-	DefaultTaxBehavior string
-	StripeConfig
-}
 
 type StripeConfig struct {
 	BaseURL              string // https://api.stripe.com

@@ -36,9 +36,8 @@ type Order struct {
 }
 
 type OrderItem struct {
-	ProductID   string `json:"product_id"`
-	Description string `json:"description"`
-	Thumbnail   string `json:"thumbnail"`
-	Quantity    int    `json:"quantity"`
-	UnitPrice   int64  `json:"unit_price"`
+	Product   Product `json:"product"`
+	Thumbnail string  `json:"thumbnail"`
+	Quantity  int     `json:"quantity"`
+	UnitPrice int64   `json:"unit_price"`
 }

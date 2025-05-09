@@ -84,19 +84,6 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	}
 	defer tx.Rollback()
 
-	// Verify addr is valid
-	if order == nil || order.Address == nil {
-		return errors.New("Order.Address.ID required when creating an order")
-	}
-	// verify userID provided
-	if order.UserID == "" {
-		return errors.New("Order.UserID required when creating an order")
-	}
-
-	if order.Email == "" {
-		return errors.New("Order.Email required when creating an order")
-	}
-
 	addr := order.Address
 	if err := tx.QueryRowContext(ctx, `
 		SELECT
@@ -131,13 +118,20 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		return err
 	}
 
-	// Retrieve cart cartItems
+	// Retrieve cart items
 	// TODO populate description and thumbnail - needed for order summary/review component
 	var cartItems []types.CartItem
 	query := `
-		SELECT product_id, quantity, unit_price
-		FROM cart_items
-		WHERE user_id = $1
+		SELECT
+			p.id,
+			p.name,
+			COALESCE(p.tax_code, '') AS tax_code,
+			p.description,
+			ci.quantity,
+			ci.unit_price
+		FROM cart_items ci
+		JOIN products p ON ci.product_id = p.id
+		WHERE ci.user_id = $1
 	`
 	rows, err := tx.QueryContext(ctx, query, order.UserID)
 	if err != nil {
@@ -148,7 +142,14 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	for rows.Next() {
 		var item types.CartItem
 		item.Product = types.Product{}
-		if err = rows.Scan(&item.Product.ID, &item.Quantity, &item.UnitPrice); err != nil {
+		if err = rows.Scan(
+			&item.Product.ID,
+			&item.Product.Name,
+			&item.Product.TaxCode,
+			&item.Product.Description,
+			&item.Quantity,
+			&item.UnitPrice,
+		); err != nil {
 			return err
 		}
 		cartItems = append(cartItems, item)
@@ -209,7 +210,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 			return err
 		}
 		order.Items = append(order.Items, types.OrderItem{
-			ProductID: item.Product.ID,
+			Product:   item.Product,
 			Quantity:  item.Quantity,
 			UnitPrice: item.UnitPrice,
 		})
@@ -459,10 +460,11 @@ func (r *orderRepository) PopulateOrderItems(ctx context.Context, orders *[]type
 	for rows.Next() {
 		var orderID string
 		item := types.OrderItem{}
+		item.Product = types.Product{}
 		if err := rows.Scan(
 			&orderID,
-			&item.ProductID,
-			&item.Description,
+			&item.Product.ID,
+			&item.Product.Description,
 			&item.Thumbnail,
 			&item.Quantity,
 			&item.UnitPrice,
