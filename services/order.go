@@ -238,7 +238,7 @@ func (os *orderService) paymentIntentCreated(ctx context.Context, event stripe.E
 	if order.TotalAmount != paymentIntent.Amount {
 		return fmt.Errorf("payment intent amount does not match expected amount")
 	}
-	if order.Currency != paymentIntent.Currency {
+	if !strings.EqualFold(order.Currency, paymentIntent.Currency) {
 		return fmt.Errorf("payment intent currency does not match expected currency")
 	}
 	return nil
@@ -262,7 +262,7 @@ func (os *orderService) paymentIntentSucceeded(ctx context.Context, event stripe
 		slog.Error("Payment intent amount does not match expected amount", "order_id", order.ID)
 		return fmt.Errorf("payment intent amount does not match expected amount")
 	}
-	if order.Currency != paymentIntent.Currency {
+	if !strings.EqualFold(order.Currency, paymentIntent.Currency) {
 		slog.Error("Payment intent currency does not match expected currency", "order_id", order.ID)
 		return fmt.Errorf("payment intent currency does not match expected currency")
 	}

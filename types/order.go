@@ -37,7 +37,7 @@ type Order struct {
 
 type OrderItem struct {
 	Product   Product `json:"product"`
-	Thumbnail string  `json:"thumbnail"`
+	Thumbnail string  `json:"thumbnail"` // TODO remove this and reference product.images instead
 	Quantity  int     `json:"quantity"`
 	UnitPrice int64   `json:"unit_price"`
 }

@@ -76,13 +76,14 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE OR REPLACE VIEW v_product AS
+CREATE OR REPLACE VIEW v_products AS
 SELECT
     p.id,
     p.name,
     p.price,
     p.description,
     p.details,
+    COALESCE(p.tax_code, '') AS tax_code,
     c.slug AS category_slug,
     COALESCE(imgs.images, '[]') AS images,
     LEAST(inv.quantity, 100) AS quantity

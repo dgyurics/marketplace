@@ -161,7 +161,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 	if len(filter.Categories) == 0 {
 		queryBuilder.WriteString(`
 			SELECT p.id, p.name, p.price, p.description, p.images
-			FROM v_product p
+			FROM v_products p
 			WHERE true
 		`)
 	} else {
@@ -178,7 +178,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 				JOIN category_tree ct ON c.parent_id = ct.id
 			)
 			SELECT p.id, p.name, p.price, p.description, p.images
-			FROM v_product p
+			FROM v_products p
 			JOIN product_categories pc ON p.id = pc.product_id
 			JOIN category_tree ct ON ct.id = pc.category_id
 			WHERE true
@@ -210,7 +210,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 func (r *productRepository) GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error) {
 	query := `
 	SELECT id, name, price, description, details, images, quantity
-	FROM v_product
+	FROM v_products
 	WHERE id = $1;
 	`
 

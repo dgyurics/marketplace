@@ -87,15 +87,25 @@ func loadMachineID() uint8 {
 
 func loadLocaleConfig() types.LocaleConfig {
 	config := types.LocaleConfig{
-		CurrencyCode: mustLookupEnv("CURRENCY_CODE"),
-		CountryCode:  mustLookupEnv("COUNTRY_CODE"),
+		CurrencyCode:    mustLookupEnv("CURRENCY_CODE"),
+		CountryCode:     mustLookupEnv("COUNTRY_CODE"),
+		TaxBehavior:     types.TaxExclusive,
+		FallbackTaxCode: mustLookupEnv("FALLBACK_TAX_CODE"),
 	}
+
 	if _, ok := SupportedCountries[config.CountryCode]; !ok {
 		panic(fmt.Sprintf("Unsupported country code: %s", config.CountryCode))
 	}
+
 	if _, ok := SupportedCurrencies[config.CurrencyCode]; !ok {
 		panic(fmt.Sprintf("Unsupported currency code: %s", config.CurrencyCode))
 	}
+
+	taxBehavior := mustLookupEnv("TAX_BEHAVIOR")
+	if taxBehavior == string(types.TaxInclusive) {
+		config.TaxBehavior = types.TaxInclusive
+	}
+
 	return config
 }
 

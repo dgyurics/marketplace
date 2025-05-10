@@ -77,8 +77,8 @@ type LoggerConfig struct {
 type TaxBehavior string
 
 const (
-	Inclusive TaxBehavior = "inclusive"
-	Exclusive TaxBehavior = "exclusive"
+	TaxInclusive TaxBehavior = "inclusive"
+	TaxExclusive TaxBehavior = "exclusive"
 )
 
 type LocaleConfig struct {

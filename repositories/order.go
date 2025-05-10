@@ -45,12 +45,12 @@ func (r *orderRepository) CancelPendingOrders(ctx context.Context, interval time
 	}
 	var stripeIDs []string
 	for rows.Next() {
-		var id string
+		var id sql.NullString
 		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		if id != "" {
-			stripeIDs = append(stripeIDs, id)
+		if id.Valid {
+			stripeIDs = append(stripeIDs, id.String)
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -119,18 +119,19 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	}
 
 	// Retrieve cart items
-	// TODO populate description and thumbnail - needed for order summary/review component
 	var cartItems []types.CartItem
 	query := `
 		SELECT
 			p.id,
 			p.name,
-			COALESCE(p.tax_code, '') AS tax_code,
+			p.price,
+			p.tax_code,
+			p.images,
 			p.description,
 			ci.quantity,
 			ci.unit_price
 		FROM cart_items ci
-		JOIN products p ON ci.product_id = p.id
+		JOIN v_products p ON ci.product_id = p.id
 		WHERE ci.user_id = $1
 	`
 	rows, err := tx.QueryContext(ctx, query, order.UserID)
@@ -142,16 +143,28 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	for rows.Next() {
 		var item types.CartItem
 		item.Product = types.Product{}
+		var imagesJSON []byte
+
 		if err = rows.Scan(
 			&item.Product.ID,
 			&item.Product.Name,
+			&item.Product.Price,
 			&item.Product.TaxCode,
+			&imagesJSON,
 			&item.Product.Description,
 			&item.Quantity,
 			&item.UnitPrice,
 		); err != nil {
 			return err
 		}
+
+		// Convert JSON array to Go struct
+		// FIXME seems counterintuitive to convert images to JSON in view/database
+		// and then convert back to Go struct/array
+		if err := json.Unmarshal(imagesJSON, &item.Product.Images); err != nil {
+			return err
+		}
+
 		cartItems = append(cartItems, item)
 	}
 	if err = rows.Err(); err != nil {
