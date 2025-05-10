@@ -76,10 +76,21 @@ func (r *productRepository) CreateProductWithCategory(ctx context.Context, produ
 
 	// Create the product
 	query := `
-		INSERT INTO products (id, name, price, description)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO products (id, name, price, description, details, tax_code)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, name, price, description`
-	if err = tx.QueryRowContext(ctx, query, product.ID, product.Name, product.Price, product.Description).
+	if err = tx.QueryRowContext(ctx,
+		query,
+		product.ID,
+		product.Name,
+		product.Price,
+		product.Description,
+		product.Details,
+		sql.NullString{
+			String: product.TaxCode,
+			Valid:  strings.TrimSpace(product.TaxCode) != "",
+		},
+	).
 		Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
 		return err
 	}

@@ -20,6 +20,7 @@ func TestCreateProduct(t *testing.T) {
 		Name:        "Test Product",
 		Price:       100000,
 		Description: "A test product description",
+		Details:     []byte(`{"key": "value"}`),
 	}
 	product.ID, _ = utilities.GenerateIDString()
 
@@ -62,6 +63,7 @@ func TestCreateProductWithImages(t *testing.T) {
 		Name:        "Test Product with Images",
 		Price:       100000,
 		Description: "Product with images for testing",
+		Details:     []byte(`{"key": "value"}`),
 		Images: []types.Image{
 			{ID: utilities.MustGenerateIDString(), ImageURL: "http://example.com/image1.jpg", Animated: false, AltText: func(s string) *string { return &s }("Image 1")},
 			{ID: utilities.MustGenerateIDString(), ImageURL: "http://example.com/image2.gif", Animated: true, AltText: func(s string) *string { return &s }("Image 2 animated")},
@@ -107,6 +109,7 @@ func TestCreateProductWithCategory(t *testing.T) {
 		Name:        "Test Product with Category",
 		Price:       150000,
 		Description: "A test product with category description",
+		Details:     []byte(`{"key": "value"}`),
 	}
 	product.ID, _ = utilities.GenerateIDString()
 
@@ -195,6 +198,7 @@ func TestGetProductsByCategory(t *testing.T) {
 		Name:        "Test Product with Category",
 		Price:       200000,
 		Description: "A test product with a category",
+		Details:     []byte(`{"key": "value"}`),
 	}
 	product.ID, _ = utilities.GenerateIDString()
 

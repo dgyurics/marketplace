@@ -3,14 +3,15 @@ package types
 import "encoding/json"
 
 type Product struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Price       int64   `json:"price"`
-	Description string  `json:"description"`
-	Images      []Image `json:"images"`
-	TaxCode     string  `json:"tax_code"`
-	CreatedAt   string  `json:"created_at"`
-	UpdatedAt   string  `json:"updated_at"`
+	ID          string          `json:"id"`
+	Name        string          `json:"name"`
+	Price       int64           `json:"price"`
+	Details     json.RawMessage `json:"details"`
+	Description string          `json:"description"`
+	Images      []Image         `json:"images"`
+	TaxCode     string          `json:"tax_code"`
+	CreatedAt   string          `json:"created_at"`
+	UpdatedAt   string          `json:"updated_at"`
 }
 
 type ProductWithInventory struct {

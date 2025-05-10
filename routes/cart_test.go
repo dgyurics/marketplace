@@ -58,7 +58,8 @@ func TestAddItemToCart(t *testing.T) {
 	item := types.CartItem{
 		Quantity: 2,
 		Product: types.Product{
-			ID: productID,
+			ID:      productID,
+			Details: json.RawMessage("{\"key\":\"value\"}"),
 		},
 	}
 
