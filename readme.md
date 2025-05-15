@@ -13,6 +13,7 @@
   <li><strong>Shopping Cart:</strong> Manage user shopping carts, calculate totals, and track item quantities.</li>
   <li><strong>Payments:</strong> Stripe integration for calculating tax and processing payments.</li>
   <li><strong>Logging:</strong> Structured logging for monitoring and debugging in a distributed environment.</li>
+  <li><strong>Internationalization and Localization:</strong> Support for multiple currencies and languages.</li>
 </ul>
 
 <h2>Planned Enhancements</h2>
@@ -24,7 +25,7 @@
   <li><strong>Image Hosting:</strong> Option to self-host product images (currently using Cloudinary).</li>
   <li><strong>SMTP:</strong> Self-host SMTP server (currently using Mailjet).</li>
   <li><strong>Product Variants:</strong> Support product variants (e.g., size, color) and manage inventory for each variant (SKU).</li>
-  <li><strong>User Interface:</strong> Develop a user interface to interact with the API.</li>
+  <li><strong>User Interface:</strong> An extensible user interface to be deployed alongside the API.</li>
 </ul>
 
 <h2>Future Considerations</h2>
@@ -34,7 +35,6 @@
   <li><strong>Role-Based Access Control:</strong> Implement role-based access control to restrict access to certain resources. E.g. admin, vendor, customer</li>
   <li><strong>Promotions and Discounts:</strong> Manage promotional codes, discounts, and sale events.</li>
   <li><strong>Advanced Inventory Management:</strong> Inventory management with alerts for low stock, as well as support for multiple warehouses/distributors.</li>
-  <li><strong>Internationalization and Localization:</strong> Support multiple currencies, languages, and localized product information.</li>
   <li><strong>Product Reviews:</strong> Allow users to leave reviews and ratings for products.</li>
 </ul>
 
