@@ -29,13 +29,13 @@ func (u *User) IsGuest() bool {
 type Address struct {
 	ID           string    `json:"id"`
 	UserID       string    `json:"user_id"`
-	CountryCode  string    `json:"country_code"` // ISO 3166-1 alpha-2
+	CountryCode  string    `json:"country_code"` // TODO rename to country ISO 3166-1 alpha-2
 	Addressee    *string   `json:"addressee"`
-	AddressLine1 string    `json:"address_line1"` // rename to line1
-	AddressLine2 *string   `json:"address_line2"` // rename to line2
-	City         string    `json:"city"`
-	StateCode    string    `json:"state_code"`
-	PostalCode   string    `json:"postal_code"`
+	AddressLine1 string    `json:"address_line1"` // TODO rename to line1 Address line 1 (Street address/PO Box/Company name)
+	AddressLine2 *string   `json:"address_line2"` // TODO rename to line2 Address line 2 (Apartment/Suite/Unit/Building)
+	City         string    `json:"city"`          // City/District/Suburb/Town/Village
+	StateCode    string    `json:"state_code"`    // TODO rename to state ISO 3166-2
+	PostalCode   string    `json:"postal_code"`   // ZIP or postal code
 	IsDeleted    bool      `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`

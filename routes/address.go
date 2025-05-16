@@ -44,7 +44,7 @@ func (h *AddressRoutes) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if address.AddressLine1 == "" || address.City == "" || address.StateCode == "" || address.PostalCode == "" || address.CountryCode == "" {
+	if address.AddressLine1 == "" || address.City == "" || address.StateCode == "" || address.PostalCode == "" {
 		u.RespondWithError(w, r, http.StatusBadRequest, "missing required fields for address")
 		return
 	}

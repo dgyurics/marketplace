@@ -1,15 +1,19 @@
+.PHONY: all clean test test-no-cache test-coverage test-coverage-report test-coverage-func build run stripe-listen update-payment-intent confirm-payment-intent refund-payment-intent generate-id generate-ids decode-id generate-keys
+
 # Variables
+BIN_DIR=bin
 BINARY_NAME=marketplace
+BINARY=$(BIN_DIR)/$(BINARY_NAME)
 SRC_DIR=./cmd/marketplace
 PRIVATE_KEY_FILE=private.pem
 PUBLIC_KEY_FILE=public.pem
 
 # Default target
-all: build
+all: run
 
 # Clean up generated files
 clean:
-	rm -f $(BINARY_NAME) $(PRIVATE_KEY_FILE) $(PUBLIC_KEY_FILE)
+	rm -f $(BINARY) $(PRIVATE_KEY_FILE) $(PUBLIC_KEY_FILE)
 
 # Run tests
 test:
@@ -32,11 +36,11 @@ test-coverage-func:
 
 # Build the binary
 build:
-	go build -o bin/$(BINARY_NAME) $(SRC_DIR)
+	go build -o $(BINARY) $(SRC_DIR)
 
 # Run the binary
 run: build
-	./bin/$(BINARY_NAME)
+	./$(BINARY)
 
 # Stripe listen
 stripe-listen:
