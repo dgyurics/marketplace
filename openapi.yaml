@@ -346,17 +346,17 @@ paths:
                 addressee:
                   type: string
                   example: "John Doe"
-                address_line1:
+                line1:
                   type: string
                   example: "123 Main St"
-                address_line2:
+                line2:
                   type: string
                   nullable: true
                   example: "Apt 4B"
                 city:
                   type: string
                   example: "New York"
-                state_code:
+                state:
                   type: string
                   example: "NY"
                 postal_code:
@@ -376,27 +376,23 @@ paths:
                   addressee:
                     type: string
                     example: "John Doe"
-                  address_line1:
+                  address:
                     type: string
                     example: "123 Main St"
-                  address_line2:
+                  address:
                     type: string
                     nullable: true
                     example: "Apt 4B"
                   city:
                     type: string
                     example: "New York"
-                  state_code:
+                  state:
                     type: string
                     example: "NY"
                   postal_code:
                     type: string
                     example: "10001"
                   created_at:
-                    type: string
-                    format: date-time
-                    example: "2025-03-04T12:00:00Z"
-                  updated_at:
                     type: string
                     format: date-time
                     example: "2025-03-04T12:00:00Z"
@@ -875,27 +871,23 @@ components:
         addressee:
           type: string
           example: "John Doe"
-        address_line1:
+        line1:
           type: string
           example: "123 Main St"
-        address_line2:
+        line2:
           type: string
           nullable: true
           example: "Apt 4B"
         city:
           type: string
           example: "New York"
-        state_code:
+        state:
           type: string
           example: "NY"
         postal_code:
           type: string
           example: "10001"
         created_at:
-          type: string
-          format: date-time
-          example: "2025-03-04T12:00:00Z"
-        updated_at:
           type: string
           format: date-time
           example: "2025-03-04T12:00:00Z"

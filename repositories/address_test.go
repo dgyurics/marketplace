@@ -23,14 +23,14 @@ func TestCreateAddress(t *testing.T) {
 	// Create a test address
 	addressee := "John Doe"
 	address := &types.Address{
-		ID:           utilities.MustGenerateIDString(),
-		UserID:       user.ID,
-		Addressee:    &addressee,
-		AddressLine1: "123 Test St",
-		AddressLine2: &addressLine2,
-		City:         "Testville",
-		StateCode:    "TS",
-		PostalCode:   "12345",
+		ID:         utilities.MustGenerateIDString(),
+		UserID:     user.ID,
+		Addressee:  &addressee,
+		Line1:      "123 Test St",
+		Line2:      &addressLine2,
+		City:       "Testville",
+		State:      "TS",
+		PostalCode: "12345",
 	}
 
 	err := repo.CreateAddress(ctx, address)
@@ -62,15 +62,15 @@ func TestCreateAddressWhenDuplicateExists(t *testing.T) {
 
 	// Define address fields
 	address := &types.Address{
-		ID:           utilities.MustGenerateIDString(),
-		UserID:       user.ID,
-		Addressee:    &addressee,
-		AddressLine1: "123 Test St",
-		AddressLine2: &addressLine2,
-		City:         "Testville",
-		StateCode:    "TS",
-		PostalCode:   "12345",
-		CountryCode:  "US",
+		ID:         utilities.MustGenerateIDString(),
+		UserID:     user.ID,
+		Addressee:  &addressee,
+		Line1:      "123 Test St",
+		Line2:      &addressLine2,
+		City:       "Testville",
+		State:      "TS",
+		PostalCode: "12345",
+		Country:    "US",
 	}
 
 	// Create the first address
@@ -81,15 +81,15 @@ func TestCreateAddressWhenDuplicateExists(t *testing.T) {
 
 	// Create another address with the same fields (simulating a duplicate)
 	dupAddress := &types.Address{
-		ID:           utilities.MustGenerateIDString(), // different ID
-		UserID:       user.ID,
-		Addressee:    &addressee,
-		AddressLine1: "123 Test St",
-		AddressLine2: &addressLine2,
-		City:         "Testville",
-		StateCode:    "TS",
-		PostalCode:   "12345",
-		CountryCode:  "US",
+		ID:         utilities.MustGenerateIDString(), // different ID
+		UserID:     user.ID,
+		Addressee:  &addressee,
+		Line1:      "123 Test St",
+		Line2:      &addressLine2,
+		City:       "Testville",
+		State:      "TS",
+		PostalCode: "12345",
+		Country:    "US",
 	}
 
 	err = repo.CreateAddress(ctx, dupAddress)
@@ -117,24 +117,24 @@ func TestGetAddresses(t *testing.T) {
 	// Create multiple addresses for the user
 	addressee1 := "John Doe"
 	address1 := &types.Address{
-		ID:           utilities.MustGenerateIDString(),
-		UserID:       user.ID,
-		Addressee:    &addressee1,
-		AddressLine1: "123 Test St",
-		AddressLine2: &addressLine2,
-		City:         "Testville",
-		StateCode:    "TS",
-		PostalCode:   "12345",
+		ID:         utilities.MustGenerateIDString(),
+		UserID:     user.ID,
+		Addressee:  &addressee1,
+		Line1:      "123 Test St",
+		Line2:      &addressLine2,
+		City:       "Testville",
+		State:      "TS",
+		PostalCode: "12345",
 	}
 	addressee2 := "Jane Doe"
 	address2 := &types.Address{
-		ID:           utilities.MustGenerateIDString(),
-		UserID:       user.ID,
-		Addressee:    &addressee2,
-		AddressLine1: "456 Test Ave",
-		City:         "Testville",
-		StateCode:    "TS",
-		PostalCode:   "67890",
+		ID:         utilities.MustGenerateIDString(),
+		UserID:     user.ID,
+		Addressee:  &addressee2,
+		Line1:      "456 Test Ave",
+		City:       "Testville",
+		State:      "TS",
+		PostalCode: "67890",
 	}
 
 	err := repo.CreateAddress(ctx, address1)
@@ -168,14 +168,14 @@ func TestRemoveAddress(t *testing.T) {
 	// Create a test address
 	addressee := "John Doe"
 	address := &types.Address{
-		ID:           utilities.MustGenerateIDString(),
-		UserID:       user.ID,
-		Addressee:    &addressee,
-		AddressLine1: "123 Test St",
-		AddressLine2: &addressLine2,
-		City:         "Testville",
-		StateCode:    "TS",
-		PostalCode:   "12345",
+		ID:         utilities.MustGenerateIDString(),
+		UserID:     user.ID,
+		Addressee:  &addressee,
+		Line1:      "123 Test St",
+		Line2:      &addressLine2,
+		City:       "Testville",
+		State:      "TS",
+		PostalCode: "12345",
 	}
 
 	err := repo.CreateAddress(ctx, address)
@@ -204,17 +204,17 @@ func TestGetAddressWithEmptyFields(t *testing.T) {
 	userRepo := NewUserRepository(dbPool)
 	user := createUniqueTestUser(t, userRepo)
 
-	// Create an address with empty addressee, and nil for address_line2
+	// Create an address with empty addressee, and nil for line2
 	addressee := ""
 	address := &types.Address{
-		ID:           utilities.MustGenerateIDString(),
-		UserID:       user.ID,
-		Addressee:    &addressee, // empty addressee
-		AddressLine1: "789 Test Blvd",
-		AddressLine2: nil, // nil address_line2
-		City:         "Emptyville",
-		StateCode:    "EM",
-		PostalCode:   "00000",
+		ID:         utilities.MustGenerateIDString(),
+		UserID:     user.ID,
+		Addressee:  &addressee, // empty addressee
+		Line1:      "789 Test Blvd",
+		Line2:      nil, // nil line2
+		City:       "Emptyville",
+		State:      "EM",
+		PostalCode: "00000",
 	}
 
 	err := repo.CreateAddress(ctx, address)
@@ -241,7 +241,7 @@ func TestGetAddressWithEmptyFields(t *testing.T) {
 	} else {
 		assert.Equal(t, "", *found.Addressee, "Expected empty addressee")
 	}
-	assert.Nil(t, found.AddressLine2, "Expected address_line2 to be nil")
+	assert.Nil(t, found.Line2, "Expected line2 to be nil")
 
 	// Clean up: remove created address and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM addresses WHERE id = $1", address.ID)

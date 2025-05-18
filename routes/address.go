@@ -44,12 +44,12 @@ func (h *AddressRoutes) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if address.AddressLine1 == "" || address.City == "" || address.StateCode == "" || address.PostalCode == "" {
+	if address.Line1 == "" || address.City == "" || address.State == "" || address.PostalCode == "" {
 		u.RespondWithError(w, r, http.StatusBadRequest, "missing required fields for address")
 		return
 	}
 
-	if !u.PostalCodePatterns[h.config.CountryCode].MatchString(address.PostalCode) {
+	if !u.PostalCodePatterns[h.config.Country].MatchString(address.PostalCode) {
 		u.RespondWithError(w, r, http.StatusBadRequest, "invalid postal code format")
 		return
 	}

@@ -37,22 +37,22 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 		FROM addresses
 		WHERE user_id = $1 AND
 			addressee = $2 AND
-			address_line1 = $3 AND
-			address_line2 = $4 AND
+			line1 = $3 AND
+			line2 = $4 AND
 			city = $5 AND
-			state_code = $6 AND
+			state = $6 AND
 			postal_code = $7 AND
-			country_code = $8 AND
+			country = $8 AND
 			is_deleted = FALSE
 	`,
 		address.UserID,
 		address.Addressee,
-		address.AddressLine1,
-		address.AddressLine2,
+		address.Line1,
+		address.Line2,
 		address.City,
-		address.StateCode,
+		address.State,
 		address.PostalCode,
-		address.CountryCode,
+		address.Country,
 	).Scan(&addressID)
 	if err == sql.ErrNoRows {
 		addressID = ""
@@ -81,28 +81,28 @@ func (r *addressRepository) createAddress(ctx context.Context, tx *sql.Tx, addre
 			id,
 			user_id,
 			addressee,
-			address_line1,
-			address_line2,
+			line1,
+			line2,
 			city,
-			state_code,
+			state,
 			postal_code,
-			country_code
+			country
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, user_id, created_at, updated_at
+		RETURNING id, user_id, created_at
 	`
 
 	return tx.QueryRowContext(ctx, query,
 		address.ID,
 		address.UserID,
 		address.Addressee,
-		address.AddressLine1,
-		address.AddressLine2,
+		address.Line1,
+		address.Line2,
 		address.City,
-		address.StateCode,
+		address.State,
 		address.PostalCode,
-		address.CountryCode,
-	).Scan(&address.ID, &address.UserID, &address.CreatedAt, &address.UpdatedAt)
+		address.Country,
+	).Scan(&address.ID, &address.UserID, &address.CreatedAt)
 }
 
 func (r *addressRepository) GetAddresses(ctx context.Context, userID string) ([]types.Address, error) {
@@ -111,15 +111,14 @@ func (r *addressRepository) GetAddresses(ctx context.Context, userID string) ([]
 			id,
 			user_id,
 			addressee,
-			address_line1,
-			address_line2,
+			line1,
+			line2,
 			city,
-			state_code,
+			state,
 			postal_code,
-			country_code,
+			country,
 			is_deleted,
-			created_at,
-			updated_at
+			created_at
 		FROM addresses
 		WHERE user_id = $1 AND is_deleted = FALSE
 	`
@@ -137,15 +136,14 @@ func (r *addressRepository) GetAddresses(ctx context.Context, userID string) ([]
 			&address.ID,
 			&address.UserID,
 			&address.Addressee,
-			&address.AddressLine1,
-			&address.AddressLine2,
+			&address.Line1,
+			&address.Line2,
 			&address.City,
-			&address.StateCode,
+			&address.State,
 			&address.PostalCode,
-			&address.CountryCode,
+			&address.Country,
 			&address.IsDeleted,
 			&address.CreatedAt,
-			&address.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

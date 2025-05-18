@@ -384,7 +384,7 @@ func (os *orderService) createAndLogOrder(ctx context.Context, order *types.Orde
 		return err
 	}
 	order.ID = orderID
-	order.Currency = os.locConfig.CurrencyCode
+	order.Currency = os.locConfig.Currency
 	if err := os.orderRepo.CreateOrder(ctx, order); err != nil {
 		slog.Error("Error creating order", "user_id", order.UserID, "error", err)
 		return err
@@ -436,7 +436,7 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 	if len(order.Items) == 0 {
 		return errors.New("order has no items")
 	}
-	if order.Address.CountryCode == "" {
+	if order.Address.Country == "" {
 		return errors.New("missing country code")
 	}
 
@@ -456,13 +456,13 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 
 	// Customer Address
 	form.Set("customer_details[address_source]", "shipping") // FIXME make configurable (need way to retrieve billing address)
-	form.Set("customer_details[address][country]", order.Address.CountryCode)
+	form.Set("customer_details[address][country]", order.Address.Country)
 	form.Set("customer_details[address][city]", order.Address.City)
-	form.Set("customer_details[address][line1]", order.Address.AddressLine1)
-	if line2 := order.Address.AddressLine2; line2 != nil && *line2 != "" {
+	form.Set("customer_details[address][line1]", order.Address.Line1)
+	if line2 := order.Address.Line2; line2 != nil && *line2 != "" {
 		form.Set("customer_details[address][line2]", *line2)
 	}
-	form.Set("customer_details[address][state]", order.Address.StateCode)
+	form.Set("customer_details[address][state]", order.Address.State)
 	form.Set("customer_details[address][postal_code]", order.Address.PostalCode)
 
 	url := fmt.Sprintf("%s/tax/calculations", os.strpConfig.BaseURL)

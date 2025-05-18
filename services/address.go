@@ -29,7 +29,7 @@ func NewAddressService(repo repositories.AddressRepository, config types.LocaleC
 func (s *addressService) CreateAddress(ctx context.Context, address *types.Address) error {
 	var userID = getUserID(ctx)
 	address.UserID = userID
-	address.CountryCode = s.config.CountryCode
+	address.Country = s.config.Country
 
 	// if a duplicate address is found, addressID will not be used
 	addressID, err := utilities.GenerateIDString()

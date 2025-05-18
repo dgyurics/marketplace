@@ -82,8 +82,8 @@ const (
 )
 
 type LocaleConfig struct {
-	CountryCode     string // ISO 3166-1 alpha-2 country code
-	CurrencyCode    string // ISO 4217 currency code
+	Country         string // ISO 3166-1 alpha-2
+	Currency        string // ISO 4217 currency
 	FallbackTaxCode string // Default tax code when item/product level tax code not provided
 	TaxBehavior     TaxBehavior
 }

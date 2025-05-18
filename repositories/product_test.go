@@ -158,7 +158,7 @@ func TestGetProducts(t *testing.T) {
 	assert.NotEmpty(t, product.ID, "Expected product ID to be set")
 
 	// Get all products
-	products, err := repo.GetProducts(ctx, types.ProductFilter{Limit: 100, Page: 1})
+	products, err := repo.GetProducts(ctx, types.ProductFilter{Limit: 1000, Page: 1})
 	assert.NoError(t, err, "Expected no error on getting all products")
 	assert.NotEmpty(t, products, "Expected products list to not be empty")
 

@@ -28,11 +28,11 @@ func TestCalculateTax_Success(t *testing.T) {
 		ID:       "order-123",
 		Currency: "usd",
 		Address: &types.Address{
-			CountryCode:  "US",
-			StateCode:    "CA",
-			City:         "Los Angeles",
-			PostalCode:   "90001",
-			AddressLine1: "123 Main St",
+			Country:    "US",
+			State:      "CA",
+			City:       "Los Angeles",
+			PostalCode: "90001",
+			Line1:      "123 Main St",
 		},
 		Items: []types.OrderItem{
 			{Product: types.Product{ID: "prod-1"}, Quantity: 2, UnitPrice: 500},
@@ -61,8 +61,8 @@ func TestCalculateTax_Success(t *testing.T) {
 	svc := &orderService{
 		HttpClient: httpClient,
 		locConfig: types.LocaleConfig{
-			CountryCode:     "US",
-			CurrencyCode:    "USD",
+			Country:         "US",
+			Currency:        "USD",
 			FallbackTaxCode: "txcd_99999999",
 			TaxBehavior:     "exclusive",
 		},

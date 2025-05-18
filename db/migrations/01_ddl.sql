@@ -160,16 +160,15 @@ CREATE TABLE IF NOT EXISTS addresses (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     addressee VARCHAR(255),
-    address_line1 VARCHAR(255) NOT NULL,
-    address_line2 VARCHAR(255),
-    city VARCHAR(255) NOT NULL,
-    state_code CHAR(2) NOT NULL,
-    postal_code VARCHAR(20) NOT NULL,
-    is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- If an order references the address, it will only be soft-deleted
-    country_code CHAR(2) NOT NULL DEFAULT 'US',
+    line1 VARCHAR(255) NOT NULL,
+    line2 VARCHAR(255),
+    city VARCHAR(255) NOT NULL, -- city, district, suburb, town, village
+    state CHAR(2) NOT NULL, -- state, county, province, region
+    postal_code VARCHAR(20) NOT NULL, -- zip code, postal code
+    is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- when existing order references address, we have to soft delete
+    country CHAR(2) NOT NULL, -- ISO 3166-1 alpha-2 country code
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 );
 CREATE INDEX idx_addresses_is_deleted_false
 ON addresses (id)

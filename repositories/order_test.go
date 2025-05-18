@@ -18,7 +18,7 @@ func createTestAddress(t *testing.T, db *sql.DB, userID string) string {
 	addressID := utilities.MustGenerateIDString()
 
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO addresses (id, user_id, address_line1, city, state_code, postal_code)
+		INSERT INTO addresses (id, user_id, line1, city, state, postal_code)
 		VALUES ($1, $2, '123 Test St', 'Test City', 'CA', '12345')`,
 		addressID, userID)
 	assert.NoError(t, err)
