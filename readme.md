@@ -26,6 +26,7 @@
   <li><strong>SMTP:</strong> Self-host SMTP server (currently using Mailjet).</li>
   <li><strong>Product Variants:</strong> Support product variants (e.g., size, color) and manage inventory for each variant (SKU).</li>
   <li><strong>User Interface:</strong> An extensible user interface to be deployed alongside the API.</li>
+  <li><strong>Refunds:</strong> Administrative endpoint for partial and full refunds.</li>
 </ul>
 
 <h2>Future Considerations</h2>
