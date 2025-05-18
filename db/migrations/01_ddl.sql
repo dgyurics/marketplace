@@ -18,6 +18,16 @@ CREATE INDEX idx_categories_slug_is_deleted_false
 ON categories (slug)
 WHERE is_deleted = FALSE;
 
+CREATE TABLE IF NOT EXISTS tax_rates (
+    state VARCHAR(10),
+    tax_code VARCHAR(50),
+    inclusive BOOLEAN DEFAULT FALSE NOT NULL,
+    percentage NUMERIC(5, 4) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE (state, tax_code)
+);
+
 CREATE TABLE IF NOT EXISTS products (
     id BIGINT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
