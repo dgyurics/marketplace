@@ -436,9 +436,6 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 	if len(order.Items) == 0 {
 		return errors.New("order has no items")
 	}
-	if order.Address.Country == "" {
-		return errors.New("missing country code")
-	}
 
 	// Line Items
 	for i, item := range order.Items {
@@ -455,7 +452,7 @@ func (os *orderService) calculateTax(ctx context.Context, order *types.Order) er
 	}
 
 	// Customer Address
-	form.Set("customer_details[address_source]", "shipping") // FIXME make configurable (need way to retrieve billing address)
+	form.Set("customer_details[address_source]", "shipping")
 	form.Set("customer_details[address][country]", order.Address.Country)
 	form.Set("customer_details[address][city]", order.Address.City)
 	form.Set("customer_details[address][line1]", order.Address.Line1)
