@@ -46,7 +46,7 @@ func (s *scheduleService) Start(ctx context.Context) {
 			slog.Info("Scheduling service stopped")
 			return
 		case <-ticker.C:
-			// run job only once each 10 minutes
+			// run job every 10 minutes
 			if s.schedRepo.RunJob(ctx, types.StaleOrders, 10*time.Minute) {
 				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
 				s.orderSrv.CancelStaleOrders(ctxTimeout)

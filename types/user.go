@@ -30,9 +30,9 @@ type Address struct {
 	ID         string    `json:"id"`
 	UserID     string    `json:"user_id"`
 	Country    string    `json:"country"`
-	Addressee  *string   `json:"addressee"`
+	Addressee  *string   `json:"addressee"` // FIXME just use omit empty string
 	Line1      string    `json:"line1"`
-	Line2      *string   `json:"line2"`
+	Line2      *string   `json:"line2"`       // FIXME just use omit empty string
 	City       string    `json:"city"`        // city, district, suburb, town, village
 	State      string    `json:"state"`       // state, county, province, region
 	PostalCode string    `json:"postal_code"` // zip code, postal code

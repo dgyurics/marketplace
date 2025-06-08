@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// FIXME use pointers
 type Config struct {
 	Auth         AuthConfig
 	BaseURL      string
@@ -99,4 +100,5 @@ type StripeConfig struct {
 	BaseURL              string // https://api.stripe.com
 	SecretKey            string // sk_test_xxxxxxxxxxxxxxxxxxxxxxxx
 	WebhookSigningSecret string // whsec_xxxxxxxxxxxxxxxxxxxxxxxx
+	Version              string // 2025-04-30.basil
 }

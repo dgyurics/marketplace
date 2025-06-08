@@ -114,6 +114,7 @@ func loadStripeConfig() types.StripeConfig {
 		BaseURL:              mustLookupEnv("STRIPE_BASE_URL"),
 		SecretKey:            mustLookupEnv("STRIPE_SECRET_KEY"),
 		WebhookSigningSecret: mustLookupEnv("STRIPE_WEBHOOK_SIGNING_SECRET"),
+		Version:              mustLookupEnv("STRIPE_VERSION"),
 	}
 }
 

@@ -7,8 +7,6 @@ type Event struct {
 	Livemode bool   `json:"livemode"`
 	Created  int64  `json:"created"` // seconds elapsed since Unix epoch
 }
-
-// TODO - add support for other webhook events
 type Data struct {
 	Object PaymentIntent `json:"object"`
 }
@@ -20,6 +18,10 @@ type PaymentIntent struct {
 	ClientSecret string `json:"client_secret"`
 	Currency     string `json:"currency"`
 	Error        string `json:"error,omitempty"`
+}
+
+type PaymentIntentResponse struct {
+	ClientSecret string `json:"client_secret"`
 }
 
 type TaxCalculationResponse struct {
@@ -46,12 +48,12 @@ type CustomerDetails struct {
 }
 
 type Address struct {
-	City       string  `json:"city"`
-	Country    string  `json:"country"`
-	Line1      string  `json:"line1"`
-	Line2      *string `json:"line2,omitempty"`
-	PostalCode string  `json:"postal_code"`
-	State      string  `json:"state"`
+	City       string `json:"city"`
+	Country    string `json:"country"`
+	Line1      string `json:"line1"`
+	Line2      string `json:"line2,omitempty"`
+	PostalCode string `json:"postal_code"`
+	State      string `json:"state"`
 }
 
 type TaxBreakdown struct {
@@ -70,3 +72,40 @@ type TaxRateDetails struct {
 	State             string `json:"state"`
 	TaxType           string `json:"tax_type"`
 }
+
+// Description of the event (for example, `invoice.created` or `charge.refunded`).
+type EventType string
+
+// List of values that EventType can take
+// Full list available at https://github.com/stripe/stripe-go
+const (
+	EventTypePaymentIntentAmountCapturableUpdated   EventType = "payment_intent.amount_capturable_updated"
+	EventTypePaymentIntentCanceled                  EventType = "payment_intent.canceled"
+	EventTypePaymentIntentCreated                   EventType = "payment_intent.created"
+	EventTypePaymentIntentPartiallyFunded           EventType = "payment_intent.partially_funded"
+	EventTypePaymentIntentPaymentFailed             EventType = "payment_intent.payment_failed"
+	EventTypePaymentIntentProcessing                EventType = "payment_intent.processing"
+	EventTypePaymentIntentRequiresAction            EventType = "payment_intent.requires_action"
+	EventTypePaymentIntentSucceeded                 EventType = "payment_intent.succeeded"
+	EventTypePaymentLinkCreated                     EventType = "payment_link.created"
+	EventTypePaymentLinkUpdated                     EventType = "payment_link.updated"
+	EventTypePaymentMethodAttached                  EventType = "payment_method.attached"
+	EventTypePaymentMethodAutomaticallyUpdated      EventType = "payment_method.automatically_updated"
+	EventTypePaymentMethodDetached                  EventType = "payment_method.detached"
+	EventTypePaymentMethodUpdated                   EventType = "payment_method.updated"
+	EventTypeRefundCreated                          EventType = "refund.created"
+	EventTypeRefundFailed                           EventType = "refund.failed"
+	EventTypeRefundUpdated                          EventType = "refund.updated"
+	EventTypeTaxSettingsUpdated                     EventType = "tax.settings.updated"
+	EventTypeTaxRateCreated                         EventType = "tax_rate.created"
+	EventTypeTaxRateUpdated                         EventType = "tax_rate.updated"
+	EventTypeTerminalReaderActionFailed             EventType = "terminal.reader.action_failed"
+	EventTypeTerminalReaderActionSucceeded          EventType = "terminal.reader.action_succeeded"
+	EventTypeBillingCreditBalanceTransactionCreated EventType = "billing.credit_balance_transaction.created"
+	EventTypeBillingCreditGrantCreated              EventType = "billing.credit_grant.created"
+	EventTypeBillingCreditGrantUpdated              EventType = "billing.credit_grant.updated"
+	EventTypeBillingMeterCreated                    EventType = "billing.meter.created"
+	EventTypeBillingMeterDeactivated                EventType = "billing.meter.deactivated"
+	EventTypeBillingMeterReactivated                EventType = "billing.meter.reactivated"
+	EventTypeBillingMeterUpdated                    EventType = "billing.meter.updated"
+)

@@ -78,7 +78,7 @@ func (r *refreshRepository) GetToken(ctx context.Context, tokenHash string) (*ty
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
+	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {

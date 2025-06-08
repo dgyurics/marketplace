@@ -966,13 +966,10 @@ components:
         product_id:
           type: string
           example: "123"
-        image_url:
+        url:
           type: string
           format: uri
           example: "https://example.com/image.jpg"
-        animated:
-          type: boolean
-          example: false
         display_order:
           type: integer
           example: 0

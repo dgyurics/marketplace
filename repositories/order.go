@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
+	"log/slog"
 	"time"
 
 	"github.com/dgyurics/marketplace/types"
@@ -14,13 +14,11 @@ import (
 )
 
 type OrderRepository interface {
-	GetOrder(ctx context.Context, order *types.Order) error
-	GetOrders(ctx context.Context, userID string, page, limit int) ([]types.Order, error)
-	PopulateOrderItems(ctx context.Context, orders *[]types.Order) error
+	CancelPendingOrders(ctx context.Context, interval time.Duration) ([]string, error) // TODO refactor, returning just stripe IDs is hacky
 	CreateOrder(ctx context.Context, order *types.Order) error
-	UpdateOrder(ctx context.Context, order *types.Order) error
-	CreateStripeEvent(ctx context.Context, event stripe.Event) error
-	CancelPendingOrders(ctx context.Context, interval time.Duration) ([]string, error)
+	GetOrder(ctx context.Context, orderID, userID string) (types.Order, error)
+	GetOrders(ctx context.Context, userID string, page, limit int) ([]types.Order, error)
+	UpdateOrder(ctx context.Context, params types.OrderParams) (types.Order, error)
 }
 
 type orderRepository struct {
@@ -76,45 +74,27 @@ func (r *orderRepository) restockCanceledOrderItems(ctx context.Context) error {
 	return err
 }
 
+// CreateOrder creates a new order from the user's cart items
 func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) error {
+	if order == nil {
+		return errors.New("order cannot be nil")
+	}
+	if order.UserID == "" {
+		return errors.New("user ID is required")
+	}
+	if order.Currency == "" {
+		return errors.New("currency is required")
+	}
+	if order.ID == "" {
+		return errors.New("order ID is required")
+	}
+
 	// Begin a transaction
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-
-	addr := order.Address
-	if err := tx.QueryRowContext(ctx, `
-		SELECT
-			id,
-			user_id,
-			addressee,
-			line1,
-			line2,
-			city,
-			state,
-			postal_code,
-			country,
-			created_at
-		FROM addresses
-		WHERE id = $1 AND
-			user_id = $2 AND
-			is_deleted = FALSE
-	`, order.Address.ID, order.UserID).Scan(
-		&addr.ID,
-		&addr.UserID,
-		&addr.Addressee,
-		&addr.Line1,
-		&addr.Line2,
-		&addr.City,
-		&addr.State,
-		&addr.PostalCode,
-		&addr.Country,
-		&addr.CreatedAt,
-	); err != nil {
-		return err
-	}
 
 	// Retrieve cart items
 	var cartItems []types.CartItem
@@ -169,11 +149,14 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		return err
 	}
 
-	// Calculate cart total (excluding tax + shipping)
-	amount := calculateOrderAmount(cartItems)
-	if amount == 0 {
-		return errors.New("order cart is empty")
+	if len(cartItems) == 0 {
+		slog.Debug("CreateOrder: no items in cart", "user_id", order.UserID)
+		return types.ErrNotFound
 	}
+
+	// Calculate cart total, excluding tax + shipping.
+	// Tax and shipping will be calculated later.
+	amount := calculateOrderAmount(cartItems)
 
 	// Reduce inventory
 	if err = reduceInventory(ctx, tx, cartItems); err != nil {
@@ -182,23 +165,21 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 
 	// create a new order with pending status
 	query = `
-		INSERT INTO orders (id, user_id, email, address_id, currency, amount) VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, user_id, email, currency, amount, status, created_at
+		INSERT INTO orders (id, user_id, currency, amount, total_amount) VALUES ($1, $2, $3, $4, $4)
+		RETURNING id, user_id, currency, amount, total_amount, status, created_at
 	`
 	if err = tx.QueryRowContext(
 		ctx, query,
 		order.ID,
 		order.UserID,
-		order.Email,
-		order.Address.ID,
 		order.Currency,
 		amount,
 	).Scan(
 		&order.ID,
 		&order.UserID,
-		&order.Email,
 		&order.Currency,
 		&order.Amount,
+		&order.TotalAmount,
 		&order.Status,
 		&order.CreatedAt,
 	); err != nil {
@@ -259,87 +240,97 @@ func calculateOrderAmount(items []types.CartItem) int64 {
 	return total
 }
 
-// CreateStripeEvent saves a Stripe event to the database
-func (r *orderRepository) CreateStripeEvent(ctx context.Context, event stripe.Event) error {
-	if event.Data != nil {
-		event.Data.Object.ClientSecret = ""
+func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderParams) (ord types.Order, err error) {
+	if params.ID == "" {
+		return ord, errors.New("order ID is required")
 	}
-	query := `
-		INSERT INTO stripe_events (
-			id,
-			event_type,
-			payload,
-			processed_at
-		)
-		VALUES ($1, $2, $3, $4)
-	`
-	payload, err := json.Marshal(event.Data.Object)
-	if err != nil {
-		return err
-	}
-	_, err = r.db.ExecContext(ctx, query,
-		event.ID,
-		event.Type,
-		payload,
-		time.Unix(event.Created, 0).UTC(),
-	)
-	return err
-}
-
-// UpdateOrder updates an order with new status and/or payment intent ID
-// FIXME break this up into two sep functions
-func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) error {
-	if order == nil || order.ID == "" {
-		return fmt.Errorf("missing order ID")
+	if params.UserID == "" {
+		return ord, errors.New("user ID is required")
 	}
 
 	query := `UPDATE orders SET updated_at = CURRENT_TIMESTAMP`
 	args := []interface{}{}
 	argCount := 1
 
-	if order.Status != "" {
+	attrs := []slog.Attr{
+		slog.String("order_id", params.ID),
+	}
+
+	if params.Status != nil {
+		attrs = append(attrs, slog.String("status", string(*params.Status)))
 		query += fmt.Sprintf(", status = $%d", argCount)
-		args = append(args, order.Status)
+		args = append(args, *params.Status)
 		argCount++
 	}
 
-	if order.TaxAmount != 0 {
+	if params.AddressID != nil {
+		attrs = append(attrs, slog.String("address_id", *params.AddressID))
+		query += fmt.Sprintf(", address_id = $%d", argCount)
+		args = append(args, *params.AddressID)
+		argCount++
+	}
+
+	if params.TaxAmount != nil {
+		attrs = append(attrs, slog.Int64("tax_amount", *params.TaxAmount))
 		query += fmt.Sprintf(", tax_amount = $%d", argCount)
-		args = append(args, order.TaxAmount)
+		args = append(args, *params.TaxAmount)
 		argCount++
 	}
 
-	if order.ShippingAmount != 0 {
+	if params.ShippingAmount != nil {
+		attrs = append(attrs, slog.Int64("shipping_amount", *params.ShippingAmount))
 		query += fmt.Sprintf(", shipping_amount = $%d", argCount)
-		args = append(args, order.ShippingAmount)
+		args = append(args, *params.ShippingAmount)
 		argCount++
 	}
 
-	if order.TotalAmount != 0 {
+	if params.TotalAmount != nil {
+		attrs = append(attrs, slog.Int64("total_amount", *params.TotalAmount))
 		query += fmt.Sprintf(", total_amount = $%d", argCount)
-		args = append(args, order.TotalAmount)
+		args = append(args, *params.TotalAmount)
 		argCount++
 	}
 
-	if order.StripePaymentIntent != nil {
-		intentJSON, err := json.Marshal(order.StripePaymentIntent)
+	if params.Email != nil {
+		attrs = append(attrs, slog.String("email", *params.Email))
+		query += fmt.Sprintf(", email = $%d", argCount)
+		args = append(args, *params.Email)
+		argCount++
+	}
+
+	if params.StripePaymentIntent != nil {
+		intentJSON, err := json.Marshal(*params.StripePaymentIntent)
 		if err != nil {
-			return fmt.Errorf("failed to encode stripe payment intent: %w", err)
+			return ord, fmt.Errorf("failed to encode stripe payment intent: %w", err)
 		}
+
+		attrs = append(attrs, slog.String("stripe_payment_intent", string(intentJSON)))
 		query += fmt.Sprintf(", stripe_payment_intent = $%d", argCount)
 		args = append(args, intentJSON)
 		argCount++
 	}
 
 	if len(args) == 0 {
-		return fmt.Errorf("no fields to update")
+		return ord, fmt.Errorf("no fields to update")
 	}
 
 	query += fmt.Sprintf(" WHERE id = $%d", argCount)
-	args = append(args, order.ID)
+	args = append(args, params.ID)
+	argCount++
 
-	_, err := r.db.ExecContext(ctx, query, args...)
-	return err
+	query += fmt.Sprintf(" AND user_id = $%d", argCount)
+	args = append(args, params.UserID)
+	argCount++
+
+	slog.LogAttrs(ctx, slog.LevelDebug, "Updating order", attrs...)
+
+	if _, err := r.db.ExecContext(ctx, query, args...); err != nil {
+		slog.Error("Failed to update order", "error", err, "order_id", params.ID, "user_id", params.UserID)
+		return ord, err
+	}
+
+	ord, err = r.GetOrder(ctx, params.ID, params.UserID)
+	return ord, err
 }
 
 // GetOrders retrieves all orders for a user
@@ -423,143 +414,121 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 		return nil, err
 	}
 
+	// Populate order items for each order
+	for idx, order := range result {
+		// TODO wrap in goroutine
+		result[idx].Items, err = r.populateOrderItems(ctx, order.ID)
+		if err != nil {
+			slog.Error("Failed to populate order items", "order_id", order.ID, "error", err)
+		}
+	}
+
 	return result, nil
 }
 
-// PopulateOrderItems populates the order items for a list of orders
-func (r *orderRepository) PopulateOrderItems(ctx context.Context, orders *[]types.Order) error {
-	if len(*orders) == 0 {
-		return nil
-	}
-
-	// Collect order IDs
-	orderIDs := make([]interface{}, len(*orders))
-	for i, order := range *orders {
-		orderIDs[i] = order.ID
-	}
-
-	// Dynamically build the query with placeholders
-	placeholders := make([]string, len(orderIDs))
-	for i := range placeholders {
-		placeholders[i] = fmt.Sprintf("$%d", i+1) // PostgreSQL uses $1, $2, ...
+// populateOrderItems populates the order items for a list of orders
+func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string) ([]types.OrderItem, error) {
+	if orderID == "" {
+		return nil, errors.New("order ID is required")
 	}
 
 	// Query to fetch order items
-	query := fmt.Sprintf(`
+	// missing alt text, product name,
+	query := `
 		SELECT
-			order_id,
 			product_id,
+			name,
 			description,
 			thumbnail,
+			alt_text,
 			quantity,
 			unit_price
 		FROM v_order_items
-		WHERE order_id IN (%s)
-	`, strings.Join(placeholders, ","))
+		WHERE order_id = $1
+	`
 
 	// Query to fetch order items
-	rows, err := r.db.QueryContext(ctx, query, orderIDs...)
+	rows, err := r.db.QueryContext(ctx, query, orderID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer rows.Close()
 
-	// Map to store items grouped by order ID
-	itemMap := make(map[string][]types.OrderItem)
-
 	// Process query results
+	var items []types.OrderItem
 	for rows.Next() {
-		var orderID string
 		item := types.OrderItem{}
-		item.Product = types.Product{}
 		if err := rows.Scan(
-			&orderID,
 			&item.Product.ID,
+			&item.Product.Name,
 			&item.Product.Description,
 			&item.Thumbnail,
+			&item.AltText,
 			&item.Quantity,
 			&item.UnitPrice,
 		); err != nil {
-			return err
+			return nil, err
 		}
-		itemMap[orderID] = append(itemMap[orderID], item)
+		items = append(items, item)
 	}
 
 	// Check for errors from iterating over rows.
-	if err = rows.Err(); err != nil {
-		return err
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
-	// Populate the orders with their items
-	for i, order := range *orders {
-		if items, ok := itemMap[order.ID]; ok {
-			(*orders)[i].Items = items
-		}
+	return items, nil
+}
+
+func (r *orderRepository) GetOrder(ctx context.Context, orderID, userID string) (types.Order, error) {
+	var order types.Order
+	if orderID == "" {
+		return order, errors.New("order ID is required")
 	}
-
-	return nil
-}
-
-// isEmptyOrderLookup checks if the order lookup is empty
-func isEmptyOrderLookup(order *types.Order) bool {
-	return order.ID == "" && (order.StripePaymentIntent == nil || order.StripePaymentIntent.ID == "")
-}
-
-// GetOrder retrieves an order by ID or payment intent ID
-// FIXME refactor split into two functions,
-// GetOrderByID
-// GetOrderByPaymentIntent
-func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) error {
-	// Validate input
-	if isEmptyOrderLookup(order) {
-		return fmt.Errorf("missing identifier: provide order.ID or StripePaymentIntent.ID")
+	if userID == "" {
+		return order, errors.New("user ID is required")
 	}
 	query := `
 		SELECT
 			o.id,
 			o.user_id,
-			o.email,
+			COALESCE(o.email, '') AS email,
 			o.currency,
 			o.amount,
 			o.tax_amount,
 			o.total_amount,
 			o.status,
 			o.stripe_payment_intent,
-			a.id AS address_id,
+			o.address_id,
 			a.addressee,
 			a.line1,
 			a.line2,
 			a.city,
 			a.state,
 			a.postal_code,
+			a.country,
 			o.created_at,
 			o.updated_at
 		FROM orders o
-		JOIN addresses a ON o.address_id = a.id
+		LEFT JOIN addresses a ON o.address_id = a.id
+		WHERE
+			o.id = $1 AND
+			o.user_id = $2
 	`
-	args := []interface{}{}
-	var whereClause string
-
-	// Build the WHERE clause based on provided fields
-	if order.ID != "" {
-		whereClause = "WHERE o.id = $1"
-		args = append(args, order.ID)
-	} else if order.UserID != "" {
-		whereClause = "WHERE o.user_id = $1 ORDER BY o.created_at DESC LIMIT 1"
-		args = append(args, order.UserID)
-	} else if order.StripePaymentIntent != nil && order.StripePaymentIntent.ID != "" {
-		whereClause = "WHERE o.stripe_payment_intent->>'id' = $1"
-		args = append(args, order.StripePaymentIntent.ID)
-	}
-
-	// Combine query and where clause
-	query += whereClause
 
 	// Execute the query
-	order.Address = &types.Address{}
-	order.StripePaymentIntent = &stripe.PaymentIntent{} // Avoid overwriting the existing pointer
 	var rawIntent []byte
-	err := r.db.QueryRowContext(ctx, query, args...).Scan(
+	var address struct {
+		ID         sql.NullString
+		Addressee  sql.NullString
+		Line1      sql.NullString
+		Line2      sql.NullString
+		City       sql.NullString
+		State      sql.NullString
+		PostalCode sql.NullString
+		Country    sql.NullString
+	}
+	err := r.db.QueryRowContext(ctx, query, orderID, userID).Scan(
 		&order.ID,
 		&order.UserID,
 		&order.Email,
@@ -569,32 +538,52 @@ func (r *orderRepository) GetOrder(ctx context.Context, order *types.Order) erro
 		&order.TotalAmount,
 		&order.Status,
 		&rawIntent,
-		&order.Address.ID,
-		&order.Address.Addressee,
-		&order.Address.Line1,
-		&order.Address.Line2,
-		&order.Address.City,
-		&order.Address.State,
-		&order.Address.PostalCode,
+		&address.ID,
+		&address.Addressee,
+		&address.Line1,
+		&address.Line2,
+		&address.City,
+		&address.State,
+		&address.PostalCode,
+		&address.Country,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
+	if err == sql.ErrNoRows {
+		return order, types.ErrNotFound
+	}
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return fmt.Errorf("order not found")
-		}
-		return err
+		return order, err
 	}
 
 	// Unmarshal the Stripe payment intent if it exists
 	if len(rawIntent) > 0 {
-		var spi stripe.PaymentIntent
-		err = json.Unmarshal(rawIntent, &spi)
+		var payInt stripe.PaymentIntent
+		err = json.Unmarshal(rawIntent, &payInt)
 		if err != nil {
-			return fmt.Errorf("failed to unmarshal Stripe payment intent: %w", err)
+			return order, fmt.Errorf("failed to unmarshal Stripe payment intent: %w", err)
 		}
-		order.StripePaymentIntent = &spi
+		order.StripePaymentIntent = &payInt
 	}
 
-	return nil
+	// Populate address if it exists
+	if address.ID.Valid {
+		order.Address = &types.Address{
+			ID:         address.ID.String,
+			Addressee:  &address.Addressee.String,
+			Line1:      address.Line1.String,
+			Line2:      &address.Line2.String,
+			City:       address.City.String,
+			State:      address.State.String,
+			PostalCode: address.PostalCode.String,
+			Country:    address.Country.String,
+		}
+	}
+
+	// Populate order items for this order
+	if order.Items, err = r.populateOrderItems(ctx, order.ID); err != nil {
+		return order, fmt.Errorf("failed to populate order items: %w", err)
+	}
+
+	return order, nil
 }

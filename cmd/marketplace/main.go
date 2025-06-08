@@ -72,8 +72,9 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewCategoryRoutes(services.Category, baseRouter),
 		routes.NewProductRoutes(services.Product, baseRouter),
 		routes.NewCartRoutes(services.Cart, baseRouter),
-		routes.NewOrderRoutes(services.Order, baseRouter),
+		routes.NewOrderRoutes(services.Order, services.Tax, services.Payment, services.Cart, baseRouter),
 		routes.NewPasswordRoutes(services.Password, services.User, services.Email, services.Template, config.BaseURL, baseRouter),
+		routes.NewPaymentRoutes(services.Payment, baseRouter),
 	)
 
 	// Create and return the server
@@ -96,12 +97,14 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	userRepository := repositories.NewUserRepository(db)
 	categoryRepository := repositories.NewCategoryRepository(db)
 	productRepository := repositories.NewProductRepository(db)
+	paymentRepository := repositories.NewPaymentRepository(db)
 	cartRepository := repositories.NewCartRepository(db)
 	orderRepository := repositories.NewOrderRepository(db)
 	inviteRepository := repositories.NewInviteRepository(db)
 	passwordRepository := repositories.NewPasswordRepository(db)
 	scheduleRepository := repositories.NewScheduleRepository(db)
 	refreshTokenRepository := repositories.NewRefreshRepository(db)
+	taxRepository := repositories.NewTaxRepository(db)
 
 	// create http client required by certain services
 	httpClient := utilities.NewDefaultHTTPClient(10 * time.Second) // TODO make this configurable
@@ -112,13 +115,15 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
 	cartService := services.NewCartService(cartRepository)
-	orderService := services.NewOrderService(orderRepository, cartRepository, config.Stripe, config.Locale, httpClient)
+	paymentService := services.NewPaymentService(httpClient, config.Stripe, config.Locale, paymentRepository)
+	orderService := services.NewOrderService(orderRepository, cartRepository, paymentService, config.Locale, httpClient)
 	inviteService := services.NewInviteService(inviteRepository, config.Auth.HMACSecret)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	emailService := services.NewMailjetSender(config.Email)
 	jwtService := services.NewJWTService(config.JWT)
 	scheduleService := services.NewScheduleService(orderService, scheduleRepository)
+	taxService := services.NewTaxService(taxRepository, config.Stripe, config.Locale, httpClient)
 	templateService, _ := services.NewTemplateService(config.TemplatesDir)
 
 	return servicesContainer{
@@ -131,9 +136,11 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		Invite:   inviteService,
 		Password: passwordService,
 		Refresh:  refreshService,
+		Payment:  paymentService,
 		Email:    emailService,
 		JWT:      jwtService,
 		Schedule: scheduleService,
+		Tax:      taxService,
 		Template: templateService,
 	}
 }
@@ -142,16 +149,18 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 type servicesContainer struct {
 	Address  services.AddressService
 	User     services.UserService
-	Category services.CategoryService
-	Product  services.ProductService
 	Cart     services.CartService
-	Order    services.OrderService
-	Invite   services.InviteService
-	Password services.PasswordService
-	Refresh  services.RefreshService
+	Category services.CategoryService
 	Email    services.EmailSender
+	Invite   services.InviteService
 	JWT      services.JWTService
+	Order    services.OrderService
+	Password services.PasswordService
+	Payment  services.PaymentService
+	Product  services.ProductService
+	Refresh  services.RefreshService
 	Schedule services.ScheduleService
+	Tax      services.TaxService
 	Template services.TemplateService
 }
 

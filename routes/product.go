@@ -113,6 +113,10 @@ func (h *ProductRoutes) UpdateInventory(w http.ResponseWriter, r *http.Request) 
 func (h *ProductRoutes) RemoveProduct(w http.ResponseWriter, r *http.Request) {
 	productID := mux.Vars(r)["id"]
 	err := h.productService.RemoveProduct(r.Context(), productID)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, "Product not found")
+		return
+	}
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return

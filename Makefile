@@ -28,7 +28,7 @@ test-coverage:
 
 # Generate test coverage report
 test-coverage-report:
-	go test ./... -coverprofile=coverage.out
+	go test -coverprofile=coverage.out ./...
 
 # View function-level test coverage
 test-coverage-func:

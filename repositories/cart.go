@@ -160,7 +160,7 @@ func (r *cartRepository) RemoveItemFromCart(ctx context.Context, userID string, 
 		return err
 	}
 	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
-		return sql.ErrNoRows
+		return types.ErrNotFound
 	}
 	return nil
 }

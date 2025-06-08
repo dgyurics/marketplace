@@ -29,8 +29,8 @@ type ProductWithInventory struct {
 type Image struct {
 	ID           string  `json:"id"`
 	ProductID    string  `json:"product_id"`
-	ImageURL     string  `json:"image_url"`
-	Animated     bool    `json:"animated"`
+	URL          string  `json:"url"`
+	Type         string  `json:"type"` // main, thumbnail, gallery
 	DisplayOrder int     `json:"display_order"`
 	AltText      *string `json:"alt_text,omitempty"`
 }

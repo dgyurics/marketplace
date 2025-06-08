@@ -1,70 +1,151 @@
-INSERT INTO categories (id, name, slug, description) VALUES
-('526402777421709313', 'Category 1', 'category-1', 'This is category 1'),
-('526403107899310082', 'Category 2', 'category-2', 'This is category 2'),
-('526403265579974659', 'Category 3', 'category-3', 'This is category 3'),
-('526403439761031172', 'Category 4', 'category-4', 'This is category 4'),
-('526403643973304325', 'Category 5', 'category-5', 'This is category 5');
+-- United States
+INSERT INTO tax_rates (country, state, inclusive, percentage)
+VALUES
+('US', 'AL', FALSE, 921),  -- Alabama
+('US', 'AK', FALSE, 176),  -- Alaska (no state tax, local only)
+('US', 'AZ', FALSE, 838),  -- Arizona
+('US', 'AR', FALSE, 944),  -- Arkansas
+('US', 'CA', FALSE, 882),  -- California
+('US', 'CO', FALSE, 777),  -- Colorado
+('US', 'CT', FALSE, 635),  -- Connecticut
+('US', 'DE', FALSE, 0),    -- Delaware
+('US', 'FL', FALSE, 702),  -- Florida
+('US', 'GA', FALSE, 737),  -- Georgia
+('US', 'HI', FALSE, 444),  -- Hawaii (GET, not traditional sales tax)
+('US', 'ID', FALSE, 606),  -- Idaho
+('US', 'IL', FALSE, 882),  -- Illinois
+('US', 'IN', FALSE, 700),  -- Indiana
+('US', 'IA', FALSE, 688),  -- Iowa
+('US', 'KS', FALSE, 869),  -- Kansas
+('US', 'KY', FALSE, 600),  -- Kentucky
+('US', 'LA', FALSE, 988),  -- Louisiana
+('US', 'ME', FALSE, 555),  -- Maine
+('US', 'MD', FALSE, 600),  -- Maryland
+('US', 'MA', FALSE, 625),  -- Massachusetts
+('US', 'MI', FALSE, 600),  -- Michigan
+('US', 'MN', FALSE, 741),  -- Minnesota
+('US', 'MS', FALSE, 707),  -- Mississippi
+('US', 'MO', FALSE, 820),  -- Missouri
+('US', 'MT', FALSE, 0),    -- Montana
+('US', 'NE', FALSE, 691),  -- Nebraska
+('US', 'NV', FALSE, 836),  -- Nevada
+('US', 'NH', FALSE, 0),    -- New Hampshire
+('US', 'NJ', FALSE, 666),  -- New Jersey
+('US', 'NM', FALSE, 785),  -- New Mexico
+('US', 'NY', FALSE, 852),  -- New York
+('US', 'NC', FALSE, 698),  -- North Carolina
+('US', 'ND', FALSE, 698),  -- North Dakota
+('US', 'OH', FALSE, 724),  -- Ohio
+('US', 'OK', FALSE, 947),  -- Oklahoma
+('US', 'OR', FALSE, 0),    -- Oregon (no sales tax)
+('US', 'PA', FALSE, 634),  -- Pennsylvania
+('US', 'RI', FALSE, 700),  -- Rhode Island
+('US', 'SC', FALSE, 747),  -- South Carolina
+('US', 'SD', FALSE, 642),  -- South Dakota
+('US', 'TN', FALSE, 955),  -- Tennessee
+('US', 'TX', FALSE, 820),  -- Texas
+('US', 'UT', FALSE, 712),  -- Utah
+('US', 'VT', FALSE, 620),  -- Vermont
+('US', 'VA', FALSE, 581),  -- Virginia
+('US', 'WA', FALSE, 940),  -- Washington
+('US', 'WV', FALSE, 654),  -- West Virginia
+('US', 'WI', FALSE, 543),  -- Wisconsin
+('US', 'WY', FALSE, 539),  -- Wyoming
+('US', 'DC', FALSE, 620),  -- District of Columbia
 
-INSERT INTO products (id, name, price, description) VALUES
-('526403779902308358', 'Product 1', 1000, 'This is product 1'),
-('526403958856482823', 'Product 2', 2000, 'This is product 2'),
-('526404087537729544', 'Product 3', 3000, 'This is product 3'),
-('526404262373097481', 'Product 4', 4000, 'This is product 4'),
-('526404379536785418', 'Product 5', 5032, 'This is product 5'),
-('526404490752950283', 'Product 6', 6000, 'This is product 6'),
-('526404634617577484', 'Product 7', 7077, 'This is product 7'),
-('526404777643343885', 'Product 8', 8000, 'This is product 8'),
-('526404888909840398', 'Product 9', 9099, 'This is product 9'),
-('526404991661899791', 'Product 10', 10000, 'This is product 10');
+-- U.S. Territories
+('US', 'AS', FALSE, 0),    -- American Samoa
+('US', 'GU', FALSE, 400),  -- Guam
+('US', 'MP', FALSE, 0),    -- Northern Mariana Islands
+('US', 'PR', FALSE, 1050), -- Puerto Rico
+('US', 'VI', FALSE, 600);  -- U.S. Virgin Islands
 
-INSERT INTO images (id, product_id, image_url, animated, display_order, alt_text) VALUES
-('576264336620650498', '526403779902308358', 'https://picsum.photos/seed/product1-main/800/600', false, 0, 'Main image of Product 1'),
-('576264336620650499', '526403779902308358', 'https://picsum.photos/seed/product1-thumb/150/150', false, 1, 'Thumbnail image of Product 1'),
-('576264336620650500', '526403779902308358', 'https://picsum.photos/seed/product1-gallery1/800/600',false, 2, 'Gallery image of Product 1'),
-('576264336620650501', '526403958856482823', 'https://picsum.photos/seed/product2-main/800/600', false, 0, 'Main image of Product 2'),
-('576264336620650502', '526403958856482823', 'https://picsum.photos/seed/product2-thumb/150/150', false, 1, 'Thumbnail image of Product 2'),
-('576264336620650503', '526404087537729544', 'https://picsum.photos/seed/product3-main/800/600', false, 0, 'Main image of Product 3'),
-('576264336620650504', '526404087537729544', 'https://picsum.photos/seed/product3-thumb/150/150', false, 1, 'Thumbnail image of Product 3'),
-('576264336620650505', '526404087537729544', 'https://picsum.photos/seed/product3-gallery1/800/600',false, 2, 'Gallery image of Product 3'),
-('576264336620650506', '526404262373097481', 'https://picsum.photos/seed/product4-main/800/600', false, 0, 'Main image of Product 4'),
-('576264336620650507', '526404262373097481', 'https://picsum.photos/seed/product4-thumb/150/150', false, 1, 'Thumbnail image of Product 4'),
-('576264336620650508', '526404262373097481', 'https://picsum.photos/seed/product4-gallery1/800/600',false, 2, 'Gallery image of Product 4'),
-('576264336620650509', '526404379536785418', 'https://picsum.photos/seed/product5-main/800/600', false, 0, 'Main image of Product 5'),
-('576264336620650510', '526404379536785418', 'https://picsum.photos/seed/product5-thumb/150/150', false, 1, 'Thumbnail image of Product 5'),
-('576264336620650511', '526404379536785418', 'https://picsum.photos/seed/product5-zoom/1600/1200', false, 2, 'Zoom image of Product 5'),
-('576264336620650512', '526404490752950283', 'https://picsum.photos/seed/product6-main/800/600', false, 0, 'Main image of Product 6'),
-('576264336620650513', '526404490752950283', 'https://picsum.photos/seed/product6-thumb/150/150', false, 1, 'Thumbnail image of Product 6'),
-('576264336620650514', '526404634617577484', 'https://picsum.photos/seed/product7-main/800/600', false, 0, 'Main image of Product 7'),
-('576264336620650515', '526404634617577484', 'https://picsum.photos/seed/product7-thumb/150/150', false, 1, 'Thumbnail image of Product 7'),
-('576264336620650516', '526404634617577484', 'https://picsum.photos/seed/product7-hero/1920/1080', false, 2, 'Hero image of Product 7'),
-('576264336620650517', '526404777643343885', 'https://picsum.photos/seed/product8-main/800/600', false, 0, 'Main image of Product 8'),
-('576264336620650518', '526404777643343885', 'https://picsum.photos/seed/product8-thumb/150/150', false, 1, 'Thumbnail image of Product 8'),
-('576264336620650519', '526404888909840398', 'https://picsum.photos/seed/product9-main/800/600', false, 0, 'Main image of Product 9'),
-('576264336620650520', '526404888909840398', 'https://picsum.photos/seed/product9-thumb/150/150', false, 1, 'Thumbnail image of Product 9'),
-('576264336620650521', '526404888909840398', 'https://picsum.photos/seed/product9-zoom/1600/1200', false, 2, 'Zoom image of Product 9'),
-('576264336620650522', '526404991661899791', 'https://picsum.photos/seed/product10-main/800/600', false, 0, 'Main image of Product 10'),
-('576264336620650523', '526404991661899791', 'https://picsum.photos/seed/product10-thumb/150/150', false, 1, 'Thumbnail image of Product 10');
+INSERT INTO tax_rates (country, state, inclusive, percentage)
+VALUES
+('CA', 'AB', TRUE, 500),   -- Alberta
+('CA', 'BC', TRUE, 1200),  -- British Columbia
+('CA', 'MB', TRUE, 1200),  -- Manitoba
+('CA', 'NB', TRUE, 1500),  -- New Brunswick
+('CA', 'NL', TRUE, 1500),  -- Newfoundland and Labrador
+('CA', 'NS', TRUE, 1500),  -- Nova Scotia
+('CA', 'NT', TRUE, 500),   -- Northwest Territories
+('CA', 'NU', TRUE, 500),   -- Nunavut
+('CA', 'ON', TRUE, 1300),  -- Ontario
+('CA', 'PE', TRUE, 1500),  -- Prince Edward Island
+('CA', 'QC', TRUE, 1498),  -- Quebec
+('CA', 'SK', TRUE, 1100),  -- Saskatchewan
+('CA', 'YT', TRUE, 500);   -- Yukon (GST only)
 
-INSERT INTO inventory (product_id, quantity) VALUES
-('526403779902308358', 100),
-('526403958856482823', 200),
-('526404087537729544', 150),
-('526404262373097481', 120),
-('526404379536785418', 0),
-('526404490752950283', 0),
-('526404634617577484', 90),
-('526404777643343885', 70),
-('526404888909840398', 110),
-('526404991661899791', 80);
+-- Scandinavia
+INSERT INTO tax_rates (country, inclusive, percentage)
+VALUES
+('SE', TRUE, 2500), -- Sweden
+('NO', TRUE, 2500), -- Norway
+('DK', TRUE, 2500), -- Denmark
+('IS', TRUE, 2400), -- Iceland
+('FI', TRUE, 2400); -- Finland
 
-INSERT INTO product_categories (product_id, category_id) VALUES 
-('526403779902308358', '526402777421709313'),
-('526403958856482823', '526402777421709313'),
-('526404087537729544', '526402777421709313'),
-('526404262373097481', '526403107899310082'),
-('526404379536785418', '526403107899310082'),
-('526404490752950283', '526403107899310082'),
-('526404634617577484', '526403265579974659'),
-('526404777643343885', '526403265579974659'),
-('526404888909840398', '526403439761031172'),
-('526404991661899791', '526403643973304325');
+INSERT INTO tax_rates (country, inclusive, percentage)
+VALUES
+-- Western Europe
+('GB', TRUE, 2000),  -- United Kingdom
+('CH', TRUE, 770),   -- Switzerland
+('LI', TRUE, 770),   -- Liechtenstein
+('DE', TRUE, 1900),  -- Germany
+('FR', TRUE, 2000),  -- France
+('IT', TRUE, 2200),  -- Italy
+('ES', TRUE, 2100),  -- Spain
+('NL', TRUE, 2100),  -- Netherlands
+('BE', TRUE, 2100),  -- Belgium
+('AT', TRUE, 2000),  -- Austria
+('LU', TRUE, 1600),  -- Luxembourg
+('IE', TRUE, 2300),  -- Ireland
+('PT', TRUE, 2300),  -- Portugal
+
+-- Central Europe
+('PL', TRUE, 2300),  -- Poland
+('CZ', TRUE, 2100),  -- Czech Republic
+('SK', TRUE, 2000),  -- Slovakia
+('HU', TRUE, 2700),  -- Hungary (highest in EU)
+('SI', TRUE, 2200),  -- Slovenia
+('HR', TRUE, 2500),  -- Croatia
+
+-- Eastern Europe & Balkans
+('RO', TRUE, 1900),  -- Romania
+('BG', TRUE, 2000),  -- Bulgaria
+('EE', TRUE, 2000),  -- Estonia
+('LV', TRUE, 2100),  -- Latvia
+('LT', TRUE, 2100),  -- Lithuania
+
+-- Southeast & neighboring countries
+('RS', TRUE, 2000),  -- Serbia
+('BA', TRUE, 1700),  -- Bosnia & Herzegovina
+('MK', TRUE, 1800),  -- North Macedonia
+('MD', TRUE, 2000),  -- Moldova
+('UA', TRUE, 2000),  -- Ukraine
+
+-- Asia Pacific
+('JP', TRUE, 1000),  -- Japan
+('SG', TRUE, 900),   -- Singapore
+('KR', TRUE, 1000),  -- South Korea
+('IN', TRUE, 1800),  -- India: ~18% GST average
+('CN', TRUE, 1300),  -- China
+
+-- Middle East
+('AE', TRUE, 500),   -- UAE
+('SA', TRUE, 1500),  -- Saudi Arabia
+('IL', TRUE, 1700),  -- Israel
+
+-- Africa
+('ZA', TRUE, 1500),  -- South Africa
+('NG', TRUE, 750),   -- Nigeria
+
+-- Latin America
+('BR', TRUE, 1700),  -- Brazil
+('MX', TRUE, 1600),  -- Mexico
+('AR', TRUE, 2100),  -- Argentina
+('CL', TRUE, 1900),  -- Chile
+
+-- Oceania
+('AU', TRUE, 1000),  -- Australia
+('NZ', TRUE, 1500);  -- New Zealand

@@ -2,108 +2,50 @@ package routes
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/types/stripe"
 	u "github.com/dgyurics/marketplace/utilities"
+	"github.com/gorilla/mux"
 )
 
 type OrderRoutes struct {
 	router
-	orderService services.OrderService
+	orderService   services.OrderService
+	taxService     services.TaxService
+	paymentService services.PaymentService
+	cartService    services.CartService
 }
 
 func NewOrderRoutes(
 	orderService services.OrderService,
+	taxService services.TaxService,
+	paymentService services.PaymentService,
+	cartService services.CartService,
 	router router) *OrderRoutes {
 	return &OrderRoutes{
-		router:       router,
-		orderService: orderService,
+		router:         router,
+		orderService:   orderService,
+		taxService:     taxService,
+		paymentService: paymentService,
+		cartService:    cartService,
 	}
 }
 
 func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	// Parse the JSON body to extract addressID
-	var requestBody struct {
-		AddressID string `json:"address_id"`
-		Email     string `json:"email"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
+	ord, err := h.orderService.CreateOrder(r.Context())
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	// Validate addressID is provided
-	if requestBody.AddressID == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Address ID is required")
-		return
-	}
-
-	// Validate that the email is provided
-	if requestBody.Email == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
-		return
-	}
-
-	// Create the order
-	order := types.Order{
-		Address: &types.Address{ID: requestBody.AddressID},
-		Email:   requestBody.Email,
-	}
-	if err := h.orderService.CreateOrder(r.Context(), &order); err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	u.RespondWithJSON(w, http.StatusOK, order)
-}
-
-func (h *OrderRoutes) StripeWebhook(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	var event stripe.Event
-	if err := json.Unmarshal(body, &event); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
-		return
-	}
-
-	// verify signature
-	signature := r.Header.Get("Stripe-Signature")
-	if err := h.orderService.VerifyStripeEventSignature(body, signature); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request signature")
-		return
-	}
-
-	// verify expected data in event
-	if event.Type == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "event.type is required")
-		return
-	}
-
-	if event.Data == nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "event.data is required")
-		return
-	}
-
-	if event.Data.Object.ID == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "event.data.object.id is required")
-		return
-	}
-
-	// save and process event
-	if err := h.orderService.ProcessStripeEvent(r.Context(), event); err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-	}
-
-	u.RespondSuccess(w)
+	u.RespondWithJSON(w, http.StatusOK, ord)
 }
 
 func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
@@ -117,8 +59,100 @@ func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, orders)
 }
 
+func (h *OrderRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
+	orderID := mux.Vars(r)["order_id"]
+	order, err := h.orderService.GetOrder(r.Context(), orderID)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if order.Address == nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "order address is required for tax estimate")
+		return
+	}
+
+	taxEstimate, err := h.taxService.EstimateTax(r.Context(), *order.Address, order.Items)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	u.RespondWithJSON(w, http.StatusOK, types.TaxEstimateResponse{TaxAmount: taxEstimate})
+}
+
+func (h *OrderRoutes) Update(w http.ResponseWriter, r *http.Request) {
+	orderID := mux.Vars(r)["order_id"]
+	params := types.OrderParams{
+		ID: orderID,
+	}
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
+		return
+	}
+	ord, err := h.orderService.UpdateOrder(r.Context(), params)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u.RespondWithJSON(w, http.StatusOK, ord)
+}
+
+// Confirm finalizes an order by calculating actual tax and generating a payment intent.
+func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
+	orderID := mux.Vars(r)["order_id"]
+	order, err := h.orderService.GetOrder(r.Context(), orderID)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	tax, err := h.taxService.CalculateTax(r.Context(), order.ID, *order.Address, order.Items)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	pi, err := h.paymentService.CreatePaymentIntent(r.Context(), order.ID, order.TotalAmount+tax)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	totalAmount := order.TotalAmount + tax
+	params := types.OrderParams{
+		ID:                  orderID,
+		TaxAmount:           &tax,
+		TotalAmount:         &totalAmount,
+		StripePaymentIntent: &pi,
+	}
+	ord, err := h.orderService.UpdateOrder(r.Context(), params)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Clear user cart after order confirmation
+	if err := h.cartService.ClearCart(r.Context()); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	u.RespondWithJSON(w, http.StatusOK, stripe.PaymentIntentResponse{ClientSecret: ord.StripePaymentIntent.ClientSecret})
+}
+
 func (h *OrderRoutes) RegisterRoutes() {
-	h.muxRouter.HandleFunc("/orders/events", h.StripeWebhook).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secure(h.CreateOrder)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/orders/{order_id}", h.secure(h.Update)).Methods(http.MethodPatch)
+	h.muxRouter.Handle("/orders/{order_id}/confirm", h.secure(h.Confirm)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secure(h.GetOrders)).Methods(http.MethodGet)
+	h.muxRouter.Handle("/orders/{order_id}/tax-estimate", h.secure(h.EstimateTax)).Methods(http.MethodGet)
 }

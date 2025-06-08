@@ -37,7 +37,7 @@ func startStripeListener() {
 		log.Fatal("Error: STRIPE_SECRET_KEY is not set in the .env file")
 	}
 
-	cmd := exec.Command("stripe", "listen", "--api-key", secretKey, "--forward-to", "http://localhost:8000/orders/events")
+	cmd := exec.Command("stripe", "listen", "--api-key", secretKey, "--forward-to", "http://localhost:8000/payment/events")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

@@ -1,5 +1,7 @@
 package types
 
+import "errors"
+
 // HTTPError represents an error that occurred during an HTTP request.
 type HTTPError struct {
 	Message    string
@@ -18,6 +20,9 @@ func NewAPIError(statusCode int, message string, err error) HTTPError {
 		err:        err,
 	}
 }
+
+var ErrNotFound = errors.New("resource not found")
+var ErrInvalidRequest = errors.New("invalid request")
 
 type DatabaseError string
 

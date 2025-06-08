@@ -18,14 +18,16 @@ CREATE INDEX idx_categories_slug_is_deleted_false
 ON categories (slug)
 WHERE is_deleted = FALSE;
 
+-- For tax estimation only
 CREATE TABLE IF NOT EXISTS tax_rates (
-    state VARCHAR(10),
-    tax_code VARCHAR(50),
+    country CHAR(2) NOT NULL,
+    state VARCHAR(50),
+    tax_code VARCHAR(50), -- use NULL for general goods and services tax
     inclusive BOOLEAN DEFAULT FALSE NOT NULL,
-    percentage NUMERIC(5, 4) NOT NULL,
+    percentage INT NOT NULL, -- scaled by 10000 e.g. 725 = 0.0725
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    UNIQUE (state, tax_code)
+    UNIQUE (country, state, tax_code)
 );
 
 CREATE TABLE IF NOT EXISTS products (
@@ -43,11 +45,13 @@ CREATE INDEX idx_products_is_deleted_false
 ON products (id)
 WHERE is_deleted = FALSE;
 
+CREATE TYPE image_type_enum AS ENUM ('main', 'thumbnail', 'gallery');
+
 CREATE TABLE IF NOT EXISTS images (
     id BIGINT PRIMARY KEY,
     product_id BIGINT NOT NULL,
-    image_url TEXT NOT NULL,
-    animated BOOLEAN DEFAULT FALSE,
+    url TEXT NOT NULL,
+    type image_type_enum DEFAULT 'main' NOT NULL,
     display_order INT DEFAULT 0,
     alt_text VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -105,8 +109,8 @@ LEFT JOIN LATERAL (
     SELECT JSONB_AGG(
         JSONB_BUILD_OBJECT(
             'id', i.id::TEXT,
-            'image_url', i.image_url,
-            'animated', i.animated,
+            'url', i.url,
+            'type', i.type,
             'display_order', i.display_order,
             'alt_text', i.alt_text
         ) ORDER BY i.display_order
@@ -173,7 +177,7 @@ CREATE TABLE IF NOT EXISTS addresses (
     line1 VARCHAR(255) NOT NULL,
     line2 VARCHAR(255),
     city VARCHAR(255) NOT NULL, -- city, district, suburb, town, village
-    state CHAR(2) NOT NULL, -- state, county, province, region
+    state VARCHAR(50) NOT NULL, -- state, county, province, region
     postal_code VARCHAR(20) NOT NULL, -- zip code, postal code
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- when existing order references address, we have to soft delete
     country CHAR(2) NOT NULL, -- ISO 3166-1 alpha-2 country code
@@ -195,10 +199,10 @@ CREATE TYPE order_status_enum AS ENUM (
 );
 CREATE TABLE IF NOT EXISTS orders (
     id BIGINT PRIMARY KEY,
-    user_id BIGINT,
-    email VARCHAR(255) NOT NULL,
+    user_id BIGINT NOT NULL,
+    email VARCHAR(255),
     address_id BIGINT,
-    currency VARCHAR(10) DEFAULT 'usd',
+    currency VARCHAR(10) NOT NULL DEFAULT 'usd',
     amount BIGINT NOT NULL DEFAULT 0,
     tax_amount BIGINT NOT NULL DEFAULT 0,
     shipping_amount BIGINT NOT NULL DEFAULT 0,
@@ -230,16 +234,15 @@ CREATE OR REPLACE VIEW v_order_items AS
 SELECT
     oi.order_id,
     oi.product_id,
+    p.name,
     COALESCE(p.description, '') AS description,
-    COALESCE(img.image_url, '') AS thumbnail,
+    COALESCE(i.url, '') AS thumbnail,
+    COALESCE(i.alt_text, '') AS alt_text,
     oi.quantity,
     oi.unit_price
 FROM order_items oi
 JOIN products p ON oi.product_id = p.id
-LEFT JOIN images img ON img.product_id = p.id
-    AND img.display_order = 0;
--- FIXME this assumes the first image is the thumbnail
--- However this is not defined anywhere
+LEFT JOIN images i ON i.product_id = p.id AND i.type = 'thumbnail';
 
 CREATE TABLE stripe_events (
     id VARCHAR(255) UNIQUE NOT NULL,

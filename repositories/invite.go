@@ -41,6 +41,7 @@ func (r *inviteRepository) StoreCode(ctx context.Context, code string, used bool
 
 // GetCode retrieves an invite code from the database
 // and returns whether it has been used and if it exists
+// FIXME clean this up
 func (r *inviteRepository) GetCode(ctx context.Context, code string) (used bool, exists bool, err error) {
 	query := `SELECT used_at FROM invitation_codes WHERE code = $1`
 	var usedAt sql.NullTime

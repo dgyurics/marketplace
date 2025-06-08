@@ -37,6 +37,7 @@
   <li><strong>Promotions and Discounts:</strong> Manage promotional codes, discounts, and sale events.</li>
   <li><strong>Advanced Inventory Management:</strong> Inventory management with alerts for low stock, as well as support for multiple warehouses/distributors.</li>
   <li><strong>Product Reviews:</strong> Allow users to leave reviews and ratings for products.</li>
+  <li><strong>Pay with Crypto:</strong> Support for cryptocurrency payments would eliminate the need for 3rd party payment processors.</li>
 </ul>
 
 <h2>Prerequisites</h2>

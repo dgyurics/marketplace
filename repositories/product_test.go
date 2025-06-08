@@ -65,8 +65,8 @@ func TestCreateProductWithImages(t *testing.T) {
 		Description: "Product with images for testing",
 		Details:     []byte(`{"key": "value"}`),
 		Images: []types.Image{
-			{ID: utilities.MustGenerateIDString(), ImageURL: "http://example.com/image1.jpg", Animated: false, AltText: func(s string) *string { return &s }("Image 1")},
-			{ID: utilities.MustGenerateIDString(), ImageURL: "http://example.com/image2.gif", Animated: true, AltText: func(s string) *string { return &s }("Image 2 animated")},
+			{ID: utilities.MustGenerateIDString(), URL: "http://example.com/image1.jpg", AltText: func(s string) *string { return &s }("Image 1"), Type: "main", DisplayOrder: 1},
+			{ID: utilities.MustGenerateIDString(), URL: "http://example.com/image2.gif", AltText: func(s string) *string { return &s }("Image 2 animated"), Type: "thumbnail", DisplayOrder: 2},
 		},
 	}
 	product.ID, _ = utilities.GenerateIDString()
@@ -85,12 +85,10 @@ func TestCreateProductWithImages(t *testing.T) {
 	require.NoError(t, err, "Expected no error on unmarshaling images")
 	assert.Equal(t, 2, len(images), "Expected two images to be present")
 
-	assert.Equal(t, "http://example.com/image1.jpg", images[0].ImageURL, "Expected image URL to match for first image")
-	assert.Equal(t, false, images[0].Animated, "Expected animated flag to be false for first image")
+	assert.Equal(t, "http://example.com/image1.jpg", images[0].URL, "Expected image URL to match for first image")
 	assert.Equal(t, "Image 1", *images[0].AltText, "Expected alt text to match for first image")
 
-	assert.Equal(t, "http://example.com/image2.gif", images[1].ImageURL, "Expected image URL to match for second image")
-	assert.Equal(t, true, images[1].Animated, "Expected animated flag to be true for second image")
+	assert.Equal(t, "http://example.com/image2.gif", images[1].URL, "Expected image URL to match for second image")
 	assert.Equal(t, "Image 2 animated", *images[1].AltText, "Expected alt text to match for second image")
 
 	// Clean up
