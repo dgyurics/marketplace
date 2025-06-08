@@ -110,21 +110,21 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	httpClient := utilities.NewDefaultHTTPClient(10 * time.Second) // TODO make this configurable
 
 	// create services
+	emailService := services.NewMailjetSender(config.Email)
+	templateService, _ := services.NewTemplateService(config.TemplatesDir)
 	addressService := services.NewAddressService(addressRepository, config.Locale)
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
 	cartService := services.NewCartService(cartRepository)
-	paymentService := services.NewPaymentService(httpClient, config.Stripe, config.Locale, paymentRepository)
+	paymentService := services.NewPaymentService(httpClient, config.Stripe, config.Locale, emailService, templateService, paymentRepository)
 	orderService := services.NewOrderService(orderRepository, cartRepository, paymentService, config.Locale, httpClient)
 	inviteService := services.NewInviteService(inviteRepository, config.Auth.HMACSecret)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
-	emailService := services.NewMailjetSender(config.Email)
 	jwtService := services.NewJWTService(config.JWT)
 	scheduleService := services.NewScheduleService(orderService, scheduleRepository)
 	taxService := services.NewTaxService(taxRepository, config.Stripe, config.Locale, httpClient)
-	templateService, _ := services.NewTemplateService(config.TemplatesDir)
 
 	return servicesContainer{
 		Address:  addressService,

@@ -12,6 +12,7 @@ type Template string
 const (
 	EmailVerification Template = "email_verification.html"
 	PasswordReset     Template = "password_reset.html"
+	PaymentSuccess    Template = "payment_success.html"
 )
 
 // TemplateService defines methods for managing HTML templates.

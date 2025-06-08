@@ -32,6 +32,8 @@ type paymentService struct {
 	HttpClient   utilities.HTTPClient
 	stripeConfig types.StripeConfig
 	localeConfig types.LocaleConfig
+	serviceEmail EmailSender
+	serviceTmp   TemplateService
 	repo         repositories.PaymentRepository
 }
 
@@ -39,11 +41,15 @@ func NewPaymentService(
 	httpClient utilities.HTTPClient,
 	stripeConfig types.StripeConfig,
 	localeConfig types.LocaleConfig,
+	serviceEmail EmailSender,
+	serviceTmp TemplateService,
 	repo repositories.PaymentRepository) PaymentService {
 	return &paymentService{
 		HttpClient:   httpClient,
 		stripeConfig: stripeConfig,
 		localeConfig: localeConfig,
+		serviceEmail: serviceEmail,
+		serviceTmp:   serviceTmp,
 		repo:         repo,
 	}
 }
@@ -229,6 +235,22 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 	}
 
 	slog.Info("Order marked as paid", "order_id", order.ID, "payment_intent_id", paymentIntent.ID)
+
+	// Send payment success email
+	go func(recEmail, orderID string) {
+		data := map[string]string{
+			"OrderID": orderID,
+		}
+		body, err := s.serviceTmp.RenderToString(PaymentSuccess, data)
+		if err != nil {
+			slog.Error("Error loading email template: ", "error", err)
+			return
+		}
+		if err := s.serviceEmail.SendEmail([]string{recEmail}, "Order Confirmation", body, true); err != nil {
+			slog.Error("Error sending email: ", "error", err)
+		}
+	}(order.Email, order.ID)
+
 	return nil
 }
 
