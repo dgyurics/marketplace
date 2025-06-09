@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -12,19 +13,27 @@ import (
 
 type CartRoutes struct {
 	router
-	cartService services.CartService
+	cartService  services.CartService
+	orderService services.OrderService
 }
 
 func NewCartRoutes(
 	cartService services.CartService,
+	orderService services.OrderService,
 	router router) *CartRoutes {
 	return &CartRoutes{
-		router:      router,
-		cartService: cartService,
+		router:       router,
+		cartService:  cartService,
+		orderService: orderService,
 	}
 }
 
 func (h *CartRoutes) AddItemToCart(w http.ResponseWriter, r *http.Request) {
+	if err := h.cancelPendingOrder(r.Context()); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	var item types.CartItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
@@ -37,7 +46,12 @@ func (h *CartRoutes) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item.Product.ID = mux.Vars(r)["product_id"]
-	if err := h.cartService.AddItemToCart(r.Context(), &item); err != nil {
+	err := h.cartService.AddItemToCart(r.Context(), &item)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusConflict, "insufficient stock for product")
+		return
+	}
+	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -46,6 +60,11 @@ func (h *CartRoutes) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CartRoutes) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
+	if err := h.cancelPendingOrder(r.Context()); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	var item types.CartItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
@@ -58,7 +77,12 @@ func (h *CartRoutes) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item.Product.ID = mux.Vars(r)["product_id"]
-	if err := h.cartService.UpdateCartItem(r.Context(), &item); err != nil {
+	err := h.cartService.UpdateCartItem(r.Context(), &item)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusConflict, "insufficient stock for product")
+		return
+	}
+	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -67,6 +91,11 @@ func (h *CartRoutes) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CartRoutes) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) {
+	if err := h.cancelPendingOrder(r.Context()); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	vars := mux.Vars(r)
 	productID := vars["product_id"]
 
@@ -79,6 +108,7 @@ func (h *CartRoutes) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *CartRoutes) GetCart(w http.ResponseWriter, r *http.Request) {
+	// Retrieve the cart for the current user
 	cart, err := h.cartService.GetCart(r.Context())
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
@@ -86,6 +116,24 @@ func (h *CartRoutes) GetCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u.RespondWithJSON(w, http.StatusOK, cart)
+}
+
+// cancelPendingOrder checks for a pending order and cancels it if found.
+// When a user checks out, a new order is created
+func (h *CartRoutes) cancelPendingOrder(ctx context.Context) error {
+	ord, err := h.orderService.GetPendingOrderForUser(ctx)
+	if err == types.ErrNotFound || ord.ID == "" {
+		return nil // No pending order to cancel
+	}
+	if err != nil {
+		return err
+	}
+	cancel := types.OrderCanceled
+	_, err = h.orderService.UpdateOrder(ctx, types.OrderParams{
+		ID:     ord.ID,
+		Status: &cancel,
+	})
+	return err
 }
 
 func (h *CartRoutes) RegisterRoutes() {

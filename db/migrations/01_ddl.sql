@@ -195,7 +195,7 @@ CREATE TYPE order_status_enum AS ENUM (
     'fulfilled',
     'shipped',
     'delivered',
-    'cancelled'
+    'canceled'
 );
 CREATE TABLE IF NOT EXISTS orders (
     id BIGINT PRIMARY KEY,

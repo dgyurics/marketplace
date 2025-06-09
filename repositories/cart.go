@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"log/slog"
 
 	"github.com/dgyurics/marketplace/types"
 )
@@ -94,7 +94,8 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 	}
 
 	if availableQuantity < (existingQuantity + item.Quantity) {
-		return fmt.Errorf("insufficient inventory for product %s", item.Product.ID)
+		slog.Info("Insufficient inventory for product", "product_id", item.Product.ID, "available", availableQuantity, "requested", item.Quantity)
+		return types.ErrNotFound
 	}
 
 	// Fetch unit_price from the product table
@@ -134,7 +135,8 @@ func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item
 	// Check if the new quantity exceeds available inventory
 	quantityDifference := item.Quantity - oldQuantity
 	if availableQuantity < quantityDifference {
-		return fmt.Errorf("insufficient inventory for product %s", item.Product.ID)
+		slog.Info("Insufficient inventory for product", "product_id", item.Product.ID, "available", availableQuantity, "requested", item.Quantity)
+		return types.ErrNotFound
 	}
 
 	// Update the cart item

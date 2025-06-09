@@ -213,6 +213,14 @@ func (m *mockOrderRepo) UpdateOrder(ctx context.Context, params types.OrderParam
 	return types.Order{}, args.Error(1)
 }
 
+func (m *mockOrderRepo) GetPendingOrder(ctx context.Context, userID string) (types.Order, error) {
+	args := m.Called(ctx, userID)
+	if v := args.Get(0); v != nil {
+		return v.(types.Order), args.Error(1)
+	}
+	return types.Order{}, args.Error(1)
+}
+
 func (m *mockOrderRepo) CancelPendingOrders(ctx context.Context, interval time.Duration) ([]string, error) {
 	return nil, nil
 }

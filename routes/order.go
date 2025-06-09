@@ -35,7 +35,20 @@ func NewOrderRoutes(
 }
 
 func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	ord, err := h.orderService.CreateOrder(r.Context())
+	ord, err := h.orderService.GetPendingOrderForUser(r.Context())
+	if err == types.ErrNotFound {
+		// No pending order found, create a new one
+	} else if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	} else {
+		// Pending order exists, return it
+		u.RespondWithJSON(w, http.StatusOK, ord)
+		return
+	}
+
+	// No pending order, create a new one
+	ord, err = h.orderService.CreateOrder(r.Context())
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return

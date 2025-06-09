@@ -21,6 +21,7 @@ type OrderService interface {
 	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
 	GetOrder(ctx context.Context, orderID string) (types.Order, error)
 	CancelStaleOrders(ctx context.Context)
+	GetPendingOrderForUser(ctx context.Context) (types.Order, error)
 }
 
 type orderService struct {
@@ -113,4 +114,9 @@ func (os *orderService) CreateOrder(ctx context.Context) (types.Order, error) {
 
 func (os *orderService) GetOrder(ctx context.Context, orderID string) (types.Order, error) {
 	return os.orderRepo.GetOrder(ctx, orderID, getUserID(ctx))
+}
+
+func (os *orderService) GetPendingOrderForUser(ctx context.Context) (types.Order, error) {
+	userID := getUserID(ctx)
+	return os.orderRepo.GetPendingOrder(ctx, userID)
 }

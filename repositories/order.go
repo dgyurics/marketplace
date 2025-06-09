@@ -17,6 +17,7 @@ type OrderRepository interface {
 	CancelPendingOrders(ctx context.Context, interval time.Duration) ([]string, error) // TODO refactor, returning just stripe IDs is hacky
 	CreateOrder(ctx context.Context, order *types.Order) error
 	GetOrder(ctx context.Context, orderID, userID string) (types.Order, error)
+	GetPendingOrder(ctx context.Context, userID string) (types.Order, error)
 	GetOrders(ctx context.Context, userID string, page, limit int) ([]types.Order, error)
 	UpdateOrder(ctx context.Context, params types.OrderParams) (types.Order, error)
 }
@@ -33,7 +34,7 @@ func (r *orderRepository) CancelPendingOrders(ctx context.Context, interval time
 	intervalStr := fmt.Sprintf("%d seconds", int(interval.Seconds()))
 	query := `
 		UPDATE orders
-		SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+		SET status = 'canceled', updated_at = CURRENT_TIMESTAMP
 		WHERE status = 'pending' AND updated_at < NOW() - ($1)::INTERVAL
 		RETURNING stripe_payment_intent->>'id' AS payment_intent_id
 	`
@@ -62,7 +63,7 @@ func (r *orderRepository) restockCanceledOrderItems(ctx context.Context) error {
 		WITH deleted_items AS (
 			DELETE FROM order_items oi
 			USING orders o
-			WHERE o.id = oi.order_id AND o.status = 'cancelled'
+			WHERE o.id = oi.order_id AND o.status = 'canceled'
 			RETURNING oi.product_id, oi.quantity
 		)
 		UPDATE inventory i
@@ -330,7 +331,17 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderPar
 	}
 
 	ord, err = r.GetOrder(ctx, params.ID, params.UserID)
-	return ord, err
+	if err != nil {
+		slog.Error("Failed to retrieve updated order", "error", err, "order_id", params.ID, "user_id", params.UserID)
+		return ord, err
+	}
+
+	// If the order was canceled, restock the items
+	if ord.Status == types.OrderCanceled {
+		return ord, r.restockCanceledOrderItems(ctx)
+	}
+
+	return ord, nil
 }
 
 // GetOrders retrieves all orders for a user
@@ -529,6 +540,112 @@ func (r *orderRepository) GetOrder(ctx context.Context, orderID, userID string) 
 		Country    sql.NullString
 	}
 	err := r.db.QueryRowContext(ctx, query, orderID, userID).Scan(
+		&order.ID,
+		&order.UserID,
+		&order.Email,
+		&order.Currency,
+		&order.Amount,
+		&order.TaxAmount,
+		&order.TotalAmount,
+		&order.Status,
+		&rawIntent,
+		&address.ID,
+		&address.Addressee,
+		&address.Line1,
+		&address.Line2,
+		&address.City,
+		&address.State,
+		&address.PostalCode,
+		&address.Country,
+		&order.CreatedAt,
+		&order.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return order, types.ErrNotFound
+	}
+	if err != nil {
+		return order, err
+	}
+
+	// Unmarshal the Stripe payment intent if it exists
+	if len(rawIntent) > 0 {
+		var payInt stripe.PaymentIntent
+		err = json.Unmarshal(rawIntent, &payInt)
+		if err != nil {
+			return order, fmt.Errorf("failed to unmarshal Stripe payment intent: %w", err)
+		}
+		order.StripePaymentIntent = &payInt
+	}
+
+	// Populate address if it exists
+	if address.ID.Valid {
+		order.Address = &types.Address{
+			ID:         address.ID.String,
+			Addressee:  &address.Addressee.String,
+			Line1:      address.Line1.String,
+			Line2:      &address.Line2.String,
+			City:       address.City.String,
+			State:      address.State.String,
+			PostalCode: address.PostalCode.String,
+			Country:    address.Country.String,
+		}
+	}
+
+	// Populate order items for this order
+	if order.Items, err = r.populateOrderItems(ctx, order.ID); err != nil {
+		return order, fmt.Errorf("failed to populate order items: %w", err)
+	}
+
+	return order, nil
+}
+
+func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (types.Order, error) {
+	var order types.Order
+	if userID == "" {
+		return order, errors.New("user ID is required")
+	}
+	query := `
+		SELECT
+			o.id,
+			o.user_id,
+			COALESCE(o.email, '') AS email,
+			o.currency,
+			o.amount,
+			o.tax_amount,
+			o.total_amount,
+			o.status,
+			o.stripe_payment_intent,
+			o.address_id,
+			a.addressee,
+			a.line1,
+			a.line2,
+			a.city,
+			a.state,
+			a.postal_code,
+			a.country,
+			o.created_at,
+			o.updated_at
+		FROM orders o
+		LEFT JOIN addresses a ON o.address_id = a.id
+		WHERE
+			o.user_id = $1 AND
+			o.status = 'pending'
+		LIMIT 1
+	` // LIMIT 1 added, but technically shouldn't be needed (system should limit users to one pending order)
+
+	// Execute the query
+	var rawIntent []byte
+	var address struct {
+		ID         sql.NullString
+		Addressee  sql.NullString
+		Line1      sql.NullString
+		Line2      sql.NullString
+		City       sql.NullString
+		State      sql.NullString
+		PostalCode sql.NullString
+		Country    sql.NullString
+	}
+	err := r.db.QueryRowContext(ctx, query, userID).Scan(
 		&order.ID,
 		&order.UserID,
 		&order.Email,

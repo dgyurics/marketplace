@@ -46,8 +46,10 @@ func (m *MockCartService) ClearCart(ctx context.Context) error {
 
 func TestAddItemToCart(t *testing.T) {
 	mockCartService := new(MockCartService)
+	mockOrderService := new(MockOrderService)
 	routes := &CartRoutes{
-		cartService: mockCartService,
+		cartService:  mockCartService,
+		orderService: mockOrderService,
 		router: router{
 			muxRouter:      mux.NewRouter(),
 			authMiddleware: nil,
@@ -64,6 +66,10 @@ func TestAddItemToCart(t *testing.T) {
 	}
 
 	mockCartService.On("AddItemToCart", mock.Anything, &item).Return(nil)
+	mockOrderService.On("GetPendingOrderForUser", mock.Anything).Return(
+		types.Order{},
+		types.ErrNotFound,
+	)
 
 	// Create a new HTTP POST request with the cart ID in the URL and the item as the payload
 	payload, _ := json.Marshal(item)
@@ -89,8 +95,10 @@ func TestAddItemToCart(t *testing.T) {
 
 func TestRemoveItemFromCart(t *testing.T) {
 	mockCartService := new(MockCartService)
+	mockOrderService := new(MockOrderService)
 	routes := &CartRoutes{
-		cartService: mockCartService,
+		cartService:  mockCartService,
+		orderService: mockOrderService,
 		router: router{
 			muxRouter:      mux.NewRouter(),
 			authMiddleware: nil,
@@ -99,6 +107,10 @@ func TestRemoveItemFromCart(t *testing.T) {
 
 	productID := "test-product-id"
 	mockCartService.On("RemoveItemFromCart", mock.Anything, productID).Return(nil)
+	mockOrderService.On("GetPendingOrderForUser", mock.Anything).Return(
+		types.Order{},
+		types.ErrNotFound,
+	)
 
 	// Create a new HTTP DELETE request with cartID and productID in the URL
 	req, err := http.NewRequest(http.MethodDelete, "/carts/items/"+productID, nil)
@@ -122,8 +134,10 @@ func TestRemoveItemFromCart(t *testing.T) {
 
 func TestGetCart(t *testing.T) {
 	mockCartService := new(MockCartService)
+	mockOrderService := new(MockOrderService)
 	routes := &CartRoutes{
-		cartService: mockCartService,
+		cartService:  mockCartService,
+		orderService: mockOrderService,
 		router: router{
 			muxRouter:      mux.NewRouter(),
 			authMiddleware: nil,
