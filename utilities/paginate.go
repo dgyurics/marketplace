@@ -24,5 +24,9 @@ func ParsePaginationParams(r *http.Request, defaultPage, defaultLimit int) Pagin
 		limit = l
 	}
 
+	if limit > 100 {
+		limit = 100 // Cap the limit to a maximum of 100
+	}
+
 	return PaginationParams{Page: page, Limit: limit}
 }

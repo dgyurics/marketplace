@@ -62,3 +62,14 @@ func TestParsePaginationParams_ZeroValues(t *testing.T) {
 	assert.Equal(t, defaultPage, params.Page)   // Should fall back to default
 	assert.Equal(t, defaultLimit, params.Limit) // Should fall back to default
 }
+
+func TestParsePaginationParams_ExceedingLimit(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/?page=1&limit=150", nil)
+
+	defaultPage := 1
+	defaultLimit := 10
+	params := ParsePaginationParams(req, defaultPage, defaultLimit)
+
+	assert.Equal(t, 1, params.Page)    // Valid page should be applied
+	assert.Equal(t, 100, params.Limit) // Limit should be capped at 100
+}
