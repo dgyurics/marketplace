@@ -75,6 +75,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewOrderRoutes(services.Order, services.Tax, services.Payment, services.Cart, baseRouter),
 		routes.NewPasswordRoutes(services.Password, services.User, services.Email, services.Template, config.BaseURL, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, baseRouter),
+		routes.NewHealthRoutes(baseRouter),
 	)
 
 	// Create and return the server
