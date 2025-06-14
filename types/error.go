@@ -23,6 +23,7 @@ func NewAPIError(statusCode int, message string, err error) HTTPError {
 
 var ErrNotFound = errors.New("resource not found")
 var ErrInvalidRequest = errors.New("invalid request")
+var ErrUniqueConstraintViolation = errors.New("unique constraint violation")
 
 type DatabaseError string
 

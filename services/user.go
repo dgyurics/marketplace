@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
@@ -80,9 +79,13 @@ func (s *userService) verifyEmail(ctx context.Context, credentials *types.Creden
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, types.ErrNotFound
 	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		return nil, types.ErrNotFound
+	}
 	return user, err
 }
 

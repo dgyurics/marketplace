@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/dgyurics/marketplace/types"
+	"github.com/lib/pq"
 )
 
 type UserRepository interface {
@@ -50,8 +51,24 @@ func (r *userRepository) CreateUser(ctx context.Context, user *types.User) error
 		VALUES ($1, $2, $3, 'user')
 		RETURNING id, email, role, updated_at
 	`
-	return r.db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash).
+	err := r.db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash).
 		Scan(&user.ID, &user.Email, &user.Role, &user.UpdatedAt)
+	if isUniqueViolation(err) {
+		return types.ErrUniqueConstraintViolation
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Helper function to detect unique violations
+func isUniqueViolation(err error) bool {
+	if pqErr, ok := err.(*pq.Error); ok {
+		return pqErr.Code == "23505" // unique_violation
+	}
+
+	return false
 }
 
 // GetUserByEmail retrieves a user from the database by email

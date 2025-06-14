@@ -98,7 +98,12 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		Email:    credentials.Email,
 		Password: credentials.Password,
 	}
-	if err := h.userService.CreateUser(r.Context(), &usr); err != nil {
+	err = h.userService.CreateUser(r.Context(), &usr)
+	if err == types.ErrUniqueConstraintViolation {
+		u.RespondWithError(w, r, http.StatusConflict, "User with this email already exists")
+		return
+	}
+	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -155,8 +160,12 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Verify user credentials
 	usr, err := h.userService.Login(r.Context(), &credentials)
-	if err != nil {
+	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusUnauthorized, "Invalid credentials")
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
