@@ -14,11 +14,11 @@
   <li><strong>Payments:</strong> Stripe integration for calculating tax and processing payments.</li>
   <li><strong>Logging:</strong> Structured logging for monitoring and debugging in a distributed environment.</li>
   <li><strong>Internationalization and Localization:</strong> Support for multiple currencies and languages.</li>
+  <li><strong>Email Notifications:</strong> Send order status emails to users.</li>
 </ul>
 
 <h2>Planned Enhancements</h2>
 <ul>
-  <li><strong>Email Notifications:</strong> Send order status emails to users.</li>
   <li><strong>Search:</strong> Advanced search capabilities, allowing users to find products through keyword and fuzzy searches.</li>
   <li><strong>Caching:</strong> Implement API caching to improve performance.</li>
   <li><strong>Rate Limiting:</strong> Protect the API from abuse with rate limiting.</li>
@@ -27,6 +27,7 @@
   <li><strong>Product Variants:</strong> Support product variants (e.g., size, color) and manage inventory for each variant (SKU).</li>
   <li><strong>User Interface:</strong> An extensible user interface to be deployed alongside the API.</li>
   <li><strong>Refunds:</strong> Administrative endpoint for partial and full refunds.</li>
+  <li><strong>Admin Interface:</strong> An extensible admin interface to manage products, inventory, and orders.</li>
 </ul>
 
 <h2>Future Considerations</h2>
@@ -35,9 +36,9 @@
   <li><strong>Shipping Management:</strong> Calculate shipping costs and track shipments.</li>
   <li><strong>Role-Based Access Control:</strong> Implement role-based access control to restrict access to certain resources. E.g. admin, vendor, customer</li>
   <li><strong>Promotions and Discounts:</strong> Manage promotional codes, discounts, and sale events.</li>
-  <li><strong>Advanced Inventory Management:</strong> Inventory management with alerts for low stock, as well as support for multiple warehouses/distributors.</li>
+  <li><strong>Advanced Inventory Management:</strong> Inventory management with alerts for low stock, as well as support for multiple distributors.</li>
   <li><strong>Product Reviews:</strong> Allow users to leave reviews and ratings for products.</li>
-  <li><strong>Pay with Crypto:</strong> Support for cryptocurrency payments would eliminate the need for 3rd party payment processors.</li>
+  <li><strong>Pay with Crypto:</strong> Support for payments with cryptocurrency would eliminate need for 3rd party payment processors.</li>
 </ul>
 
 <h2>Prerequisites</h2>
