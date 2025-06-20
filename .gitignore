@@ -5,3 +5,4 @@ public.pem
 .env
 *.log
 *.out
+.vscode
