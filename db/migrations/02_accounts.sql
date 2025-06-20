@@ -1,0 +1,1 @@
+INSERT INTO users (id, password_hash, role) VALUES (114717860949983232, '$2a$10$foTM0ULLDB3KW1uhsCkTkesYQknpocAbMNT4Xfdp.vQ1C1U4HLfai', 'admin')
