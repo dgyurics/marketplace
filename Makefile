@@ -8,6 +8,10 @@ SRC_DIR=./cmd/marketplace
 PRIVATE_KEY_FILE=private.pem
 PUBLIC_KEY_FILE=public.pem
 
+# Build variables - can be overridden
+GOOS ?= linux
+GOARCH ?= amd64
+
 # Default target
 all: run
 
@@ -34,9 +38,13 @@ test-coverage-report:
 test-coverage-func:
 	go tool cover -func=coverage.out
 
-# Build the binary
+# Build the binary (development)
 build:
 	go build -o $(BINARY) $(SRC_DIR)
+
+# Build the binary for production
+build-prod:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BINARY) $(SRC_DIR)
 
 # Run the binary
 run: build
