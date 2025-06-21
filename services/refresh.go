@@ -101,10 +101,20 @@ func hashString(token string, secret []byte) string {
 	return hex.EncodeToString(h.Sum(nil)) // return the final HMAC hash as a hexadecimal string
 }
 
+// TODO: move somewhere else (util?)
 func getUserID(ctx context.Context) string {
 	user, ok := ctx.Value(UserKey).(*types.User)
 	if !ok {
 		return ""
 	}
 	return user.ID
+}
+
+// TODO: move somewhere else (util?)
+func getUser(ctx context.Context) (usr types.User) {
+	user, ok := ctx.Value(UserKey).(*types.User)
+	if !ok {
+		return
+	}
+	return *user
 }

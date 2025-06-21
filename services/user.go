@@ -12,7 +12,7 @@ import (
 type UserService interface {
 	CreateUser(ctx context.Context, user *types.User) error
 	CreateGuest(ctx context.Context, user *types.User) error
-	ConvertGuestToUser(ctx context.Context, user *types.User) error
+	SetCredentials(ctx context.Context, credential types.Credential) (types.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	Login(ctx context.Context, credential *types.Credential) (*types.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
@@ -50,14 +50,32 @@ func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
 	return s.repo.CreateUser(ctx, user)
 }
 
-func (s *userService) ConvertGuestToUser(ctx context.Context, user *types.User) error {
-	hashedPassword, err := generateFromPassword(user.Password)
+func (s *userService) SetCredentials(ctx context.Context, credentials types.Credential) (types.User, error) {
+	hashedPassword, err := generateFromPassword(credentials.Password)
 	if err != nil {
-		return err
+		return types.User{}, err
 	}
-	user.ID = getUserID(ctx)
-	user.PasswordHash = string(hashedPassword)
-	return s.repo.ConvertGuestToUser(ctx, user)
+	usr := getUser(ctx)
+	usr.Email = credentials.Email
+	usr.PasswordHash = string(hashedPassword)
+
+	// Set credentials
+	if usr.IsAdmin() {
+		err = s.repo.SetAdminCredentials(ctx, &usr)
+	} else if usr.IsGuest() {
+		err = s.repo.SetGuestCredentials(ctx, &usr)
+		usr.Role = "user" // guest is now a user
+	}
+
+	if err != nil {
+		return types.User{}, err
+	}
+
+	return types.User{
+		ID:    usr.ID,
+		Email: credentials.Email,
+		Role:  usr.Role,
+	}, nil
 }
 
 // generateFromPassword generates a hashed password from a plaintext password

@@ -11,7 +11,8 @@ import (
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *types.User) error
 	CreateGuest(ctx context.Context, user *types.User) error
-	ConvertGuestToUser(ctx context.Context, user *types.User) error
+	SetAdminCredentials(ctx context.Context, user *types.User) error
+	SetGuestCredentials(ctx context.Context, user *types.User) error
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
 }
@@ -24,15 +25,44 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
-func (r *userRepository) ConvertGuestToUser(ctx context.Context, user *types.User) error {
+func (r *userRepository) SetAdminCredentials(ctx context.Context, user *types.User) error {
+	query := `
+		UPDATE users
+		SET email = $1, password_hash = $2, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $3 AND email = 'admin@marketplace.com'
+	`
+	result, err := r.db.ExecContext(ctx, query, user.Email, user.PasswordHash, user.ID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return types.ErrNotFound
+	}
+	return nil
+}
+
+func (r *userRepository) SetGuestCredentials(ctx context.Context, user *types.User) error {
 	query := `
 		UPDATE users
 		SET email = $1, password_hash = $2, role = 'user', updated_at = CURRENT_TIMESTAMP
-		WHERE  id = $3 AND role = 'guest'
-		RETURNING id, email, role, updated_at
+		WHERE id = $3 AND role = 'guest' AND password_hash IS NULL
 	`
-	return r.db.QueryRowContext(ctx, query, user.Email, user.PasswordHash, user.ID).
-		Scan(&user.ID, &user.Email, &user.Role, &user.UpdatedAt)
+	result, err := r.db.ExecContext(ctx, query, user.Email, user.PasswordHash, user.ID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return types.ErrNotFound
+	}
+	return nil
 }
 
 func (r *userRepository) CreateGuest(ctx context.Context, user *types.User) error {

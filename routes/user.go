@@ -307,8 +307,10 @@ func (h *UserRoutes) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *UserRoutes) ConvertGuestToUser(w http.ResponseWriter, r *http.Request) {
-	// verify patch request contains email and password
+// UpdatedCredentials is used as a one-time update to convert an authenticated guest to a user.
+// It is also used for overriding the default admin account, on system setup
+func (h *UserRoutes) UpdatedCredentials(w http.ResponseWriter, r *http.Request) {
+	// verify request contains email and password
 	var credentials types.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
@@ -319,31 +321,30 @@ func (h *UserRoutes) ConvertGuestToUser(w http.ResponseWriter, r *http.Request) 
 		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
 		return
 	}
-
 	if credentials.Password == "" {
 		u.RespondWithError(w, r, http.StatusBadRequest, "Password is required")
 		return
 	}
 
-	// Convert guest to user
-	usr := types.User{
-		Email:    credentials.Email,
-		Password: credentials.Password,
+	// Update user email and password
+	usr, err := h.userService.SetCredentials(r.Context(), credentials)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		return
 	}
-	err := h.userService.ConvertGuestToUser(r.Context(), &usr)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Generate access token
+	// Generate new access token
 	accessToken, err := h.jwtService.GenerateToken(usr)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Generate refresh token
+	// Generate new refresh token
 	var token string
 	token, err = h.refreshService.GenerateToken()
 	if err != nil {
@@ -398,7 +399,7 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/users/exists", h.Exists).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/guest", h.CreateGuestUser).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/logout", h.secure(h.Logout)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users/guest", h.secure(h.ConvertGuestToUser)).Methods(http.MethodPatch)
+	h.muxRouter.Handle("/users/credentials", h.secure(h.UpdatedCredentials)).Methods(http.MethodPut)
 	// Admin routes
 	h.muxRouter.Handle("/users", h.secureAdmin(h.GetAllUsers)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/users/invite", h.secureAdmin(h.GenerateInviteCode)).Methods(http.MethodPost)
