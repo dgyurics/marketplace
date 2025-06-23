@@ -189,9 +189,10 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusOK, map[string]string{
-		"token":         accessToken,
-		"refresh_token": refreshToken,
+	u.RespondWithJSON(w, http.StatusOK, map[string]interface{}{
+		"token":          accessToken,
+		"refresh_token":  refreshToken,
+		"requires_setup": usr.RequiresSetup,
 	})
 }
 
@@ -328,6 +329,10 @@ func (h *UserRoutes) UpdatedCredentials(w http.ResponseWriter, r *http.Request) 
 
 	// Update user email and password
 	usr, err := h.userService.SetCredentials(r.Context(), credentials)
+	if err == types.ErrUniqueConstraintViolation {
+		u.RespondWithError(w, r, http.StatusConflict, "User with this email already exists")
+		return
+	}
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return

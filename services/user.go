@@ -42,6 +42,9 @@ func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
 	}
 	user.PasswordHash = string(hashedPassword)
 
+	// TODO - check if session/request already has a guest account/user
+	// if so, use that ID instead of generating a new one
+
 	userID, err := utilities.GenerateIDString()
 	if err != nil {
 		return err

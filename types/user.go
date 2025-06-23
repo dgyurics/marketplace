@@ -5,13 +5,14 @@ import (
 )
 
 type User struct {
-	ID           string    `json:"id"`
-	Email        string    `json:"email"`
-	Password     string    `json:"-"`
-	PasswordHash string    `json:"-"`
-	Role         string    `json:"role"`
-	UpdatedAt    time.Time `json:"updated_at"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID            string    `json:"id"`
+	Email         string    `json:"email"`
+	Password      string    `json:"-"`
+	PasswordHash  string    `json:"-"`
+	Role          string    `json:"role"`
+	RequiresSetup bool      `json:"requires_setup"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 func (u *User) IsAdmin() bool {

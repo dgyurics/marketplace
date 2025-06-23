@@ -28,10 +28,13 @@ func NewUserRepository(db *sql.DB) UserRepository {
 func (r *userRepository) SetAdminCredentials(ctx context.Context, user *types.User) error {
 	query := `
 		UPDATE users
-		SET email = $1, password_hash = $2, updated_at = CURRENT_TIMESTAMP
+		SET email = $1, password_hash = $2, requires_setup = false, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $3 AND email = 'admin@marketplace.com'
 	`
 	result, err := r.db.ExecContext(ctx, query, user.Email, user.PasswordHash, user.ID)
+	if isUniqueViolation(err) {
+		return types.ErrUniqueConstraintViolation
+	}
 	if err != nil {
 		return err
 	}
@@ -48,10 +51,13 @@ func (r *userRepository) SetAdminCredentials(ctx context.Context, user *types.Us
 func (r *userRepository) SetGuestCredentials(ctx context.Context, user *types.User) error {
 	query := `
 		UPDATE users
-		SET email = $1, password_hash = $2, role = 'user', updated_at = CURRENT_TIMESTAMP
+		SET email = $1, password_hash = $2, role = 'user', requires_setup = false, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $3 AND role = 'guest' AND password_hash IS NULL
 	`
 	result, err := r.db.ExecContext(ctx, query, user.Email, user.PasswordHash, user.ID)
+	if isUniqueViolation(err) {
+		return types.ErrUniqueConstraintViolation
+	}
 	if err != nil {
 		return err
 	}
@@ -106,8 +112,25 @@ func isUniqueViolation(err error) bool {
 // FIXME refactor to return types.ErrNotFound when no user is found
 func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*types.User, error) {
 	var user types.User
-	err := r.db.QueryRowContext(ctx, "SELECT id, email, password_hash, role, updated_at FROM users WHERE email = $1", email).
-		Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Role, &user.UpdatedAt)
+	query := `
+		SELECT
+			id,
+			email,
+			password_hash,
+			role,
+			requires_setup,
+			updated_at
+		FROM users
+		WHERE email = $1
+	`
+	err := r.db.QueryRowContext(ctx, query, email).
+		Scan(
+			&user.ID,
+			&user.Email,
+			&user.PasswordHash,
+			&user.Role,
+			&user.RequiresSetup,
+			&user.UpdatedAt)
 
 	if err == sql.ErrNoRows {
 		return nil, nil // Return nil, nil when no user is found

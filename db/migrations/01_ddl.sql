@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE,
     password_hash TEXT,
     role user_role_enum DEFAULT 'guest' NOT NULL,
+    requires_setup BOOLEAN DEFAULT false NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
