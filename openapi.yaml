@@ -376,10 +376,10 @@ paths:
                   addressee:
                     type: string
                     example: "John Doe"
-                  address:
+                  line1:
                     type: string
                     example: "123 Main St"
-                  address:
+                  line2:
                     type: string
                     nullable: true
                     example: "Apt 4B"

@@ -25,21 +25,6 @@ func NewProductRoutes(
 }
 
 func (h *ProductRoutes) CreateProduct(w http.ResponseWriter, r *http.Request) {
-	var product types.Product
-	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
-		return
-	}
-
-	if err := h.productService.CreateProduct(r.Context(), &product); err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	u.RespondWithJSON(w, http.StatusCreated, product)
-}
-
-func (h *ProductRoutes) CreateProductWithCategory(w http.ResponseWriter, r *http.Request) {
 	category := mux.Vars(r)["category"]
 	var product types.Product
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
@@ -47,7 +32,7 @@ func (h *ProductRoutes) CreateProductWithCategory(w http.ResponseWriter, r *http
 		return
 	}
 
-	if err := h.productService.CreateProductWithCategory(r.Context(), &product, category); err != nil {
+	if err := h.productService.CreateProduct(r.Context(), &product, category); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -127,10 +112,7 @@ func (h *ProductRoutes) RemoveProduct(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProductRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/products", h.GetProducts).Methods(http.MethodGet)
-	h.muxRouter.HandleFunc("/products/{id}", h.GetProduct).Methods(http.MethodGet)
-	h.muxRouter.Handle("/products", h.secureAdmin(h.CreateProduct)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/products/categories/{category}", h.secureAdmin(h.CreateProductWithCategory)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/products/categories/{category}", h.secureAdmin(h.CreateProduct)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/products/{id}", h.secureAdmin(h.RemoveProduct)).Methods(http.MethodDelete)
 	h.muxRouter.Handle("/products/{id}/inventory", h.secureAdmin(h.UpdateInventory)).Methods(http.MethodPut)
-	// router.HandleFunc("/products/{id}", h.UpdateProduct).Methods("PUT")
 }

@@ -11,8 +11,7 @@ import (
 )
 
 type ProductRepository interface {
-	CreateProduct(ctx context.Context, product *types.Product) error
-	CreateProductWithCategory(ctx context.Context, product *types.Product, categorySlug string) error
+	CreateProduct(ctx context.Context, product *types.Product, categorySlug string) error
 	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
 	GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error)
 	DeleteProduct(ctx context.Context, id string) error
@@ -27,46 +26,7 @@ func NewProductRepository(db *sql.DB) ProductRepository {
 	return &productRepository{db: db}
 }
 
-func (r *productRepository) CreateProduct(ctx context.Context, product *types.Product) error {
-	// Begin a transaction
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Insert the product
-	query := `
-		INSERT INTO products (id, name, price, description)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, name, price, description`
-	if err := tx.QueryRowContext(ctx, query, product.ID, product.Name, product.Price, product.Description).
-		Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
-		return err
-	}
-
-	// Insert associated images
-	for _, image := range product.Images {
-		imageQuery := `
-			INSERT INTO images (id, product_id, url, type, display_order, alt_text)
-			VALUES ($1, $2, $3, $4, $5, $6)`
-		if _, err = tx.ExecContext(ctx, imageQuery, image.ID, product.ID, image.URL, image.Type, image.DisplayOrder, image.AltText); err != nil {
-			return err
-		}
-	}
-
-	// Insert inventory record
-	inventoryQuery := `
-		INSERT INTO inventory (product_id, quantity)
-		VALUES ($1, 0)`
-	if _, err := tx.ExecContext(ctx, inventoryQuery, product.ID); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-func (r *productRepository) CreateProductWithCategory(ctx context.Context, product *types.Product, categorySlug string) error {
+func (r *productRepository) CreateProduct(ctx context.Context, product *types.Product, categorySlug string) error {
 	// Begin a transaction
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
