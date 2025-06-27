@@ -13,6 +13,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type dummyAuth struct{}
+
+func (d dummyAuth) AuthenticateUser(next http.HandlerFunc) http.Handler {
+	return next
+}
+func (d dummyAuth) AuthenticateAdmin(next http.HandlerFunc) http.Handler {
+	return next
+}
+
 // Mocking the ProductService
 type MockProductService struct {
 	mock.Mock
@@ -48,6 +57,8 @@ func (m *MockProductService) RemoveProduct(ctx context.Context, id string) error
 	return args.Error(0)
 }
 
+// TODO rewrite tests to use actual endpoint
+
 func TestGetProductByID(t *testing.T) {
 	// Create a mock service
 	mockService := new(MockProductService)
@@ -57,9 +68,12 @@ func TestGetProductByID(t *testing.T) {
 		productService: mockService,
 		router: router{
 			muxRouter:      mux.NewRouter(),
-			authMiddleware: nil,
+			authMiddleware: &dummyAuth{},
 		},
 	}
+
+	// Register all routes
+	routes.RegisterRoutes()
 
 	// Create a sample product that will be returned by the mock service
 	product := &types.ProductWithInventory{
@@ -80,9 +94,6 @@ func TestGetProductByID(t *testing.T) {
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
-	// Add the route to the mux router
-	routes.muxRouter.HandleFunc("/products/{id}", routes.GetProduct).Methods(http.MethodGet)
-
 	// Serve the request via the router
 	routes.muxRouter.ServeHTTP(rr, req)
 
@@ -90,7 +101,7 @@ func TestGetProductByID(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	// Check the response body is what you expect
-	var responseProduct types.Product
+	var responseProduct types.ProductWithInventory
 	err = json.NewDecoder(rr.Body).Decode(&responseProduct)
 	require.NoError(t, err)
 
