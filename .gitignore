@@ -6,3 +6,4 @@ public.pem
 *.log
 *.out
 .vscode
+images/*

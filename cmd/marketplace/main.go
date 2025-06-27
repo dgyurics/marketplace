@@ -68,14 +68,15 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 	// create routes
 	routes.RegisterAllRoutes(
 		routes.NewAddressRoutes(services.Address, config.Locale, baseRouter),
-		routes.NewUserRoutes(services.User, services.Invite, services.JWT, services.Refresh, config.Auth, baseRouter),
-		routes.NewCategoryRoutes(services.Category, baseRouter),
-		routes.NewProductRoutes(services.Product, baseRouter),
 		routes.NewCartRoutes(services.Cart, services.Order, baseRouter),
+		routes.NewCategoryRoutes(services.Category, baseRouter),
+		routes.NewHealthRoutes(baseRouter),
+		routes.NewImageRoutes(services.Image, baseRouter),
 		routes.NewOrderRoutes(services.Order, services.Tax, services.Payment, services.Cart, baseRouter),
 		routes.NewPasswordRoutes(services.Password, services.User, services.Email, services.Template, config.BaseURL, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, baseRouter),
-		routes.NewHealthRoutes(baseRouter),
+		routes.NewProductRoutes(services.Product, baseRouter),
+		routes.NewUserRoutes(services.User, services.Invite, services.JWT, services.Refresh, config.Auth, baseRouter),
 	)
 
 	// Create and return the server
@@ -121,6 +122,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	paymentService := services.NewPaymentService(httpClient, config.Stripe, config.Locale, emailService, templateService, paymentRepository)
 	orderService := services.NewOrderService(orderRepository, cartRepository, paymentService, config.Locale, httpClient)
 	inviteService := services.NewInviteService(inviteRepository, config.Auth.HMACSecret)
+	imageService := services.NewImageService()
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	jwtService := services.NewJWTService(config.JWT)
@@ -134,6 +136,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		Product:  productService,
 		Cart:     cartService,
 		Order:    orderService,
+		Image:    imageService,
 		Invite:   inviteService,
 		Password: passwordService,
 		Refresh:  refreshService,
@@ -153,6 +156,7 @@ type servicesContainer struct {
 	Cart     services.CartService
 	Category services.CategoryService
 	Email    services.EmailSender
+	Image    services.ImageService
 	Invite   services.InviteService
 	JWT      services.JWTService
 	Order    services.OrderService
