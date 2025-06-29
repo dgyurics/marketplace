@@ -27,5 +27,21 @@ services:
       - ./openapi.yaml:/openapi.yaml:ro
     restart: always
 
+  imgproxy:
+      image: darthsim/imgproxy:v3
+      container_name: imgproxy
+      ports:
+        - "8002:8080"
+      environment:
+        IMGPROXY_LOCAL_FILESYSTEM_ROOT: /images
+        IMGPROXY_AUTO_WEBP: true
+        IMGPROXY_ENABLE_DEBUG_HEADERS: true
+        IMGPROXY_ALLOW_UNSAFE_URLS: false
+        IMGPROXY_KEY: ${IMGPROXY_KEY}
+        IMGPROXY_SALT: ${IMGPROXY_SALT}
+        IMGPROXY_SIGNATURE_SIZE: 32
+      volumes:
+        - ./images:/images:ro
+
 volumes:
   postgres-data:

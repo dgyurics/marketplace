@@ -87,3 +87,7 @@ generate-keys:
 	fi
 	@echo "Private key: $(PRIVATE_KEY_FILE)"
 	@echo "Public key: $(PUBLIC_KEY_FILE)"
+
+# Generate a random 32-byte hex string
+generate-rand:
+	openssl rand -hex 32

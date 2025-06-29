@@ -107,6 +107,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	scheduleRepository := repositories.NewScheduleRepository(db)
 	refreshTokenRepository := repositories.NewRefreshRepository(db)
 	taxRepository := repositories.NewTaxRepository(db)
+	imageRepository := repositories.NewImageRepository(db)
 
 	// create http client required by certain services
 	httpClient := utilities.NewDefaultHTTPClient(10 * time.Second) // TODO make this configurable
@@ -122,7 +123,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	paymentService := services.NewPaymentService(httpClient, config.Stripe, config.Locale, emailService, templateService, paymentRepository)
 	orderService := services.NewOrderService(orderRepository, cartRepository, paymentService, config.Locale, httpClient)
 	inviteService := services.NewInviteService(inviteRepository, config.Auth.HMACSecret)
-	imageService := services.NewImageService()
+	imageService := services.NewImageService(imageRepository, config.Image)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	jwtService := services.NewJWTService(config.JWT)

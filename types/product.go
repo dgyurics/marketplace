@@ -1,6 +1,11 @@
 package types
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 type Product struct {
 	ID          string          `json:"id"`
@@ -26,13 +31,50 @@ type ProductWithInventory struct {
 	Quantity    int             `json:"quantity"`
 }
 
+type ImageType string
+
+const (
+	Thumbnail ImageType = "thumbnail"
+	Gallery   ImageType = "gallery"
+	Hero      ImageType = "hero"
+	Original  ImageType = "original"
+)
+
+// ParseImageType parses a string into ImageType
+func ParseImageType(s string) (ImageType, error) {
+	switch strings.ToLower(s) {
+	case "original":
+		return Original, nil
+	case "hero":
+		return Hero, nil
+	case "thumbnail":
+		return Thumbnail, nil
+	case "gallery":
+		return Gallery, nil
+	default:
+		return "", fmt.Errorf("invalid image type: %s", s)
+	}
+}
+
+// ParseImageOrder parses a string into an integer for display order
+func ParseImageOrder(s string) int {
+	if s == "" {
+		return 0 // Default display order if not provided
+	}
+	r, err := strconv.Atoi(s)
+	if err != nil {
+		return 0
+	}
+	return r
+}
+
 type Image struct {
-	ID           string  `json:"id"`
-	ProductID    string  `json:"product_id"`
-	URL          string  `json:"url"`
-	Type         string  `json:"type"` // main, thumbnail, gallery
-	DisplayOrder int     `json:"display_order"`
-	AltText      *string `json:"alt_text,omitempty"`
+	ID           string    `json:"id"`
+	ProductID    string    `json:"product_id"`
+	URL          string    `json:"url"`
+	Type         ImageType `json:"type"`
+	DisplayOrder int       `json:"display_order"`
+	AltText      *string   `json:"alt_text,omitempty"` // FIXME convert pointer to string
 }
 
 type ProductFilter struct {

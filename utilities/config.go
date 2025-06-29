@@ -1,6 +1,7 @@
 package utilities
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -25,6 +26,7 @@ func LoadConfig() types.Config {
 		MachineID:    loadMachineID(),
 		Stripe:       loadStripeConfig(),
 		JWT:          loadJWTConfig(),
+		Image:        loadImageConfig(),
 		TemplatesDir: loadTemplatesDir(),
 		BaseURL:      loadBaseURL(),
 	}
@@ -83,6 +85,26 @@ func loadMachineID() uint8 {
 		panic(fmt.Sprintf("Invalid integer for MACHINE_ID: %s", envVar))
 	}
 	return uint8(val)
+}
+
+func loadImageConfig() types.ImageConfig {
+	keyHex := mustLookupEnv("IMGPROXY_KEY")
+	key, err := hex.DecodeString(keyHex)
+	if err != nil {
+		panic("invalid IMGPROXY_KEY: " + err.Error())
+	}
+
+	saltHex := mustLookupEnv("IMGPROXY_SALT")
+	salt, err := hex.DecodeString(saltHex)
+	if err != nil {
+		panic("invalid IMGPROXY_SALT: " + err.Error())
+	}
+
+	return types.ImageConfig{
+		Key:     key,
+		Salt:    salt,
+		BaseURL: mustLookupEnv("IMGPROXY_BASE_URL"),
+	}
 }
 
 func loadLocaleConfig() types.LocaleConfig {

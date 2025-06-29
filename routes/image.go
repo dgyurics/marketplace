@@ -4,7 +4,10 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"log/slog"
+
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/utilities"
 	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
@@ -22,21 +25,54 @@ func NewImageRoutes(imageService services.ImageService, router router) *ImageRou
 	}
 }
 
-func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
-	productID := mux.Vars(r)["id"] // TODO verify product exists
+const (
+	formKeyImage   = "image"    // Form key for image file
+	formKeyType    = "type"     // Form key for image type (e.g., "hero", "gallery", etc.)
+	formKeyAltText = "alt_text" // Form key for alt text
+)
 
-	// Parse the multipart form data
-	err := r.ParseMultipartForm(30 << 20) // 30 MB
+// UploadImage handles the image upload for a product
+// It verifies the product exists, checks the image format, stores the image on disk,
+// generates signed URLs, and creates image records in the database.
+//
+// The image can be of type "hero", "gallery", or "thumbnail".
+// The image is stored in a subdirectory named after the product ID.
+//
+// The image file is expected to be sent as a multipart form file with the key [image].
+// The image [type] can be specified in the form data, defaulting to "gallery" if not provided.
+// The [alt_text] can also be provided in the form data.
+func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
+	productID := mux.Vars(r)["id"] // product ID from path parameter
+
+	// Verify product exists
+	exists, err := h.imageService.ProductExists(r.Context(), productID)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if !exists {
+		u.RespondWithError(w, r, http.StatusBadRequest, "product not found")
+		return
+	}
+
+	// Parse the multipart form file
+	err = r.ParseMultipartForm(30 << 20) // 30 MB
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
-	file, fileHeader, err := r.FormFile("image") // "image" is the form field name for the file upload
+	file, fileHeader, err := r.FormFile(formKeyImage)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error retrieving file from form data")
 		return
 	}
 	defer file.Close()
+
+	// Parse the multipart form image type
+	imageType, _ := types.ParseImageType(r.FormValue(formKeyType))
+	if imageType == "" {
+		imageType = "gallery"
+	}
 
 	// Validate file type
 	supported, err := h.imageService.IsSupportedImage(file)
@@ -49,6 +85,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Generate a unique ID for the file/image
 	imgID, err := utilities.GenerateIDString()
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, "error generating image ID")
@@ -60,18 +97,58 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	ext := filepath.Ext(originalFilename) // Gets extension like ".jpg" or ".png"
 
 	// Append extension to generated ID
-	imageFilename := imgID + ext
+	filename := imgID + ext
 
-	// Store the image
-	imagePath, err := h.imageService.StoreImage(productID, file, imageFilename)
+	// Store the image on disk
+	imagePath, err := h.imageService.StoreImage(productID, file, filename)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, "error storing image")
 		return
 	}
+	slog.Debug("Image uploaded successfully", "path", imagePath)
+
+	// Generate signed URL(s) for the image
+	// Note: If the image type is "hero", we generate URLs for hero, gallery, and thumbnail
+	var urls []string
+	if imageType == types.Hero {
+		urls = h.imageService.CreateImageURLs(productID, filename, types.Hero, types.Gallery, types.Thumbnail)
+	} else {
+		urls = h.imageService.CreateImageURLs(productID, filename, imageType)
+	}
+	slog.Debug("Generated signed URL", "url", urls)
+
+	// Create the image record(s)
+	typs := []types.ImageType{imageType, types.Gallery, types.Thumbnail}
+	for idx, url := range urls {
+		id, err := utilities.GenerateIDString()
+		if err != nil {
+			u.RespondWithError(w, r, http.StatusInternalServerError, "error generating image record ID")
+			return
+		}
+		if err := h.imageService.CreateImageRecord(r.Context(), &types.Image{
+			ID:        id,
+			ProductID: productID,
+			URL:       url,
+			Type:      typs[idx],
+			AltText:   altTextFromForm(r),
+		}); err != nil {
+			slog.ErrorContext(r.Context(), "error creating image record", "productID", productID, "type", imageType, "error", err)
+			u.RespondWithError(w, r, http.StatusInternalServerError, "error creating image record")
+			return
+		}
+	}
 
 	u.RespondWithJSON(w, http.StatusCreated, map[string]string{
-		"filename": imagePath,
+		"path": imagePath,
 	})
+}
+
+func altTextFromForm(r *http.Request) *string {
+	altText := r.FormValue(formKeyAltText)
+	if altText == "" {
+		return nil
+	}
+	return &altText
 }
 
 func (h *ImageRoutes) RegisterRoutes() {

@@ -45,13 +45,13 @@ CREATE INDEX idx_products_is_deleted_false
 ON products (id)
 WHERE is_deleted = FALSE;
 
-CREATE TYPE image_type_enum AS ENUM ('main', 'thumbnail', 'gallery');
+CREATE TYPE image_type_enum AS ENUM ('hero', 'thumbnail', 'gallery');
 
 CREATE TABLE IF NOT EXISTS images (
     id BIGINT PRIMARY KEY,
     product_id BIGINT NOT NULL,
     url TEXT NOT NULL,
-    type image_type_enum DEFAULT 'main' NOT NULL,
+    type image_type_enum DEFAULT 'hero' NOT NULL,
     display_order INT DEFAULT 0,
     alt_text VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,

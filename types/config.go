@@ -20,6 +20,7 @@ type Config struct {
 	MachineID    uint8
 	Server       ServerConfig
 	Stripe       StripeConfig
+	Image        ImageConfig
 	TemplatesDir string // path to directory containing email templates
 }
 
@@ -101,4 +102,10 @@ type StripeConfig struct {
 	SecretKey            string // sk_test_xxxxxxxxxxxxxxxxxxxxxxxx
 	WebhookSigningSecret string // whsec_xxxxxxxxxxxxxxxxxxxxxxxx
 	Version              string // 2025-04-30.basil
+}
+
+type ImageConfig struct {
+	Key     []byte // hex encoded key for imgproxy
+	Salt    []byte // hex encoded salt for imgproxy
+	BaseURL string // base URL for imgproxy, e.g. http://localhost:8002
 }
