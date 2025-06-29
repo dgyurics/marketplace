@@ -33,7 +33,7 @@ func TestCreateProductWithImages(t *testing.T) {
 		Description: "Product with images for testing",
 		Details:     []byte(`{"key": "value"}`),
 		Images: []types.Image{
-			{ID: utilities.MustGenerateIDString(), URL: "http://example.com/image1.jpg", AltText: func(s string) *string { return &s }("Image 1"), Type: "main", DisplayOrder: 1},
+			{ID: utilities.MustGenerateIDString(), URL: "http://example.com/image1.jpg", AltText: func(s string) *string { return &s }("Image 1"), Type: "hero", DisplayOrder: 1},
 			{ID: utilities.MustGenerateIDString(), URL: "http://example.com/image2.gif", AltText: func(s string) *string { return &s }("Image 2 animated"), Type: "thumbnail", DisplayOrder: 2},
 		},
 	}
@@ -154,6 +154,8 @@ func TestGetProducts(t *testing.T) {
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
 	assert.NoError(t, err, "Expected no error on product deletion")
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM categories WHERE id = $1", categoryID)
+	assert.NoError(t, err, "Expected no error on category deletion")
 }
 
 func TestGetProductsByCategory(t *testing.T) {
@@ -253,6 +255,8 @@ func TestGetProductByID(t *testing.T) {
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
 	assert.NoError(t, err, "Expected no error on product deletion")
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM categories WHERE id = $1", categoryID)
+	assert.NoError(t, err, "Expected no error on category deletion")
 }
 
 func TestDeleteProduct(t *testing.T) {
@@ -295,4 +299,6 @@ func TestDeleteProduct(t *testing.T) {
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
 	assert.NoError(t, err, "Expected no error on product deletion")
+	_, err = dbPool.ExecContext(ctx, "DELETE FROM categories WHERE id = $1", categoryID)
+	assert.NoError(t, err, "Expected no error on category deletion")
 }
