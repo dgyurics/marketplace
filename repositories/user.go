@@ -11,8 +11,7 @@ import (
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *types.User) error
 	CreateGuest(ctx context.Context, user *types.User) error
-	SetAdminCredentials(ctx context.Context, user *types.User) error
-	SetGuestCredentials(ctx context.Context, user *types.User) error
+	SetCredentials(ctx context.Context, user *types.User) error
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
 }
@@ -25,36 +24,25 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
-func (r *userRepository) SetAdminCredentials(ctx context.Context, user *types.User) error {
+func (r *userRepository) SetCredentials(ctx context.Context, user *types.User) error {
 	query := `
 		UPDATE users
-		SET email = $1, password_hash = $2, requires_setup = false, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $3 AND email = 'admin@marketplace.com'
+		SET
+			email = $1,
+			password_hash = $2,
+			role = $3,
+			requires_setup = false,
+			updated_at = CURRENT_TIMESTAMP
+		WHERE id = $4 AND requires_setup = true
 	`
-	result, err := r.db.ExecContext(ctx, query, user.Email, user.PasswordHash, user.ID)
-	if isUniqueViolation(err) {
-		return types.ErrUniqueConstraintViolation
-	}
-	if err != nil {
-		return err
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowsAffected == 0 {
-		return types.ErrNotFound
-	}
-	return nil
-}
 
-func (r *userRepository) SetGuestCredentials(ctx context.Context, user *types.User) error {
-	query := `
-		UPDATE users
-		SET email = $1, password_hash = $2, role = 'user', requires_setup = false, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $3 AND role = 'guest' AND password_hash IS NULL
-	`
-	result, err := r.db.ExecContext(ctx, query, user.Email, user.PasswordHash, user.ID)
+	// Update role if user is a guest
+	if user.IsGuest() {
+		user.Role = "user"
+	}
+
+	// Execute the update query
+	result, err := r.db.ExecContext(ctx, query, user.Email, user.PasswordHash, user.Role, user.ID)
 	if isUniqueViolation(err) {
 		return types.ErrUniqueConstraintViolation
 	}
@@ -73,8 +61,8 @@ func (r *userRepository) SetGuestCredentials(ctx context.Context, user *types.Us
 
 func (r *userRepository) CreateGuest(ctx context.Context, user *types.User) error {
 	query := `
-		INSERT INTO users (id, role)
-		VALUES ($1, 'guest')
+		INSERT INTO users (id, role, requires_setup)
+		VALUES ($1, 'guest', true)
 		RETURNING id, role, updated_at
 	`
 	return r.db.QueryRowContext(ctx, query, user.ID).

@@ -51,6 +51,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify product exists
+	// FIXME: validate input is numeric
 	exists, err := h.imageService.ProductExists(r.Context(), productID)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())

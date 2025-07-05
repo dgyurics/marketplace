@@ -62,15 +62,9 @@ func (s *userService) SetCredentials(ctx context.Context, credentials types.Cred
 	usr.Email = credentials.Email
 	usr.PasswordHash = string(hashedPassword)
 
-	// Set credentials
-	if usr.IsAdmin() {
-		err = s.repo.SetAdminCredentials(ctx, &usr)
-	} else if usr.IsGuest() {
-		err = s.repo.SetGuestCredentials(ctx, &usr)
-		usr.Role = "user" // guest is now a user
-	}
-
-	if err != nil {
+	// Update/Set credentials in database
+	// If the account type is guest, it will be converted to a user account
+	if err := s.repo.SetCredentials(ctx, &usr); err != nil {
 		return types.User{}, err
 	}
 
