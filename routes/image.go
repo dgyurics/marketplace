@@ -44,6 +44,12 @@ const (
 func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	productID := mux.Vars(r)["id"] // product ID from path parameter
 
+	// Parse the multipart form file
+	if err := r.ParseMultipartForm(30 << 20); err != nil { // 30 MB limit
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// Verify product exists
 	exists, err := h.imageService.ProductExists(r.Context(), productID)
 	if err != nil {
@@ -51,16 +57,11 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !exists {
-		u.RespondWithError(w, r, http.StatusBadRequest, "product not found")
+		u.RespondWithError(w, r, http.StatusNotFound, "product not found")
 		return
 	}
 
-	// Parse the multipart form file
-	err = r.ParseMultipartForm(30 << 20) // 30 MB
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
-		return
-	}
+	// Retrieve the file from the form data
 	file, fileHeader, err := r.FormFile(formKeyImage)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error retrieving file from form data")

@@ -45,6 +45,7 @@ func NewImageService(repo repositories.ImageRepository, config types.ImageConfig
 }
 
 func (s *imageService) ProductExists(ctx context.Context, productID string) (bool, error) {
+	// TODO verify productID is number
 	exists, err := s.repo.ProductExists(ctx, productID)
 	if err != nil {
 		return false, err

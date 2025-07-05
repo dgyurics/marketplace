@@ -20,6 +20,7 @@ func (h *HealthRoutes) RegisterRoutes() {
 }
 func (h *HealthRoutes) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	// TODO enhance to check database connection, external services, etc.
 	response := map[string]string{"status": "ok"}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
