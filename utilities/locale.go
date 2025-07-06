@@ -4,8 +4,7 @@ import (
 	"regexp"
 )
 
-// SupportedCountries lists all countries where Stripe is officially supported or in preview/extended network as of 2025.
-// Format: ISO 3166-1 alpha-2 code: true
+// Supported ISO 3166-1 alpha-2 countries
 var SupportedCountries = map[string]bool{
 	"AE": true,
 	"AR": true,
@@ -77,8 +76,7 @@ var SupportedCountries = map[string]bool{
 	"ZA": true,
 }
 
-// SupportedCurrencies lists all currencies where Stripe is officially supported as of 2024.
-// Format: ISO 4217 currency code: true
+// Supported ISO 4217 currencies
 var SupportedCurrencies = map[string]bool{
 	"AED": true,
 	"AFN": true,

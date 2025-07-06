@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS products (
     description TEXT NOT NULL,
     details JSONB DEFAULT '{}'::jsonb NOT NULL,
     tax_code VARCHAR(50),
-    is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
+    is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- TODO rename to enabled/disabled
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
