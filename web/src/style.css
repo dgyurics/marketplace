@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+
+:root {
+  /* font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; */
+  font-family: "Playfair Display", serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light;
+  color: #000;
+  background-color: #fff;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reset default styles for a cleaner look */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Body styling */
+body {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  background: #fff;
+  color: #000;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Links */
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #333;
+}
+
+/* Buttons */
+button {
+  border: 1px solid #000;
+  background: transparent;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background: #000;
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.5;
+  background: #ccc;
+  color: #666;
+  border-color: #999;
+}
+
+button:disabled:hover {
+  cursor: default;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Main App Container */
+#app {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Minimalistic Responsive Design */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  button {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+}
+
+.container {
+  max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 30px;
+}
+
+.error {
+  text-align: center;
+  color: red;
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+.form-group {
+  margin-bottom: 25px;
+  text-align: left;
+  position: relative;
+}
+
+.form-group-flex {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 10px;
+  background-color: black;
+  color: white;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #333;
+}
+
+.submit-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}

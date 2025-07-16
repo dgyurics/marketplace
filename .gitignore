@@ -7,3 +7,5 @@ public.pem
 *.out
 .vscode
 images/*
+node_modules
+dist
