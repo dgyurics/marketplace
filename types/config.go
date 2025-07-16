@@ -105,7 +105,8 @@ type StripeConfig struct {
 }
 
 type ImageConfig struct {
-	Key     []byte // hex encoded key for imgproxy
-	Salt    []byte // hex encoded salt for imgproxy
-	BaseURL string // base URL for imgproxy, e.g. http://localhost:8002
+	Key            []byte // hex encoded key for imgproxy
+	Salt           []byte // hex encoded salt for imgproxy
+	BaseURLImgPrxy string // base URL for imgproxy, e.g. http://localhost:8002
+	BaseURLRemBg   string // base URL for rembg, e.g. http://localhost:7001
 }

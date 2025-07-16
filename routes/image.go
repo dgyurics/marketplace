@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"context"
 	"net/http"
 	"path/filepath"
 
@@ -42,7 +43,8 @@ const (
 // The image [type] can be specified in the form data, defaulting to "gallery" if not provided.
 // The [alt_text] can also be provided in the form data.
 func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
-	productID := mux.Vars(r)["id"] // product ID from path parameter
+	productID := mux.Vars(r)["id"]                       // product ID from path parameter
+	removeBg := r.URL.Query().Get("remove_bg") == "true" // optional remove background flag
 
 	// Parse the multipart form file
 	if err := r.ParseMultipartForm(30 << 20); err != nil { // 30 MB limit
@@ -143,6 +145,23 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusCreated, map[string]string{
 		"path": imagePath,
 	})
+
+	// If background removal requested, do it asynchronously after response is sent
+	if removeBg {
+		// Clone the context to prevent it from being canceled when the request completes
+		bgCtx := context.Background()
+		go func() {
+			newImagePath, err := h.imageService.RemoveBackground(bgCtx, imagePath, filename)
+			if err != nil {
+				slog.ErrorContext(r.Context(), "error removing background", "productID", productID, "error", err)
+				u.RespondWithError(w, r, http.StatusInternalServerError, "error removing background")
+				return
+			}
+			slog.Debug("Background removed successfully", "newPath", newImagePath)
+
+			// Do we need to create new signatures/records??
+		}()
+	}
 }
 
 func altTextFromForm(r *http.Request) *string {

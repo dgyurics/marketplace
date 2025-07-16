@@ -1,18 +1,22 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"io"
+	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 )
 
 const (
@@ -26,21 +30,26 @@ type ImageService interface {
 	CreateImageURLs(productID, filename string, imgType ...types.ImageType) []string
 	CreateImageRecord(ctx context.Context, image *types.Image) error
 	ProductExists(ctx context.Context, productID string) (bool, error) // TODO move to product service
+	RemoveBackground(ctx context.Context, filePath, filename string) (string, error)
 }
 
 type imageService struct {
-	repo    repositories.ImageRepository
-	key     []byte
-	salt    []byte
-	baseURL string
+	HttpClient     utilities.HTTPClient
+	repo           repositories.ImageRepository
+	key            []byte
+	salt           []byte
+	baseURLImgPrxy string
+	baseURLRemBg   string
 }
 
-func NewImageService(repo repositories.ImageRepository, config types.ImageConfig) ImageService {
+func NewImageService(HttpClient utilities.HTTPClient, repo repositories.ImageRepository, config types.ImageConfig) ImageService {
 	return &imageService{
-		repo:    repo,
-		key:     config.Key,
-		salt:    config.Salt,
-		baseURL: config.BaseURL,
+		HttpClient:     HttpClient,
+		repo:           repo,
+		key:            config.Key,
+		salt:           config.Salt,
+		baseURLImgPrxy: config.BaseURLImgPrxy,
+		baseURLRemBg:   config.BaseURLRemBg,
 	}
 }
 
@@ -53,12 +62,22 @@ func (s *imageService) ProductExists(ctx context.Context, productID string) (boo
 	return exists, nil
 }
 
-func (s *imageService) StoreImage(productID string, file io.Reader, filename string) (string, error) {
-	// Create subdirectory for the file
+// mkdir creates a directory for the image file, returning the full path to the file
+func mkdir(productID string, imagename string) (string, error) {
 	dirPath := filepath.Join(ImageUploadPath, productID)
-	filePath := filepath.Join(dirPath, filepath.Base(filename))
-	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
-		return "", err
+	filePath := filepath.Join(dirPath, filepath.Base(imagename))
+	err := os.MkdirAll(dirPath, os.ModePerm)
+	if err != nil {
+		return "", fmt.Errorf("failed to create directory %s: %w", dirPath, err)
+	}
+	return filePath, nil
+}
+
+// StoreImage saves the image file to disk and returns the file path
+func (s *imageService) StoreImage(productID string, file io.Reader, filename string) (string, error) {
+	filePath, err := mkdir(productID, filename)
+	if err != nil {
+		return "", fmt.Errorf("failed to create directory for image: %w", err)
 	}
 
 	// Save the file
@@ -68,6 +87,7 @@ func (s *imageService) StoreImage(productID string, file io.Reader, filename str
 	}
 	defer dst.Close()
 
+	// Copy the file content to the destination
 	if _, err := io.Copy(dst, file); err != nil {
 		return "", err
 	}
@@ -130,6 +150,69 @@ const (
 	DefaultQuality   = "quality:85"
 )
 
+// RemoveBackground removes the background from the image specified by imagePath
+func (s *imageService) RemoveBackground(ctx context.Context, filePath, filename string) (string, error) {
+	// open source image
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open image file: %w", err)
+	}
+	defer file.Close()
+
+	// create multipart writer
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Create form file using image
+	part, err := writer.CreateFormFile("file", filename)
+	if err != nil {
+		return "", fmt.Errorf("failed to create form file: %w", err)
+	}
+
+	// Copy image into form file part
+	if _, err := io.Copy(part, file); err != nil {
+		return "", fmt.Errorf("failed to copy image file to form: %w", err)
+	}
+
+	// Close the multipart writer to finalize the form data
+	writer.Close()
+
+	// Prepare the HTTP request to the rembg service
+	url := fmt.Sprintf("%s/api/remove", s.baseURLRemBg)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, body)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	// Execute request
+	res, err := s.HttpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request to rembg service: %w", err)
+	}
+	defer res.Body.Close()
+
+	// Handle response
+	if res.StatusCode != http.StatusOK {
+		slog.Error("Rembg service returned non-OK status", "status", res.StatusCode, "url", s.baseURLRemBg)
+		return "", fmt.Errorf("failed to remove background: %s", res.Status)
+	}
+
+	// Overwrite the original image with the processed image
+	dst, err := os.Create(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create destination file: %w", err)
+	}
+	defer dst.Close()
+
+	// Copy the file content to the destination
+	if _, err := io.Copy(dst, res.Body); err != nil {
+		return "", err
+	}
+
+	return filePath, nil
+}
+
 // GenerateImageURL generates a signed URL for use with imgproxy
 func (s *imageService) GenerateImageURL(productID, filename string, imgType types.ImageType) string {
 	var path string
@@ -150,5 +233,5 @@ func (s *imageService) GenerateImageURL(productID, filename string, imgType type
 	signature := mac.Sum(nil)
 	encodedSig := base64.RawURLEncoding.EncodeToString(signature)
 
-	return fmt.Sprintf("%s/%s%s", s.baseURL, encodedSig, path)
+	return fmt.Sprintf("%s/%s%s", s.baseURLImgPrxy, encodedSig, path)
 }

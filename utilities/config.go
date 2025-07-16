@@ -101,9 +101,10 @@ func loadImageConfig() types.ImageConfig {
 	}
 
 	return types.ImageConfig{
-		Key:     key,
-		Salt:    salt,
-		BaseURL: mustLookupEnv("IMGPROXY_BASE_URL"),
+		Key:            key,
+		Salt:           salt,
+		BaseURLImgPrxy: mustLookupEnv("IMGPROXY_BASE_URL"),
+		BaseURLRemBg:   mustLookupEnv("REM_BG_BASE_URL"),
 	}
 }
 

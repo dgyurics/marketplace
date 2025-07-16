@@ -123,7 +123,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	paymentService := services.NewPaymentService(httpClient, config.Stripe, config.Locale, emailService, templateService, paymentRepository)
 	orderService := services.NewOrderService(orderRepository, cartRepository, paymentService, config.Locale, httpClient)
 	inviteService := services.NewInviteService(inviteRepository, config.Auth.HMACSecret)
-	imageService := services.NewImageService(imageRepository, config.Image)
+	imageService := services.NewImageService(httpClient, imageRepository, config.Image)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	jwtService := services.NewJWTService(config.JWT)
