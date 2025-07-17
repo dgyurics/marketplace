@@ -1178,7 +1178,6 @@ paths:
         "500":
           description: Internal server error
 
-  /categories:
 components:
   securitySchemes:
     BearerAuth:
