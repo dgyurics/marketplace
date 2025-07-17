@@ -1,7 +1,21 @@
-const { VITE_API_URL, VITE_STRIPE_PUBLISHABLE_KEY, VITE_COUNTRY, PROD, VITE_REQUEST_TIMEOUT } =
-  import.meta.env
+interface ImportMetaEnv {
+  readonly VITE_API_URL: string
+  readonly VITE_STRIPE_PUBLISHABLE_KEY: string
+  readonly VITE_COUNTRY: string
+  readonly VITE_REQUEST_TIMEOUT?: string
+  // Vite built-in properties
+  readonly MODE: string
+  readonly BASE_URL: string
+  readonly PROD: boolean
+  readonly DEV: boolean
+  readonly SSR: boolean
+}
 
-export const API_URL = PROD ? VITE_API_URL : '/api'
-export const STRIPE_PUBLISHABLE_KEY = VITE_STRIPE_PUBLISHABLE_KEY
-export const COUNTRY = VITE_COUNTRY
-export const REQUEST_TIMEOUT = VITE_REQUEST_TIMEOUT ? parseInt(VITE_REQUEST_TIMEOUT, 10) : 30000
+const env = import.meta.env as ImportMetaEnv
+
+export const API_URL = env.PROD ? env.VITE_API_URL : '/api'
+export const STRIPE_PUBLISHABLE_KEY = env.VITE_STRIPE_PUBLISHABLE_KEY
+export const COUNTRY = env.VITE_COUNTRY
+export const REQUEST_TIMEOUT = env.VITE_REQUEST_TIMEOUT
+  ? parseInt(env.VITE_REQUEST_TIMEOUT, 10)
+  : 30000

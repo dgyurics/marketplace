@@ -44,7 +44,9 @@ services:
       - ./images:/images:ro
 
   rembg:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.rembg
     container_name: rembg
     ports:
       - "7001:7000"

@@ -6,7 +6,6 @@ import { defineConfig } from 'vite'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
   resolve: {
@@ -14,12 +13,13 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     },
   },
+  envDir: '../',
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000', // Go backend URL
+        target: 'http://localhost:8000',
         changeOrigin: true,
-        secure: false, // Disable SSL verification if backend uses HTTPS with self-signed certs
+        secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''), // Remove "/api" prefix
       },
     },

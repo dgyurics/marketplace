@@ -1,93 +1,199 @@
-.PHONY: all clean test test-no-cache test-coverage test-coverage-report test-coverage-func build run stripe-listen update-payment-intent confirm-payment-intent refund-payment-intent generate-id generate-ids decode-id generate-keys
+# ============================================================================
+# Marketplace Build System
+# ============================================================================
 
+.PHONY: all clean install dev build test coverage keys stripe id help \
+	dev-backend dev-frontend build-backend build-frontend build-prod build-backend-prod \
+	install-backend install-frontend test-verbose test-no-cache coverage-report coverage-func \
+	generate-secret stripe-listen stripe-update stripe-confirm stripe-refund \
+	id-generate id-generate-bulk id-decode run frontend backend lint fmt
+
+# ============================================================================
 # Variables
-BIN_DIR=bin
-BINARY_NAME=marketplace
-BINARY=$(BIN_DIR)/$(BINARY_NAME)
-SRC_DIR=./cmd/marketplace
-PRIVATE_KEY_FILE=private.pem
-PUBLIC_KEY_FILE=public.pem
+# ============================================================================
 
-# Build variables - can be overridden
+# Build Configuration
+BINARY = bin/marketplace
 GOOS ?= linux
 GOARCH ?= amd64
 
-# Default target
-all: run
+# Directories
+WEB_DIR = web
+SRC_DIR = ./cmd/marketplace
 
-# Clean up generated files
-clean:
-	rm -f $(BINARY) $(PRIVATE_KEY_FILE) $(PUBLIC_KEY_FILE)
+# Security Files
+PRIVATE_KEY_FILE = private.pem
+PUBLIC_KEY_FILE = public.pem
 
-# Run tests
+# Clean Targets
+CLEAN_FILES = $(BINARY) $(PRIVATE_KEY_FILE) $(PUBLIC_KEY_FILE) coverage.out *.log
+CLEAN_DIRS = $(WEB_DIR)/dist $(WEB_DIR)/node_modules
+
+# ============================================================================
+# Main Targets
+# ============================================================================
+
+all: dev
+
+help:
+	@echo "Available targets:"
+	@echo "  dev          - Start development environment"
+	@echo "  build        - Build both backend and frontend"
+	@echo "  build-prod   - Build for production"
+	@echo "  test         - Run all tests"
+	@echo "  clean        - Clean all generated files"
+	@echo "  install      - Install dependencies"
+	@echo "  keys         - Generate RSA keys"
+
+# ============================================================================
+# Development
+# ============================================================================
+
+dev: install
+	@echo "Starting development environment..."
+	@echo "Backend: http://localhost:8000"
+	@echo "Frontend: http://localhost:5173"
+	@make -j3 dev-backend stripe-listen dev-frontend
+
+dev-backend: build-backend
+	./$(BINARY)
+
+dev-frontend:
+	cd $(WEB_DIR) && npm run dev
+
+# ============================================================================
+# Build
+# ============================================================================
+
+build: build-backend build-frontend
+
+build-backend:
+	@echo "Building backend..."
+	@mkdir -p bin
+	go build -o $(BINARY) $(SRC_DIR)
+
+build-frontend:
+	@echo "Building frontend..."
+	cd $(WEB_DIR) && npm run build
+
+build-prod: build-backend-prod build-frontend
+
+build-backend-prod:
+	@echo "Building backend for production ($(GOOS)/$(GOARCH))..."
+	@mkdir -p bin
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BINARY) $(SRC_DIR)
+
+# ============================================================================
+# Dependencies
+# ============================================================================
+
+install: install-backend install-frontend
+
+install-backend:
+	@echo "Installing backend dependencies..."
+	go mod download
+
+install-frontend:
+	@echo "Installing frontend dependencies..."
+	cd $(WEB_DIR) && npm install
+
+# ============================================================================
+# Testing
+# ============================================================================
+
 test:
 	go test ./...
+
+test-verbose:
+	go test -v ./...
 
 test-no-cache:
 	go test -count=1 ./...
 
-# View test coverage
-test-coverage:
+coverage:
 	go test -cover ./...
 
-# Generate test coverage report
-test-coverage-report:
+coverage-report:
 	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
 
-# View function-level test coverage
-test-coverage-func:
+coverage-func:
+	@if [ ! -f coverage.out ]; then \
+		echo "No coverage.out file found. Run 'make coverage-report' first."; \
+		exit 1; \
+	fi
 	go tool cover -func=coverage.out
 
-# Build the binary (development)
-build:
-	go build -o $(BINARY) $(SRC_DIR)
+# ============================================================================
+# Code Quality
+# ============================================================================
 
-# Build the binary for production
-build-prod:
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BINARY) $(SRC_DIR)
+lint:
+	@echo "Running linters..."
+	golangci-lint run ./...
+	cd $(WEB_DIR) && npm run lint
 
-# Run the binary
-run: build
-	./$(BINARY)
+fmt:
+	@echo "Formatting code..."
+	go fmt ./...
+	cd $(WEB_DIR) && npm run format
 
-# Stripe listen
+# ============================================================================
+# Utilities
+# ============================================================================
+
+clean:
+	@echo "Cleaning up..."
+	rm -rf $(CLEAN_FILES) $(CLEAN_DIRS)
+
+keys:
+	@echo "Generating RSA key pair..."
+	@openssl genpkey -algorithm RSA -out $(PRIVATE_KEY_FILE) -pkeyopt rsa_keygen_bits:2048
+	@openssl rsa -pubout -in $(PRIVATE_KEY_FILE) -out $(PUBLIC_KEY_FILE)
+	@echo "Generated: $(PRIVATE_KEY_FILE) and $(PUBLIC_KEY_FILE)"
+
+generate-secret:
+	@openssl rand -hex 32
+
+# ============================================================================
+# Stripe Tools
+# ============================================================================
+
 stripe-listen:
 	go run ./cmd/stripe -cmd=listen
 
-# Payment Intent Commands
-update-payment-intent:
+stripe-update:
 	go run ./cmd/stripe -cmd=update -pi=$(PI)
 
-confirm-payment-intent:
+stripe-confirm:
 	go run ./cmd/stripe -cmd=confirm -pi=$(PI)
 
-refund-payment-intent:
+stripe-refund:
 	go run ./cmd/stripe -cmd=refund -pi=$(PI)
 
-# Generate unique IDs
-generate-id:
+# ============================================================================
+# ID Tools
+# ============================================================================
+
+id-generate:
 	go run ./cmd/id -cmd=generate-id
 
-generate-ids:
-	go run ./cmd/id -cmd=generate-id -n=$(n)
+id-generate-bulk:
+	go run ./cmd/id -cmd=generate-id -n=$(N)
 
-decode-id:
-	go run ./cmd/id -cmd=decode-id $(id)
+id-decode:
+	go run ./cmd/id -cmd=decode-id $(ID)
 
-# Generate RSA keys (private and public PEM files)
-generate-keys:
-	@echo "Generating RSA private and public keys..."
-	@if ! openssl genpkey -algorithm RSA -out $(PRIVATE_KEY_FILE) -pkeyopt rsa_keygen_bits:2048; then \
-		echo "Failed to generate private key"; \
-		exit 1; \
-	fi
-	@if ! openssl rsa -pubout -in $(PRIVATE_KEY_FILE) -out $(PUBLIC_KEY_FILE); then \
-		echo "Failed to generate public key"; \
-		exit 1; \
-	fi
-	@echo "Private key: $(PRIVATE_KEY_FILE)"
-	@echo "Public key: $(PUBLIC_KEY_FILE)"
+# ============================================================================
+# Quick Run Commands
+# ============================================================================
 
-# Generate a random 32-byte hex string
-generate-rand:
-	openssl rand -hex 32
+run: build-backend
+	./$(BINARY)
+
+frontend: install-frontend
+	cd $(WEB_DIR) && npm run dev
+
+backend: build-backend
+	./$(BINARY)
