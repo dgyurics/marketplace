@@ -61,6 +61,7 @@ func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, products)
 }
 
+// FIXME returns 500 when product not found
 func (h *ProductRoutes) GetProduct(w http.ResponseWriter, r *http.Request) {
 	productId, ok := mux.Vars(r)["id"]
 	if !ok {

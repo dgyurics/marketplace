@@ -146,6 +146,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 		"path": imagePath,
 	})
 
+	// FIXME superfluous response.WriteHeader call
 	// If background removal requested, do it asynchronously after response is sent
 	if removeBg {
 		// Clone the context to prevent it from being canceled when the request completes
