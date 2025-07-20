@@ -13,16 +13,15 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     },
   },
-  envDir: '../',
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''), // Remove "/api" prefix
-      },
-    },
-  },
+  // server: {
+  //   proxy: {
+  //     '/api': {
+  //       target: 'http://localhost:8000',
+  //       changeOrigin: true,
+  //       secure: false,
+  //       rewrite: (path) => path.replace(/^\/api/, ''), // Remove "/api" prefix
+  //     },
+  //   },
+  // },
   logLevel: 'info',
 })

@@ -15,4 +15,4 @@ RUN pip install --no-cache-dir --upgrade pip \
 EXPOSE 7000
 
 # Run rembg as HTTP server
-CMD ["rembg", "s", "--host", "0.0.0.0", "--port", "7000"]
+CMD ["rembg", "s", "--host", "0.0.0.0", "--port", "80"]

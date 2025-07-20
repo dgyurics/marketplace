@@ -1,0 +1,84 @@
+version: "3.9"
+name: marketplace-testing
+
+services:
+  nginx:
+    container_name: nginx
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+      - web
+
+  api:
+    container_name: api
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.api
+    env_file:
+      - ../env/.env.prod
+    volumes:
+      - ../../images:/images:rw      
+    depends_on:
+      postgres:
+        condition: service_healthy
+      imgproxy:
+        condition: service_started
+      rembg:
+        condition: service_started
+
+  web:
+    container_name: web
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.web
+    env_file:
+      - ../env/.env.prod
+    depends_on:
+      - api
+  
+  postgres:
+    container_name: postgres  
+    image: postgres:16
+    environment:
+      POSTGRES_DB: marketplace
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    env_file:
+      - ../env/.env.prod      
+    volumes:
+      - postgres-data:/var/lib/postgresql/data # Persistent data volume
+      - ../../db/migrations:/docker-entrypoint-initdb.d # Initialization scripts (migrations)
+      - ../../db/config/postgresql.dev.conf:/etc/postgresql/postgresql.conf # Custom configuration
+      - ../../db/log:/var/log/postgresql # Mount logs
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf # Use the custom config file
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d marketplace"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+  imgproxy:
+    container_name: imgproxy
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.imgproxy
+    env_file:
+      - ../env/.env.prod
+    volumes:
+      - ../../images:/images:ro
+
+  rembg:
+    container_name: rembg
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.rembg
+
+volumes:
+  postgres-data:

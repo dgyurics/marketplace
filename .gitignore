@@ -1,11 +1,21 @@
 /bin/
 .DS_Store
-private.pem
-public.pem
-.env
 *.log
 *.out
 .vscode
+
+# Ignore images (but keep the directory)
 images/*
+
+# Ignore build artifacts
 node_modules
 dist
+
+# Ignore environment files
+.env
+.env.dev
+.env.prod
+
+# Ignore encryption keys
+private.pem
+public.pem
