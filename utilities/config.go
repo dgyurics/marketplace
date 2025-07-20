@@ -71,9 +71,23 @@ func loadDBConfig() types.DBConfig {
 }
 
 func loadJWTConfig() types.JWTConfig {
+	privKeyPath := getEnvOrDefault("PRIVATE_KEY_PATH", "private.pem")
+	pubKeyPath := getEnvOrDefault("PUBLIC_KEY_PATH", "public.pem")
+
+	privateKey := mustReadFile(privKeyPath)
+	publicKey := mustReadFile(pubKeyPath)
+
+	// validate files aren't empty
+	if len(privateKey) == 0 {
+		panic(fmt.Sprintf("Private key file is empty: %s", privKeyPath))
+	}
+	if len(publicKey) == 0 {
+		panic(fmt.Sprintf("Public key file is empty: %s", pubKeyPath))
+	}
+
 	return types.JWTConfig{
-		PrivateKey: mustReadFile("private.pem"),
-		PublicKey:  mustReadFile("public.pem"),
+		PrivateKey: privateKey,
+		PublicKey:  publicKey,
 		Expiry:     mustParseDuration("JWT_EXPIRY"),
 	}
 }
@@ -103,7 +117,7 @@ func loadImageConfig() types.ImageConfig {
 	return types.ImageConfig{
 		Key:            key,
 		Salt:           salt,
-		BaseURLImgPrxy: mustLookupEnv("IMGPROXY_BASE_URL"),
+		BaseURLImgPrxy: mustLookupEnv("IMG_PROXY_BASE_URL"),
 		BaseURLRemBg:   mustLookupEnv("REM_BG_BASE_URL"),
 	}
 }
@@ -188,6 +202,15 @@ func mustLookupEnv(key string) string {
 		return value
 	}
 	panic(fmt.Sprintf("Environment variable %s is required", key))
+}
+
+// getEnvOrDefault retrieves the value of the environment variable named by the key.
+// It returns the default value if the variable is not set.
+func getEnvOrDefault(key, defaultValue string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return defaultValue
 }
 
 // mustParseDuration parses a duration string from the environment variable.
