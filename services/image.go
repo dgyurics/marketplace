@@ -218,13 +218,13 @@ func (s *imageService) GenerateImageURL(productID, filename string, imgType type
 	var path string
 	switch imgType {
 	case types.Gallery:
-		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s@webp", GalleryResolution, GalleryQuality, productID, filename)
+		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", GalleryResolution, GalleryQuality, productID, filename)
 	case types.Thumbnail:
-		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s@webp", ThumbnailResolution, ThumbnailQuality, productID, filename)
+		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", ThumbnailResolution, ThumbnailQuality, productID, filename)
 	case types.Hero:
-		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s@webp", HeroResolution, HeroQuality, productID, filename)
+		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", HeroResolution, HeroQuality, productID, filename)
 	default:
-		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s@webp", DefaultResolution, DefaultQuality, productID, filename)
+		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", DefaultResolution, DefaultQuality, productID, filename)
 	}
 
 	mac := hmac.New(sha256.New, s.key)
