@@ -8,10 +8,13 @@ import (
 
 	"os/exec"
 
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/dgyurics/marketplace/utilities"
 )
 
 func main() {
+	// Load environment variables
+	utilities.LoadEnvironment()
+
 	// Define CLI commands
 	command := flag.String("cmd", "", "Command to execute: listen, update, confirm, refund")
 	paymentIntent := flag.String("pi", "", "Payment Intent ID (required for update, confirm, refund)")

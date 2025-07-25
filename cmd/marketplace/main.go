@@ -18,10 +18,12 @@ import (
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
-	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
+	// Load environment variables
+	utilities.LoadEnvironment()
+
 	// Root context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

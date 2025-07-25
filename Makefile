@@ -55,11 +55,19 @@ dev: install
 	@echo "Frontend: http://localhost:5173"
 	@make -j3 dev-backend stripe-listen dev-frontend
 
+dev-dependencies:
+	@echo "Starting database and dependencies..."
+	docker compose --env-file deploy/env/.env.dev -f deploy/compose/docker-compose.dev.yaml up -d
+
+dev-all:
+	@make dev
+	@make dev-dependencies
+
 dev-backend: build-backend
 	./$(BINARY)
 
 dev-frontend:
-	cd $(WEB_DIR) && npm run dev
+	cd $(WEB_DIR) && npm run dev -- --host
 
 # ============================================================================
 # Build

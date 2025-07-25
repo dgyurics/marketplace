@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"database/sql"
-	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -10,17 +9,13 @@ import (
 	"github.com/dgyurics/marketplace/db"
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/utilities"
-	"github.com/joho/godotenv"
 )
 
 var dbPool *sql.DB
 
 func TestMain(m *testing.M) {
-	// Load environment variables from .env
-	err := godotenv.Load("../.env")
-	if err != nil {
-		slog.Warn("No .env file found, using system environment variables")
-	}
+	// Load environment variables
+	utilities.LoadEnvironment()
 
 	dbConfig := types.DBConfig{
 		URL:             os.Getenv("DATABASE_URL"),
