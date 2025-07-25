@@ -3,21 +3,35 @@ package db
 import (
 	"database/sql"
 	"log/slog"
+	"time"
 
 	"github.com/dgyurics/marketplace/types"
 	_ "github.com/lib/pq"
 )
 
-// Connect creates a connection to the database and returns the connection.
-// The returned [sql.DB] is safe for concurrent use by multiple goroutines,
-// and should only be called once.
+// Connect creates a connection to the database with retry logic
 func Connect(c types.DBConfig) *sql.DB {
-	db, err := sql.Open("postgres", c.URL)
-	if err != nil {
-		panic("Failed to connect to database: " + err.Error())
+	var db *sql.DB
+	var err error
+	maxRetries := 10
+	retryDelay := 5 * time.Second
+
+	for i := 0; i < maxRetries; i++ {
+		db, err = sql.Open("postgres", c.URL)
+		if err == nil {
+			if err = db.Ping(); err == nil {
+				break // Successfully connected
+			}
+		}
+
+		if i < maxRetries-1 {
+			slog.Info("Failed to connect to database, retrying...", "attempt", i+1, "error", err)
+			time.Sleep(retryDelay)
+		}
 	}
-	if err := db.Ping(); err != nil {
-		panic("Failed to ping database: " + err.Error())
+
+	if err != nil {
+		panic("Failed to connect to database after retries: " + err.Error())
 	}
 
 	db.SetMaxOpenConns(c.MaxOpenConns)
