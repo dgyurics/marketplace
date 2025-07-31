@@ -1,6 +1,14 @@
 <template>
   <div class="home-container">
-    <div class="feature-container"></div>
+    <div class="feature-container">
+      <img
+        class="feature-image"
+        src="@/assets/roberto-nickson-bg.webp"
+        alt="Background Image"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
   </div>
 </template>
 
@@ -15,6 +23,10 @@
   z-index: 1;
 }
 
+.feature-image {
+  object-fit: cover;
+}
+
 .feature-container {
   position: fixed;
   top: 0;
@@ -23,10 +35,6 @@
   height: 100vh;
   z-index: -1;
   overflow: hidden;
-  background-image: url('@/assets/roberto-nickson-bg.webp');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
 }
 
 .feature-image {

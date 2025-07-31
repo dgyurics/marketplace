@@ -48,8 +48,8 @@ func NewImageService(HttpClient utilities.HTTPClient, repo repositories.ImageRep
 		repo:           repo,
 		key:            config.Key,
 		salt:           config.Salt,
-		baseURLImgPrxy: config.BaseURLImgPrxy,
-		baseURLRemBg:   config.BaseURLRemBg,
+		baseURLImgPrxy: config.BaseURLImgproxy,
+		baseURLRemBg:   config.BaseURLRembg,
 	}
 }
 

@@ -34,10 +34,10 @@ func LoadConfig() types.Config {
 
 func loadCORSConfig() types.CORSConfig {
 	return types.CORSConfig{
-		AllowedOrigins:   strings.Split(mustLookupEnv("CORS_ALLOWED_ORIGINS"), ","),
-		AllowedMethods:   strings.Split(mustLookupEnv("CORS_ALLOWED_METHODS"), ","),
-		AllowedHeaders:   strings.Split(mustLookupEnv("CORS_ALLOWED_HEADERS"), ","),
-		AllowCredentials: isFeatureEnabled("CORS_ALLOW_CREDENTIALS"),
+		// AllowedOrigins:   strings.Split(mustLookupEnv("CORS_ALLOWED_ORIGINS"), ","),
+		// AllowedMethods:   strings.Split(mustLookupEnv("CORS_ALLOWED_METHODS"), ","),
+		// AllowedHeaders:   strings.Split(mustLookupEnv("CORS_ALLOWED_HEADERS"), ","),
+		// AllowCredentials: isFeatureEnabled("CORS_ALLOW_CREDENTIALS"),
 	}
 }
 
@@ -62,11 +62,16 @@ func loadAuthConfig() types.AuthConfig {
 
 func loadDBConfig() types.DBConfig {
 	return types.DBConfig{
-		URL:             mustLookupEnv("DATABASE_URL"),
-		MaxOpenConns:    mustAtoI("DATABASE_MAX_CONNECTIONS"),
-		MaxIdleConns:    mustAtoI("DATABASE_MAX_IDLE_CONNECTIONS"),
-		ConnMaxLifetime: mustParseDuration("DATABASE_CONNECTION_MAX_LIFETIME"),
-		ConnMaxIdleTime: mustParseDuration("DATABASE_CONNECTION_MAX_IDLE_TIME"),
+		Host:            mustLookupEnv("POSTGRES_HOST"),
+		Port:            mustAtoI("POSTGRES_PORT"),
+		User:            mustLookupEnv("POSTGRES_USER"),
+		Password:        mustLookupEnv("POSTGRES_PASSWORD"),
+		Name:            mustLookupEnv("POSTGRES_DB"),
+		SSLMode:         mustLookupEnv("POSTGRES_SSLMODE"),
+		MaxOpenConns:    mustAtoI("POSTGRES_MAX_CONNECTIONS"),
+		MaxIdleConns:    mustAtoI("POSTGRES_MAX_IDLE_CONNECTIONS"),
+		ConnMaxLifetime: mustParseDuration("POSTGRES_CONNECTION_MAX_LIFETIME"),
+		ConnMaxIdleTime: mustParseDuration("POSTGRES_CONNECTION_MAX_IDLE_TIME"),
 	}
 }
 
@@ -114,11 +119,14 @@ func loadImageConfig() types.ImageConfig {
 		panic("invalid IMGPROXY_SALT: " + err.Error())
 	}
 
+	urlImgproxy := fmt.Sprintf("%s/images", loadBaseURL())
+	urlRembg := "http://rembg"
+
 	return types.ImageConfig{
-		Key:            key,
-		Salt:           salt,
-		BaseURLImgPrxy: mustLookupEnv("IMG_PROXY_BASE_URL"),
-		BaseURLRemBg:   mustLookupEnv("REM_BG_BASE_URL"),
+		Key:             key,
+		Salt:            salt,
+		BaseURLImgproxy: urlImgproxy,
+		BaseURLRembg:    urlRembg,
 	}
 }
 

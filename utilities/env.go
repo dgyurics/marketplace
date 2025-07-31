@@ -15,9 +15,9 @@ func LoadEnvironment() {
 
 	// Try multiple possible locations
 	envPaths := []string{
-		"./deploy/env/.env.dev",     // When run from project root
-		"../deploy/env/.env.dev",    // When run from a direct subdirectory
-		"../../deploy/env/.env.dev", // When run from a package in a subdirectory
+		"./deploy/local/.env",
+		"../deploy/local/.env",
+		"../../deploy/local/.env",
 	}
 
 	for _, path := range envPaths {
@@ -26,5 +26,5 @@ func LoadEnvironment() {
 		}
 	}
 
-	panic("Error loading environment variables: .env.dev not found")
+	panic("Error loading environment variables: .env not found")
 }

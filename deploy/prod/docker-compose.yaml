@@ -1,0 +1,76 @@
+version: "3.9"
+name: marketplace
+
+services:
+  nginx:
+    container_name: nginx
+    build:
+      context: ../../
+      dockerfile: deploy/prod/Dockerfile.nginx
+    env_file:
+      - .env  
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+      - web
+
+  api:
+    container_name: api
+    env_file:
+      - .env
+    build:
+      context: ../../
+      dockerfile: deploy/prod/Dockerfile.api
+    volumes:
+      - images-data:/images:rw
+    depends_on:
+      - postgres
+      - imgproxy
+      - rembg
+
+  web:
+    container_name: web    
+    env_file:
+      - .env  
+    build:
+      context: ../../
+      dockerfile: deploy/prod/Dockerfile.web
+    depends_on:
+      - api
+  
+  postgres:
+    container_name: postgres
+    build:
+      context: ../../
+      dockerfile: deploy/prod/Dockerfile.postgres
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # PostgreSQL Docker image uses a custom/special entrypoint script.
+    # To avoid overriding it, run command from here rather than CMD within the Dockerfile.
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+
+  imgproxy:
+    container_name: imgproxy
+    env_file:
+      - .env  
+    build:
+      dockerfile: deploy/prod/Dockerfile.imgproxy
+    volumes:
+      - images-data:/images:ro
+
+  rembg:
+    container_name: rembg
+    env_file:
+      - .env
+    build:
+      dockerfile: deploy/prod/Dockerfile.rembg
+
+volumes:
+  postgres-data:
+  images-data:

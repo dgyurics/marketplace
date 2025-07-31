@@ -63,7 +63,12 @@ type JWTConfig struct {
 }
 
 type DBConfig struct {
-	URL             string
+	Host            string        // database host
+	Port            int           // database port
+	User            string        // database user
+	Password        string        // database password
+	Name            string        // database name
+	SSLMode         string        // SSL mode for the database connection (e.g., "disable
 	MaxOpenConns    int           // max number of open connections to the database
 	MaxIdleConns    int           // max number of connections in the idle connection pool
 	ConnMaxLifetime time.Duration // max time a connection may be reused
@@ -105,8 +110,8 @@ type StripeConfig struct {
 }
 
 type ImageConfig struct {
-	Key            []byte // hex encoded key for imgproxy
-	Salt           []byte // hex encoded salt for imgproxy
-	BaseURLImgPrxy string // base URL for imgproxy, e.g. http://localhost:8002
-	BaseURLRemBg   string // base URL for rembg, e.g. http://localhost:7001
+	Key             []byte // hex encoded key for imgproxy
+	Salt            []byte // hex encoded salt for imgproxy
+	BaseURLImgproxy string // base URL for imgproxy, e.g. http://localhost:8002
+	BaseURLRembg    string // base URL for rembg, e.g. http://localhost:7001
 }

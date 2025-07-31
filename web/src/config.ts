@@ -13,7 +13,7 @@ interface ImportMetaEnv {
 
 const env = import.meta.env as ImportMetaEnv
 
-export const API_URL = env.PROD ? env.VITE_API_URL : '/api'
+export const API_URL = env.VITE_API_URL
 export const STRIPE_PUBLISHABLE_KEY = env.VITE_STRIPE_PUBLISHABLE_KEY
 export const COUNTRY = env.VITE_COUNTRY
 export const REQUEST_TIMEOUT = env.VITE_REQUEST_TIMEOUT

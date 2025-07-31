@@ -2,7 +2,9 @@ package repositories
 
 import (
 	"database/sql"
+	"log/slog"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -14,11 +16,21 @@ import (
 var dbPool *sql.DB
 
 func TestMain(m *testing.M) {
+	utilities.InitLogger(types.LoggerConfig{
+		LogFilePath: "test.log",
+		AppID:       "test_app",
+		Level:       slog.LevelDebug,
+	})
 	// Load environment variables
 	utilities.LoadEnvironment()
-
+	port, _ := strconv.Atoi(os.Getenv("POSTGRES_PORT"))
 	dbConfig := types.DBConfig{
-		URL:             os.Getenv("DATABASE_URL"),
+		Host:            os.Getenv("POSTGRES_HOST"),
+		Port:            port,
+		User:            os.Getenv("POSTGRES_USER"),
+		Password:        os.Getenv("POSTGRES_PASSWORD"),
+		Name:            os.Getenv("POSTGRES_NAME"),
+		SSLMode:         os.Getenv("POSTGRES_SSLMODE"),
 		MaxOpenConns:    10,
 		MaxIdleConns:    5,
 		ConnMaxLifetime: time.Minute * 5,

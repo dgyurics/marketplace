@@ -1,0 +1,3 @@
+FROM postgres:16
+COPY deploy/prod/postgresql.conf /etc/postgresql/postgresql.conf
+COPY db/migrations /docker-entrypoint-initdb.d
