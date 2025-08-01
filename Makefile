@@ -14,8 +14,6 @@
 
 # Build Configuration
 BINARY = bin/marketplace
-GOOS ?= linux
-GOARCH ?= amd64
 
 # Directories
 WEB_DIR = web
@@ -39,7 +37,6 @@ help:
 	@echo "Available targets:"
 	@echo "  dev          - Start development environment"
 	@echo "  build        - Build both backend and frontend"
-	@echo "  build-prod   - Build for production"
 	@echo "  test         - Run all tests"
 	@echo "  clean        - Clean all generated files"
 	@echo "  install      - Install dependencies"
@@ -83,13 +80,6 @@ build-backend:
 build-frontend:
 	@echo "Building frontend..."
 	cd $(WEB_DIR) && npm run build
-
-build-prod: build-backend-prod build-frontend
-
-build-backend-prod:
-	@echo "Building backend for production ($(GOOS)/$(GOARCH))..."
-	@mkdir -p bin
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BINARY) $(SRC_DIR)
 
 # ============================================================================
 # Dependencies
