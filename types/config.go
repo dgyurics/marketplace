@@ -10,7 +10,6 @@ import (
 type Config struct {
 	Auth         AuthConfig
 	BaseURL      string
-	CORS         CORSConfig
 	Database     DBConfig
 	Email        EmailConfig
 	Environment  Environment
@@ -39,13 +38,6 @@ type AuthConfig struct {
 	HMACSecret    []byte
 	RefreshExpiry time.Duration // duration for which the refresh token is valid
 	InviteReq     bool          // flag for requiring an invite to register
-}
-
-type CORSConfig struct {
-	AllowedOrigins   []string
-	AllowedMethods   []string
-	AllowedHeaders   []string
-	AllowCredentials bool
 }
 
 type EmailConfig struct {

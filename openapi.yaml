@@ -7,7 +7,6 @@ info:
 servers:
   - url: http://localhost
     description: Local Development Server
-    x-cors: true
 
 security:
   - BearerAuth: []

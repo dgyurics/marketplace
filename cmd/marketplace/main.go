@@ -61,8 +61,6 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 	// create router
 	router := mux.NewRouter()
 	router.Use(middleware.RequestLoggerMiddleware)
-	//router.Use(middleware.CORSMiddleware(config.CORS)) // FIXME remove this, all requests should come from same origin
-	//router.Use(middleware.LimitBodySizeMiddleware)     // FIXME remove this and let nginx handle
 
 	// create base router
 	baseRouter := routes.NewRouter(router, middleware.NewAccessControl(services.JWT))
