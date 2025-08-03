@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 		Port:            port,
 		User:            os.Getenv("POSTGRES_USER"),
 		Password:        os.Getenv("POSTGRES_PASSWORD"),
-		Name:            os.Getenv("POSTGRES_NAME"),
+		Name:            os.Getenv("POSTGRES_DB"),
 		SSLMode:         os.Getenv("POSTGRES_SSLMODE"),
 		MaxOpenConns:    10,
 		MaxIdleConns:    5,

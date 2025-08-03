@@ -54,7 +54,7 @@ dev: install
 
 dev-dependencies:
 	@echo "Starting database and dependencies..."
-	docker compose --env-file deploy/env/.env.dev -f deploy/compose/docker-compose.dev.yaml up -d
+	docker compose -f deploy/local/docker-compose.yaml up -d
 
 dev-all:
 	@make dev
@@ -64,7 +64,7 @@ dev-backend: build-backend
 	./$(BINARY)
 
 dev-frontend:
-	cd $(WEB_DIR) && npm run dev -- --host
+	cd $(WEB_DIR) && npm run dev
 
 # ============================================================================
 # Build

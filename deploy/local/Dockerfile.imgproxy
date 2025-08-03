@@ -1,0 +1,2 @@
+FROM darthsim/imgproxy:v3
+EXPOSE 80

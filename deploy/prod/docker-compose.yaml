@@ -13,7 +13,7 @@ services:
         max-size: 10m
         max-file: 5
     env_file:
-      - .env  
+      - .env
     ports:
       - "80:80"
       - "443:443"
@@ -43,7 +43,7 @@ services:
   web:
     container_name: web    
     env_file:
-      - .env  
+      - .env
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.web
@@ -78,7 +78,7 @@ services:
   imgproxy:
     container_name: imgproxy
     env_file:
-      - .env  
+      - .env
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.imgproxy

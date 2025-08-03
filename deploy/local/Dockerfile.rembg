@@ -1,0 +1,18 @@
+FROM python:3.12-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libglib2.0-0 libsm6 libxext6 libxrender-dev curl \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Upgrade pip and install rembg with explicit dependencies
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir "rembg[cli]" onnxruntime
+
+# Expose the port for the HTTP server
+EXPOSE 7000
+
+# Run rembg as HTTP server
+CMD ["rembg", "s", "--host", "0.0.0.0", "--port", "80"]

@@ -1,0 +1,50 @@
+version: "3.9"
+name: marketplace-dev
+
+services:
+  nginx:
+    container_name: nginx
+    build:
+      context: ../../
+      dockerfile: deploy/local/Dockerfile.nginx
+    env_file:
+      - .env
+    ports:
+      - "80:80"
+
+  postgres:
+    container_name: postgres
+    build:
+      context: ../../
+      dockerfile: deploy/local/Dockerfile.postgres
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # PostgreSQL Docker image uses a custom/special entrypoint script.
+    # To avoid overriding it, run command from here rather than CMD within the Dockerfile.
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+
+  imgproxy:
+    container_name: imgproxy
+    env_file:
+      - .env
+    build:
+      context: ../../
+      dockerfile: deploy/local/Dockerfile.imgproxy
+    volumes:
+      - images-data:/images:ro
+
+  rembg:
+    container_name: rembg
+    env_file:
+      - .env
+    build:
+      context: ../../
+      dockerfile: deploy/local/Dockerfile.rembg
+
+volumes:
+  postgres-data:
+  images-data:
