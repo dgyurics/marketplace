@@ -7,6 +7,11 @@ services:
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.nginx
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 5
     env_file:
       - .env  
     ports:
@@ -23,6 +28,11 @@ services:
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.api
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 5
     volumes:
       - images-data:/images:rw
     depends_on:
@@ -37,6 +47,11 @@ services:
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.web
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 5
     depends_on:
       - api
   
@@ -45,6 +60,11 @@ services:
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.postgres
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 5
     env_file:
       - .env
     ports:
@@ -62,6 +82,11 @@ services:
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.imgproxy
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 5
     volumes:
       - images-data:/images:ro
 
@@ -72,6 +97,11 @@ services:
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.rembg
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 5
 
 volumes:
   postgres-data:
