@@ -14,7 +14,7 @@ func RequestLoggerMiddleware(next http.Handler) http.Handler {
 		duration := time.Since(start)
 
 		// Structured logging with slog
-		slog.Info("HTTP Request",
+		slog.Debug("HTTP Request",
 			slog.String("method", r.Method),
 			slog.String("path", r.RequestURI),
 			slog.String("remote_addr", r.RemoteAddr),

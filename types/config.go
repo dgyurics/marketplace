@@ -68,9 +68,7 @@ type DBConfig struct {
 }
 
 type LoggerConfig struct {
-	LogFilePath string // path to the log file
-	AppID       string // unique identifier for the application
-	Level       slog.Level
+	Level slog.Level
 }
 
 type TaxBehavior string

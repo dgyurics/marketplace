@@ -4,7 +4,6 @@
 package utilities
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"strings"
@@ -12,36 +11,16 @@ import (
 	"github.com/dgyurics/marketplace/types"
 )
 
-var logFile *os.File // Keep a reference to the log file to close it later
-
-// InitLogger initializes the logger with the given configuration.
+// InitLogger initializes the logger with the given log level.
 func InitLogger(config types.LoggerConfig) {
-	logFile, openErr := os.OpenFile(config.LogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if openErr != nil {
-		fmt.Printf("Failed to open log file: %v\n", openErr)
-		handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn})
-		slog.SetDefault(slog.New(handler).With("fallback", true))
-	}
-
-	handler := slog.NewJSONHandler(logFile, &slog.HandlerOptions{Level: config.Level})
-	log := slog.New(handler).WithGroup("app").With("id", config.AppID)
-	slog.SetDefault(log)
-}
-
-// CloseLogger closes the log file.
-func CloseLogger() {
-	if logFile != nil {
-		slog.Info("Closing log file")
-		logFile.Close()
-	}
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: config.Level})
+	slog.SetDefault(slog.New(handler))
 }
 
 // loadLoggerConfig loads logger configuration from environment variables.
 func loadLoggerConfig() types.LoggerConfig {
 	return types.LoggerConfig{
-		LogFilePath: mustLookupEnv("LOG_FILE_PATH"),
-		AppID:       mustLookupEnv("APP_ID"),
-		Level:       parseLogLevel(mustLookupEnv("LOG_LEVEL")),
+		Level: parseLogLevel(mustLookupEnv("LOG_LEVEL")),
 	}
 }
 

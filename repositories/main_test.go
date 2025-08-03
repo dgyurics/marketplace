@@ -17,9 +17,7 @@ var dbPool *sql.DB
 
 func TestMain(m *testing.M) {
 	utilities.InitLogger(types.LoggerConfig{
-		LogFilePath: "test.log",
-		AppID:       "test_app",
-		Level:       slog.LevelDebug,
+		Level: slog.LevelDebug,
 	})
 	// Load environment variables
 	utilities.LoadEnvironment()

@@ -60,7 +60,7 @@ func main() {
 func initializeServer(config types.Config, services servicesContainer) *http.Server {
 	// create router
 	router := mux.NewRouter()
-	router.Use(middleware.RequestLoggerMiddleware)
+	router.Use(middleware.RequestLoggerMiddleware) // nginx logs requests, this is used for debugging
 
 	// create base router
 	baseRouter := routes.NewRouter(router, middleware.NewAccessControl(services.JWT))
@@ -195,6 +195,4 @@ func gracefulShutdown(server *http.Server, cancel context.CancelFunc) {
 	} else {
 		slog.Info("Server gracefully stopped")
 	}
-
-	utilities.CloseLogger() // flush buffer
 }
