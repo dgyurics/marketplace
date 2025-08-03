@@ -1,50 +1,54 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/dgyurics/marketplace/main/logo.webp" alt="marketplace">
 </p>
-<h1 align="center">Marketplace</h1>
+
+<h2>Marketplace</h2>
 <p align="center">
-  Marketplace is a self-hosted e-commerce framework built with Go, designed to help developers build and customize their own online store. Dependencies have been kept to a minimum.
+Marketplace is a self-hosted e-commerce framework, designed for local businesses and community commerce. Built with minimal external dependencies and maximum self-reliance.
 </p>
+
 <h2>Features</h2>
 <ul>
-  <li><strong>Product Management:</strong> CRUD operations for products, including categorization, basic inventory management, and support for product meta-data (e.g., material, weight, dimensions).</li>
-  <li><strong>Order Management:</strong> Create and manage orders, including order status tracking.</li>
-  <li><strong>Guest Checkout:</strong> Allow purchases without account creation.</li>
-  <li><strong>User Authentication:</strong> JWT-based user authorization and authentication.</li>
-  <li><strong>Shopping Cart:</strong> Manage customer shopping carts, calculate totals, and track item quantities.</li>
-  <li><strong>Payments:</strong> Stripe integration for calculating tax and processing payments.</li>
-  <li><strong>Logging:</strong> Structured logging for monitoring and debugging in a distributed environment.</li>
-  <li><strong>Internationalization and Localization:</strong> Support for multiple currencies and languages.</li>
-  <li><strong>Email Notifications:</strong> Send order status emails to customers.</li>
-  <li><strong>Image Hosting:</strong> Self-hosted images using imgproxy. Automatic image resizing, compression, and format conversion.</li>
+  <li>Product Management: CRUD operations for products, including categorization, basic inventory management, and support for product meta-data (e.g., material, weight, dimensions).</li>
+  <li>Order Management: Create and manage orders, including order status tracking.</li>
+  <li>Guest Checkout: Allow purchases without account creation.</li>
+  <li>User Authentication: JWT-based user authorization and authentication.</li>
+  <li>Shopping Cart: Manage customer shopping carts, calculate totals, and track item quantities.</li>
+  <li>Payment Processing: Currently supports Stripe integration (being modified to support self-hosted alternatives).</li>
+  <li>User Interface: An extensible user interface.</li>
+  <li>Logging: Structured logging for monitoring and auditing.</li>
+  <li>Email Notifications: Send order status emails to customers (currently via Mailjet, transitioning to self-hosted SMTP).</li>
+  <li>Image Hosting: Self-hosted images using imgproxy. Automatic image resizing, compression, and format conversion.</li>
+  <li>Internationalization and Localization: Support for multiple currencies and languages.</li>
+</ul>
+
+<h2>Active Development</h2>
+<ul>
+  <li>Self-Hosted SMTP:</string> Replace Mailjet with a self-hosted SMTP server.</li>
+  <li>Native Payment Processing: Eliminate Stripe dependency.</li>
+  <li>Admin Interface: An extensible admin interface for managing products, orders, and users.</li>
+  <li>Backup and Recovery: Automated self-hosted backup solution.</li>
+  <li>Caching: Implement API caching to improve performance.</li>
+  <li>Rate Limiting: Protect the API from abuse with rate limiting.</li>
 </ul>
 
 <h2>Planned Enhancements</h2>
 <ul>
-  <li><strong>Search:</strong> Advanced search capabilities, allowing customer to find products through keyword and fuzzy searches.</li>
-  <li><strong>Caching:</strong> Implement API caching to improve performance.</li>
-  <li><strong>Rate Limiting:</strong> Protect the API from abuse with rate limiting.</li>
-  <li><strong>SMTP:</strong> Self-host SMTP server (currently using Mailjet).</li>
-  <li><strong>Product Variants:</strong> Support product variants (e.g., size, color) and manage inventory for each variant (SKU).</li>
-  <li><strong>Refunds:</strong> Support for partial and full refunds.</li>
-  <li><strong>User Interface:</strong> An extensible user interface to be deployed alongside the API.</li>
-  <li><strong>Admin Interface:</strong> An extensible admin interface to manage products, inventory, and orders.</li>
+  <li>Search: Search capabilities, allowing customer to find products through keyword and fuzzy searches.</li>
+  <li>Refunds: Support for partial and full refunds.</li>
+  <li>Product Variants: Support product variants (e.g., size, color) and manage inventory for each variant (SKU).</li>
 </ul>
 
 <h2>Future Considerations</h2>
 <ul>
-  <li><strong>Pay Later:</strong> Allow verified customers to pay later, outside of the system.</li>
-  <li><strong>Shipping Management:</strong> Calculate shipping costs and track shipments.</li>
-  <li><strong>Promotions and Discounts:</strong> Manage promotional codes.</li>
-  <li><strong>Product Reviews:</strong> Allow customer to leave reviews and ratings for products.</li>
+  <li>Local Delivery Zones: Define delivery areas and coordinate local delivery.</li>
+  <li>Pickup Options: Allow customers to choose when to pick-up.</li>
+  <li>Promotions and Discounts: Manage promotional codes.</li>
 </ul>
 
 <h2>Prerequisites</h2>
 <ul>
   <li>Go 1.22 or higher</li>
+  <li>Node.js 20.17 or higher</li>
   <li>Docker</li>
 </ul>
-
-<h2>Installation</h2>
-<p><a href="https://github.com/dgyurics/marketplace/wiki">This guide</a> walks you through setting up Marketplace on a machine running Ubuntu Linux. Although installing Marketplace is relatively straightforward, we recommend working knowledge of Go if you plan to modify the source code.
-</p>
