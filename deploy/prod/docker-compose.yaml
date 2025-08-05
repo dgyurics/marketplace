@@ -17,6 +17,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - ssl-certs:/etc/ssl/certs:ro
     depends_on:
       - api
       - web
@@ -106,3 +108,4 @@ services:
 volumes:
   postgres-data:
   images-data:
+  ssl-certs:
