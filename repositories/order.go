@@ -378,7 +378,7 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 	}
 	defer rows.Close()
 
-	var result []types.Order
+	result := []types.Order{}
 	for rows.Next() {
 		var rawIntent []byte
 		order := types.Order{

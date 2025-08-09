@@ -46,7 +46,7 @@ func (r *cartRepository) GetCart(ctx context.Context, userID string) ([]types.Ca
 	}
 	defer rows.Close()
 
-	items := make([]types.CartItem, 0)
+	items := []types.CartItem{}
 	for rows.Next() {
 		var item types.CartItem
 		var imagesJSON []byte

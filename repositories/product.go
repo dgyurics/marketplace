@@ -85,7 +85,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 }
 
 func (r *productRepository) GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error) {
-	var products []types.Product
+	products := []types.Product{}
 	query, args := generateGetProductsQuery(filter)
 
 	rows, err := r.db.QueryContext(ctx, query, args...)

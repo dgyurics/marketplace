@@ -130,7 +130,7 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*typ
 }
 
 func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error) {
-	var users []types.User
+	users := []types.User{}
 	query := `
 		SELECT id, email, role, updated_at
 		FROM users

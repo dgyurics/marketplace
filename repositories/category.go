@@ -37,7 +37,7 @@ func (r *categoryRepository) CreateCategory(ctx context.Context, category *types
 }
 
 func (r *categoryRepository) GetAllCategories(ctx context.Context) ([]types.Category, error) {
-	var categories []types.Category
+	categories := []types.Category{}
 	query := `
 		SELECT
 			id,
