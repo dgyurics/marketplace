@@ -18,7 +18,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ssl-certs:/etc/ssl/certs:ro
+      - ssl-certs:/etc/letsencrypt:ro
     depends_on:
       - api
       - web
