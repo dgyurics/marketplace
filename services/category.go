@@ -12,6 +12,7 @@ type CategoryService interface {
 	CreateCategory(ctx context.Context, category *types.Category) error
 	GetAllCategories(ctx context.Context) ([]types.Category, error)
 	GetCategoryByID(ctx context.Context, id string) (*types.Category, error)
+	RemoveCategory(ctx context.Context, id string) error
 }
 
 type categoryService struct {
@@ -37,4 +38,8 @@ func (s *categoryService) GetAllCategories(ctx context.Context) ([]types.Categor
 
 func (s *categoryService) GetCategoryByID(ctx context.Context, id string) (*types.Category, error) {
 	return s.repo.GetCategoryByID(ctx, id)
+}
+
+func (s *categoryService) RemoveCategory(ctx context.Context, id string) error {
+	return s.repo.RemoveCategory(ctx, id)
 }

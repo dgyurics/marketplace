@@ -11,6 +11,7 @@ type CategoryRepository interface {
 	CreateCategory(ctx context.Context, category *types.Category) error
 	GetAllCategories(ctx context.Context) ([]types.Category, error)
 	GetCategoryByID(ctx context.Context, id string) (*types.Category, error)
+	RemoveCategory(ctx context.Context, id string) error
 }
 
 type categoryRepository struct {
@@ -97,4 +98,24 @@ func (r *categoryRepository) GetCategoryByID(ctx context.Context, id string) (*t
 		return nil, err
 	}
 	return &category, nil
+}
+
+func (r *categoryRepository) RemoveCategory(ctx context.Context, id string) error {
+	// delete will propogade and delete entries from product_categories table
+	query := `
+		DELETE FROM categories
+		WHERE id = $1
+	`
+	result, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return types.ErrNotFound
+	}
+	return nil
 }
