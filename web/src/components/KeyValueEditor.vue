@@ -1,6 +1,5 @@
 <template>
   <div class="key-value-editor">
-    <h3 v-if="title">{{ title }}</h3>
     <div class="editor-container">
       <div v-for="(pair, index) in pairs" :key="index" class="pair-row">
         <input
@@ -38,10 +37,6 @@
 import { ref, watch, defineEmits, defineProps } from 'vue'
 
 const props = defineProps({
-  title: {
-    type: String,
-    default: '',
-  },
   keyPlaceholder: {
     type: String,
     default: 'Key',
@@ -202,28 +197,28 @@ defineExpose({
 }
 
 .remove-btn {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border: none;
-  background-color: #e74c3c;
-  color: white;
-  border-radius: 50%;
+  background: none;
+  color: #333;
   cursor: pointer;
   font-size: 16px;
+  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
+  line-height: 1;
   flex-shrink: 0;
 }
 
 .remove-btn:disabled {
-  background-color: #bdc3c7;
+  color: #bdc3c7;
   cursor: not-allowed;
 }
 
 .remove-btn:not(:disabled):hover {
-  background-color: #c0392b;
+  color: #000;
 }
 
 .add-btn {

@@ -26,7 +26,6 @@
         <KeyValueEditor
           ref="detailsEditor"
           v-model="newProduct.details"
-          title="Product Details"
           key-placeholder="Key (e.g., color, size, material)"
           value-placeholder="Value"
           pair-name="Detail"
