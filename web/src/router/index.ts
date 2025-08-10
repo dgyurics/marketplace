@@ -4,7 +4,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import AccountSetup from '@/pages/AccountSetup.vue'
 import Category from '@/pages/admin/Category.vue'
 import NewImage from '@/pages/admin/NewImage.vue'
-import NewProduct from '@/pages/admin/NewProduct.vue'
+// import NewProduct from '@/pages/admin/NewProduct.vue'
+import ProductAdmin from '@/pages/admin/Product.vue'
 import Cart from '@/pages/Cart.vue'
 import Home from '@/pages/Home.vue'
 import LoginRegister from '@/pages/LoginRegister.vue'
@@ -29,7 +30,8 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/checkout/payment', component: Payment },
     { path: '/checkout/confirmation', component: OrderConfirmation },
     { path: '/unsupported', component: Unsupported },
-    { path: '/admin/products', component: NewProduct, beforeEnter: requireAdmin },
+    { path: '/admin/products', component: ProductAdmin, beforeEnter: requireAdmin },
+    // { path: '/admin/products', component: NewProduct, beforeEnter: requireAdmin },
     { path: '/admin/categories', component: Category, beforeEnter: requireAdmin },
     { path: '/admin/products/:id/images', component: NewImage, beforeEnter: requireAdmin },
   ]

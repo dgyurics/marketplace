@@ -223,3 +223,7 @@ export const createProduct = async (
   const reponse = await apiClient.post(`/products/categories/${categorySlug}`, product)
   return reponse.data
 }
+
+export const removeProduct = async (productId: string): Promise<void> => {
+  await apiClient.delete(`/products/${productId}`)
+}
