@@ -33,6 +33,11 @@ func (m *MockCategoryService) GetCategoryByID(ctx context.Context, id string) (*
 	return args.Get(0).(*types.Category), args.Error(1)
 }
 
+func (m *MockCategoryService) RemoveCategory(ctx context.Context, id string) error {
+	args := m.Called(ctx, id)
+	return args.Error(1)
+}
+
 func TestCreateCategory(t *testing.T) {
 	// Create a mock service
 	mockService := new(MockCategoryService)

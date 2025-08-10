@@ -2,7 +2,10 @@
   <div class="auth-container">
     <template v-if="authStore.user?.role === 'user' || authStore.user?.role === 'admin'">
       <h2>You are logged in</h2>
-      <button class="btn logout-btn" @click="handleLogout">Logout</button>
+      <button class="btn btn" @click="handleLogout">Logout</button>
+      <div v-if="authStore.user?.role === 'admin'">
+        <button class="btn btn" @click="goToCategories">Category</button>
+      </div>
     </template>
     <template v-else>
       <h2>Sign In or Create an Account</h2>
@@ -103,6 +106,10 @@ const handleRegister = async () => {
   }
 }
 
+const goToCategories = () => {
+  router.push('/admin/categories')
+}
+
 const handleLogout = async () => {
   try {
     await apiLogout()
@@ -153,7 +160,7 @@ h2 {
   margin-bottom: 50px;
 }
 
-.logout-btn {
+.btn {
   background: black;
   color: white;
   border: none;

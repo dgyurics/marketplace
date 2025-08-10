@@ -202,9 +202,18 @@ export const updateOrder = async (
   return response.data
 }
 
+export const createCategory = async (category: Partial<Category>): Promise<Category> => {
+  const response = await apiClient.post('/categories', category)
+  return response.data
+}
+
 export const getCategories = async (): Promise<Category[]> => {
   const response = await apiClient.get('/categories')
   return response.data
+}
+
+export const removeCategory = async (categoryId: string): Promise<void> => {
+  await apiClient.delete(`/categories/${categoryId}`)
 }
 
 export const createProduct = async (

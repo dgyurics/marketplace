@@ -2,6 +2,7 @@ import type { NavigationGuardNext, RouteLocationNormalized, RouteRecordRaw } fro
 import { createRouter, createWebHistory } from 'vue-router'
 
 import AccountSetup from '@/pages/AccountSetup.vue'
+import Category from '@/pages/admin/Category.vue'
 import NewImage from '@/pages/admin/NewImage.vue'
 import NewProduct from '@/pages/admin/NewProduct.vue'
 import Cart from '@/pages/Cart.vue'
@@ -29,6 +30,7 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/checkout/confirmation', component: OrderConfirmation },
     { path: '/unsupported', component: Unsupported },
     { path: '/admin/products', component: NewProduct, beforeEnter: requireAdmin },
+    { path: '/admin/categories', component: Category, beforeEnter: requireAdmin },
     { path: '/admin/products/:id/images', component: NewImage, beforeEnter: requireAdmin },
   ]
 

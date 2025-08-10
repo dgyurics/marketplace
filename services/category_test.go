@@ -30,6 +30,11 @@ func (m *MockCategoryRepository) GetCategoryByID(ctx context.Context, id string)
 	return args.Get(0).(*types.Category), args.Error(1)
 }
 
+func (m *MockCategoryRepository) RemoveCategory(ctx context.Context, id string) error {
+	args := m.Called(ctx, id)
+	return args.Error(1)
+}
+
 func TestCategoryService_CreateCategory(t *testing.T) {
 	mockRepo := new(MockCategoryRepository)
 	service := services.NewCategoryService(mockRepo)
