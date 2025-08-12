@@ -1,3 +1,5 @@
+import type { Category } from './category'
+
 export interface Product {
   id: string
   name: string
@@ -5,6 +7,7 @@ export interface Product {
   details: Record<string, unknown>
   description: string
   images: Image[]
+  category?: Category
   tax_code?: string
   created_at?: string
   updated_at?: string
@@ -23,13 +26,9 @@ export interface CreateProductRequest {
   tax_code?: string
 }
 
-export interface UpdateProductRequest {
-  name?: string
-  price?: number
-  details?: Record<string, unknown>
-  description?: string
-  tax_code?: string
-}
+type RequireOnly<T, K extends keyof T> = Partial<T> & Pick<T, K>
+
+export type UpdateProductRequest = RequireOnly<Product, 'id'>
 
 export type ImageType = 'hero' | 'thumbnail' | 'gallery'
 

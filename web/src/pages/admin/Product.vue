@@ -8,7 +8,7 @@
             v-model="newProduct.price"
             type="number"
             step="0.01"
-            placeholder="Price (in dollars)"
+            placeholder="Price"
             required
             @input="handlePriceInput"
           />
@@ -17,7 +17,7 @@
           <select v-model="selectedCategorySlug" required>
             <option value="">Select Category</option>
             <option v-for="category in categories" :key="category.id" :value="category.slug">
-              {{ category.name }}
+              {{ category.slug }}
             </option>
           </select>
         </div>

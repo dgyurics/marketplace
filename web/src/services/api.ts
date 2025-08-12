@@ -13,6 +13,7 @@ import type {
   ImageType,
   Product,
   CreateProductRequest,
+  UpdateProductRequest,
 } from '@/types'
 
 const apiClient = axios.create({
@@ -226,4 +227,9 @@ export const createProduct = async (
 
 export const removeProduct = async (productId: string): Promise<void> => {
   await apiClient.delete(`/products/${productId}`)
+}
+
+export const updateProduct = async (product: UpdateProductRequest): Promise<Product> => {
+  const response = await apiClient.put('/products', product)
+  return response.data
 }

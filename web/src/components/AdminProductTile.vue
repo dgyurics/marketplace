@@ -1,5 +1,5 @@
 <template>
-  <div class="product-tile">
+  <div class="product-tile" @click="handleClick">
     <button class="delete-button" title="Delete product" @click="handleDelete">×</button>
     <div class="product-info">
       <h3 class="product-title">{{ product.name }}</h3>
@@ -24,6 +24,8 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
+
 import type { Product } from '@/types'
 
 const props = defineProps<{ product: Product }>()
@@ -31,9 +33,15 @@ const emit = defineEmits<{
   delete: [productId: string]
 }>()
 
+const router = useRouter()
+
 const handleDelete = (event: Event) => {
   event.stopPropagation()
   emit('delete', props.product.id)
+}
+
+const handleClick = () => {
+  router.push(`/admin/products/${props.product.id}`)
 }
 </script>
 
@@ -50,6 +58,7 @@ const handleDelete = (event: Event) => {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   border-radius: 8px;
   background-color: #fff;
+  cursor: pointer;
   transition:
     transform 0.2s ease-in-out,
     box-shadow 0.2s ease-in-out;
