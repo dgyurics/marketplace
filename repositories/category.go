@@ -83,6 +83,8 @@ func (r *categoryRepository) GetCategoryByID(ctx context.Context, id string) (*t
 			id,
 			name,
 			description,
+			slug,
+			parent_id,
 			created_at,
 			updated_at
 		FROM categories
@@ -91,6 +93,8 @@ func (r *categoryRepository) GetCategoryByID(ctx context.Context, id string) (*t
 		&category.ID,
 		&category.Name,
 		&category.Description,
+		&category.Slug,
+		&category.ParentID,
 		&category.CreatedAt,
 		&category.UpdatedAt,
 	)
@@ -101,7 +105,7 @@ func (r *categoryRepository) GetCategoryByID(ctx context.Context, id string) (*t
 }
 
 func (r *categoryRepository) RemoveCategory(ctx context.Context, id string) error {
-	// delete will propogade and delete entries from product_categories table
+	// delete will propogade and set product.category_id to NULL
 	query := `
 		DELETE FROM categories
 		WHERE id = $1

@@ -47,6 +47,11 @@ func (m *MockProductService) GetProductByID(ctx context.Context, id string) (*ty
 	return args.Get(0).(*types.ProductWithInventory), args.Error(1)
 }
 
+func (m *MockProductService) UpdateProduct(ctx context.Context, product types.Product) error {
+	args := m.Called(ctx, product)
+	return args.Error(0)
+}
+
 func (m *MockProductService) UpdateInventory(ctx context.Context, productID string, quantity int) error {
 	args := m.Called(ctx, productID, quantity)
 	return args.Error(0)

@@ -3,22 +3,12 @@ CREATE TABLE IF NOT EXISTS categories (
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(255) UNIQUE NOT NULL,
     parent_id BIGINT REFERENCES categories(id) ON DELETE SET NULL,
-    is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- TODO delete this column
     description TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
--- TODO delete this index
-CREATE INDEX idx_categories_is_deleted_false
-ON categories (id)
-WHERE is_deleted = FALSE;
 
--- TODO update this to remove the is_deleted condition
-CREATE INDEX idx_categories_slug_is_deleted_false
-ON categories (slug)
-WHERE is_deleted = FALSE;
-
--- For tax estimation only
+-- For tax estimates only
 CREATE TABLE IF NOT EXISTS tax_rates (
     country CHAR(2) NOT NULL,
     state VARCHAR(50),
@@ -37,12 +27,16 @@ CREATE TABLE IF NOT EXISTS products (
     description TEXT NOT NULL,
     details JSONB DEFAULT '{}'::jsonb NOT NULL,
     tax_code VARCHAR(50),
+    category_id BIGINT,
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- TODO rename to enabled/disabled
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE SET NULL
 );
-CREATE INDEX idx_products_is_deleted_false
-ON products (id)
+
+-- Used to quickly find products by category (used by v_products)
+CREATE INDEX idx_products_category_is_deleted
+ON products (category_id, is_deleted)
 WHERE is_deleted = FALSE;
 
 CREATE TYPE image_type_enum AS ENUM ('hero', 'thumbnail', 'gallery');
@@ -71,16 +65,7 @@ CREATE INDEX idx_inventory_in_stock
 ON inventory (product_id)
 WHERE quantity > 0;
 
-CREATE TABLE IF NOT EXISTS product_categories (
-    product_id BIGINT NOT NULL,
-    category_id BIGINT NOT NULL,
-    PRIMARY KEY (product_id, category_id),
-    FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE CASCADE
-);
-
 CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest');
-
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY,
     email VARCHAR(255) UNIQUE,
@@ -98,13 +83,13 @@ SELECT
     p.price,
     p.description,
     p.details,
+    p.category_id,
     COALESCE(p.tax_code, '') AS tax_code,
     c.slug AS category_slug,
     COALESCE(imgs.images, '[]') AS images,
     LEAST(inv.quantity, 100) AS quantity
 FROM products p
-LEFT JOIN product_categories pc ON p.id = pc.product_id
-LEFT JOIN categories c ON pc.category_id = c.id
+LEFT JOIN categories c ON p.category_id = c.id
 LEFT JOIN inventory inv ON p.id = inv.product_id
 LEFT JOIN LATERAL (
     SELECT JSONB_AGG(

@@ -11,9 +11,11 @@ import (
 )
 
 type ProductRepository interface {
+	// FIXME refactor to use product.category
 	CreateProduct(ctx context.Context, product *types.Product, categorySlug string) error
 	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
 	GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error)
+	UpdateProduct(ctx context.Context, product types.Product) error
 	DeleteProduct(ctx context.Context, id string) error
 	UpdateInventory(ctx context.Context, productID string, quantity int) error
 }
@@ -36,8 +38,8 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 
 	// Create the product
 	query := `
-		INSERT INTO products (id, name, price, description, details, tax_code)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO products (id, name, price, description, details, tax_code, category_id)
+		VALUES ($1, $2, $3, $4, $5, $6, (SELECT id FROM categories WHERE slug = $7))
 		RETURNING id, name, price, description`
 	if err = tx.QueryRowContext(ctx,
 		query,
@@ -50,16 +52,8 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 			String: product.TaxCode,
 			Valid:  strings.TrimSpace(product.TaxCode) != "",
 		},
-	).
-		Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
-		return err
-	}
-
-	// Associate the product with the category
-	associationQuery := `
-		INSERT INTO product_categories (product_id, category_id)
-		VALUES ($1, (SELECT id FROM categories WHERE slug = $2))`
-	if _, err = tx.ExecContext(ctx, associationQuery, product.ID, categorySlug); err != nil {
+		categorySlug,
+	).Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
 		return err
 	}
 
@@ -97,7 +91,6 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 	for rows.Next() {
 		var product types.Product
 		var imagesJSON []byte
-
 		if err = rows.Scan(
 			&product.ID,
 			&product.Name,
@@ -151,8 +144,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 			)
 			SELECT p.id, p.name, p.price, p.description, p.details, p.images
 			FROM v_products p
-			JOIN product_categories pc ON p.id = pc.product_id
-			JOIN category_tree ct ON ct.id = pc.category_id
+			JOIN category_tree ct ON ct.id = p.category_id
 			WHERE true
 		`, strings.Join(placeholders, ", ")))
 	}
@@ -181,12 +173,26 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 
 func (r *productRepository) GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error) {
 	query := `
-	SELECT id, name, price, description, details, images, quantity
-	FROM v_products
-	WHERE id = $1;
+	SELECT
+		p.id,
+		p.name,
+		p.price,
+		p.description,
+		p.details,
+		p.images,
+		p.quantity,
+		c.id,
+		c.name,
+		c.slug,
+		c.description,
+		c.parent_id
+	FROM v_products p
+	LEFT JOIN categories c ON p.category_id = c.id
+	WHERE p.id = $1;
 	`
 
 	var product types.ProductWithInventory
+	var categoryID, categoryParentID, categoryName, categorySlug, categoryDescription sql.NullString
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&product.ID,
 		&product.Name,
@@ -195,12 +201,66 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*typ
 		&product.Details,
 		&product.Images,
 		&product.Quantity,
+		&categoryID,
+		&categoryName,
+		&categorySlug,
+		&categoryDescription,
+		&categoryParentID,
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	// Populate Category if category data exists
+	if categoryID.Valid {
+		product.Category = &types.Category{
+			ID:          categoryID.String,
+			Name:        categoryName.String,
+			Slug:        categorySlug.String,
+			Description: categoryDescription.String,
+		}
+		if categoryParentID.Valid {
+			product.Category.ParentID = &categoryParentID.String
+		}
+	}
+
 	return &product, nil
+}
+
+func (r *productRepository) UpdateProduct(ctx context.Context, product types.Product) error {
+	var categoryID sql.NullString
+	if product.Category != nil {
+		categoryID = sql.NullString{String: product.Category.ID, Valid: true}
+	}
+
+	query := `UPDATE products SET
+		name = $1,
+		price = $2,
+		description = $3,
+		details = $4,
+		tax_code = $5,
+		category_id = $6,
+		is_deleted = $7,
+		updated_at = NOW()
+		WHERE id = $8
+	`
+	result, err := r.db.ExecContext(ctx, query,
+		product.Name,
+		product.Price,
+		product.Description,
+		product.Details,
+		product.TaxCode,
+		categoryID,
+		false, // FIXME need field product.enabled
+		product.ID,
+	)
+	if err != nil {
+		return err
+	}
+	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+		return types.ErrNotFound
+	}
+	return nil
 }
 
 func (r *productRepository) DeleteProduct(ctx context.Context, id string) error {
