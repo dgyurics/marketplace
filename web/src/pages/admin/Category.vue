@@ -8,7 +8,7 @@
           <select v-model="newCategory.parent_id">
             <option value="">No Parent Category</option>
             <option v-for="category in categories" :key="category.id" :value="category.id">
-              {{ category.name }}
+              {{ category.slug }}
             </option>
           </select>
           <input

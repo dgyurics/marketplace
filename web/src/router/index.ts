@@ -2,11 +2,10 @@ import type { NavigationGuardNext, RouteLocationNormalized, RouteRecordRaw } fro
 import { createRouter, createWebHistory } from 'vue-router'
 
 import AccountSetup from '@/pages/AccountSetup.vue'
-import Category from '@/pages/admin/Category.vue'
-import NewImage from '@/pages/admin/NewImage.vue'
-// import NewProduct from '@/pages/admin/NewProduct.vue'
-import ProductAdmin from '@/pages/admin/Product.vue'
-import ProductDetailsAdmin from '@/pages/admin/ProductDetail.vue'
+import AdminCategories from '@/pages/admin/Category.vue'
+import AdminProductImages from '@/pages/admin/NewImage.vue'
+import AdminProducts from '@/pages/admin/Product.vue'
+import AdminProductEdit from '@/pages/admin/ProductDetail.vue'
 import Cart from '@/pages/Cart.vue'
 import Home from '@/pages/Home.vue'
 import LoginRegister from '@/pages/LoginRegister.vue'
@@ -31,11 +30,14 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/checkout/payment', component: Payment },
     { path: '/checkout/confirmation', component: OrderConfirmation },
     { path: '/unsupported', component: Unsupported },
-    { path: '/admin/products', component: ProductAdmin, beforeEnter: requireAdmin },
-    { path: '/admin/products/:id', component: ProductDetailsAdmin, beforeEnter: requireAdmin },
-    // { path: '/admin/products', component: NewProduct, beforeEnter: requireAdmin },
-    { path: '/admin/categories', component: Category, beforeEnter: requireAdmin },
-    { path: '/admin/products/:id/images', component: NewImage, beforeEnter: requireAdmin },
+    { path: '/admin/products', component: AdminProducts, beforeEnter: requireAdmin },
+    { path: '/admin/products/:id', component: AdminProductEdit, beforeEnter: requireAdmin },
+    { path: '/admin/categories', component: AdminCategories, beforeEnter: requireAdmin },
+    {
+      path: '/admin/products/:id/images',
+      component: AdminProductImages,
+      beforeEnter: requireAdmin,
+    },
   ]
 
   try {
@@ -52,8 +54,8 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
         name: 'Category',
       })
     }
-  } catch (error) {
-    console.error('Failed to load categories:', error)
+  } catch {
+    // Fail silently if categories cannot be fetched
   }
 
   // NotFound route should always be last

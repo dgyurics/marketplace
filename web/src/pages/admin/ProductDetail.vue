@@ -122,7 +122,7 @@ const handleSubmit = async () => {
     saving.value = true
 
     // Find the selected category by slug
-    const selectedCategory = categories.value.find(cat => cat.slug === selectedCategorySlug.value)
+    const selectedCategory = categories.value.find((cat) => cat.slug === selectedCategorySlug.value)
 
     const _updateData = {
       id: product.value.id,
@@ -132,7 +132,7 @@ const handleSubmit = async () => {
       tax_code: editProduct.value.tax_code || undefined,
       details: editProduct.value.details,
       // Include category if one is selected
-      ...(selectedCategory && { category: { id: selectedCategory.id } })
+      ...(selectedCategory && { category: { id: selectedCategory.id } }),
     }
 
     await updateProduct(_updateData)

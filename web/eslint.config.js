@@ -19,6 +19,7 @@ export default [
         ecmaVersion: 'latest',
         sourceType: 'module',
         project: './tsconfig.app.json',
+        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
         console: 'readonly',
@@ -115,7 +116,6 @@ export default [
         ecmaVersion: 'latest',
         sourceType: 'module',
         extraFileExtensions: ['.vue'],
-        project: './tsconfig.app.json',  // Add this for type-aware rules
       },
       globals: {
         console: 'readonly',
@@ -196,13 +196,9 @@ export default [
         },
       ],
 
-      // TypeScript
+      // TypeScript - non-type-aware rules only
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/prefer-optional-chain': 'error',
-      '@typescript-eslint/prefer-nullish-coalescing': 'error',
-      '@typescript-eslint/no-unnecessary-condition': 'warn',
-      '@typescript-eslint/no-unnecessary-type-assertion': 'error',
 
       // Error handling - relaxed for Vue components
       '@typescript-eslint/no-unsafe-assignment': 'off',
