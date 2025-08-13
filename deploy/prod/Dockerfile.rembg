@@ -11,8 +11,5 @@ WORKDIR /app
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir "rembg[cli]" onnxruntime
 
-# Expose the port for the HTTP server
-EXPOSE 7000
-
 # Run rembg as HTTP server
 CMD ["rembg", "s", "--host", "0.0.0.0", "--port", "80"]

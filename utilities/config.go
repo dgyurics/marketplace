@@ -110,13 +110,13 @@ func loadImageConfig() types.ImageConfig {
 	}
 
 	urlImgproxy := fmt.Sprintf("%s/images", loadBaseURL())
-	urlRembg := "http://rembg"
 
 	return types.ImageConfig{
 		Key:             key,
 		Salt:            salt,
 		BaseURLImgproxy: urlImgproxy,
-		BaseURLRembg:    urlRembg,
+		BaseURLRembg:    getEnvOrDefault("REMBG_BASE_URL", "http://rembg"),
+		ImageUploadPath: getEnvOrDefault("IMG_DIR_OVERRIDE", "images"), // need to override when doing local development
 	}
 }
 

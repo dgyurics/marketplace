@@ -35,16 +35,17 @@ services:
       context: ../../
       dockerfile: deploy/local/Dockerfile.imgproxy
     volumes:
-      - images-data:/images:ro
+      - ./images:/images:ro
 
   rembg:
     container_name: rembg
     env_file:
       - .env
+    ports:
+      - "5532:80"
     build:
       context: ../../
       dockerfile: deploy/local/Dockerfile.rembg
 
 volumes:
   postgres-data:
-  images-data:

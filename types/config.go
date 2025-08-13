@@ -104,4 +104,5 @@ type ImageConfig struct {
 	Salt            []byte // hex encoded salt for imgproxy
 	BaseURLImgproxy string // base URL for imgproxy, e.g. http://localhost:8002
 	BaseURLRembg    string // base URL for rembg, e.g. http://localhost:7001
+	ImageUploadPath string // directory for storing images, e.g. /images
 }

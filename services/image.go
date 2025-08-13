@@ -19,11 +19,6 @@ import (
 	"github.com/dgyurics/marketplace/utilities"
 )
 
-const (
-	// Image upload path relative to the application root
-	ImageUploadPath = "images"
-)
-
 type ImageService interface {
 	StoreImage(productID string, file io.Reader, filename string) (string, error)
 	IsSupportedImage(file io.Reader) (bool, error)
@@ -40,6 +35,7 @@ type imageService struct {
 	salt           []byte
 	baseURLImgPrxy string
 	baseURLRemBg   string
+	imgDir         string
 }
 
 func NewImageService(HttpClient utilities.HTTPClient, repo repositories.ImageRepository, config types.ImageConfig) ImageService {
@@ -50,6 +46,7 @@ func NewImageService(HttpClient utilities.HTTPClient, repo repositories.ImageRep
 		salt:           config.Salt,
 		baseURLImgPrxy: config.BaseURLImgproxy,
 		baseURLRemBg:   config.BaseURLRembg,
+		imgDir:         config.ImageUploadPath,
 	}
 }
 
@@ -63,8 +60,8 @@ func (s *imageService) ProductExists(ctx context.Context, productID string) (boo
 }
 
 // mkdir creates a directory for the image file, returning the full path to the file
-func mkdir(productID string, imagename string) (string, error) {
-	dirPath := filepath.Join(ImageUploadPath, productID)
+func (s *imageService) mkdir(productID string, imagename string) (string, error) {
+	dirPath := filepath.Join(s.imgDir, productID)
 	filePath := filepath.Join(dirPath, filepath.Base(imagename))
 	err := os.MkdirAll(dirPath, os.ModePerm)
 	if err != nil {
@@ -75,7 +72,7 @@ func mkdir(productID string, imagename string) (string, error) {
 
 // StoreImage saves the image file to disk and returns the file path
 func (s *imageService) StoreImage(productID string, file io.Reader, filename string) (string, error) {
-	filePath, err := mkdir(productID, filename)
+	filePath, err := s.mkdir(productID, filename)
 	if err != nil {
 		return "", fmt.Errorf("failed to create directory for image: %w", err)
 	}

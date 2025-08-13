@@ -14,3 +14,6 @@ dist
 # Ignore encryption keys
 private.pem
 public.pem
+
+# Ignore images
+**/images/
