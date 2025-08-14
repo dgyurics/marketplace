@@ -10,6 +10,7 @@ import (
 type ImageRepository interface {
 	ProductExists(ctx context.Context, productID string) (bool, error)
 	CreateImage(ctx context.Context, image *types.Image) error
+	RemoveImage(ctx context.Context, id string) (ImageDeletionResult, error)
 }
 
 type imageRepository struct {
@@ -35,8 +36,8 @@ func (r *imageRepository) ProductExists(ctx context.Context, productID string) (
 
 func (r *imageRepository) CreateImage(ctx context.Context, image *types.Image) error {
 	query := `
-        INSERT INTO images (id, product_id, url, type, display_order, alt_text)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO images (id, product_id, url, type, display_order, alt_text, source)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
     `
 	_, err := r.db.ExecContext(ctx, query,
 		image.ID,
@@ -45,6 +46,64 @@ func (r *imageRepository) CreateImage(ctx context.Context, image *types.Image) e
 		image.Type,
 		image.DisplayOrder,
 		image.AltText,
+		image.Source,
 	)
 	return err
+}
+
+type ImageDeletionResult struct {
+	ProductID       string
+	SourceImage     string
+	CanDeleteSource bool // if true, delete source image
+}
+
+func (r *imageRepository) RemoveImage(ctx context.Context, id string) (ImageDeletionResult, error) {
+	var result ImageDeletionResult
+
+	// Begin a transaction
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return result, err
+	}
+	defer tx.Rollback() // Roll back the transaction in case of an error
+
+	// 1. fetch the productID and source image
+	srcQuery := `
+		SELECT product_id, source
+		FROM images
+		WHERE id = $1
+	`
+	err = tx.QueryRowContext(ctx, srcQuery, id).Scan(&result.ProductID, &result.SourceImage)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return result, types.ErrNotFound
+		}
+		return result, err
+	}
+
+	// 2. remove the specified image
+	deleteQuery := `DELETE FROM images WHERE id = $1`
+	deleteResult, err := tx.ExecContext(ctx, deleteQuery, id)
+	if err != nil {
+		return result, err
+	}
+
+	rowsAffected, err := deleteResult.RowsAffected()
+	if err != nil {
+		return result, err
+	}
+	if rowsAffected == 0 {
+		return result, types.ErrNotFound
+	}
+
+	// 3. check if source image still in-use
+	usageQuery := `SELECT COUNT(*) FROM images WHERE source = $1`
+	var usageCount int
+	err = tx.QueryRowContext(ctx, usageQuery, result.SourceImage).Scan(&usageCount)
+	if err != nil {
+		return result, err
+	}
+	result.CanDeleteSource = (usageCount == 0)
+
+	return result, tx.Commit()
 }

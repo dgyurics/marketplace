@@ -46,12 +46,14 @@ CREATE TABLE IF NOT EXISTS images (
     product_id BIGINT NOT NULL,
     url TEXT NOT NULL,
     type image_type_enum DEFAULT 'hero' NOT NULL,
-    display_order INT DEFAULT 0,
+    display_order INT DEFAULT 0, -- TODO remove display_order and use created_at for ordering
+    source VARCHAR(255) NOT NULL, -- e.g. 115025008992583680.webp
     alt_text VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
+CREATE INDEX idx_images_source ON images(source);
 
 CREATE TABLE IF NOT EXISTS inventory (
     product_id BIGINT PRIMARY KEY,

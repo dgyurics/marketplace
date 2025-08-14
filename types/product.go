@@ -75,8 +75,9 @@ type Image struct {
 	ProductID    string    `json:"product_id"`
 	URL          string    `json:"url"`
 	Type         ImageType `json:"type"`
-	DisplayOrder int       `json:"display_order"`
+	DisplayOrder int       `json:"display_order"`      // FIXME remove this + references
 	AltText      *string   `json:"alt_text,omitempty"` // FIXME convert pointer to string
+	Source       string    `json:"source"`
 }
 
 type ProductFilter struct {

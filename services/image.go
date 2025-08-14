@@ -26,6 +26,7 @@ type ImageService interface {
 	CreateImageRecord(ctx context.Context, image *types.Image) error
 	ProductExists(ctx context.Context, productID string) (bool, error) // TODO move to product service
 	RemoveBackground(ctx context.Context, filePath, filename string) (string, error)
+	RemoveImage(ctx context.Context, id string) error
 }
 
 type imageService struct {
@@ -106,10 +107,33 @@ func (s *imageService) IsSupportedImage(file io.Reader) (bool, error) {
 		}
 	}
 
+	// Check for HEIC signature first (since http.DetectContentType doesn't detect it well)
+	// rembg does not support HEIC, so we can skip it for now
+	// if isHEIC(buff) {
+	// 	return true, nil
+	// }
+
 	// Detect content type
 	contentType := http.DetectContentType(buff) // This will return a valid MIME type based on the first 512 bytes
 	return isSupportedContentType(contentType), nil
 }
+
+// isHEIC checks if the file is a HEIC image by looking at the file signature
+// func isHEIC(buff []byte) bool {
+// 	if len(buff) < 12 {
+// 		return false
+// 	}
+
+// 	// HEIC files start with specific byte patterns
+// 	// Check for "ftyp" at offset 4 and then HEIC brand codes
+// 	if string(buff[4:8]) == "ftyp" {
+// 		// Check for HEIC brand codes at offset 8
+// 		brand := string(buff[8:12])
+// 		return brand == "heic" || brand == "heix" || brand == "heim" || brand == "heis" || brand == "mif1"
+// 	}
+
+// 	return false
+// }
 
 // isSupportedContentType checks if the content type is one of the supported image formats
 func isSupportedContentType(contentType string) bool {
@@ -231,4 +255,40 @@ func (s *imageService) GenerateImageURL(productID, filename string, imgType type
 	encodedSig := base64.RawURLEncoding.EncodeToString(signature)
 
 	return fmt.Sprintf("%s/%s%s", s.baseURLImgPrxy, encodedSig, path)
+}
+
+func (s *imageService) RemoveImage(ctx context.Context, imageID string) error {
+	// remove image from database
+	deleteResult, err := s.repo.RemoveImage(ctx, imageID)
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to remove image from DB", "error", err)
+		return err
+	}
+
+	// if we cannot delete the source, return early
+	if !deleteResult.CanDeleteSource {
+		return nil
+	}
+
+	// remove image from filesystem
+	directory := filepath.Join(s.imgDir, deleteResult.ProductID)
+	filePath := filepath.Join(directory, deleteResult.SourceImage)
+	if err := os.Remove(filePath); err != nil {
+		slog.WarnContext(ctx, "Failed to remove image file", "file", filePath, "error", err)
+		return err
+	}
+
+	// remove directory if empty
+	entries, err := os.ReadDir(directory)
+	if err != nil {
+		slog.WarnContext(ctx, "Failed to read directory", "directory", directory, "error", err)
+		return err
+	}
+	if len(entries) == 0 {
+		if err := os.Remove(directory); err != nil {
+			slog.WarnContext(ctx, "Failed to remove empty directory", "directory", directory, "error", err)
+		}
+	}
+
+	return nil
 }

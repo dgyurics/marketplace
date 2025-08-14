@@ -135,6 +135,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 			URL:       url,
 			Type:      typs[idx],
 			AltText:   altTextFromForm(r),
+			Source:    filename,
 		}); err != nil {
 			slog.ErrorContext(r.Context(), "error creating image record", "productID", productID, "type", imageType, "error", err)
 			u.RespondWithError(w, r, http.StatusInternalServerError, "error creating image record")
@@ -173,6 +174,21 @@ func altTextFromForm(r *http.Request) *string {
 	return &altText
 }
 
+func (h *ImageRoutes) RemoveImage(w http.ResponseWriter, r *http.Request) {
+	err := h.imageService.RemoveImage(r.Context(), mux.Vars(r)["image"])
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, "Image not found")
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u.RespondSuccess(w)
+}
+
 func (h *ImageRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/images/products/{id}", h.secureAdmin(h.UploadImage)).Methods(http.MethodPost)
+	// TODO refactor other endpoints to use {image}, {product}, in lieu of {id}
+	h.muxRouter.Handle("/images/{image}", h.secureAdmin(h.RemoveImage)).Methods(http.MethodDelete)
 }
