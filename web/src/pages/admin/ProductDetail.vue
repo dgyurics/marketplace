@@ -33,6 +33,16 @@
           pair-name="Detail"
         />
 
+        <!-- Image Gallery Section -->
+        <ImageGallery :images="product.images || []" @image-deleted="handleImageDeleted" />
+
+        <!-- Image Upload Section -->
+        <ImageUploader
+          :product-id="product.id"
+          @upload-success="handleImageUploadSuccess"
+          @upload-error="handleImageUploadError"
+        />
+
         <div class="form-actions">
           <button type="submit" class="submit-button" :disabled="saving">
             {{ saving ? 'Saving...' : 'Save Changes' }}
@@ -50,6 +60,8 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import ImageGallery from '@/components/ImageGallery.vue'
+import ImageUploader from '@/components/ImageUploader.vue'
 import KeyValueEditor from '@/components/KeyValueEditor.vue'
 import { getProductById, getCategories, updateProduct } from '@/services/api'
 
@@ -148,6 +160,20 @@ const handleSubmit = async () => {
 
 const goBack = () => {
   router.back()
+}
+
+const handleImageUploadSuccess = async () => {
+  // Refresh product data to show new images
+  await fetchProduct()
+}
+
+const handleImageDeleted = async () => {
+  // Refresh product data to remove deleted image
+  await fetchProduct()
+}
+
+const handleImageUploadError = (_error) => {
+  // Handle upload errors silently, consistent with other error handling in this component
 }
 
 onMounted(() => {

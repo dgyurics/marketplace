@@ -33,10 +33,11 @@ func TestCreateProductWithImages(t *testing.T) {
 		Description: "Product with images for testing",
 		Details:     []byte(`{"key": "value"}`),
 		Images: []types.Image{
-			{ID: utilities.MustGenerateIDString(), URL: "http://example.com/image1.jpg", AltText: func(s string) *string { return &s }("Image 1"), Type: "hero", DisplayOrder: 1},
-			{ID: utilities.MustGenerateIDString(), URL: "http://example.com/image2.gif", AltText: func(s string) *string { return &s }("Image 2 animated"), Type: "thumbnail", DisplayOrder: 2},
+			{ID: utilities.MustGenerateIDString(), URL: "http://example.com/image1.jpg", AltText: func(s string) *string { return &s }("Image 1"), Type: "hero", DisplayOrder: 1, Source: "image1.jpg"},
+			{ID: utilities.MustGenerateIDString(), URL: "http://example.com/image2.gif", AltText: func(s string) *string { return &s }("Image 2 animated"), Type: "thumbnail", DisplayOrder: 2, Source: "image2.gif"},
 		},
 	}
+
 	product.ID, _ = utilities.GenerateIDString()
 
 	err = repo.CreateProduct(ctx, product, category.Slug)

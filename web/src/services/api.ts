@@ -125,7 +125,7 @@ export const getProducts = async (
   return response.data
 }
 
-export const uploadProductImage = async (
+export const uploadImage = async (
   productId: string,
   file: File,
   type: ImageType,
@@ -144,6 +144,10 @@ export const uploadProductImage = async (
     }
   )
   return response.data
+}
+
+export const removeImage = async (id: string): Promise<void> => {
+  await apiClient.delete(`/images/${id}`)
 }
 
 export const getProductById = async (id: string): Promise<ProductWithInventory> => {

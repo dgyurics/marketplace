@@ -1,0 +1,276 @@
+<template>
+  <div class="image-uploader">
+    <div class="uploader-container">
+      <div class="upload-section">
+        <div class="form-row">
+          <select v-model="imageType" class="image-type-select">
+            <option value="gallery">Gallery</option>
+            <option value="hero">Hero</option>
+            <option value="thumbnail">Thumbnail</option>
+          </select>
+          <input
+            ref="fileInput"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff"
+            class="file-input"
+            @change="handleFileSelect"
+          />
+          <button
+            type="button"
+            class="upload-btn"
+            :disabled="!selectedFile || uploading"
+            @click="handleUpload"
+          >
+            {{ uploading ? 'Uploading...' : 'Upload Image' }}
+          </button>
+        </div>
+
+        <div v-if="selectedFile" class="file-preview">
+          <span class="file-info">
+            {{ selectedFile.name }} ({{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB)
+          </span>
+        </div>
+
+        <div class="checkbox-row">
+          <label class="checkbox-label">
+            <input v-model="removeBackground" type="checkbox" />
+            Remove background automatically
+          </label>
+        </div>
+
+        <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+        <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+
+import { uploadImage } from '@/services/api'
+
+const props = defineProps({
+  productId: {
+    type: String,
+    required: true,
+  },
+})
+
+const emit = defineEmits(['upload-success', 'upload-error'])
+
+const fileInput = ref(null)
+const selectedFile = ref(null)
+const imageType = ref('gallery')
+const removeBackground = ref(true)
+const uploading = ref(false)
+const errorMessage = ref('')
+const successMessage = ref('')
+
+const handleFileSelect = (event) => {
+  const target = event.target
+  if (target.files && target.files.length > 0) {
+    selectedFile.value = target.files[0]
+    errorMessage.value = ''
+    successMessage.value = ''
+  }
+}
+
+const handleUpload = async () => {
+  if (!selectedFile.value || !props.productId) return
+
+  try {
+    uploading.value = true
+    errorMessage.value = ''
+    successMessage.value = ''
+
+    await uploadImage(props.productId, selectedFile.value, imageType.value, removeBackground.value)
+
+    successMessage.value = 'Image uploaded successfully!'
+    emit('upload-success')
+
+    // Reset form
+    resetForm()
+
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      successMessage.value = ''
+    }, 3000)
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error)
+    emit('upload-error', error)
+  } finally {
+    uploading.value = false
+  }
+}
+
+const resetForm = () => {
+  selectedFile.value = null
+  imageType.value = 'gallery'
+  removeBackground.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+const getErrorMessage = (error) => {
+  if (error && typeof error === 'object' && 'response' in error) {
+    switch (error.response?.status) {
+      case 400:
+        return 'Invalid request. Please check the file format.'
+      case 401:
+        return 'Unauthorized. Please log in again.'
+      case 403:
+        return 'Forbidden. You do not have permission to upload images.'
+      case 404:
+        return 'Product not found.'
+      case 413:
+        return 'File too large. Please choose a smaller image.'
+      case 415:
+        return 'Unsupported file format. Please use JPEG, PNG, WebP, GIF, BMP, or TIFF.'
+      case 500:
+        return 'Server error. Please try again later.'
+      default:
+        return error.response?.data?.message || 'An error occurred uploading the image.'
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return 'An unexpected error occurred. Please try again.'
+}
+
+// Expose methods for parent component
+defineExpose({
+  resetForm,
+})
+</script>
+
+<style scoped>
+.image-uploader {
+  margin: 20px 0;
+}
+
+.uploader-container {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  background-color: #f9f9f9;
+}
+
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.image-type-select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  min-width: 120px;
+}
+
+.file-input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  min-width: 200px;
+}
+
+.upload-btn {
+  padding: 8px 16px;
+  background-color: #000;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background-color: #333;
+}
+
+.upload-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.file-preview {
+  padding: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.file-info {
+  color: #495057;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.checkbox-label input[type='checkbox'] {
+  margin: 0;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 14px;
+  padding: 8px;
+  background-color: #fdeaea;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+}
+
+.success-message {
+  color: #155724;
+  font-size: 14px;
+  padding: 8px;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .file-input,
+  .image-type-select,
+  .upload-btn {
+    min-width: 100%;
+  }
+}
+</style>

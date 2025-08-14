@@ -3,7 +3,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import AccountSetup from '@/pages/AccountSetup.vue'
 import AdminCategories from '@/pages/admin/Category.vue'
-import AdminProductImages from '@/pages/admin/NewImage.vue'
 import AdminProducts from '@/pages/admin/Product.vue'
 import AdminProductEdit from '@/pages/admin/ProductDetail.vue'
 import Cart from '@/pages/Cart.vue'
@@ -33,11 +32,6 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/admin/products', component: AdminProducts, beforeEnter: requireAdmin },
     { path: '/admin/products/:id', component: AdminProductEdit, beforeEnter: requireAdmin },
     { path: '/admin/categories', component: AdminCategories, beforeEnter: requireAdmin },
-    {
-      path: '/admin/products/:id/images',
-      component: AdminProductImages,
-      beforeEnter: requireAdmin,
-    },
   ]
 
   try {

@@ -60,9 +60,12 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 	// Create any images associated with the product
 	for _, image := range product.Images {
 		imageQuery := `
-			INSERT INTO images (id, product_id, url, type, display_order, alt_text)
-			VALUES ($1, $2, $3, $4, $5, $6)`
-		if _, err = tx.ExecContext(ctx, imageQuery, image.ID, product.ID, image.URL, image.Type, image.DisplayOrder, image.AltText); err != nil {
+			INSERT INTO images (id, product_id, url, type, display_order, alt_text, source)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)`
+		if _, err = tx.ExecContext(
+			ctx, imageQuery, image.ID,
+			product.ID, image.URL, image.Type,
+			image.DisplayOrder, image.AltText, image.Source); err != nil {
 			return err
 		}
 	}

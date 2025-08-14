@@ -316,12 +316,13 @@ func TestGetCartWithImages(t *testing.T) {
 	imgID2 := utilities.MustGenerateIDString()
 	imageIDs := []string{imgID1, imgID2}
 	imageURLs := []string{"https://example.com/image1.jpg", "https://example.com/image2.jpg"}
+	imageSrces := []string{"image1.jpg", "image2.jpg"}
 
 	for i, imageID := range imageIDs {
 		_, err = dbPool.ExecContext(ctx, `
-			INSERT INTO images (id, product_id, url, display_order)
-			VALUES ($1, $2, $3, $4)`,
-			imageID, product.ID, imageURLs[i], i)
+			INSERT INTO images (id, product_id, url, display_order, source)
+			VALUES ($1, $2, $3, $4, $5)`,
+			imageID, product.ID, imageURLs[i], i, imageSrces[i])
 		assert.NoError(t, err, "Expected no error on inserting product images")
 	}
 
