@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineEmits, defineProps } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
   keyPlaceholder: {
