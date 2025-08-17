@@ -34,7 +34,7 @@ func (r *cartRepository) GetCart(ctx context.Context, userID string) ([]types.Ca
 			ci.unit_price,
 		  pv.name,
 			pv.price,
-			pv.description,
+			pv.summary,
 			pv.images
 		FROM cart_items ci
 		JOIN v_products pv ON ci.product_id = pv.id
@@ -57,7 +57,7 @@ func (r *cartRepository) GetCart(ctx context.Context, userID string) ([]types.Ca
 			&item.UnitPrice,
 			&item.Product.Name,
 			&item.Product.Price,
-			&item.Product.Description,
+			&item.Product.Summary,
 			&imagesJSON,
 		); err != nil {
 			return nil, err

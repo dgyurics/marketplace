@@ -12,7 +12,7 @@
             required
             @input="handlePriceInput"
           />
-          <input v-model="newProduct.description" type="text" placeholder="Description" required />
+          <input v-model="newProduct.summary" type="text" placeholder="Summary" required />
           <input v-model="newProduct.tax_code" type="text" placeholder="Tax Code (optional)" />
           <select v-model="selectedCategorySlug" required>
             <option value="">Select Category</option>
@@ -20,6 +20,10 @@
               {{ category.slug }}
             </option>
           </select>
+        </div>
+
+        <div class="textarea-row">
+          <textarea v-model="newProduct.description" placeholder="Description" rows="3"></textarea>
         </div>
 
         <!-- Details Section -->
@@ -59,6 +63,7 @@ const detailsEditor = ref(null)
 const newProduct = ref({
   name: '',
   price: '',
+  summary: '',
   description: '',
   tax_code: '',
   details: {},
@@ -97,7 +102,8 @@ const handleSubmit = async () => {
     const productData = {
       name: newProduct.value.name,
       price: Math.round(parseFloat(newProduct.value.price) * 100), // Convert to cents
-      description: newProduct.value.description,
+      summary: newProduct.value.summary,
+      description: newProduct.value.description || undefined,
       tax_code: newProduct.value.tax_code || undefined,
       details: newProduct.value.details,
     }
@@ -105,7 +111,14 @@ const handleSubmit = async () => {
     await createProduct(productData, selectedCategorySlug.value)
 
     // Reset form
-    newProduct.value = { name: '', price: '', description: '', tax_code: '', details: {} }
+    newProduct.value = {
+      name: '',
+      price: '',
+      summary: '',
+      description: '',
+      tax_code: '',
+      details: {},
+    }
     selectedCategorySlug.value = ''
     detailsEditor.value?.reset()
 
@@ -150,16 +163,33 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
+  margin-bottom: 15px;
 }
 
+.textarea-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.form-row textarea,
 .form-row input,
-.form-row select {
+.form-row select,
+.textarea-row textarea {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
   background-color: transparent;
   min-width: 200px;
+  font-family: inherit;
+}
+
+.textarea-row textarea {
+  width: 100%;
+  max-width: 600px;
+  resize: vertical;
+  line-height: 1.4;
 }
 
 .submit-button {

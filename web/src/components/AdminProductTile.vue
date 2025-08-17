@@ -5,7 +5,7 @@
       <h3 class="product-title">{{ product.name }}</h3>
       <p class="product-id">ID: {{ product.id }}</p>
       <p class="product-price">${{ (product.price / 100).toFixed(2) }}</p>
-      <p v-if="product.description" class="product-description">{{ product.description }}</p>
+      <p v-if="product.summary" class="product-summary">{{ product.summary }}</p>
       <p v-if="product.tax_code" class="product-tax-code">Tax Code: {{ product.tax_code }}</p>
       <div class="product-details">
         <div class="details-list">
@@ -123,7 +123,7 @@ const handleClick = () => {
   letter-spacing: 0.5px;
 }
 
-.product-description {
+.product-summary {
   font-size: 12px;
   color: #666;
   margin-top: 5px;

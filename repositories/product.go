@@ -38,14 +38,15 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 
 	// Create the product
 	query := `
-		INSERT INTO products (id, name, price, description, details, tax_code, category_id)
-		VALUES ($1, $2, $3, $4, $5, $6, (SELECT id FROM categories WHERE slug = $7))
-		RETURNING id, name, price, description`
+		INSERT INTO products (id, name, price, summary, description, details, tax_code, category_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, (SELECT id FROM categories WHERE slug = $8))
+		RETURNING id, name, price, summary`
 	if err = tx.QueryRowContext(ctx,
 		query,
 		product.ID,
 		product.Name,
 		product.Price,
+		product.Summary,
 		product.Description,
 		product.Details,
 		sql.NullString{
@@ -53,10 +54,11 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 			Valid:  strings.TrimSpace(product.TaxCode) != "",
 		},
 		categorySlug,
-	).Scan(&product.ID, &product.Name, &product.Price, &product.Description); err != nil {
+	).Scan(&product.ID, &product.Name, &product.Price, &product.Summary); err != nil {
 		return err
 	}
 
+	// TODO remove this - not needed
 	// Create any images associated with the product
 	for _, image := range product.Images {
 		imageQuery := `
@@ -98,7 +100,7 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 			&product.ID,
 			&product.Name,
 			&product.Price,
-			&product.Description,
+			&product.Summary,
 			&product.Details,
 			&imagesJSON,
 		); err != nil {
@@ -128,7 +130,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 	var queryBuilder strings.Builder
 	if len(filter.Categories) == 0 {
 		queryBuilder.WriteString(`
-			SELECT p.id, p.name, p.price, p.description, p.details, p.images
+			SELECT p.id, p.name, p.price, p.summary, p.details, p.images
 			FROM v_products p
 			WHERE true
 		`)
@@ -145,7 +147,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 				SELECT c.id FROM categories c
 				JOIN category_tree ct ON c.parent_id = ct.id
 			)
-			SELECT p.id, p.name, p.price, p.description, p.details, p.images
+			SELECT p.id, p.name, p.price, p.summary, p.details, p.images
 			FROM v_products p
 			JOIN category_tree ct ON ct.id = p.category_id
 			WHERE true
@@ -180,6 +182,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*typ
 		p.id,
 		p.name,
 		p.price,
+		p.summary,
 		p.description,
 		p.details,
 		p.images,
@@ -200,6 +203,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*typ
 		&product.ID,
 		&product.Name,
 		&product.Price,
+		&product.Summary,
 		&product.Description,
 		&product.Details,
 		&product.Images,
@@ -239,17 +243,19 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 	query := `UPDATE products SET
 		name = $1,
 		price = $2,
-		description = $3,
-		details = $4,
-		tax_code = $5,
-		category_id = $6,
-		is_deleted = $7,
+		summary = $3,
+		description = $4,
+		details = $5,
+		tax_code = $6,
+		category_id = $7,
+		is_deleted = $8,
 		updated_at = NOW()
-		WHERE id = $8
+		WHERE id = $9
 	`
 	result, err := r.db.ExecContext(ctx, query,
 		product.Name,
 		product.Price,
+		product.Summary,
 		product.Description,
 		product.Details,
 		product.TaxCode,

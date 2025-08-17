@@ -76,8 +76,8 @@ func createTestProductAndInventory(t *testing.T, db *sql.DB, quantity int) strin
 
 	var err error
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, description) 
-		VALUES ($1, 'Test Product', 1000, 'Test product description')`,
+		INSERT INTO products (id, name, price, summary) 
+		VALUES ($1, 'Test Product', 1000, 'Test product summary')`,
 		productID)
 	assert.NoError(t, err)
 

@@ -5,7 +5,7 @@
     </div>
     <div class="product-info">
       <h3 class="product-title">{{ product.name }}</h3>
-      <p class="product-description">{{ product.description }}</p>
+      <p class="product-summary">{{ product.summary }}</p>
       <p class="product-price">${{ (product.price / 100).toFixed(2) }}</p>
     </div>
   </div>
@@ -94,7 +94,7 @@ const imgURL = computed(() => props.product.images.find((img) => img.type === 'h
   letter-spacing: 0.5px;
 }
 
-.product-description {
+.product-summary {
   font-size: 14px;
   color: #666;
   margin-top: 5px;

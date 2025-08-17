@@ -106,7 +106,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 			p.price,
 			p.tax_code,
 			p.images,
-			p.description,
+			p.summary,
 			ci.quantity,
 			ci.unit_price
 		FROM cart_items ci
@@ -130,7 +130,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 			&item.Product.Price,
 			&item.Product.TaxCode,
 			&imagesJSON,
-			&item.Product.Description,
+			&item.Product.Summary,
 			&item.Quantity,
 			&item.UnitPrice,
 		); err != nil {
@@ -449,7 +449,7 @@ func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string
 		SELECT
 			product_id,
 			name,
-			description,
+			summary,
 			thumbnail,
 			alt_text,
 			quantity,
@@ -472,7 +472,7 @@ func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string
 		if err := rows.Scan(
 			&item.Product.ID,
 			&item.Product.Name,
-			&item.Product.Description,
+			&item.Product.Summary,
 			&item.Thumbnail,
 			&item.AltText,
 			&item.Quantity,

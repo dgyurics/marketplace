@@ -85,7 +85,8 @@ func TestGetProductByID(t *testing.T) {
 		ID:          "1",
 		Name:        "Test Product",
 		Price:       100000,
-		Description: "This is a test product",
+		Summary:     "This is a test product summary",
+		Description: "This is a test product description",
 		Quantity:    10,
 	}
 
@@ -113,6 +114,7 @@ func TestGetProductByID(t *testing.T) {
 	require.Equal(t, product.ID, responseProduct.ID)
 	require.Equal(t, product.Name, responseProduct.Name)
 	require.Equal(t, product.Price, responseProduct.Price)
+	require.Equal(t, product.Summary, responseProduct.Summary)
 	require.Equal(t, product.Description, responseProduct.Description)
 
 	// Assert that the mock's expectations were met
@@ -138,13 +140,15 @@ func TestGetProducts(t *testing.T) {
 			ID:          "1",
 			Name:        "Test Product 1",
 			Price:       100000,
-			Description: "This is the first test product",
+			Summary:     "This is the first test product summary",
+			Description: "This is the first test product description",
 		},
 		{
 			ID:          "2",
 			Name:        "Test Product 2",
 			Price:       200000,
-			Description: "This is the second test product",
+			Summary:     "This is the second test product summary",
+			Description: "This is the second test product description",
 		},
 	}
 

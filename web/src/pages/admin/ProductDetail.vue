@@ -13,7 +13,7 @@
             required
             @input="handlePriceInput"
           />
-          <input v-model="editProduct.description" type="text" placeholder="Description" required />
+          <input v-model="editProduct.summary" type="text" placeholder="Summary" required />
           <input v-model="editProduct.tax_code" type="text" placeholder="Tax Code (optional)" />
           <select v-model="selectedCategorySlug" required>
             <option value="">Select Category</option>
@@ -21,6 +21,10 @@
               {{ category.slug }}
             </option>
           </select>
+        </div>
+
+        <div class="textarea-row">
+          <textarea v-model="editProduct.description" placeholder="Description" rows="4"></textarea>
         </div>
 
         <!-- Details Section -->
@@ -78,6 +82,7 @@ const detailsEditor = ref(null)
 const editProduct = ref({
   name: '',
   price: '',
+  summary: '',
   description: '',
   tax_code: '',
   details: {},
@@ -95,6 +100,7 @@ const fetchProduct = async () => {
     editProduct.value = {
       name: data.name,
       price: (data.price / 100).toFixed(2),
+      summary: data.summary,
       description: data.description,
       tax_code: data.tax_code ?? '',
       details: data.details,
@@ -140,7 +146,8 @@ const handleSubmit = async () => {
       id: product.value.id,
       name: editProduct.value.name,
       price: Math.round(parseFloat(editProduct.value.price) * 100), // Convert to cents
-      description: editProduct.value.description,
+      summary: editProduct.value.summary,
+      description: editProduct.value.description || undefined,
       tax_code: editProduct.value.tax_code || undefined,
       details: editProduct.value.details,
       // Include category if one is selected
@@ -238,6 +245,10 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
+.textarea-row {
+  margin-bottom: 20px;
+}
+
 .form-row input,
 .form-row select {
   flex: 1;
@@ -249,8 +260,21 @@ onMounted(() => {
   background-color: white;
 }
 
+.textarea-row textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  background-color: white;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
 .form-row input:focus,
-.form-row select:focus {
+.form-row select:focus,
+.textarea-row textarea:focus {
   outline: none;
   border-color: #007bff;
 }

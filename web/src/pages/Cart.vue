@@ -12,7 +12,7 @@
           <ThumbnailImage :images="item.product.images" />
           <div class="item-text">
             <span class="item-name">{{ item.product.name }}</span>
-            <p class="item-description">{{ item.product.description }}</p>
+            <p class="item-summary">{{ item.product.summary }}</p>
           </div>
         </div>
         <div class="divider"></div>
@@ -149,13 +149,12 @@ ul {
   border-radius: 5px;
 }
 
-/* Item Name & Description */
 .item-text {
   display: flex;
   flex-direction: column;
   justify-content: center;
   margin-left: 20px;
-  max-width: 500px; /* Allows space for a long description */
+  max-width: 500px; /* Allows space for a long summary */
 }
 
 .item-name {
@@ -167,7 +166,7 @@ ul {
   text-overflow: ellipsis;
 }
 
-.item-description {
+.item-summary {
   font-size: 16px;
   color: #555;
   margin-top: 6px;

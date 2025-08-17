@@ -16,43 +16,22 @@
     <div class="product-detail-bottom">
       <div class="product-info">
         <h1 class="product-title">{{ product.name }}</h1>
-        <p class="product-description">{{ product.description }}</p>
-        <p
-          v-if="product.details['description']"
-          class="product-description"
-          v-html="product.details['description']"
-        ></p>
+        <p class="product-summary">{{ product.summary }}</p>
+        <p class="product-description" v-html="product.description"></p>
         <p class="product-price">${{ (product.price / 100).toFixed(2) }}</p>
       </div>
 
       <div class="product-actions">
-        <!-- FIXME needs to be dynamic fields/properties -->
-        <!-- TODO move to seperate form -->
         <div v-if="product.details" class="product-details">
           <h3>Details</h3>
-          <p v-if="product.details['dimensions']">
-            <b>Dimensions:</b> {{ product.details['dimensions'] }}
-          </p>
-          <p v-if="product.details['material']">
-            <b>Material:</b> {{ product.details['material'] }}
-          </p>
-          <p v-if="product.details['weight']"><b>Weight:</b> {{ product.details['weight'] }}</p>
-          <p v-if="product.details['care_instructions']">
-            <b>Care Instructions:</b> {{ product.details['care_instructions'] }}
-          </p>
-          <p v-if="product.details['assembly_required'] !== undefined">
-            <b>Assembly Required:</b> {{ product.details['assembly_required'] ? 'Yes' : 'No' }}
-          </p>
-          <p v-if="product.details['medium']"><b>Medium:</b> {{ product.details['medium'] }}</p>
-          <p v-if="product.details['framed'] !== undefined">
-            <b>Framed:</b> {{ product.details['framed'] ? 'Yes' : 'No' }}
-          </p>
-          <p v-if="product.details['bulb_type']">
-            <b>Bulb Type:</b> {{ product.details['bulb_type'] }}
-          </p>
-          <p v-if="product.details['cord_length']">
-            <b>Cord Length:</b> {{ product.details['cord_length'] }}
-          </p>
+          <div
+            class="details-grid"
+            :class="{ 'two-columns': Object.keys(product.details).length > 4 }"
+          >
+            <p v-for="(value, key) in product.details" :key="key">
+              <b class="detail-item">{{ key }}:</b> {{ value }}
+            </p>
+          </div>
         </div>
         <button class="add-to-cart" :disabled="isOutOfStock" @click="addToCart">
           <span v-if="!addedToCart && !isOutOfStock">Add to Cart</span>
@@ -96,6 +75,7 @@ const cartStore = useCartStore()
 const product = reactive<ProductWithInventory>({
   id: '',
   name: '',
+  summary: '',
   description: '',
   price: 0,
   images: [],
@@ -261,6 +241,7 @@ const addToCart = async () => {
   margin-bottom: 20px;
 }
 
+.product-summary,
 .product-description {
   margin-bottom: 20px;
 }
@@ -271,6 +252,7 @@ const addToCart = async () => {
 
 .product-title,
 .product-description,
+.product-summary,
 .product-price,
 .product-details {
   font-size: 14px; /* Match details section */
@@ -288,6 +270,25 @@ const addToCart = async () => {
   font-size: 12px;
   color: #c00;
   margin-top: 8px;
+}
+
+.detail-item {
+  text-transform: capitalize;
+}
+
+.details-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.details-grid.two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+}
+
+.details-grid.two-columns p {
+  margin-bottom: 8px;
 }
 
 @keyframes scaleIn {

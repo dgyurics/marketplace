@@ -81,8 +81,8 @@ func TestAddItemToCart(t *testing.T) {
 	product := types.Product{ID: utilities.MustGenerateIDString()}
 
 	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, description)
-		VALUES ($1, 'Test Product', 1000, 'Test product description')`,
+		INSERT INTO products (id, name, price, summary)
+		VALUES ($1, 'Test Product', 1000, 'Test product summary')`,
 		product.ID)
 	assert.NoError(t, err, "Expected no error on inserting test product")
 
@@ -136,8 +136,8 @@ func TestUpdateCartItem(t *testing.T) {
 	product := types.Product{ID: utilities.MustGenerateIDString()}
 
 	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, description)
-		VALUES ($1, 'Test Product', 1000, 'Test product description')`,
+		INSERT INTO products (id, name, price, summary)
+		VALUES ($1, 'Test Product', 1000, 'Test product summary')`,
 		product.ID)
 	assert.NoError(t, err, "Expected no error on inserting test product")
 
@@ -194,8 +194,8 @@ func TestRemoveItemFromCart(t *testing.T) {
 	product := types.Product{ID: utilities.MustGenerateIDString()}
 
 	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, description)
-		VALUES ($1, 'Test Product', 1000, 'Test product description')`,
+		INSERT INTO products (id, name, price, summary)
+		VALUES ($1, 'Test Product', 1000, 'Test product summary')`,
 		product.ID)
 	assert.NoError(t, err, "Expected no error on inserting test product")
 
@@ -247,8 +247,8 @@ func TestClearCart(t *testing.T) {
 	product := types.Product{ID: utilities.MustGenerateIDString()}
 
 	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, description)
-		VALUES ($1, 'Test Product', 1000, 'Test product description')`,
+		INSERT INTO products (id, name, price, summary)
+		VALUES ($1, 'Test Product', 1000, 'Test product summary')`,
 		product.ID)
 	assert.NoError(t, err, "Expected no error on inserting test product")
 
@@ -300,8 +300,8 @@ func TestGetCartWithImages(t *testing.T) {
 	product := types.Product{ID: utilities.MustGenerateIDString()}
 
 	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, description)
-		VALUES ($1, 'Test Product', 1000, 'Test product description')`,
+		INSERT INTO products (id, name, price, summary)
+		VALUES ($1, 'Test Product', 1000, 'Test product summary')`,
 		product.ID)
 	assert.NoError(t, err, "Expected no error on inserting test product")
 

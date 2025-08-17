@@ -12,6 +12,7 @@ type Product struct {
 	Name        string          `json:"name"`
 	Price       int64           `json:"price"`
 	Details     json.RawMessage `json:"details"`
+	Summary     string          `json:"summary"`
 	Description string          `json:"description"`
 	Images      []Image         `json:"images"`
 	Category    *Category       `json:"category"`
@@ -24,6 +25,7 @@ type ProductWithInventory struct {
 	ID          string          `json:"id"`
 	Name        string          `json:"name"`
 	Price       int64           `json:"price"`
+	Summary     string          `json:"summary"`
 	Description string          `json:"description"`
 	Details     json.RawMessage `json:"details"`
 	Images      json.RawMessage `json:"images"`
