@@ -62,7 +62,7 @@ const emit = defineEmits(['upload-success', 'upload-error'])
 const fileInput = ref(null)
 const selectedFile = ref(null)
 const imageType = ref('gallery')
-const removeBackground = ref(true)
+const removeBackground = ref(false)
 const uploading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
@@ -107,7 +107,7 @@ const handleUpload = async () => {
 const resetForm = () => {
   selectedFile.value = null
   imageType.value = 'gallery'
-  removeBackground.value = true
+  removeBackground.value = false
   errorMessage.value = ''
   successMessage.value = ''
   if (fileInput.value) {
