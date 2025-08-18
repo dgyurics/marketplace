@@ -1,7 +1,7 @@
 <template>
   <div class="image-gallery">
     <h3>Product Images</h3>
-    <div v-if="images.length === 0" class="no-images">
+    <div v-if="!images.length" class="no-images">
       <p>No images uploaded yet</p>
     </div>
     <div v-else class="table-container">
@@ -12,10 +12,11 @@
             <th>URL</th>
             <th>Type</th>
             <th></th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="image in sortedImages" :key="image.id" class="image-row">
+          <tr v-for="image in images" :key="image.id" class="image-row">
             <td class="id-cell">{{ image.id }}</td>
             <td class="url-cell">
               <span
@@ -28,6 +29,16 @@
               </span>
             </td>
             <td class="type-cell">{{ image.type }}</td>
+            <td class="actions-cell">
+              <button
+                type="button"
+                class="promote-btn"
+                title="Promote image"
+                @click="handlePromote(image.id)"
+              >
+                ↑
+              </button>
+            </td>
             <td class="actions-cell">
               <button
                 type="button"
@@ -60,34 +71,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
-import { removeImage } from '@/services/api'
+import { removeImage, promoteImage } from '@/services/api'
 
-const props = defineProps({
+defineProps({
   images: {
     type: Array,
     default: () => [],
   },
 })
 
-const emit = defineEmits(['image-deleted'])
+const emit = defineEmits(['image-deleted', 'image-promoted'])
 
 const previewImage = ref(null)
 const previewStyle = ref({})
 const isClickPreview = ref(false)
-
-// Sort images by display_order, then by type (hero first)
-const sortedImages = computed(() => {
-  return [...props.images].sort((a, b) => {
-    if (a.display_order !== b.display_order) {
-      return a.display_order - b.display_order
-    }
-    // If same display order, prioritize hero images
-    const typeOrder = { hero: 0, thumbnail: 1, gallery: 2 }
-    return typeOrder[a.type] - typeOrder[b.type]
-  })
-})
 
 const truncateUrl = (url) => {
   if (url.length <= 50) return url
@@ -98,6 +97,15 @@ const handleDelete = async (imageId, productId) => {
   try {
     await removeImage(imageId, productId)
     emit('image-deleted')
+  } catch {
+    // Handle error silently, consistent with other error handling in the app
+  }
+}
+
+const handlePromote = async (imageId) => {
+  try {
+    await promoteImage(imageId)
+    emit('image-promoted')
   } catch {
     // Handle error silently, consistent with other error handling in the app
   }
@@ -292,8 +300,9 @@ onUnmounted(() => {
 }
 
 .actions-cell {
-  width: 100px;
+  width: 40px;
   text-align: center;
+  padding: 10px 4px;
 }
 
 .remove-btn {
@@ -313,6 +322,26 @@ onUnmounted(() => {
 }
 
 .remove-btn:hover {
+  color: #000;
+}
+
+.promote-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  color: #333;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.promote-btn:hover {
   color: #000;
 }
 

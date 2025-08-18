@@ -38,7 +38,6 @@ export interface Image {
   product_id?: string // FIXME pretty sure this never is used/exists
   url: string
   type: ImageType
-  display_order: number // TODO remove this, being deprecated
   alt_text?: string | null
 }
 

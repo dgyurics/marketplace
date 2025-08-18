@@ -11,6 +11,7 @@ type ImageRepository interface {
 	ProductExists(ctx context.Context, productID string) (bool, error)
 	CreateImage(ctx context.Context, image *types.Image) error
 	RemoveImage(ctx context.Context, id string) (ImageDeletionResult, error)
+	PromoteImage(ctx context.Context, id string) error
 }
 
 type imageRepository struct {
@@ -36,19 +37,38 @@ func (r *imageRepository) ProductExists(ctx context.Context, productID string) (
 
 func (r *imageRepository) CreateImage(ctx context.Context, image *types.Image) error {
 	query := `
-        INSERT INTO images (id, product_id, url, type, display_order, alt_text, source)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO images (id, product_id, url, type, alt_text, source)
+        VALUES ($1, $2, $3, $4, $5, $6)
     `
 	_, err := r.db.ExecContext(ctx, query,
 		image.ID,
 		image.ProductID,
 		image.URL,
 		image.Type,
-		image.DisplayOrder,
 		image.AltText,
 		image.Source,
 	)
 	return err
+}
+
+func (r *imageRepository) PromoteImage(ctx context.Context, id string) error {
+	query := `
+		UPDATE images
+		SET updated_at = NOW()
+		WHERE id = $1
+	`
+	result, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return types.ErrNotFound
+	}
+	return nil
 }
 
 type ImageDeletionResult struct {

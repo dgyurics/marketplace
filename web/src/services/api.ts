@@ -150,6 +150,10 @@ export const removeImage = async (id: string): Promise<void> => {
   await apiClient.delete(`/images/${id}`)
 }
 
+export const promoteImage = async (id: string): Promise<void> => {
+  await apiClient.post(`/images/${id}`)
+}
+
 export const getProductById = async (id: string): Promise<ProductWithInventory> => {
   const response = await apiClient.get(`/products/${id}`)
   return response.data

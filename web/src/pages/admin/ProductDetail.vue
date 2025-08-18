@@ -38,11 +38,16 @@
         />
 
         <!-- Image Gallery Section -->
-        <ImageGallery :images="product.images || []" @image-deleted="handleImageDeleted" />
+        <ImageGallery
+          :images="product.images || []"
+          @image-deleted="handleImageDeleted"
+          @image-promoted="handleImagePromoted"
+        />
 
         <!-- Image Upload Section -->
         <ImageUploader
           :product-id="product.id"
+          :images="product.images || []"
           @upload-success="handleImageUploadSuccess"
           @upload-error="handleImageUploadError"
         />
@@ -176,6 +181,11 @@ const handleImageUploadSuccess = async () => {
 
 const handleImageDeleted = async () => {
   // Refresh product data to remove deleted image
+  await fetchProduct()
+}
+
+const handleImagePromoted = async () => {
+  // Refresh product data to reflect promoted image
   await fetchProduct()
 }
 

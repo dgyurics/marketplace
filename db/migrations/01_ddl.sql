@@ -47,7 +47,6 @@ CREATE TABLE IF NOT EXISTS images (
     product_id BIGINT NOT NULL,
     url TEXT NOT NULL,
     type image_type_enum DEFAULT 'hero' NOT NULL,
-    display_order INT DEFAULT 0, -- TODO remove display_order and use created_at for ordering
     source VARCHAR(255) NOT NULL, -- e.g. 115025008992583680.webp
     alt_text VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -101,9 +100,9 @@ LEFT JOIN LATERAL (
             'id', i.id::TEXT,
             'url', i.url,
             'type', i.type,
-            'display_order', i.display_order,
+            'updated_at', i.updated_at,
             'alt_text', i.alt_text
-        ) ORDER BY i.display_order
+        ) ORDER BY i.updated_at DESC
     ) AS images
     FROM images i
     WHERE i.product_id = p.id

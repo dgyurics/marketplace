@@ -27,6 +27,7 @@ type ImageService interface {
 	ProductExists(ctx context.Context, productID string) (bool, error) // TODO move to product service
 	RemoveBackground(ctx context.Context, filePath, filename string) (string, error)
 	RemoveImage(ctx context.Context, id string) error
+	PromoteImage(ctx context.Context, id string) error
 }
 
 type imageService struct {
@@ -255,6 +256,10 @@ func (s *imageService) GenerateImageURL(productID, filename string, imgType type
 	encodedSig := base64.RawURLEncoding.EncodeToString(signature)
 
 	return fmt.Sprintf("%s/%s%s", s.baseURLImgPrxy, encodedSig, path)
+}
+
+func (s *imageService) PromoteImage(ctx context.Context, imageID string) error {
+	return s.repo.PromoteImage(ctx, imageID)
 }
 
 func (s *imageService) RemoveImage(ctx context.Context, imageID string) error {

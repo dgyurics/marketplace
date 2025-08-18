@@ -4,9 +4,14 @@
       <div class="upload-section">
         <div class="form-row">
           <select v-model="imageType" class="image-type-select">
-            <option value="gallery">Gallery</option>
-            <option value="hero">Hero</option>
-            <option value="thumbnail">Thumbnail</option>
+            <option
+              v-for="option in availableImageTypes"
+              :key="option.value"
+              :value="option.value"
+              :disabled="option.disabled"
+            >
+              {{ option.label }}
+            </option>
           </select>
           <input
             ref="fileInput"
@@ -46,7 +51,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 import { uploadImage } from '@/services/api'
 
@@ -54,6 +59,10 @@ const props = defineProps({
   productId: {
     type: String,
     required: true,
+  },
+  images: {
+    type: Array,
+    default: () => [],
   },
 })
 
@@ -66,6 +75,48 @@ const removeBackground = ref(false)
 const uploading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+
+// Compute available image types based on existing images
+const availableImageTypes = computed(() => {
+  const existingTypes = props.images.map((img) => img.type)
+  const hasHero = existingTypes.includes('hero')
+  const hasThumbnail = existingTypes.includes('thumbnail')
+
+  const options = [
+    { value: 'hero', label: 'Hero', disabled: hasHero },
+    { value: 'thumbnail', label: 'Thumbnail', disabled: hasThumbnail },
+    { value: 'gallery', label: 'Gallery', disabled: false },
+  ]
+
+  // Logic for defaults and enabled options
+  if (!hasHero) {
+    // No hero image - only allow hero
+    return options.map((opt) => ({ ...opt, disabled: opt.value !== 'hero' }))
+  }
+  if (!hasThumbnail) {
+    // Has hero but no thumbnail - only allow thumbnail
+    return options.map((opt) => ({ ...opt, disabled: opt.value !== 'thumbnail' }))
+  }
+  // Has both hero and thumbnail - only allow gallery
+  return options.map((opt) => ({ ...opt, disabled: opt.value !== 'gallery' }))
+})
+
+// Set default imageType based on available options
+const setDefaultImageType = () => {
+  const availableOption = availableImageTypes.value.find((opt) => !opt.disabled)
+  if (availableOption) {
+    imageType.value = availableOption.value
+  }
+}
+
+// Watch for changes in images to update default
+watch(
+  () => props.images,
+  () => {
+    setDefaultImageType()
+  },
+  { immediate: true }
+)
 
 const handleFileSelect = (event) => {
   const target = event.target
@@ -106,7 +157,7 @@ const handleUpload = async () => {
 
 const resetForm = () => {
   selectedFile.value = null
-  imageType.value = 'gallery'
+  setDefaultImageType()
   removeBackground.value = false
   errorMessage.value = ''
   successMessage.value = ''
@@ -182,6 +233,11 @@ defineExpose({
   font-size: 14px;
   background-color: white;
   min-width: 120px;
+}
+
+.image-type-select option:disabled {
+  color: #999;
+  background-color: #f5f5f5;
 }
 
 .file-input {

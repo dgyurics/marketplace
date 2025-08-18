@@ -73,13 +73,12 @@ func ParseImageOrder(s string) int {
 }
 
 type Image struct {
-	ID           string    `json:"id"`
-	ProductID    string    `json:"product_id"`
-	URL          string    `json:"url"`
-	Type         ImageType `json:"type"`
-	DisplayOrder int       `json:"display_order"`      // FIXME remove this + references
-	AltText      *string   `json:"alt_text,omitempty"` // FIXME convert pointer to string
-	Source       string    `json:"source"`
+	ID        string    `json:"id"`
+	ProductID string    `json:"product_id"`
+	URL       string    `json:"url"`
+	Type      ImageType `json:"type"`
+	AltText   *string   `json:"alt_text,omitempty"` // FIXME convert pointer to string
+	Source    string    `json:"source"`
 }
 
 type ProductFilter struct {

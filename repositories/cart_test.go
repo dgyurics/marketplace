@@ -320,9 +320,9 @@ func TestGetCartWithImages(t *testing.T) {
 
 	for i, imageID := range imageIDs {
 		_, err = dbPool.ExecContext(ctx, `
-			INSERT INTO images (id, product_id, url, display_order, source)
-			VALUES ($1, $2, $3, $4, $5)`,
-			imageID, product.ID, imageURLs[i], i, imageSrces[i])
+			INSERT INTO images (id, product_id, url, source)
+			VALUES ($1, $2, $3, $4)`,
+			imageID, product.ID, imageURLs[i], imageSrces[i])
 		assert.NoError(t, err, "Expected no error on inserting product images")
 	}
 
@@ -344,8 +344,8 @@ func TestGetCartWithImages(t *testing.T) {
 	fetchedProduct := cart[0].Product
 	assert.Equal(t, product.ID, fetchedProduct.ID, "Expected correct product ID")
 	assert.GreaterOrEqual(t, len(fetchedProduct.Images), 2, "Expected at least 2 images for the product")
-	assert.Equal(t, imageURLs[0], fetchedProduct.Images[0].URL, "Expected correct image URL")
-	assert.Equal(t, imageURLs[1], fetchedProduct.Images[1].URL, "Expected correct image URL")
+	assert.Equal(t, imageURLs[0], fetchedProduct.Images[1].URL, "Expected correct image URL")
+	assert.Equal(t, imageURLs[1], fetchedProduct.Images[0].URL, "Expected correct image URL")
 
 	// Cleanup
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
