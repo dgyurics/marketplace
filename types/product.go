@@ -41,14 +41,11 @@ const (
 	Thumbnail ImageType = "thumbnail"
 	Gallery   ImageType = "gallery"
 	Hero      ImageType = "hero"
-	Original  ImageType = "original"
 )
 
 // ParseImageType parses a string into ImageType
 func ParseImageType(s string) (ImageType, error) {
 	switch strings.ToLower(s) {
-	case "original":
-		return Original, nil
 	case "hero":
 		return Hero, nil
 	case "thumbnail":

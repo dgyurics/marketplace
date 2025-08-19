@@ -18,7 +18,6 @@ export interface ProductWithInventory extends Product {
   quantity: number
 }
 
-// For creating new products (no ID, images, timestamps)
 export interface CreateProductRequest {
   name: string
   price: number
