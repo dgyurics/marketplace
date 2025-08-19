@@ -73,7 +73,7 @@ func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
-	orderID := mux.Vars(r)["order_id"]
+	orderID := mux.Vars(r)["id"]
 	order, err := h.orderService.GetOrder(r.Context(), orderID)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
@@ -99,7 +99,7 @@ func (h *OrderRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderRoutes) Update(w http.ResponseWriter, r *http.Request) {
-	orderID := mux.Vars(r)["order_id"]
+	orderID := mux.Vars(r)["id"]
 	params := types.OrderParams{
 		ID: orderID,
 	}
@@ -117,7 +117,7 @@ func (h *OrderRoutes) Update(w http.ResponseWriter, r *http.Request) {
 
 // Confirm finalizes an order by calculating actual tax and generating a payment intent.
 func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
-	orderID := mux.Vars(r)["order_id"]
+	orderID := mux.Vars(r)["id"]
 	order, err := h.orderService.GetOrder(r.Context(), orderID)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
@@ -164,8 +164,8 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 
 func (h *OrderRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/orders", h.secure(h.CreateOrder)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/orders/{order_id}", h.secure(h.Update)).Methods(http.MethodPatch)
-	h.muxRouter.Handle("/orders/{order_id}/confirm", h.secure(h.Confirm)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/orders/{id}", h.secure(h.Update)).Methods(http.MethodPatch)
+	h.muxRouter.Handle("/orders/{id}/confirm", h.secure(h.Confirm)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secure(h.GetOrders)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/orders/{order_id}/tax-estimate", h.secure(h.EstimateTax)).Methods(http.MethodGet)
+	h.muxRouter.Handle("/orders/{id}/tax-estimate", h.secure(h.EstimateTax)).Methods(http.MethodGet)
 }

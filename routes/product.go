@@ -25,7 +25,7 @@ func NewProductRoutes(
 }
 
 func (h *ProductRoutes) CreateProduct(w http.ResponseWriter, r *http.Request) {
-	category := mux.Vars(r)["category"]
+	category := mux.Vars(r)["id"]
 	var product types.Product
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
@@ -129,8 +129,7 @@ func (h *ProductRoutes) RemoveProduct(w http.ResponseWriter, r *http.Request) {
 func (h *ProductRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/products", h.GetProducts).Methods(http.MethodGet)
 	h.muxRouter.HandleFunc("/products/{id}", h.GetProduct).Methods(http.MethodGet)
-	// FIXME remove category from path parameter now that product struct contains category
-	h.muxRouter.Handle("/products/categories/{category}", h.secureAdmin(h.CreateProduct)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/products/categories/{id}", h.secureAdmin(h.CreateProduct)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/products/{id}", h.secureAdmin(h.RemoveProduct)).Methods(http.MethodDelete)
 	h.muxRouter.Handle("/products", h.secureAdmin(h.UpdateProduct)).Methods(http.MethodPut)
 	h.muxRouter.Handle("/products/{id}/inventory", h.secureAdmin(h.UpdateInventory)).Methods(http.MethodPut)

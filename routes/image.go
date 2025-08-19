@@ -43,7 +43,7 @@ const (
 // The image [type] can be specified in the form data, defaulting to "gallery" if not provided.
 // The [alt_text] can also be provided in the form data.
 func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
-	productID := mux.Vars(r)["product"]                  // product ID from path parameter
+	productID := mux.Vars(r)["id"]                       // product ID from path parameter
 	removeBg := r.URL.Query().Get("remove_bg") == "true" // optional remove background flag
 
 	// Parse the multipart form file
@@ -203,7 +203,7 @@ func (h *ImageRoutes) PromoteImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ImageRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/images/products/{product}", h.secureAdmin(h.UploadImage)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/images/products/{id}", h.secureAdmin(h.UploadImage)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/images/{image}", h.secureAdmin(h.RemoveImage)).Methods(http.MethodDelete)
 	h.muxRouter.Handle("/images/{image}", h.secureAdmin(h.PromoteImage)).Methods(http.MethodPost)
 }

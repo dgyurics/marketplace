@@ -45,7 +45,7 @@ func (h *CartRoutes) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item.Product.ID = mux.Vars(r)["product_id"]
+	item.Product.ID = mux.Vars(r)["id"]
 	err := h.cartService.AddItemToCart(r.Context(), &item)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusConflict, "insufficient stock for product")
@@ -76,7 +76,7 @@ func (h *CartRoutes) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item.Product.ID = mux.Vars(r)["product_id"]
+	item.Product.ID = mux.Vars(r)["id"]
 	err := h.cartService.UpdateCartItem(r.Context(), &item)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusConflict, "insufficient stock for product")
@@ -97,7 +97,7 @@ func (h *CartRoutes) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) 
 	}
 
 	vars := mux.Vars(r)
-	productID := vars["product_id"]
+	productID := vars["id"]
 
 	if err := h.cartService.RemoveItemFromCart(r.Context(), productID); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
@@ -137,8 +137,8 @@ func (h *CartRoutes) cancelPendingOrder(ctx context.Context) error {
 }
 
 func (h *CartRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/carts/items/{product_id}", h.secure(h.AddItemToCart)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/carts/items/{product_id}", h.secure(h.UpdateCartItem)).Methods(http.MethodPatch)
-	h.muxRouter.Handle("/carts/items/{product_id}", h.secure(h.RemoveItemFromCart)).Methods(http.MethodDelete)
+	h.muxRouter.Handle("/carts/items/{id}", h.secure(h.AddItemToCart)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/carts/items/{id}", h.secure(h.UpdateCartItem)).Methods(http.MethodPatch)
+	h.muxRouter.Handle("/carts/items/{id}", h.secure(h.RemoveItemFromCart)).Methods(http.MethodDelete)
 	h.muxRouter.Handle("/carts", h.secure(h.GetCart)).Methods(http.MethodGet)
 }

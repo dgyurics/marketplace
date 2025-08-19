@@ -81,7 +81,7 @@ func TestAddItemToCart(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	routes.muxRouter.HandleFunc("/carts/items/{product_id}", routes.AddItemToCart).Methods(http.MethodPost)
+	routes.muxRouter.HandleFunc("/carts/items/{id}", routes.AddItemToCart).Methods(http.MethodPost)
 
 	// Serve the request via the router
 	routes.muxRouter.ServeHTTP(rr, req)
@@ -120,7 +120,7 @@ func TestRemoveItemFromCart(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	routes.muxRouter.HandleFunc("/carts/items/{product_id}", routes.RemoveItemFromCart).Methods(http.MethodDelete)
+	routes.muxRouter.HandleFunc("/carts/items/{id}", routes.RemoveItemFromCart).Methods(http.MethodDelete)
 
 	// Serve the request via the router
 	routes.muxRouter.ServeHTTP(rr, req)
