@@ -11,7 +11,6 @@ import (
 )
 
 type ProductRepository interface {
-	// FIXME refactor to use product.category
 	CreateProduct(ctx context.Context, product *types.Product, categorySlug string) error
 	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
 	GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error)
@@ -56,20 +55,6 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		categorySlug,
 	).Scan(&product.ID, &product.Name, &product.Price, &product.Summary); err != nil {
 		return err
-	}
-
-	// TODO remove this - not needed
-	// Create any images associated with the product
-	for _, image := range product.Images {
-		imageQuery := `
-			INSERT INTO images (id, product_id, url, type, alt_text, source)
-			VALUES ($1, $2, $3, $4, $5, $6)`
-		if _, err = tx.ExecContext(ctx, imageQuery,
-			image.ID, product.ID, image.URL,
-			image.Type, image.AltText, image.Source,
-		); err != nil {
-			return err
-		}
 	}
 
 	// Create an inventory record for the product
