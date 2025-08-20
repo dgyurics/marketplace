@@ -3,7 +3,6 @@ import axios from 'axios'
 import { API_URL as baseURL, REQUEST_TIMEOUT as timeout } from '@/config'
 import { useAuthStore } from '@/store/auth'
 import type {
-  ProductWithInventory,
   CartItem,
   Address,
   Order,
@@ -111,12 +110,11 @@ export const removeUserAddress = async (addressId: string): Promise<void> => {
   return apiClient.delete(`/addresses/${addressId}`)
 }
 
-// Products
 export const getProducts = async (
   categories: string[],
   page: number = 1,
   limit: number = 10
-): Promise<ProductWithInventory[]> => {
+): Promise<Product[]> => {
   let params = `?page=${page}&limit=${limit}`
   if (categories.length > 0) {
     params += `&${categories.map((category) => `category=${category}`).join('&')}`
@@ -154,7 +152,7 @@ export const promoteImage = async (id: string): Promise<void> => {
   await apiClient.post(`/images/${id}`)
 }
 
-export const getProductById = async (id: string): Promise<ProductWithInventory> => {
+export const getProductById = async (id: string): Promise<Product> => {
   const response = await apiClient.get(`/products/${id}`)
   return response.data
 }

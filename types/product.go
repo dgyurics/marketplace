@@ -17,22 +17,9 @@ type Product struct {
 	Images      []Image         `json:"images"`
 	Category    *Category       `json:"category"`
 	TaxCode     string          `json:"tax_code"`
+	Inventory   int             `json:"inventory"`
 	CreatedAt   string          `json:"created_at"`
 	UpdatedAt   string          `json:"updated_at"`
-}
-
-type ProductWithInventory struct {
-	ID          string          `json:"id"`
-	Name        string          `json:"name"`
-	Price       int64           `json:"price"`
-	Summary     string          `json:"summary"`
-	Description string          `json:"description"`
-	Details     json.RawMessage `json:"details"`
-	Images      json.RawMessage `json:"images"`
-	Category    *Category       `json:"category"`
-	CreatedAt   string          `json:"created_at"`
-	UpdatedAt   string          `json:"updated_at"`
-	Quantity    int             `json:"quantity"`
 }
 
 type ImageType string

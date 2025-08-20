@@ -66,10 +66,10 @@ func (r *orderRepository) restockCanceledOrderItems(ctx context.Context) error {
 			WHERE o.id = oi.order_id AND o.status = 'canceled'
 			RETURNING oi.product_id, oi.quantity
 		)
-		UPDATE inventory i
-		SET quantity = i.quantity + di.quantity
+		UPDATE products p
+		SET inventory = p.inventory + di.quantity
 		FROM deleted_items di
-		WHERE i.product_id = di.product_id;
+		WHERE p.id = di.product_id;
 	`
 	_, err := r.db.ExecContext(ctx, query)
 	return err
@@ -215,9 +215,9 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 func reduceInventory(ctx context.Context, tx *sql.Tx, items []types.CartItem) error {
 	for _, item := range items {
 		result, err := tx.ExecContext(ctx, `
-			UPDATE inventory
-			SET quantity = quantity - $1
-			WHERE quantity >= $1 AND product_id = $2
+			UPDATE products
+			SET inventory = inventory - $1
+			WHERE inventory >= $1 AND id = $2
 		`, item.Quantity, item.Product.ID)
 		if err != nil {
 			return err

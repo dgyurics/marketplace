@@ -22,8 +22,8 @@ func TestOrderRepository_CreateOrder_Minimal(t *testing.T) {
 	// Create a test address
 	addressID := createTestAddress(t, dbPool, user.ID)
 
-	// Create a test product and inventory
-	productID := createTestProductAndInventory(t, dbPool, 5)
+	// Create a test product
+	productID := createTestProduct(t, dbPool, 5)
 
 	// Add product to user's cart
 	addToCart(t, dbPool, user.ID, productID, 1)
@@ -48,7 +48,6 @@ func TestOrderRepository_CreateOrder_Minimal(t *testing.T) {
 	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM inventory WHERE product_id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
@@ -68,22 +67,16 @@ func createTestAddress(t *testing.T, db *sql.DB, userID string) string {
 	return addressID
 }
 
-// Helper function to insert a product and inventory
-func createTestProductAndInventory(t *testing.T, db *sql.DB, quantity int) string {
+// Helper function to insert a product
+func createTestProduct(t *testing.T, db *sql.DB, quantity int) string {
 	ctx := context.Background()
 
 	productID := utilities.MustGenerateIDString()
 
 	var err error
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, summary) 
-		VALUES ($1, 'Test Product', 1000, 'Test product summary')`,
-		productID)
-	assert.NoError(t, err)
-
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO inventory (product_id, quantity) 
-		VALUES ($1, $2)`,
+		INSERT INTO products (id, name, price, summary, inventory) 
+		VALUES ($1, 'Test Product', 1000, 'Test product summary', $2)`,
 		productID, quantity)
 	assert.NoError(t, err)
 
@@ -141,8 +134,8 @@ func TestOrderRepository_GetOrder_Success(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 	addressID := createTestAddress(t, dbPool, user.ID)
 
-	// Create product and inventory
-	productID := createTestProductAndInventory(t, dbPool, 2)
+	// Create product
+	productID := createTestProduct(t, dbPool, 2)
 	addToCart(t, dbPool, user.ID, productID, 1)
 
 	// Create order
@@ -178,7 +171,6 @@ func TestOrderRepository_GetOrder_Success(t *testing.T) {
 	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM inventory WHERE product_id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
@@ -194,8 +186,8 @@ func TestOrderRepository_UpdateOrder(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 	addressID := createTestAddress(t, dbPool, user.ID)
 
-	// Create a product and inventory, and add to cart
-	productID := createTestProductAndInventory(t, dbPool, 3)
+	// Create a product and add to cart
+	productID := createTestProduct(t, dbPool, 3)
 	addToCart(t, dbPool, user.ID, productID, 2)
 
 	// Create initial order
@@ -225,7 +217,6 @@ func TestOrderRepository_UpdateOrder(t *testing.T) {
 	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM inventory WHERE product_id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)

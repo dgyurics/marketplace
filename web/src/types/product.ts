@@ -10,12 +10,9 @@ export interface Product {
   images: Image[]
   category?: Category
   tax_code?: string
+  inventory: number
   created_at?: string
   updated_at?: string
-}
-
-export interface ProductWithInventory extends Product {
-  quantity: number
 }
 
 export interface CreateProductRequest {

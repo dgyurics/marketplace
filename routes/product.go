@@ -61,7 +61,6 @@ func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, products)
 }
 
-// FIXME returns 500 when product not found
 func (h *ProductRoutes) GetProduct(w http.ResponseWriter, r *http.Request) {
 	productId, ok := mux.Vars(r)["id"]
 	if !ok {
@@ -69,31 +68,16 @@ func (h *ProductRoutes) GetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	product, err := h.productService.GetProductByID(r.Context(), productId)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, "Product not found")
+		return
+	}
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	u.RespondWithJSON(w, http.StatusOK, product)
-}
-
-func (h *ProductRoutes) UpdateInventory(w http.ResponseWriter, r *http.Request) {
-	productID := mux.Vars(r)["id"]
-	var input struct {
-		Quantity int `json:"quantity"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
-		return
-	}
-
-	err := h.productService.UpdateInventory(r.Context(), productID, input.Quantity)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	u.RespondSuccess(w)
 }
 
 func (h *ProductRoutes) UpdateProduct(w http.ResponseWriter, r *http.Request) {
@@ -132,5 +116,4 @@ func (h *ProductRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/products/categories/{id}", h.secureAdmin(h.CreateProduct)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/products/{id}", h.secureAdmin(h.RemoveProduct)).Methods(http.MethodDelete)
 	h.muxRouter.Handle("/products", h.secureAdmin(h.UpdateProduct)).Methods(http.MethodPut)
-	h.muxRouter.Handle("/products/{id}/inventory", h.secureAdmin(h.UpdateInventory)).Methods(http.MethodPut)
 }

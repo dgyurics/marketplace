@@ -77,20 +77,14 @@ func TestAddItemToCart(t *testing.T) {
 	_, err := repo.GetCart(ctx, user.ID) // Use the created test user's ID
 	assert.NoError(t, err, "Expected no error on cart creation")
 
-	// Step 2: Add a valid product to the inventory (simulate an existing product)
+	// Step 2: Create product
 	product := types.Product{ID: utilities.MustGenerateIDString()}
 
 	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, summary)
-		VALUES ($1, 'Test Product', 1000, 'Test product summary')`,
+		INSERT INTO products (id, name, price, summary, inventory)
+		VALUES ($1, 'Test Product', 1000, 'Test product summary', 10)`,
 		product.ID)
 	assert.NoError(t, err, "Expected no error on inserting test product")
-
-	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO inventory (product_id, quantity)
-		VALUES ($1, 10)`,
-		product.ID)
-	assert.NoError(t, err, "Expected no error on inserting inventory")
 
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
@@ -132,20 +126,14 @@ func TestUpdateCartItem(t *testing.T) {
 	_, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on cart creation")
 
-	// Step 2: Add a valid product to the inventory
+	// Step 2: Create a valid product
 	product := types.Product{ID: utilities.MustGenerateIDString()}
 
 	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, summary)
-		VALUES ($1, 'Test Product', 1000, 'Test product summary')`,
+		INSERT INTO products (id, name, price, summary, inventory)
+		VALUES ($1, 'Test Product', 1000, 'Test product summary', 10)`,
 		product.ID)
 	assert.NoError(t, err, "Expected no error on inserting test product")
-
-	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO inventory (product_id, quantity)
-		VALUES ($1, 10)`,
-		product.ID)
-	assert.NoError(t, err, "Expected no error on inserting inventory")
 
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
@@ -190,20 +178,14 @@ func TestRemoveItemFromCart(t *testing.T) {
 	_, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on cart creation")
 
-	// Step 2: Add a valid product to the inventory
+	// Step 2: Create valid product
 	product := types.Product{ID: utilities.MustGenerateIDString()}
 
 	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, summary)
-		VALUES ($1, 'Test Product', 1000, 'Test product summary')`,
+		INSERT INTO products (id, name, price, summary, inventory)
+		VALUES ($1, 'Test Product', 1000, 'Test product summary', 10)`,
 		product.ID)
 	assert.NoError(t, err, "Expected no error on inserting test product")
-
-	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO inventory (product_id, quantity)
-		VALUES ($1, 10)`,
-		product.ID)
-	assert.NoError(t, err, "Expected no error on inserting inventory")
 
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
@@ -243,20 +225,14 @@ func TestClearCart(t *testing.T) {
 	_, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on cart creation")
 
-	// Step 2: Add a valid product to the inventory
+	// Step 2: Create product
 	product := types.Product{ID: utilities.MustGenerateIDString()}
 
 	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, summary)
-		VALUES ($1, 'Test Product', 1000, 'Test product summary')`,
+		INSERT INTO products (id, name, price, summary, inventory)
+		VALUES ($1, 'Test Product', 1000, 'Test product summary', 10)`,
 		product.ID)
 	assert.NoError(t, err, "Expected no error on inserting test product")
-
-	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO inventory (product_id, quantity)
-		VALUES ($1, 10)`,
-		product.ID)
-	assert.NoError(t, err, "Expected no error on inserting inventory")
 
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
@@ -296,20 +272,14 @@ func TestGetCartWithImages(t *testing.T) {
 	_, err := repo.GetCart(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on cart creation")
 
-	// Step 2: Add a valid product to the inventory
+	// Step 2: Create product
 	product := types.Product{ID: utilities.MustGenerateIDString()}
 
 	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, summary)
-		VALUES ($1, 'Test Product', 1000, 'Test product summary')`,
+		INSERT INTO products (id, name, price, summary, inventory)
+		VALUES ($1, 'Test Product', 1000, 'Test product summary', 10)`,
 		product.ID)
 	assert.NoError(t, err, "Expected no error on inserting test product")
-
-	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO inventory (product_id, quantity)
-		VALUES ($1, 10)`,
-		product.ID)
-	assert.NoError(t, err, "Expected no error on inserting inventory")
 
 	// Step 3: Add images to the product
 	imgID1 := utilities.MustGenerateIDString()

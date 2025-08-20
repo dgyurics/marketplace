@@ -89,7 +89,7 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 
 	// Check inventory availability considering existing cart quantity
 	var availableQuantity int
-	if err := r.db.QueryRowContext(ctx, "SELECT quantity FROM inventory WHERE product_id = $1", item.Product.ID).Scan(&availableQuantity); err != nil {
+	if err := r.db.QueryRowContext(ctx, "SELECT inventory FROM products WHERE id = $1", item.Product.ID).Scan(&availableQuantity); err != nil {
 		return err
 	}
 
@@ -117,7 +117,7 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 func (r *cartRepository) UpdateCartItem(ctx context.Context, userID string, item *types.CartItem) error {
 	// Check inventory availability
 	var availableQuantity int
-	if err := r.db.QueryRowContext(ctx, "SELECT quantity FROM inventory WHERE product_id = $1", item.Product.ID).Scan(&availableQuantity); err != nil {
+	if err := r.db.QueryRowContext(ctx, "SELECT inventory FROM products WHERE id = $1", item.Product.ID).Scan(&availableQuantity); err != nil {
 		return err
 	}
 

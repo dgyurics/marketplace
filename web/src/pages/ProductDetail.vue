@@ -38,7 +38,9 @@
           <span v-else-if="isOutOfStock">Out of Stock</span>
           <span v-else class="checkmark-animation">&#10003;</span>
         </button>
-        <p v-if="isLowStock" class="low-stock-warning">Only {{ product.quantity }} left in stock</p>
+        <p v-if="isLowStock" class="low-stock-warning">
+          Only {{ product.inventory }} left in stock
+        </p>
       </div>
     </div>
   </div>
@@ -55,7 +57,7 @@ import { useRoute } from 'vue-router'
 import { getProductById, createGuestUser as apiCreateGuestUser } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
-import type { AuthTokens, ProductWithInventory } from '@/types'
+import type { AuthTokens, Product } from '@/types'
 
 // @ts-ignore
 import 'swiper/css'
@@ -72,7 +74,7 @@ const { setTokens } = authStore
 
 const cartStore = useCartStore()
 
-const product = reactive<ProductWithInventory>({
+const product = reactive<Product>({
   id: '',
   name: '',
   summary: '',
@@ -80,13 +82,13 @@ const product = reactive<ProductWithInventory>({
   price: 0,
   images: [],
   details: {},
-  quantity: 0,
+  inventory: 0,
 })
 
 const addedToCart = ref(false)
 
-const isOutOfStock = computed(() => product.quantity === 0)
-const isLowStock = computed(() => product.quantity > 0 && product.quantity <= 20)
+const isOutOfStock = computed(() => product.inventory === 0)
+const isLowStock = computed(() => product.inventory > 0 && product.inventory <= 20)
 
 onMounted(async () => {
   try {

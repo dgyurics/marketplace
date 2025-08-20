@@ -42,18 +42,13 @@ func (m *MockProductService) GetProductsByCategory(ctx context.Context, category
 	return args.Get(0).([]types.Product), args.Error(1)
 }
 
-func (m *MockProductService) GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error) {
+func (m *MockProductService) GetProductByID(ctx context.Context, id string) (types.Product, error) {
 	args := m.Called(ctx, id)
-	return args.Get(0).(*types.ProductWithInventory), args.Error(1)
+	return args.Get(0).(types.Product), args.Error(1)
 }
 
 func (m *MockProductService) UpdateProduct(ctx context.Context, product types.Product) error {
 	args := m.Called(ctx, product)
-	return args.Error(0)
-}
-
-func (m *MockProductService) UpdateInventory(ctx context.Context, productID string, quantity int) error {
-	args := m.Called(ctx, productID, quantity)
 	return args.Error(0)
 }
 
@@ -81,17 +76,17 @@ func TestGetProductByID(t *testing.T) {
 	routes.RegisterRoutes()
 
 	// Create a sample product that will be returned by the mock service
-	product := &types.ProductWithInventory{
+	product := &types.Product{
 		ID:          "1",
 		Name:        "Test Product",
 		Price:       100000,
 		Summary:     "This is a test product summary",
 		Description: "This is a test product description",
-		Quantity:    10,
+		Inventory:   10,
 	}
 
 	// Set up the expected behavior of the mock service
-	mockService.On("GetProductByID", mock.Anything, "1").Return(product, nil)
+	mockService.On("GetProductByID", mock.Anything, "1").Return(*product, nil)
 
 	// Create a new HTTP request with the product ID in the URL
 	req, err := http.NewRequest(http.MethodGet, "/products/1", nil)
@@ -107,7 +102,7 @@ func TestGetProductByID(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 
 	// Check the response body is what you expect
-	var responseProduct types.ProductWithInventory
+	var responseProduct types.Product
 	err = json.NewDecoder(rr.Body).Decode(&responseProduct)
 	require.NoError(t, err)
 

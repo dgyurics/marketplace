@@ -13,10 +13,9 @@ import (
 type ProductRepository interface {
 	CreateProduct(ctx context.Context, product *types.Product, categorySlug string) error
 	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
-	GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error)
+	GetProductByID(ctx context.Context, id string) (types.Product, error)
 	UpdateProduct(ctx context.Context, product types.Product) error
 	DeleteProduct(ctx context.Context, id string) error
-	UpdateInventory(ctx context.Context, productID string, quantity int) error
 }
 
 type productRepository struct {
@@ -28,19 +27,11 @@ func NewProductRepository(db *sql.DB) ProductRepository {
 }
 
 func (r *productRepository) CreateProduct(ctx context.Context, product *types.Product, categorySlug string) error {
-	// Begin a transaction
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() // Roll back the transaction in case of an error
-
-	// Create the product
 	query := `
-		INSERT INTO products (id, name, price, summary, description, details, tax_code, category_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, (SELECT id FROM categories WHERE slug = $8))
-		RETURNING id, name, price, summary`
-	if err = tx.QueryRowContext(ctx,
+		INSERT INTO products (id, name, price, summary, description, details, tax_code, inventory, category_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, (SELECT id FROM categories WHERE slug = $9))
+		RETURNING id`
+	if err := r.db.QueryRowContext(ctx,
 		query,
 		product.ID,
 		product.Name,
@@ -52,20 +43,12 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 			String: product.TaxCode,
 			Valid:  strings.TrimSpace(product.TaxCode) != "",
 		},
+		product.Inventory,
 		categorySlug,
-	).Scan(&product.ID, &product.Name, &product.Price, &product.Summary); err != nil {
+	).Scan(&product.ID); err != nil {
 		return err
 	}
-
-	// Create an inventory record for the product
-	inventoryQuery := `
-	INSERT INTO inventory (product_id, quantity)
-	VALUES ($1, 0)`
-	if _, err := tx.ExecContext(ctx, inventoryQuery, product.ID); err != nil {
-		return err
-	}
-
-	return tx.Commit()
+	return nil
 }
 
 func (r *productRepository) GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error) {
@@ -161,7 +144,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 	return queryBuilder.String(), args
 }
 
-func (r *productRepository) GetProductByID(ctx context.Context, id string) (*types.ProductWithInventory, error) {
+func (r *productRepository) GetProductByID(ctx context.Context, id string) (types.Product, error) {
 	query := `
 	SELECT
 		p.id,
@@ -171,7 +154,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*typ
 		p.description,
 		p.details,
 		p.images,
-		p.quantity,
+		p.inventory,
 		c.id,
 		c.name,
 		c.slug,
@@ -182,7 +165,9 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*typ
 	WHERE p.id = $1;
 	`
 
-	var product types.ProductWithInventory
+	var product types.Product
+	var imagesJSON []byte
+
 	var categoryID, categoryParentID, categoryName, categorySlug, categoryDescription sql.NullString
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&product.ID,
@@ -191,8 +176,8 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*typ
 		&product.Summary,
 		&product.Description,
 		&product.Details,
-		&product.Images,
-		&product.Quantity,
+		&imagesJSON,
+		&product.Inventory,
 		&categoryID,
 		&categoryName,
 		&categorySlug,
@@ -200,7 +185,17 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*typ
 		&categoryParentID,
 	)
 	if err != nil {
-		return nil, err
+		if err == sql.ErrNoRows {
+			return product, types.ErrNotFound
+		}
+		return product, err
+	}
+
+	// Convert JSON array to Go struct
+	// FIXME seems counterintuitive to convert images to JSON in view/database
+	// and then convert back to Go struct/array
+	if err := json.Unmarshal(imagesJSON, &product.Images); err != nil {
+		return product, err
 	}
 
 	// Populate Category if category data exists
@@ -216,7 +211,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (*typ
 		}
 	}
 
-	return &product, nil
+	return product, nil
 }
 
 func (r *productRepository) UpdateProduct(ctx context.Context, product types.Product) error {
@@ -233,9 +228,10 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 		details = $5,
 		tax_code = $6,
 		category_id = $7,
-		is_deleted = $8,
+		inventory = $8,
+		is_deleted = $9,
 		updated_at = NOW()
-		WHERE id = $9
+		WHERE id = $10
 	`
 	result, err := r.db.ExecContext(ctx, query,
 		product.Name,
@@ -245,7 +241,8 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 		product.Details,
 		product.TaxCode,
 		categoryID,
-		false, // FIXME need field product.enabled
+		product.Inventory,
+		false,
 		product.ID,
 	)
 	if err != nil {
@@ -267,10 +264,4 @@ func (r *productRepository) DeleteProduct(ctx context.Context, id string) error 
 		return types.ErrNotFound
 	}
 	return nil
-}
-
-func (r *productRepository) UpdateInventory(ctx context.Context, productID string, quantity int) error {
-	query := `UPDATE inventory SET quantity = $1 WHERE product_id = $2`
-	_, err := r.db.ExecContext(ctx, query, quantity, productID)
-	return err
 }

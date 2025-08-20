@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS products (
     details JSONB DEFAULT '{}'::jsonb NOT NULL,
     tax_code VARCHAR(50),
     category_id BIGINT,
+    inventory INT NOT NULL DEFAULT 0,
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- TODO rename to enabled/disabled
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -55,19 +56,8 @@ CREATE TABLE IF NOT EXISTS images (
 );
 CREATE INDEX idx_images_source ON images(source);
 
-CREATE TABLE IF NOT EXISTS inventory (
-    product_id BIGINT PRIMARY KEY,
-    quantity INT NOT NULL DEFAULT 0,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-    CHECK (quantity >= 0)
-);
-
--- Used to quickly find products in stock
-CREATE INDEX idx_inventory_in_stock
-ON inventory (product_id)
-WHERE quantity > 0;
-
 CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest');
+
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY,
     email VARCHAR(255) UNIQUE,
@@ -87,13 +77,12 @@ SELECT
     COALESCE(p.description, '') AS description,
     p.details,
     p.category_id,
+    p.inventory,
     COALESCE(p.tax_code, '') AS tax_code,
     c.slug AS category_slug,
-    COALESCE(imgs.images, '[]') AS images,
-    LEAST(inv.quantity, 100) AS quantity
+    COALESCE(imgs.images, '[]') AS images
 FROM products p
 LEFT JOIN categories c ON p.category_id = c.id
-LEFT JOIN inventory inv ON p.id = inv.product_id
 LEFT JOIN LATERAL (
     SELECT JSONB_AGG(
         JSONB_BUILD_OBJECT(

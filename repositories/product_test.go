@@ -235,9 +235,8 @@ func TestDeleteProduct(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on product deletion")
 
 	// Verify the product no longer exists
-	deletedProduct, err := repo.GetProductByID(ctx, product.ID)
+	_, err = repo.GetProductByID(ctx, product.ID)
 	assert.Error(t, err, "Expected an error when getting a deleted product")
-	assert.Nil(t, deletedProduct, "Expected deleted product to be nil")
 
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
