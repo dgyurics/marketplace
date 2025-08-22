@@ -7,10 +7,6 @@ DOMAIN="marketplace.com"
 echo "Stopping all running containers..."
 docker-compose down
 
-# GENERATE RSA KEYS
-openssl genpkey -algorithm RSA -out private.pem -pkeyopt rsa_keygen_bits:2048
-openssl rsa -pubout -in private.pem -out public.pem
-
 # GET SSL CERTIFICATES using Let's Encrypt
 docker run --rm -v "marketplace_ssl-certs:/etc/letsencrypt" \
     -p 80:80 \
@@ -25,3 +21,5 @@ echo "Verifying certificates in volume..."
 docker run --rm -v marketplace_ssl-certs:/certs alpine ls -la /certs/live/$DOMAIN/
 
 echo "SSL certificate setup complete!"
+
+# TODO automate certificate renewal
