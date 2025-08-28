@@ -8,7 +8,7 @@ if [[ ! -f "go.mod" ]] || [[ ! -d "deploy/prod" ]]; then
   exit 1
 fi
 
-# Step 1: Copy example.env to .env
+# Copy example.env --> .env
 copy_example_env() {
   echo "Copying deploy/prod/example.env to deploy/prod/.env..."
 
@@ -35,51 +35,146 @@ copy_example_env() {
 
 copy_example_env
 
-# Step 2: Replace {{DOMAIN}} with user input
+# Replace {{DOMAIN}}
 replace_domain() {
-  echo "Setting up domain configuration..."
+  echo "Setting up domain configuration..." >&2
 
-  read -p "Enter your domain name (e.g., marketplace.com): " -r domain
+  read -p "Enter your domain name (e.g., marketplace.com): " -r user_domain
 
-  if [[ -z "$domain" ]]; then
+  if [[ -z "$user_domain" ]]; then
     echo "Error: Domain name cannot be empty"
     exit 1
   fi
 
   # Replace {{DOMAIN}} in .env file
-  sed -i "s/{{DOMAIN}}/$domain/g" "deploy/prod/.env"
-  echo "Replaced {{DOMAIN}} with $domain in deploy/prod/.env"
+  sed -i '' "s/{{DOMAIN}}/$user_domain/g" "deploy/prod/.env"
+  echo "Replaced {{DOMAIN}} with $user_domain in deploy/prod/.env" >&2
+
+  # Return the domain
+  echo "$user_domain"
 }
 
-replace_domain
+domain=$(replace_domain)
 
+# Replace {{HMAC_SECRET}}
 setup_hmac_secret() {
   echo "Setting up HMAC_SECRET..."
 
   read -p "Auto-generate HMAC_SECRET? (Y/n): " -n 1 -r
   echo
 
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    hmac_secret=$(openssl rand -hex 32)
-    echo "Generated HMAC_SECRET: $hmac_secret"
-  else
-    read -p "Enter your HMAC_SECRET (64 hex characters): " -r hmac_secret
+  if [[ "$REPLY" == "n" || "$REPLY" == "N" ]]; then
+    read -p "Enter your HMAC_SECRET: " -r hmac_secret
     if [[ -z "$hmac_secret" ]]; then
       echo "Error: HMAC_SECRET cannot be empty"
       exit 1
     fi
+  else
+    hmac_secret=$(openssl rand -hex 32)
+    echo "Generated HMAC_SECRET: $hmac_secret"
   fi
 
   # Replace placeholder in .env
-  sed -i "s/{{HMAC_SECRET}}/$hmac_secret/g" "deploy/prod/.env"
+  sed -i '' "s/{{HMAC_SECRET}}/$hmac_secret/g" "deploy/prod/.env"
   echo "HMAC_SECRET set in deploy/prod/.env"
 }
 
 setup_hmac_secret
 
+# Generate RSA Keys (used by JWT)
+setup_rsa_keys() {
+  echo "Setting up RSA keys for JWT..."
 
-# Generate IMGPROXY_KEY and IMGPROXY_SALT and set value in deploy/prod/.env
+  if [[ -f "deploy/prod/private.pem" || -f "deploy/prod/public.pem" ]]; then
+    echo "Warning: RSA keys already exists"
+    read -p "Regenerate RSA keys? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      echo "Using existing RSA keys"
+      return 0
+    fi
+    echo "Backing up existing keys..."
+    cp "deploy/prod/private.pem" "deploy/prod/private.pem.backup.$(date +%Y%m%d_%H%M%S)"
+    cp "deploy/prod/public.pem" "deploy/prod/public.pem.backup.$(date +%Y%m%d_%H%M%S)"
+  fi
 
-# GENERATE RSA KEYS
-# openssl genpkey -algorithm RSA -out private.pem -pkeyopt rsa_keygen_bits:2048
-# openssl rsa -pubout -in private.pem -out public.pem
+  echo "Generating RSA key pair..."
+
+  # Generate private key (2048 bits)
+  openssl genpkey -algorithm RSA -out "deploy/prod/private.pem" -pkeyopt rsa_keygen_bits:2048
+
+  # Generate public key from private key
+  openssl rsa -pubout -in "deploy/prod/private.pem" -out "deploy/prod/public.pem" 
+
+  echo "Generated RSA keys:"
+  echo "  Private key: deploy/prod/private.pem"
+  echo "  Public key:  deploy/prod/public.pem"  
+}
+
+setup_rsa_keys
+
+# Replace {{IMGPROXY_KEY}} {{IMGPROXY_SALT}}
+setup_imgproxy_keys() {
+  echo "Setting up IMGPROXY_KEY and IMGPROXY_SALT..."
+
+  read -p "Auto-generate IMGPROXY_KEY and IMGPROXY_SALT? (Y/n): " -n 1 -r
+  echo
+
+  if [[ "$REPLY" == "n" || "$REPLY" == "N" ]]; then
+    read -p "Enter your IMGPROXY_KEY: " -r imgproxy_key
+    if [[ -z "$imgproxy_key" ]]; then
+      echo "Error: IMGPROXY_KEY cannot be empty"
+      exit 1
+    fi
+    read -p "Enter your IMGPROXY_SALT: " -r imgproxy_salt
+    if [[ -z "$imgproxy_salt" ]]; then
+      echo "Error: IMGPROXY_SALT cannot be empty"
+      exit 1
+    fi    
+  else
+    imgproxy_key=$(openssl rand -hex 32)
+    echo "Generated IMGPROXY_KEY: $imgproxy_key"
+    imgproxy_salt=$(openssl rand -hex 32)
+    echo "Generated IMGPROXY_SALT: $imgproxy_salt"
+  fi
+
+  # Replace placeholder in .env
+  sed -i '' "s/{{IMGPROXY_KEY}}/$imgproxy_key/g" "deploy/prod/.env"
+  echo "IMGPROXY_KEY set in deploy/prod/.env"
+
+  # Replace placeholder in .env
+  sed -i '' "s/{{IMGPROXY_SALT}}/$imgproxy_salt/g" "deploy/prod/.env"
+  echo "IMGPROXY_SALT set in deploy/prod/.env"  
+}
+
+setup_imgproxy_keys
+
+# Replace {{STRIPE_WEBHOOK_SIGNING_SECRET}} {{STRIPE_SECRET_KEY}}
+setup_stripe_secrets() {
+  echo "Setting up STRIPE_WEBHOOK_SIGNING_SECRET and STRIPE_SECRET_KEY..."  
+}
+
+setup_stripe_secrets
+
+# Replace {{MAIL_API_KEY}} {{MAIL_API_SECRET}} {{MAIL_FROM_EMAIL}} {{MAIL_FROM_NAME}}
+setup_mailjet() {}
+
+setup_mailjet
+
+# Generate SSL certificates and store them in docker volume
+# references ./ssl.sh script
+setup_ssl() {
+  read -p "Setup SSL certificates? (Y/n): " -n 1 -r
+  echo
+
+  if [[ "$REPLY" == "n" || "$REPLY" == "N" ]]; then
+    return 0
+  else
+    # Source the SSL functions
+    source deploy/prod/scripts/ssl.sh
+    echo "Setting up SSL certificates..."
+    init_ssl "$domain"  
+  fi   
+}
+
+setup_ssl
