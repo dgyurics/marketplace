@@ -187,9 +187,51 @@ setup_stripe_secrets() {
 setup_stripe_secrets
 
 # Replace {{MAIL_API_KEY}} {{MAIL_API_SECRET}} {{MAIL_FROM_EMAIL}} {{MAIL_FROM_NAME}}
-# setup_mailjet() {}
+setup_mailjet() {
+  echo "Setting up MAIL_API_KEY, MAIL_API_SECRET, MAIL_FROM_EMAIL, MAIL_FROM_NAME..."
 
-# setup_mailjet
+  read -p "Enter your MAIL_API_KEY: " -r mail_api_key
+  if [[ -z "$mail_api_key" ]]; then
+    echo "Error: MAIL_API_KEY cannot be empty"
+    exit 1
+  fi
+
+  read -p "Enter your MAIL_API_SECRET: " -r mail_api_secret
+  if [[ -z "$mail_api_secret" ]]; then
+    echo "Error: MAIL_API_SECRET cannot be empty"
+    exit 1
+  fi
+
+  read -p "Enter your MAIL_FROM_EMAIL: " -r mail_from_email
+  if [[ -z "$mail_from_email" ]]; then
+    echo "Error: MAIL_FROM_EMAIL cannot be empty"
+    exit 1
+  fi
+ 
+   read -p "Enter your MAIL_FROM_NAME: " -r mail_from_name
+  if [[ -z "$mail_from_name" ]]; then
+    echo "Error: MAIL_FROM_NAME cannot be empty"
+    exit 1
+  fi
+
+  # Replace placeholder in .env
+  sed -i '' "s/{{MAIL_API_KEY}}/$mail_api_key/g" "deploy/prod/.env"
+  echo "MAIL_API_KEY set in deploy/prod/.env"
+
+  # Replace placeholder in .env
+  sed -i '' "s/{{MAIL_API_SECRET}}/$mail_api_secret/g" "deploy/prod/.env"
+  echo "MAIL_API_SECRET set in deploy/prod/.env"
+
+  # Replace placeholder in .env
+  sed -i '' "s/{{MAIL_FROM_EMAIL}}/$mail_from_email/g" "deploy/prod/.env"
+  echo "MAIL_FROM_EMAIL set in deploy/prod/.env"
+
+  # Replace placeholder in .env
+  sed -i '' "s/{{MAIL_FROM_NAME}}/$mail_from_name/g" "deploy/prod/.env"
+  echo "MAIL_FROM_NAME set in deploy/prod/.env"
+}
+
+setup_mailjet
 
 # Generate SSL certificates and store them in docker volume
 # references ./ssl.sh script
