@@ -149,17 +149,47 @@ setup_imgproxy_keys() {
 
 setup_imgproxy_keys
 
-# Replace {{STRIPE_WEBHOOK_SIGNING_SECRET}} {{STRIPE_SECRET_KEY}}
+# Replace {{STRIPE_WEBHOOK_SIGNING_SECRET}} {{STRIPE_SECRET_KEY}} {{STRIPE_PUBLISHABLE_KEY}}
 setup_stripe_secrets() {
-  echo "Setting up STRIPE_WEBHOOK_SIGNING_SECRET and STRIPE_SECRET_KEY..."  
+  echo "Setting up STRIPE_WEBHOOK_SIGNING_SECRET, STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY..."
+
+  read -p "Enter your STRIPE_WEBHOOK_SIGNING_SECRET: " -r stripe_webhook_signing_secret
+  if [[ -z "$stripe_webhook_signing_secret" ]]; then
+    echo "Error: STRIPE_WEBHOOK_SIGNING_SECRET cannot be empty"
+    exit 1
+  fi
+
+  read -p "Enter your STRIPE_SECRET_KEY: " -r stripe_secret_key
+  if [[ -z "$stripe_secret_key" ]]; then
+    echo "Error: STRIPE_SECRET_KEY cannot be empty"
+    exit 1
+  fi
+
+  read -p "Enter your STRIPE_PUBLISHABLE_KEY: " -r stripe_publishable_key
+  if [[ -z "$stripe_publishable_key" ]]; then
+    echo "Error: STRIPE_PUBLISHABLE_KEY cannot be empty"
+    exit 1
+  fi
+
+  # Replace placeholder in .env
+  sed -i '' "s/{{STRIPE_WEBHOOK_SIGNING_SECRET}}/$stripe_webhook_signing_secret/g" "deploy/prod/.env"
+  echo "STRIPE_WEBHOOK_SIGNING_SECRET set in deploy/prod/.env"
+
+  # Replace placeholder in .env
+  sed -i '' "s/{{STRIPE_SECRET_KEY}}/$stripe_secret_key/g" "deploy/prod/.env"
+  echo "STRIPE_SECRET_KEY set in deploy/prod/.env"
+
+  # Replace placeholder in .env
+  sed -i '' "s/{{STRIPE_PUBLISHABLE_KEY}}/$stripe_publishable_key/g" "deploy/prod/.env"
+  echo "STRIPE_PUBLISHABLE_KEY set in deploy/prod/.env"
 }
 
 setup_stripe_secrets
 
 # Replace {{MAIL_API_KEY}} {{MAIL_API_SECRET}} {{MAIL_FROM_EMAIL}} {{MAIL_FROM_NAME}}
-setup_mailjet() {}
+# setup_mailjet() {}
 
-setup_mailjet
+# setup_mailjet
 
 # Generate SSL certificates and store them in docker volume
 # references ./ssl.sh script
