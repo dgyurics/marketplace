@@ -50,6 +50,10 @@ replace_domain() {
   sed -i '' "s/{{DOMAIN}}/$user_domain/g" "deploy/prod/.env"
   echo "Replaced {{DOMAIN}} with $user_domain in deploy/prod/.env" >&2
 
+  # Replace {{DOMAIN}} in nginx.conf file
+  sed -i '' "s/{{DOMAIN}}/$user_domain/g" "deploy/prod/nginx.conf"
+  echo "Replaced {{DOMAIN}} with $user_domain in deploy/prod/nginx.conf" >&2
+
   # Return the domain
   echo "$user_domain"
 }
