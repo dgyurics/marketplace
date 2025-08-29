@@ -9,11 +9,11 @@ node_modules
 dist
 
 # Ignore environment files
-.env
+.env*
 
 # Ignore encryption keys
-private.pem
-public.pem
+private.pem*
+public.pem*
 
 # Ignore images
 **/images/
