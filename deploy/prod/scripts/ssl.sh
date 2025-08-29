@@ -10,58 +10,6 @@ set -euo pipefail
 # 2. Obtaining or renewing SSL certificates via Let's Encrypt
 # =============================================================================
 
-# Colors for output
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly NC='\033[0m' # No Color
-
-# Utility functions
-log_info() {
-  echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-log_success() {
-  echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-log_warning() {
-  echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-log_error() {
-  echo -e "${RED}[ERROR]${NC} $1" >&2
-}
-
-confirm_action() {
-  local prompt="$1"
-  local default="${2:-N}"
-  
-  if [[ "$default" == "Y" ]]; then
-    read -p "$prompt (Y/n): " -n 1 -r
-  else
-    read -p "$prompt (y/N): " -n 1 -r
-  fi
-  echo
-  
-  if [[ "$default" == "Y" ]]; then
-    [[ "$REPLY" != "n" && "$REPLY" != "N" ]]
-  else
-    [[ "$REPLY" == "y" || "$REPLY" == "Y" ]]
-  fi
-}
-
-validate_input() {
-  local input="$1"
-  local field_name="$2"
-  
-  if [[ -z "$input" ]]; then
-    log_error "$field_name cannot be empty"
-    exit 1
-  fi
-}
-
 # SSL certificate functions
 check_existing_certificates() {
   local domain="$1"
@@ -110,7 +58,7 @@ obtain_certificates() {
   
   # Shut down all containers to free port 80
   log_info "Stopping containers to free port 80..."
-  docker-compose down
+  docker compose -f deploy/prod/docker-compose.yaml stop
   
   # GET SSL CERTIFICATES using Let's Encrypt
   log_info "Requesting certificates from Let's Encrypt..."
@@ -169,12 +117,3 @@ setup_auto_renewal() {
   mkdir -p logs
   log_success "Auto-renewal setup complete!"
 }
-
-# Allow script to be run standalone
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  if [[ $# -eq 0 ]]; then
-    log_error "Usage: $0 <domain>"
-    exit 1
-  fi
-  init_ssl "$1"
-fi

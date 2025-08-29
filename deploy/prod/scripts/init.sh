@@ -84,7 +84,14 @@ replace_placeholder() {
   local value="$2"
   local file="${3:-$ENV_FILE}"
   
-  sed -i '' "s/{{$placeholder}}/$value/g" "$file"
+  # Cross-platform sed: detect OS and use appropriate syntax
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    sed -i '' "s/{{$placeholder}}/$value/g" "$file"
+  else
+    # Linux and others
+    sed -i "s/{{$placeholder}}/$value/g" "$file"
+  fi
 }
 
 # Validation
