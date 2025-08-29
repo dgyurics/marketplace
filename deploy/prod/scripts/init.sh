@@ -299,7 +299,7 @@ main() {
   echo
   echo "Next steps:"
   echo "1. Review your configuration in $ENV_FILE"
-  echo "2. Run 'docker-compose -f deploy/prod/docker-compose.yaml up -d' to start services"
+  echo "2. Run 'docker compose -f deploy/prod/docker-compose.yaml up -d' to start services"
   echo "3. Verify your application is accessible at https://$domain"
 }
 

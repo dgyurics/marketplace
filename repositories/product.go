@@ -125,7 +125,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 	argIndex := len(args) + 1
 
 	if filter.InStock {
-		queryBuilder.WriteString(" AND p.quantity > 0")
+		queryBuilder.WriteString(" AND p.inventory > 0")
 	}
 
 	if filter.SortByPrice {
