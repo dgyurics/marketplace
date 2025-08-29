@@ -240,17 +240,10 @@ setup_mailjet
 # Generate SSL certificates and store them in docker volume
 # references ./ssl.sh script
 setup_ssl() {
-  read -p "Setup SSL certificates? (Y/n): " -n 1 -r
-  echo
-
-  if [[ "$REPLY" == "n" || "$REPLY" == "N" ]]; then
-    return 0
-  else
-    # Source the SSL functions
-    source deploy/prod/scripts/ssl.sh
-    echo "Setting up SSL certificates..."
-    init_ssl "$domain"  
-  fi   
+  # Source the SSL functions
+  source deploy/prod/scripts/ssl.sh
+  echo "Setting up SSL certificates..."
+  init_ssl "$domain"  
 }
 
 setup_ssl
