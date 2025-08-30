@@ -24,10 +24,7 @@
       <div class="product-actions">
         <div v-if="product.details" class="product-details">
           <h3>Details</h3>
-          <div
-            class="details-grid"
-            :class="{ 'two-columns': Object.keys(product.details).length > 4 }"
-          >
+          <div class="details">
             <p v-for="(value, key) in product.details" :key="key">
               <b class="detail-item">{{ key }}:</b> {{ value }}
             </p>
@@ -278,18 +275,7 @@ const addToCart = async () => {
   text-transform: capitalize;
 }
 
-.details-grid {
-  display: flex;
-  flex-direction: column;
-}
-
-.details-grid.two-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 20px;
-}
-
-.details-grid.two-columns p {
+.details p {
   margin-bottom: 8px;
 }
 
