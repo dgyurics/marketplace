@@ -14,6 +14,7 @@ type UserRepository interface {
 	SetCredentials(ctx context.Context, user *types.User) error
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
+	GetAllAdmins(ctx context.Context) ([]types.User, error)
 }
 
 type userRepository struct {
@@ -156,4 +157,32 @@ func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]ty
 		return nil, err
 	}
 	return users, nil
+}
+
+func (r *userRepository) GetAllAdmins(ctx context.Context) ([]types.User, error) {
+	admins := []types.User{}
+	query := `
+		SELECT email
+		FROM users
+		WHERE role = 'admin'
+	`
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var user types.User
+		err = rows.Scan(&user.Email)
+		if err != nil {
+			return nil, err
+		}
+		admins = append(admins, user)
+	}
+
+	// Check for errors from iterating over rows.
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return admins, nil
 }

@@ -16,6 +16,7 @@ type UserService interface {
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	Login(ctx context.Context, credential *types.Credential) (*types.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
+	GetAllAdmins(ctx context.Context) ([]types.User, error)
 }
 
 type userService struct {
@@ -106,4 +107,8 @@ func (s *userService) verifyEmail(ctx context.Context, credentials *types.Creden
 
 func (s *userService) GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error) {
 	return s.repo.GetAllUsers(ctx, page, limit)
+}
+
+func (s *userService) GetAllAdmins(ctx context.Context) ([]types.User, error) {
+	return s.repo.GetAllAdmins(ctx)
 }

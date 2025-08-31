@@ -34,6 +34,7 @@ type paymentService struct {
 	localeConfig types.LocaleConfig
 	serviceEmail EmailSender
 	serviceTmp   TemplateService
+	serviceUser  UserService
 	repo         repositories.PaymentRepository
 }
 
@@ -43,6 +44,7 @@ func NewPaymentService(
 	localeConfig types.LocaleConfig,
 	serviceEmail EmailSender,
 	serviceTmp TemplateService,
+	serviceUser UserService,
 	repo repositories.PaymentRepository) PaymentService {
 	return &paymentService{
 		HttpClient:   httpClient,
@@ -50,6 +52,7 @@ func NewPaymentService(
 		localeConfig: localeConfig,
 		serviceEmail: serviceEmail,
 		serviceTmp:   serviceTmp,
+		serviceUser:  serviceUser,
 		repo:         repo,
 	}
 }
@@ -250,6 +253,37 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 			slog.Error("Error sending email: ", "error", err)
 		}
 	}(order.Email, order.ID)
+
+	// Send order received email to admins
+	go func(order types.Order) {
+		admins, err := s.serviceUser.GetAllAdmins(context.Background())
+		if err != nil {
+			slog.Error("Error fetching admin users: ", "error", err)
+			return
+		}
+
+		// Extract emails
+		adminEmails := make([]string, len(admins))
+		for i, admin := range admins {
+			adminEmails[i] = admin.Email
+		}
+
+		data := map[string]string{
+			"OrderID":     order.ID,
+			"UserID":      order.UserID,
+			"UserEmail":   order.Email,
+			"TotalAmount": fmt.Sprintf("$%.2f", float64(order.TotalAmount)/100), // FIXME display using local currency
+			"UpdatedAt":   order.UpdatedAt.Format("Jan 2, 2006 at 3:04 PM UTC"), // FIXME display using local format + time
+		}
+		body, err := s.serviceTmp.RenderToString(OrderReceived, data)
+		if err != nil {
+			slog.Error("Error loading email template: ", "error", err)
+			return
+		}
+		if err := s.serviceEmail.SendEmail(adminEmails, "Order Received", body, true); err != nil {
+			slog.Error("Error sending email: ", "error", err)
+		}
+	}(order)
 
 	return nil
 }
