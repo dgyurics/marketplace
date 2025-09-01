@@ -24,7 +24,7 @@ const isNotFound = computed(() => {
   return route.matched.length === 1 && route.matched[0].path === '/:pathMatch(.*)*'
 })
 
-const bannerMessage = 'TEST MODE - Products are for demonstration only'
+const bannerMessage = 'DEMO ONLY - Products not for sale'
 
 onMounted(() => {
   isMobile.value = window.innerWidth < 768
