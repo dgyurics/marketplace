@@ -6,6 +6,7 @@
       <div v-if="authStore.user?.role === 'admin'">
         <button class="btn btn" @click="goToCategories">Category</button>
         <button class="btn btn" @click="goToProducts">Product</button>
+        <button class="btn btn" @click="goToOrders">Order</button>
       </div>
     </template>
     <template v-else>
@@ -113,6 +114,10 @@ const goToCategories = () => {
 
 const goToProducts = () => {
   router.push('/admin/products')
+}
+
+const goToOrders = () => {
+  router.push('/admin/orders')
 }
 
 const handleLogout = async () => {
