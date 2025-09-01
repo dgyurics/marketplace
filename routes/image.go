@@ -147,21 +147,17 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 		"path": imagePath,
 	})
 
-	// FIXME superfluous response.WriteHeader call
 	// If background removal requested, do it asynchronously after response is sent
 	if removeBg {
-		// Clone the context to prevent it from being canceled when the request completes
-		bgCtx := context.Background()
 		go func() {
+			// Clone the context to prevent it from being canceled when the request completes
+			bgCtx := context.Background()
 			newImagePath, err := h.imageService.RemoveBackground(bgCtx, imagePath, filename)
 			if err != nil {
 				slog.ErrorContext(r.Context(), "error removing background", "productID", productID, "error", err)
-				u.RespondWithError(w, r, http.StatusInternalServerError, "error removing background")
 				return
 			}
 			slog.Debug("Background removed successfully", "newPath", newImagePath)
-
-			// Do we need to create new signatures/records??
 		}()
 	}
 }

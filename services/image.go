@@ -173,6 +173,7 @@ const (
 )
 
 // RemoveBackground removes the background from the image specified by imagePath
+// It does so by sending a http multipart request to rembg service
 func (s *imageService) RemoveBackground(ctx context.Context, filePath, filename string) (string, error) {
 	// open source image
 	file, err := os.Open(filePath)
