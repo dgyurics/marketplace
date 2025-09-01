@@ -1,9 +1,7 @@
 #!/bin/bash
 
-set -euo pipefail
-
 # =============================================================================
-# Production Environment Secure Socket Layer (SSL) Setup Script
+# Secure Socket Layer (SSL) Setup Script
 # =============================================================================
 # This script initializes the production environment by:
 # 1. Checking for existing SSL certificates

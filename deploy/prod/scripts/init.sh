@@ -258,14 +258,14 @@ setup_mail_credentials() {
 setup_ssl_certificates() {
   local domain="$1"
   
-  if [[ ! -f "$PROD_DIR/scripts/ssl.sh" ]]; then
-      log_error "SSL script not found: $PROD_DIR/scripts/ssl.sh"
+  if [[ ! -f "$PROD_DIR/scripts/ssl-setup.sh" ]]; then
+      log_error "SSL script not found: $PROD_DIR/scripts/ssl-setup.sh"
       exit 1
   fi
   
   log_info "Setting up SSL certificates..."
-  # shellcheck source=./ssl.sh
-  source "$PROD_DIR/scripts/ssl.sh"
+  # shellcheck source=./ssl-setup.sh
+  source "$PROD_DIR/scripts/ssl-setup.sh"
   init_ssl "$domain"
 }
 

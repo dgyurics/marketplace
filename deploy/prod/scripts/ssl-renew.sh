@@ -1,5 +1,8 @@
 #!/bin/bash
-# Auto-renewal script for SSL certificates
+
+# =============================================================================
+# SSL Automatic Renewal Script
+# =============================================================================
 
 set -euo pipefail
 
