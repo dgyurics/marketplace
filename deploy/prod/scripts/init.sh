@@ -219,6 +219,14 @@ setup_stripe_credentials() {
   replace_placeholder "STRIPE_WEBHOOK_SIGNING_SECRET" "$webhook_secret"
   replace_placeholder "STRIPE_SECRET_KEY" "$secret_key"
   replace_placeholder "STRIPE_PUBLISHABLE_KEY" "$publishable_key"
+
+  if confirm_action "Enable Test Mode?" "Y"; then
+    replace_placeholder "TEST_MODE" "true"
+    log_success "Test Mode enabled"
+  else
+    replace_placeholder "TEST_MODE" "false"
+    log_success "Test Mode disabled"
+  fi
   
   log_success "Stripe credentials configured"
 }
