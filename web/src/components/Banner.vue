@@ -17,5 +17,10 @@ defineProps<{ message?: string }>()
   color: #000;
   font-size: 12px;
   padding: 2px 0;
+  /* Compensate for scrollbar */
+  box-sizing: border-box;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
 </style>

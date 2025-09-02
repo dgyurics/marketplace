@@ -47,11 +47,9 @@ onMounted(() => {
   flex-grow: 1; /* Takes up remaining space between navbar and footer */
   display: flex;
   flex-direction: column;
-  padding-bottom: 50px; /* Adjust based on footer height */
 }
 
 .home-content {
   padding-top: 0;
-  padding-bottom: 0;
 }
 </style>

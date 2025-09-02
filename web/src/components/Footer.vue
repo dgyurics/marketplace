@@ -1,32 +1,55 @@
 <template>
-  <footer :class="['footer', { 'transparent-footer': route.path === '/' }]">
-    <p>© {{ currentYear }} Marketplace. All rights reserved.</p>
+  <footer class="footer">
+    <p>
+      © {{ currentYear }} Open Marketplace Project
+      <BuildingStorefrontIcon class="footer-icon" />
+      <span class="separator">|</span>
+      <a href="https://github.com/dgyurics/marketplace">View Source</a>
+    </p>
   </footer>
 </template>
 
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
-const route = useRoute()
+import { BuildingStorefrontIcon } from '@heroicons/vue/24/outline'
 const currentYear = new Date().getFullYear()
 </script>
 
 <style scoped>
 .footer {
-  z-index: 1000; /* Ensure it's above other content */
-  width: 100%; /* Changed from 100vw */
-  box-sizing: border-box; /* Ensures padding doesn’t add extra width */
+  width: 100%;
+  box-sizing: border-box;
   padding: 15px 0;
   text-align: center;
   font-size: 14px;
+  background: #fff;
   color: #000;
-  bottom: 0;
-  left: 0;
-  transition: background 0.3s ease-in-out;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin-top: auto;
+  z-index: 1000;
+  position: relative;
 }
 
-.transparent-footer {
-  background: transparent; /* Removes background on Home */
-  color: #fff; /* Changes text color on Home */
-  position: fixed;
+.separator {
+  margin: 0 1rem;
+  opacity: 0.5;
+}
+
+.footer-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 0.5rem;
+  stroke-width: 1.5;
+}
+
+a {
+  color: #000;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #333;
 }
 </style>
