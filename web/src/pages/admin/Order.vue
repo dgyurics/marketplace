@@ -1,6 +1,6 @@
 <template>
   <div class="order-container">
-    <p>//TODO</p>
+    <p>coming soon</p>
   </div>
 </template>
 
@@ -12,5 +12,8 @@
   margin: auto;
   padding: 20px;
   text-align: center;
+}
+p {
+  text-transform: uppercase;
 }
 </style>

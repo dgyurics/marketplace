@@ -1,36 +1,43 @@
 <template>
-  <nav :class="['navbar', { 'transparent-navbar': route.path === '/' }]">
-    <div class="logo">
-      <router-link to="/">marketplace</router-link>
-    </div>
+  <nav class="navbar">
     <div class="nav-container">
-      <div class="nav-side"></div>
-      <!-- empty space to balance nav-icons -->
-      <div class="nav-links">
-        <router-link v-for="category in categories" :key="category.id" :to="`/${category.slug}`">
-          <span class="nav-text">{{ category.name }}</span>
-        </router-link>
+      <!-- Left: Logo -->
+      <div class="nav-left">
+        <div class="logo">
+          <router-link to="/">marketplace</router-link>
+        </div>
       </div>
-      <div class="nav-icons">
-        <router-link to="/cart">
-          <ShoppingCartIcon class="icon" />
-        </router-link>
-        <router-link to="/auth">
-          <UserIcon class="icon" />
-        </router-link>
+
+      <!-- Center: Navigation Links -->
+      <div class="nav-center">
+        <div class="nav-links">
+          <router-link v-for="category in categories" :key="category.id" :to="`/${category.slug}`">
+            <span class="nav-text">{{ category.name }}</span>
+          </router-link>
+        </div>
+      </div>
+
+      <!-- Right: Icons -->
+      <div class="nav-right">
+        <div class="nav-icons">
+          <router-link to="/cart">
+            <ShoppingBagIcon class="icon" />
+          </router-link>
+          <router-link to="/auth">
+            <UserIcon class="icon" />
+          </router-link>
+        </div>
       </div>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { ShoppingCartIcon, UserIcon } from '@heroicons/vue/24/outline'
+import { ShoppingBagIcon, UserIcon } from '@heroicons/vue/24/outline'
 import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
 
 import { getCategories } from '@/services/api'
 import type { Category } from '@/types'
-const route = useRoute()
 
 const categories = ref<Category[]>([])
 
@@ -51,90 +58,114 @@ nav {
   left: 0;
   width: 100vw;
   z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 30px 0;
   background: #fff;
   color: #000;
   box-sizing: border-box;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* Centered Logo */
+/* Main Nav Container */
+.nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  height: 70px;
+  position: relative;
+}
+
+/* Left Section - Logo */
+.nav-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 .logo {
-  font-size: 2.5rem;
+  text-transform: uppercase;
+  /* font-size: 0.85rem; */
+  font-weight: 400;
+  letter-spacing: 0.05em;
+
+  font-size: 1rem;
   font-weight: 400;
   font-family: 'Playfair Display', serif;
-  text-transform: lowercase;
-  letter-spacing: 1px;
-  text-align: center; /* Ensures full centering */
-  padding-bottom: 15px; /* Extra spacing below logo */
+  /* text-transform: lowercase; */
+  letter-spacing: 0.05em;
+  color: #000;
 }
 
 .logo a {
   color: #000;
   text-decoration: none;
   transition: color 0.3s ease;
+  position: relative;
 }
 
-.logo a:hover {
-  color: #555;
-}
-
-/* Nav Container */
-.nav-container {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  width: 90%;
-  max-width: 1200px;
-}
-
-.nav-side {
-  height: 100%; /* just acts as left-side spacing */
-}
-
-.nav-text {
-  text-transform: capitalize;
+/* Center Section - Navigation Links */
+.nav-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
 }
 
 .nav-links {
   display: flex;
-  gap: 20px;
+  gap: 2.5rem;
   justify-content: center;
+}
+
+.nav-text {
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+
+.nav-links a {
+  color: #000;
+  text-decoration: none;
+  transition: color 0.3s ease;
+  position: relative;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: #000;
+  transition: width 0.3s ease;
+}
+
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+/* Right Section - Icons */
+.nav-right {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .nav-icons {
   display: flex;
-  gap: 15px;
+  gap: 1.5rem;
   justify-content: flex-end;
 }
 
 .nav-icons .icon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   cursor: pointer;
   transition: color 0.3s ease;
-}
-
-.nav-icons .icon:hover {
-  color: #555;
-}
-
-.transparent-navbar {
-  background: transparent;
-  color: #fff;
-}
-
-.transparent-navbar .logo a,
-.transparent-navbar .nav-links a,
-.transparent-navbar .nav-icons .icon {
-  color: #fff;
-}
-
-.transparent-navbar .logo a:hover,
-.transparent-navbar .nav-links a:hover,
-.transparent-navbar .nav-icons .icon:hover {
-  color: #ddd;
+  color: #000;
+  stroke-width: 1.5;
 }
 </style>
