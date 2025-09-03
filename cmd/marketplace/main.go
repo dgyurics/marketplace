@@ -113,8 +113,12 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	httpClient := utilities.NewDefaultHTTPClient(10 * time.Second) // TODO make this configurable
 
 	// create services
+	templateService, err := services.NewTemplateService(config.TemplatesDir)
+	if err != nil {
+		slog.Error("Failed to initialize template service", "error", err, "templatesDir", config.TemplatesDir)
+		os.Exit(1)
+	}
 	emailService := services.NewMailjetSender(config.Email)
-	templateService, _ := services.NewTemplateService(config.TemplatesDir)
 	addressService := services.NewAddressService(addressRepository, config.Locale)
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)

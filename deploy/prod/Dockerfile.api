@@ -27,5 +27,8 @@ COPY --from=builder /app/bin/marketplace .
 # Copy JWT keys
 COPY deploy/prod/private.pem deploy/prod/public.pem ./
 
+# Copy templates directory
+COPY utilities/templates utilities/templates
+
 EXPOSE 8000
 CMD ["./marketplace"]
