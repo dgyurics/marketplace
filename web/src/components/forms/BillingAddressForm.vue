@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { computed } from 'vue'
 
 import type { Address } from '@/types'
 
@@ -36,16 +36,14 @@ const props = defineProps<{
   modelValue: Address
 }>()
 
-const address = props.modelValue
+const emit = defineEmits<{
+  'update:modelValue': [value: Address]
+}>()
 
-watch(
-  address,
-  (newVal) => {
-    // mutate parent object when child changes
-    Object.assign(props.modelValue, newVal)
-  },
-  { deep: true }
-)
+const address = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value),
+})
 </script>
 
 <style scoped>
