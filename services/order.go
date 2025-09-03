@@ -57,7 +57,7 @@ func (os *orderService) UpdateOrder(ctx context.Context, params types.OrderParam
 }
 
 func (os *orderService) CancelStaleOrders(ctx context.Context) {
-	interval := 30 * time.Minute // Cancel orders older than 30 minutes with status "pending"
+	interval := 10 * time.Minute // Cancel orders older than 10 minutes with status "pending"
 	paymentIntentIDs, err := os.orderRepo.CancelPendingOrders(ctx, interval)
 	if err != nil {
 		slog.Error("Error canceling stale orders", "error", err)
