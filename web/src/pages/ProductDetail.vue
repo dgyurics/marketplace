@@ -131,11 +131,11 @@ const addToCart = async () => {
 }
 
 :deep(.swiper-button-prev) {
-  left: -50px !important;
+  left: 10px !important;
 }
 
 :deep(.swiper-button-next) {
-  right: -50px !important;
+  right: 10px !important;
 }
 
 /* Ensure gallery container maintains consistent height */
