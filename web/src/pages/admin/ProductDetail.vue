@@ -70,9 +70,9 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import KeyValueEditor from '@/components/forms/KeyValueEditor.vue'
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
-import KeyValueEditor from '@/components/KeyValueEditor.vue'
 import { getProductById, getCategories, updateProduct } from '@/services/api'
 
 const route = useRoute()

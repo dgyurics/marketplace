@@ -67,7 +67,7 @@ import type {
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import BillingAddressForm from '@/components/BillingAddressForm.vue'
+import BillingAddressForm from '@/components/forms/BillingAddressForm.vue'
 import OrderSummary from '@/components/OrderSummary.vue'
 import { COUNTRY } from '@/config'
 import { getStripe, confirmCardPayment } from '@/services/stripe'
