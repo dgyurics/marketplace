@@ -1,7 +1,7 @@
 <template>
   <footer class="footer">
     <p>
-      © {{ currentYear }} Open Marketplace Project
+      © Open Marketplace Project
       <BuildingStorefrontIcon class="footer-icon" />
       <span class="separator">|</span>
       <a href="https://github.com/dgyurics/marketplace">View Source</a>
@@ -11,7 +11,6 @@
 
 <script setup lang="ts">
 import { BuildingStorefrontIcon } from '@heroicons/vue/24/outline'
-const currentYear = new Date().getFullYear()
 </script>
 
 <style scoped>
