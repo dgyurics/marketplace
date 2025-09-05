@@ -5,7 +5,7 @@
         class="feature-image"
         src="@/assets/roberto-nickson-bg.webp"
         alt="Background Image"
-        loading="lazy"
+        loading="eager"
         decoding="async"
       />
     </div>
