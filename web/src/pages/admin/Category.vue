@@ -16,8 +16,8 @@
             type="text"
             placeholder="Description (optional)"
           />
-          <button type="submit" class="submit-button">Add Category</button>
         </div>
+        <button type="submit" class="btn-full-width mt-15">Create Category</button>
       </form>
     </div>
     <div class="category-grid">
@@ -118,21 +118,6 @@ onMounted(() => {
   font-size: 16px;
   background-color: transparent;
   min-width: 200px;
-}
-
-.submit-button {
-  padding: 10px 20px;
-  background-color: #000;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
-}
-
-.submit-button:hover {
-  background-color: #333;
 }
 
 .category-grid {

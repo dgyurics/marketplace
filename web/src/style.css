@@ -48,16 +48,56 @@ a:hover {
 
 /* Buttons */
 button {
-  border: 1px solid #000;
-  background: transparent;
-  padding: 10px 20px;
-  font-size: 14px;
+  flex: 1;
+  padding: 12px;
+  background: #000;
+  color: #fff;
   font-weight: 600;
+  border: none;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
+  margin: 0;
+}
+
+.btn-lg {
+  font-size: 16px;
+  padding: 10px 20px;
+  min-width: 160px;
+}
+
+.btn-sm {
+  font-size: 12px;
+  padding: 8px 16px;
+  min-width: 120px;
+}
+
+.btn-md {
+  font-size: 14px;
+  padding: 10px 18px;
+  min-width: 140px;
+}
+
+.btn-full-width {
+  width: 100%;
+  display: block;
+}
+
+.btn-fit-content {
+  width: fit-content;
+}
+
+.btn-outline {
+  background: #fff;
+  border: 1px solid #000;
+  color: #000;
 }
 
 button:hover {
+  background: #333;
+}
+
+.btn-outline:hover {
   background: #000;
   color: #fff;
 }
@@ -101,6 +141,12 @@ h6 {
     padding: 8px 16px;
     font-size: 12px;
   }
+
+  .btn-lg {
+    font-size: 14px;
+    padding: 8px 16px;
+    min-width: 140px;
+  }  
 }
 
 .container {
@@ -129,24 +175,17 @@ h6 {
   margin-bottom: 15px;
 }
 
-.submit-button {
-  width: 100%;
-  padding: 10px;
-  background-color: black;
-  color: white;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
+/* Spacing utilities */
+.mt-15 {
   margin-top: 15px;
 }
 
-.submit-button:hover:not(:disabled) {
-  background-color: #333;
+.mt-20 {
+  margin-top: 20px;
 }
 
-.submit-button:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
+.mt-30 {
+  margin-top: 30px;
 }
 
 .unselectable {

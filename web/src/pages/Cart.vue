@@ -30,7 +30,7 @@
     <div v-if="items.length > 0" class="cart-total">
       <strong>Subtotal:</strong> ${{ (subtotal / 100).toFixed(2) }}
     </div>
-    <button v-if="items.length > 0" class="checkout-button" @click="goToCheckout">
+    <button v-if="items.length > 0" class="btn-full-width mt-15" @click="goToCheckout">
       Proceed to Checkout
     </button>
   </div>
@@ -202,21 +202,6 @@ ul {
 .item-quantity {
   color: #444;
   margin-top: 5px;
-}
-
-.checkout-button {
-  width: 100%;
-  padding: 10px;
-  background-color: black;
-  color: white;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-  margin-top: 15px;
-}
-
-.checkout-button:hover {
-  background-color: #333;
 }
 
 .cart-total {

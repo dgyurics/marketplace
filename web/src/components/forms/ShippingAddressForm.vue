@@ -36,7 +36,7 @@
       <small class="receipt-note">A receipt will be sent to this email.</small>
     </div>
 
-    <button type="submit" class="submit-button">Continue</button>
+    <button type="submit" class="btn-full-width mt-15">Continue</button>
   </form>
 </template>
 

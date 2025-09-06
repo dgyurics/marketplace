@@ -15,7 +15,7 @@
       </div>
 
       <div class="button-group">
-        <button type="button" class="btn" @click="handleUpdate">Update</button>
+        <button type="button" @click="handleUpdate">Update</button>
       </div>
 
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
@@ -121,7 +121,7 @@ label {
 /* Wider Input Fields */
 input {
   width: 100%;
-  max-width: 100%; /* Ensures the input is full-width */
+  max-width: 100%;
   padding: 10px 0;
   border: none;
   border-bottom: 2px solid #999;
@@ -149,21 +149,5 @@ input:focus {
   display: flex;
   justify-content: space-between;
   margin-top: 30px;
-}
-
-.btn {
-  flex: 1;
-  padding: 12px;
-  background: black;
-  color: white;
-  border: none;
-  cursor: pointer;
-  transition: background 0.3s ease;
-  font-size: 14px;
-  margin: 0 8px;
-}
-
-.btn:hover {
-  background: #333;
 }
 </style>

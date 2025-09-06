@@ -30,14 +30,16 @@
             </p>
           </div>
         </div>
-        <button class="add-to-cart" :disabled="isOutOfStock" @click="addToCart">
-          <span v-if="!addedToCart && !isOutOfStock">Add to Cart</span>
-          <span v-else-if="isOutOfStock">Out of Stock</span>
-          <span v-else class="checkmark-animation">&#10003;</span>
-        </button>
-        <p v-if="isLowStock" class="low-stock-warning">
-          Only {{ product.inventory }} left in stock
-        </p>
+        <div>
+          <button class="btn-lg" :disabled="isOutOfStock" @click="addToCart">
+            <span v-if="!addedToCart && !isOutOfStock">Add to Cart</span>
+            <span v-else-if="isOutOfStock">Out of Stock</span>
+            <span v-else class="checkmark-animation">&#10003;</span>
+          </button>
+          <p v-if="isLowStock" class="low-stock-warning">
+            Only {{ product.inventory }} left in stock
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -138,18 +140,16 @@ const addToCart = async () => {
   right: 10px !important;
 }
 
-/* Ensure gallery container maintains consistent height */
 .gallery-container {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
   max-width: 600px;
-  height: 500px; /* Ensures the gallery container has a consistent height */
+  height: 500px;
   margin-bottom: 35px;
 }
 
-/* Ensure all images maintain consistent height */
 .gallery-image {
   width: auto;
   max-width: 100%;
@@ -181,17 +181,17 @@ const addToCart = async () => {
 
 .product-detail-bottom {
   display: flex;
-  justify-content: space-between; /* Ensures better spacing */
+  justify-content: space-between;
   align-items: flex-start;
   width: 100%;
-  max-width: 1200px; /* Increase max width */
-  padding: 0 80px; /* Increased padding for better positioning */
+  max-width: 1200px;
+  padding: 0 80px;
 }
 
 .product-info {
   flex: 1;
   text-align: left;
-  max-width: 50%; /* Moves section slightly toward the center */
+  max-width: 50%;
   display: flex;
   flex-direction: column;
   justify-content: center; /* Vertically center content */
@@ -202,18 +202,8 @@ const addToCart = async () => {
   text-align: left;
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centers content horizontally */
-}
-
-.add-to-cart {
-  background-color: black;
-  color: white;
-  padding: 10px 20px;
-  font-size: 16px;
-  border: none;
-  cursor: pointer;
-  margin-top: 20px; /* Added margin for spacing */
-  min-width: 160px; /* Added min-width for consistent width */
+  align-items: center;
+  gap: 20px;
 }
 
 .product-details h3 {
@@ -266,6 +256,7 @@ const addToCart = async () => {
 }
 
 .low-stock-warning {
+  text-align: center;
   font-size: 12px;
   color: #c00;
   margin-top: 8px;

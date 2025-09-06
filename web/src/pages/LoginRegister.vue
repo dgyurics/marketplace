@@ -2,11 +2,13 @@
   <div class="auth-container">
     <template v-if="authStore.user?.role === 'user' || authStore.user?.role === 'admin'">
       <h2>You are logged in</h2>
-      <button class="btn btn" @click="handleLogout">Logout</button>
+      <button @click="handleLogout">Logout</button>
       <div v-if="authStore.user?.role === 'admin'">
-        <button class="btn btn" @click="goToCategories">Category</button>
-        <button class="btn btn" @click="goToProducts">Product</button>
-        <button class="btn btn" @click="goToOrders">Order</button>
+        <div class="button-group">
+          <button @click="goToCategories">Categories</button>
+          <button @click="goToProducts">Products</button>
+          <button @click="goToOrders">Orders</button>
+        </div>
       </div>
     </template>
     <template v-else>
@@ -27,8 +29,8 @@
         </div>
 
         <div class="button-group">
-          <button type="button" class="btn" @click="handleLogin">Login</button>
-          <button type="button" class="btn register-btn" @click="handleRegister">Register</button>
+          <button type="button" @click="handleLogin">Login</button>
+          <button type="button" class="btn-outline" @click="handleRegister">Register</button>
         </div>
 
         <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
@@ -170,17 +172,6 @@ h2 {
   margin-bottom: 50px;
 }
 
-.btn {
-  background: black;
-  color: white;
-  border: none;
-  cursor: pointer;
-  padding: 12px;
-  font-size: 14px;
-  width: 100%;
-  margin-top: 20px;
-}
-
 /* Labels */
 label {
   font-weight: 500;
@@ -193,7 +184,6 @@ label {
 input {
   width: 100%;
   max-width: 100%;
-  /* Ensures the input is full-width */
   padding: 10px 0;
   border: none;
   border-bottom: 2px solid #999;
@@ -221,33 +211,6 @@ input:focus {
   display: flex;
   justify-content: space-between;
   margin-top: 30px;
-}
-
-.btn {
-  flex: 1;
-  padding: 12px;
-  background: black;
-  color: white;
-  border: none;
-  cursor: pointer;
-  transition: background 0.3s ease;
-  font-size: 14px;
-  margin: 0;
-}
-
-.register-btn {
-  background: white;
-  color: black;
-  border: 1px solid black;
-  margin-left: 8px;
-}
-
-.register-btn:hover {
-  background: black;
-  color: white;
-}
-
-.btn:hover {
-  background: #333;
+  gap: 8px;
 }
 </style>

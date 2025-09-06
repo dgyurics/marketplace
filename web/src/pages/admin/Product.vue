@@ -36,7 +36,7 @@
           pair-name="Detail"
         />
 
-        <button type="submit" class="submit-button">Add Product</button>
+        <button type="submit" class="btn-full-width mt-15">Add Product</button>
       </form>
     </div>
     <div class="product-grid">
@@ -194,21 +194,6 @@ onMounted(() => {
   max-width: 600px;
   resize: vertical;
   line-height: 1.4;
-}
-
-.submit-button {
-  padding: 10px 20px;
-  background-color: #000;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
-}
-
-.submit-button:hover {
-  background-color: #333;
 }
 
 .product-grid {

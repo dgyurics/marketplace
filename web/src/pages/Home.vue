@@ -10,9 +10,9 @@
       />
       <div class="hero-content unselectable">
         <h1 class="hero-title">essential living</h1>
-        <div class="hero-links">
-          <router-link to="/new" class="hero-link">shop new</router-link>
-          <router-link to="/popular" class="hero-link">shop popular</router-link>
+        <div class="hero-buttons">
+          <button class="btn-sm" @click="$router.push('/new')">shop new</button>
+          <button class="btn-sm" @click="$router.push('/popular')">shop popular</button>
         </div>
       </div>
     </div>
@@ -48,6 +48,7 @@
   height: 100vh;
   object-fit: cover;
   position: absolute;
+  filter: grayscale(0.3);
   top: 0;
   left: 0;
   z-index: -1;
@@ -62,35 +63,45 @@
 }
 
 .hero-title {
-  font-size: 4rem;
-  font-weight: 400;
+  font-size: 2rem;
+  font-weight: 300;
   margin: 0;
-  text-transform: uppercase;
-  font-family: 'Bodoni Moda', serif;
-  letter-spacing: 15px;
-}
-
-.hero-links {
-  display: flex;
-  flex-direction: row;
-  gap: 2rem;
-  align-items: center;
-  justify-content: center;
-}
-
-.hero-link {
-  color: white;
-  text-decoration: none;
-  font-size: 0.9rem;
   text-transform: lowercase;
-  letter-spacing: 1px;
-  border-bottom: 1px solid white;
-  padding-bottom: 2px;
-  transition: all 0.3s ease;
+  font-family: 'Libre Baskerville', 'Georgia', serif;
+  letter-spacing: 8px;
+  position: relative;
+  line-height: 1.1;
 }
 
-.hero-link:hover {
-  color: rgba(255, 255, 255, 0.8);
-  border-bottom-color: rgba(255, 255, 255, 0.8);
+.hero-title::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 2px;
+  background: white;
+  opacity: 0.7;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 3rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-buttons button {
+  color: #fff;
+  background: #0000;
+  border: 1px solid #fff;
+  flex: none !important;
+  display: inline-block !important;
+}
+button:hover {
+  background: #ffffff;
+  color: #000;
 }
 </style>

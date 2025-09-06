@@ -53,7 +53,9 @@
         <h3>Billing Address</h3>
         <BillingAddressForm v-model="checkoutStore.billingAddress" />
       </div>
-      <button type="submit" class="submit-button" :disabled="isSubmitting">Place Order</button>
+      <button type="submit" class="btn-full-width mt-15" :disabled="isSubmitting">
+        Place Order
+      </button>
     </form>
   </div>
 </template>
@@ -245,21 +247,6 @@ label {
   font-size: 10px;
   color: #666;
   margin-top: 2px;
-}
-
-.back-button {
-  width: 100%;
-  padding: 10px;
-  background-color: #ddd;
-  color: black;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
-.back-button:hover {
-  background-color: #bbb;
 }
 
 .confirmation-note {

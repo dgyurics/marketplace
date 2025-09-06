@@ -54,10 +54,10 @@
         />
 
         <div class="form-actions">
-          <button type="submit" class="submit-button" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save Changes' }}
+          <button type="submit" class="btn-full-width mt-15" :disabled="saving">
+            Save Changes
           </button>
-          <button type="button" class="cancel-button" @click="goBack">Cancel</button>
+          <button type="button" class="btn-full-width btn-outline" @click="goBack">Cancel</button>
         </div>
       </form>
     </div>
@@ -214,21 +214,6 @@ onMounted(() => {
   margin-bottom: 30px;
 }
 
-.back-btn {
-  padding: 8px 16px;
-  background-color: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-
-.back-btn:hover {
-  background-color: #545b62;
-}
-
 .header h1 {
   margin: 0;
   font-size: 24px;
@@ -298,43 +283,5 @@ onMounted(() => {
   flex-direction: column;
   gap: 15px;
   margin-top: 30px;
-}
-
-.submit-button {
-  width: 100%;
-  padding: 12px 24px;
-  background-color: #000;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.submit-button:hover:not(:disabled) {
-  background-color: #333;
-}
-
-.submit-button:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
-.cancel-button {
-  width: 100%;
-  padding: 12px 24px;
-  background-color: transparent;
-  color: #000;
-  border: 1px solid #000;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.cancel-button:hover {
-  background-color: #000;
-  color: white;
 }
 </style>
