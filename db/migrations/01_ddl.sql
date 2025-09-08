@@ -38,7 +38,12 @@ CREATE TABLE IF NOT EXISTS products (
 
 -- Used to quickly find products by category (used by v_products)
 CREATE INDEX idx_products_category_is_deleted
-ON products (category_id, is_deleted)
+ON products (category_id)
+WHERE is_deleted = FALSE;
+
+-- Used to quickly find the newest products
+CREATE INDEX idx_products_created_at
+ON products (created_at DESC)
 WHERE is_deleted = FALSE;
 
 CREATE TYPE image_type_enum AS ENUM ('hero', 'thumbnail', 'gallery');
@@ -80,7 +85,9 @@ SELECT
     p.inventory,
     COALESCE(p.tax_code, '') AS tax_code,
     c.slug AS category_slug,
-    COALESCE(imgs.images, '[]') AS images
+    COALESCE(imgs.images, '[]') AS images,
+    COALESCE(order_stats.total_sold, 0) AS total_sold,
+    p.created_at
 FROM products p
 LEFT JOIN categories c ON p.category_id = c.id
 LEFT JOIN LATERAL (
@@ -96,6 +103,11 @@ LEFT JOIN LATERAL (
     FROM images i
     WHERE i.product_id = p.id
 ) imgs ON TRUE
+LEFT JOIN (
+    SELECT product_id, sum(oi.quantity) AS total_sold
+    FROM order_items oi
+    GROUP BY product_id
+) order_stats ON order_stats.product_id = p.id
 WHERE p.is_deleted = FALSE;
 
 CREATE OR REPLACE VIEW v_users AS
@@ -162,9 +174,6 @@ CREATE TABLE IF NOT EXISTS addresses (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 );
-CREATE INDEX idx_addresses_is_deleted_false
-ON addresses (id)
-WHERE is_deleted = FALSE;
 
 CREATE TYPE order_status_enum AS ENUM (
     'pending',
@@ -206,6 +215,8 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE RESTRICT,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
 );
+CREATE INDEX idx_order_items_product_id_quantity
+ON order_items(product_id, quantity);
 
 -- View simplifies populating order items array when fetching orders
 CREATE OR REPLACE VIEW v_order_items AS
