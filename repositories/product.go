@@ -128,14 +128,8 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 		queryBuilder.WriteString(" AND p.inventory > 0")
 	}
 
-	if filter.SortByPrice {
-		if filter.SortAsc {
-			queryBuilder.WriteString(" ORDER BY p.price ASC")
-		} else {
-			queryBuilder.WriteString(" ORDER BY p.price DESC")
-		}
-	} else {
-		queryBuilder.WriteString(" ORDER BY category_slug")
+	if filter.SortBy != "" {
+		queryBuilder.WriteString(fmt.Sprintf(" ORDER BY p.%s DESC", filter.SortBy))
 	}
 
 	queryBuilder.WriteString(fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1))

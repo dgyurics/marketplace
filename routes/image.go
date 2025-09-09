@@ -72,11 +72,8 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Parse the multipart form image type
-	imageType, _ := types.ParseImageType(r.FormValue(formKeyType))
-	if imageType == "" {
-		imageType = "gallery"
-	}
+	// Parse the multipart form for image type (hero, thumbnail, gallery)
+	imageType := types.ParseImageType(r.FormValue(formKeyType))
 
 	// Validate file type
 	supported, err := h.imageService.IsSupportedImage(file)

@@ -13,6 +13,7 @@ import type {
   Product,
   CreateProductRequest,
   UpdateProductRequest,
+  ProductFilters,
 } from '@/types'
 
 const apiClient = axios.create({
@@ -110,16 +111,29 @@ export const removeUserAddress = async (addressId: string): Promise<void> => {
   return apiClient.delete(`/addresses/${addressId}`)
 }
 
-export const getProducts = async (
-  categories: string[],
-  page: number = 1,
-  limit: number = 10
-): Promise<Product[]> => {
-  let params = `?page=${page}&limit=${limit}`
-  if (categories.length > 0) {
-    params += `&${categories.map((category) => `category=${category}`).join('&')}`
+export const getProducts = async (filters: ProductFilters = {}): Promise<Product[]> => {
+  const { categories = [], sortBy, inStock, page = 1, limit = 10 } = filters
+
+  const params = new URLSearchParams()
+
+  // Add pagination
+  params.append('page', page.toString())
+  params.append('limit', limit.toString())
+
+  // Add categories
+  categories.forEach((category: string) => params.append('category', category))
+
+  // Add sorting
+  if (sortBy) {
+    params.append('sort_by', sortBy)
   }
-  const response = await apiClient.get(`/products${params}`)
+
+  // Add in-stock filter
+  if (inStock !== undefined) {
+    params.append('in_stock', inStock.toString())
+  }
+
+  const response = await apiClient.get(`/products?${params}`)
   return response.data
 }
 

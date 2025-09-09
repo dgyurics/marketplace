@@ -7,27 +7,46 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
 
 import IntersectionTrigger from '@/components/IntersectionTrigger.vue'
 import ProductTile from '@/components/ProductTile.vue'
 import { getProducts } from '@/services/api'
+import type { Product, SortBy, ProductFilters } from '@/types'
 
-const route = useRoute()
-const products = ref([])
+interface Props {
+  sortBy?: SortBy | null
+  category?: string | null
+}
+
+const props = defineProps<Props>()
+const products = ref<Product[]>([])
 const page = ref(1)
 const hasMore = ref(true)
 const isLoading = ref(false)
-const category = ref(route.params.category) // e.g. "furniture" or "wall-decor"
 
 const fetchProducts = async () => {
   if (isLoading.value || !hasMore.value) return // Prevent multiple calls
   isLoading.value = true
 
   try {
-    const response = await getProducts([category.value], page.value, 9)
+    const filters: ProductFilters = {
+      page: page.value,
+      limit: 9,
+    }
+
+    // Set category if we have one (category routes)
+    if (props.category) {
+      filters.categories = [props.category]
+    }
+
+    // Set sorting if we have it (new/popular routes)
+    if (props.sortBy) {
+      filters.sortBy = props.sortBy
+    }
+
+    const response = await getProducts(filters)
     if (response.length === 0) {
       hasMore.value = false
     } else {
@@ -45,11 +64,11 @@ onMounted(() => {
   fetchProducts()
 })
 
-// Watch for route param changes
+// Watch for category or sortBy changes
+// When these change, it means user navigated to different page
 watch(
-  () => route.params.category,
-  (newCategory) => {
-    category.value = newCategory
+  () => [props.category, props.sortBy],
+  () => {
     resetAndFetch()
   }
 )

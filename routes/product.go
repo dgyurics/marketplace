@@ -42,14 +42,15 @@ func (h *ProductRoutes) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 	params := u.ParsePaginationParams(r, 1, 25)
-
+	inStock := r.URL.Query().Get("in_stock") == "true"
+	sortBy := types.ParseSortBy(r.URL.Query().Get("sort_by"))
+	categories := r.URL.Query()["category"]
 	filters := types.ProductFilter{
-		Page:        params.Page,
-		Limit:       params.Limit,
-		InStock:     r.URL.Query().Get("in_stock") == "true",
-		SortByPrice: r.URL.Query().Get("sort_by") == "price",
-		SortAsc:     r.URL.Query().Get("sort_order") == "asc",
-		Categories:  r.URL.Query()["category"],
+		Page:       params.Page,
+		Limit:      params.Limit,
+		InStock:    inStock,
+		SortBy:     sortBy,
+		Categories: categories,
 	}
 
 	products, err := h.productService.GetProducts(r.Context(), filters)

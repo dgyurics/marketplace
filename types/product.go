@@ -2,8 +2,6 @@ package types
 
 import (
 	"encoding/json"
-	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -30,30 +28,17 @@ const (
 	Hero      ImageType = "hero"
 )
 
-// ParseImageType parses a string into ImageType
-func ParseImageType(s string) (ImageType, error) {
+func ParseImageType(s string) ImageType {
 	switch strings.ToLower(s) {
 	case "hero":
-		return Hero, nil
+		return Hero
 	case "thumbnail":
-		return Thumbnail, nil
+		return Thumbnail
 	case "gallery":
-		return Gallery, nil
+		return Gallery
 	default:
-		return "", fmt.Errorf("invalid image type: %s", s)
+		return Gallery
 	}
-}
-
-// ParseImageOrder parses a string into an integer for display order
-func ParseImageOrder(s string) int {
-	if s == "" {
-		return 0 // Default display order if not provided
-	}
-	r, err := strconv.Atoi(s)
-	if err != nil {
-		return 0
-	}
-	return r
 }
 
 type Image struct {
@@ -66,10 +51,31 @@ type Image struct {
 }
 
 type ProductFilter struct {
-	SortByPrice bool
-	SortAsc     bool
-	InStock     bool
-	Page        int
-	Limit       int
-	Categories  []string // category slugs
+	SortBy     SortBy
+	InStock    bool
+	Page       int
+	Limit      int
+	Categories []string // category slugs
+}
+
+type SortBy string
+
+const (
+	SortByPrice      SortBy = "price"
+	SortByPopularity SortBy = "total_sold"
+	SortByNewest     SortBy = "created_at"
+	SortByDefault    SortBy = "created_at"
+)
+
+func ParseSortBy(sortBy string) SortBy {
+	switch sortBy {
+	case "price":
+		return SortByPrice
+	case "popularity":
+		return SortByPopularity
+	case "newest":
+		return SortByNewest
+	default:
+		return SortByDefault
+	}
 }

@@ -15,6 +15,16 @@ export interface Product {
   updated_at?: string
 }
 
+export type SortBy = 'price' | 'popularity' | 'newest'
+
+export interface ProductFilters {
+  categories?: string[]
+  sortBy?: SortBy
+  inStock?: boolean
+  page?: number
+  limit?: number
+}
+
 export interface CreateProductRequest {
   name: string
   price: number

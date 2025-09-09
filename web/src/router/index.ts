@@ -34,6 +34,13 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/admin/products/:id', component: AdminProductEdit, beforeEnter: requireAdmin },
     { path: '/admin/categories', component: AdminCategories, beforeEnter: requireAdmin },
     { path: '/admin/orders', component: AdminOrders, beforeEnter: requireAdmin },
+    { path: '/new', component: Product, props: { sortBy: 'newest' }, name: 'NewProducts' },
+    {
+      path: '/popular',
+      component: Product,
+      props: { sortBy: 'popularity' },
+      name: 'PopularProducts',
+    },
   ]
 
   try {

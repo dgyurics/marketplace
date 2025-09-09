@@ -73,7 +73,7 @@ const newProduct = ref({
 
 const fetchProducts = async () => {
   try {
-    const response = await getProducts([], 1, 100) // Get max 100 products for now
+    const response = await getProducts({ page: 1, limit: 100 }) // Get max 100 products for now
     products.value = response
   } catch {
     // Handle error silently
