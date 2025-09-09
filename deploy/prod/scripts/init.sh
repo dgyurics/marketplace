@@ -22,8 +22,9 @@ readonly NC='\033[0m' # No Color
 # Paths
 readonly PROD_DIR="deploy/prod"
 readonly ENV_FILE="$PROD_DIR/.env"
-readonly EXAMPLE_ENV="$PROD_DIR/example.env"
+readonly TEMPLATE_ENV="$PROD_DIR/.env.template"
 readonly NGINX_CONF="$PROD_DIR/nginx.conf"
+readonly TEMPLATE_NGINX_CONF="$PROD_DIR/nginx.conf.template"
 readonly PRIVATE_KEY="$PROD_DIR/private.pem"
 readonly PUBLIC_KEY="$PROD_DIR/public.pem"
 
@@ -103,8 +104,8 @@ validate_environment() {
     exit 1
   fi
   
-  if [[ ! -f "$EXAMPLE_ENV" ]]; then
-    log_error "$EXAMPLE_ENV not found"
+  if [[ ! -f "$TEMPLATE_ENV" ]]; then
+    log_error "$TEMPLATE_ENV not found"
     exit 1
   fi
   
@@ -125,8 +126,26 @@ setup_env_file() {
     fi
   fi
   
-  cp "$EXAMPLE_ENV" "$ENV_FILE"
+  cp "$TEMPLATE_ENV" "$ENV_FILE"
   log_success "Created $ENV_FILE from template"
+}
+
+# Nginx file setup
+setup_nginx_conf() {
+  log_info "Setting up Nginx configuration file..."
+
+  if [[ -f "$NGINX_CONF" ]]; then
+    log_warning "$NGINX_CONF already exists"
+    if confirm_action "Overwrite existing nginx.conf?"; then
+      backup_file "$NGINX_CONF"
+    else
+      log_info "Existing nginx.conf preserved. Exiting."
+      exit 0
+    fi
+  fi
+
+  cp "$TEMPLATE_NGINX_CONF" "$NGINX_CONF"
+  log_success "Created $NGINX_CONF from template"
 }
 
 # Domain configuration
@@ -282,7 +301,10 @@ main() {
   
   # Environment setup
   setup_env_file
-  
+
+  # Nginx setup
+  setup_nginx_conf
+
   # Domain configuration
   setup_domain
   

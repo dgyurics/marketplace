@@ -4,16 +4,18 @@
 *.out
 .vscode
 
-# Ignore build artifacts
+# Build artifacts
 node_modules
 dist
 
-# Ignore environment files
-.env*
+# Environment files
+.env
+.env.backup.*
 
-# Ignore encryption keys
+# Generated files
+deploy/prod/nginx.conf
 private.pem*
 public.pem*
 
-# Ignore images
+# Site Images
 **/images/
