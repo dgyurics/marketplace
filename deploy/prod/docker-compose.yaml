@@ -6,6 +6,7 @@ services:
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.nginx
+    restart: unless-stopped
     logging:
       driver: json-file
       options:
@@ -24,16 +25,17 @@ services:
 
   api:
     container_name: api
-    env_file:
-      - .env
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.api
+    restart: unless-stopped
     logging:
       driver: json-file
       options:
         max-size: 10m
         max-file: 5
+    env_file:
+      - .env
     volumes:
       - images-data:/images:rw
     depends_on:
@@ -42,17 +44,18 @@ services:
       - rembg
 
   web:
-    container_name: web    
-    env_file:
-      - .env
+    container_name: web
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.web
+    restart: unless-stopped
     logging:
       driver: json-file
       options:
         max-size: 10m
         max-file: 5
+    env_file:
+      - .env
     depends_on:
       - api
   
@@ -61,6 +64,7 @@ services:
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.postgres
+    restart: unless-stopped
     logging:
       driver: json-file
       options:
@@ -78,31 +82,33 @@ services:
 
   imgproxy:
     container_name: imgproxy
-    env_file:
-      - .env
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.imgproxy
+    restart: unless-stopped
     logging:
       driver: json-file
       options:
         max-size: 10m
         max-file: 5
+    env_file:
+      - .env
     volumes:
       - images-data:/images:ro
 
   rembg:
     container_name: rembg
-    env_file:
-      - .env
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.rembg
+    restart: unless-stopped
     logging:
       driver: json-file
       options:
         max-size: 10m
         max-file: 5
+    env_file:
+      - .env
 
 volumes:
   postgres-data:
