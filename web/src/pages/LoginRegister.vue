@@ -8,6 +8,7 @@
           <button @click="goToCategories">Categories</button>
           <button @click="goToProducts">Products</button>
           <button @click="goToOrders">Orders</button>
+          <button @click="goToUsers">Users</button>
         </div>
       </div>
     </template>
@@ -120,6 +121,10 @@ const goToProducts = () => {
 
 const goToOrders = () => {
   router.push('/admin/orders')
+}
+
+const goToUsers = () => {
+  router.push('/admin/users')
 }
 
 const handleLogout = async () => {
