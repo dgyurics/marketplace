@@ -64,6 +64,9 @@ const emit = defineEmits(['update:modelValue'])
 const pairs = ref([{ key: '', value: '' }])
 const errors = ref([])
 
+// Helper function to safely trim only strings
+const trimIfString = (value) => (typeof value === 'string' ? value.trim() : value)
+
 // Initialize pairs from modelValue
 const initializePairs = () => {
   const entries = Object.entries(props.modelValue)
@@ -92,7 +95,7 @@ const removePair = (index) => {
 }
 
 const validateKey = (index) => {
-  const currentKey = pairs.value[index].key.trim()
+  const currentKey = trimIfString(pairs.value[index].key)
 
   if (!currentKey) {
     errors.value[index] = ''
@@ -102,7 +105,7 @@ const validateKey = (index) => {
 
   if (!props.allowDuplicateKeys) {
     const duplicateIndex = pairs.value.findIndex(
-      (pair, i) => i !== index && pair.key.trim().toLowerCase() === currentKey.toLowerCase()
+      (pair, i) => i !== index && trimIfString(pair.key).toLowerCase() === currentKey.toLowerCase()
     )
 
     if (duplicateIndex !== -1) {
@@ -118,8 +121,8 @@ const validateKey = (index) => {
 const emitValue = () => {
   const result = {}
   pairs.value.forEach((pair) => {
-    const key = pair.key.trim()
-    const value = pair.value.trim()
+    const key = trimIfString(pair.key)
+    const value = trimIfString(pair.value)
     if (key && value) {
       result[key] = value
     }
