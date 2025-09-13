@@ -63,14 +63,13 @@
 }
 
 .hero-title {
-  font-size: 2rem;
-  font-weight: 300;
+  font-size: 2.2rem;
+  font-weight: 200;
   margin: 0;
-  text-transform: lowercase;
-  font-family: 'Libre Baskerville', 'Georgia', serif;
-  letter-spacing: 8px;
+  text-transform: uppercase;
+  font-family: 'Inter', 'Helvetica Neue', sans-serif;
+  letter-spacing: 4px;
   position: relative;
-  line-height: 1.1;
 }
 
 .hero-title::after {
