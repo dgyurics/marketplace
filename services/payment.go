@@ -32,7 +32,7 @@ type paymentService struct {
 	HttpClient   utilities.HTTPClient
 	stripeConfig types.StripeConfig
 	localeConfig types.LocaleConfig
-	serviceEmail EmailSender
+	serviceEmail EmailService
 	serviceTmp   TemplateService
 	serviceUser  UserService
 	repo         repositories.PaymentRepository
@@ -42,7 +42,7 @@ func NewPaymentService(
 	httpClient utilities.HTTPClient,
 	stripeConfig types.StripeConfig,
 	localeConfig types.LocaleConfig,
-	serviceEmail EmailSender,
+	serviceEmail EmailService,
 	serviceTmp TemplateService,
 	serviceUser UserService,
 	repo repositories.PaymentRepository) PaymentService {
@@ -249,8 +249,14 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 			slog.Error("Error loading email template: ", "error", err)
 			return
 		}
-		if err := s.serviceEmail.SendEmail([]string{recEmail}, "Order Confirmation", body, true); err != nil {
-			slog.Error("Error sending email: ", "error", err)
+		email := &types.Email{
+			To:      []string{recEmail},
+			Subject: "Order Confirmation",
+			Body:    body,
+			IsHTML:  true,
+		}
+		if err := s.serviceEmail.Send(email); err != nil {
+			slog.Error("Error sending order confirmation email: ", "error", err)
 		}
 	}(order.Email, order.ID)
 
@@ -280,8 +286,14 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 			slog.Error("Error loading email template: ", "error", err)
 			return
 		}
-		if err := s.serviceEmail.SendEmail(adminEmails, "Order Received", body, true); err != nil {
-			slog.Error("Error sending email: ", "error", err)
+		email := &types.Email{
+			To:      adminEmails,
+			Subject: "Order Received",
+			Body:    body,
+			IsHTML:  true,
+		}
+		if err := s.serviceEmail.Send(email); err != nil {
+			slog.Error("Error sending order confirmation email (admins): ", "error", err)
 		}
 	}(order)
 

@@ -118,7 +118,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		slog.Error("Failed to initialize template service", "error", err, "templatesDir", config.TemplatesDir)
 		os.Exit(1)
 	}
-	emailService := services.NewMailjetSender(config.Email)
+	emailService := services.NewEmailService(config.Email)
 	addressService := services.NewAddressService(addressRepository, config.Locale)
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
@@ -160,7 +160,7 @@ type servicesContainer struct {
 	User     services.UserService
 	Cart     services.CartService
 	Category services.CategoryService
-	Email    services.EmailSender
+	Email    services.EmailService
 	Image    services.ImageService
 	Invite   services.InviteService
 	JWT      services.JWTService

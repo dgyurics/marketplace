@@ -19,7 +19,7 @@ func LoadConfig() types.Config {
 		Environment:  loadEnvironment(),
 		Auth:         loadAuthConfig(),
 		Database:     loadDBConfig(),
-		Email:        loadMailConfig(),
+		Email:        loadEmailConfig(),
 		Locale:       loadLocaleConfig(),
 		Logger:       loadLoggerConfig(),
 		MachineID:    loadMachineID(),
@@ -173,13 +173,21 @@ func loadBaseURL() string {
 	return mustLookupEnv("BASE_URL")
 }
 
-func loadMailConfig() types.EmailConfig {
+func loadEmailConfig() types.EmailConfig {
+	if isFeatureEnabled("MAIL_ENABLED") {
+		return types.EmailConfig{
+			Enabled:  true,
+			Host:     mustLookupEnv("MAIL_SMTP_HOST"),
+			Port:     mustAtoI("MAIL_SMTP_PORT"),
+			Username: os.Getenv("MAIL_SMTP_USERNAME"),
+			Password: os.Getenv("MAIL_SMTP_PASSWORD"),
+			UseTLS:   isFeatureEnabled("MAIL_SMTP_USE_TLS"),
+			From:     mustLookupEnv("MAIL_FROM_EMAIL"),
+			FromName: mustLookupEnv("MAIL_FROM_NAME"),
+		}
+	}
 	return types.EmailConfig{
-		Enabled:   isFeatureEnabled("MAIL_ENABLED"),
-		APIKey:    mustLookupEnv("MAIL_API_KEY"),
-		APISecret: mustLookupEnv("MAIL_API_SECRET"),
-		FromEmail: mustLookupEnv("MAIL_FROM_EMAIL"),
-		FromName:  mustLookupEnv("MAIL_FROM_NAME"),
+		Enabled: false,
 	}
 }
 

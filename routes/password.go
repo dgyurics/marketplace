@@ -15,7 +15,7 @@ type PasswordRoutes struct {
 	router
 	servicePassword services.PasswordService
 	serviceUser     services.UserService
-	serviceEmail    services.EmailSender
+	serviceEmail    services.EmailService
 	serviceTemplate services.TemplateService
 	baseUrl         string
 }
@@ -23,7 +23,7 @@ type PasswordRoutes struct {
 func NewPasswordRoutes(
 	servicePR services.PasswordService,
 	serviceUsr services.UserService,
-	serviceEmail services.EmailSender,
+	serviceEmail services.EmailService,
 	serviceTmp services.TemplateService,
 	baseUrl string,
 	router router,
@@ -84,8 +84,14 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 			slog.Error("Error loading email template: ", "error", err)
 			return
 		}
-		if err := h.serviceEmail.SendEmail([]string{recEmail}, "Password Reset", body, true); err != nil {
-			slog.Error("Error sending email: ", "error", err)
+		email := &types.Email{
+			To:      []string{recEmail},
+			Subject: "Password Reset",
+			Body:    body,
+			IsHTML:  true,
+		}
+		if err := h.serviceEmail.Send(email); err != nil {
+			slog.Error("Error sending password reset email: ", "error", err)
 		}
 	}(usr.Email, code)
 

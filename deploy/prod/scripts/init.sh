@@ -250,14 +250,22 @@ setup_stripe_credentials() {
   log_success "Stripe credentials configured"
 }
 
-setup_mail_credentials() {
-  log_info "Setting up Mailjet credentials..."
+setup_email_credentials() {
+  log_info "Setting up Email..."
   
-  read -p "Enter your MAIL_API_KEY: " -r api_key
-  validate_input "$api_key" "MAIL_API_KEY"
+  read -p "Enter your MAIL_SMTP_HOST (e.g., postfix for local, in-v3.mailjet.com for Mailjet, smtp.gmail.com for Gmail): " -r smtp_host
+  validate_input "$smtp_host" "MAIL_SMTP_HOST"
   
-  read -p "Enter your MAIL_API_SECRET: " -r api_secret
-  validate_input "$api_secret" "MAIL_API_SECRET"
+  read -p "Enter your MAIL_SMTP_PORT (25 for local, 587 for TLS, 465 for SSL): " -r smtp_port
+  validate_input "$smtp_port" "MAIL_SMTP_PORT"
+
+  local smtp_tls=$(confirm_action "Enable SMTP TLS?" "Y" && echo "true" || echo "false")
+
+  read -p "Enter your MAIL_SMTP_USERNAME (optional for local SMTP): " -r smtp_username
+  validate_input "$smtp_username" "MAIL_SMTP_USERNAME"
+
+  read -p "Enter your MAIL_SMTP_PASSWORD (optional for local SMTP): " -r smtp_password
+  validate_input "$smtp_password" "MAIL_SMTP_PASSWORD"
   
   read -p "Enter your MAIL_FROM_EMAIL: " -r from_email
   validate_input "$from_email" "MAIL_FROM_EMAIL"
@@ -265,12 +273,15 @@ setup_mail_credentials() {
   read -p "Enter your MAIL_FROM_NAME: " -r from_name
   validate_input "$from_name" "MAIL_FROM_NAME"
   
-  replace_placeholder "MAIL_API_KEY" "$api_key"
-  replace_placeholder "MAIL_API_SECRET" "$api_secret"
+  replace_placeholder "MAIL_SMTP_HOST" "$smtp_host"
+  replace_placeholder "MAIL_SMTP_PORT" "$smtp_port"
+  replace_placeholder "MAIL_SMTP_USE_TLS" "$smtp_tls"
+  replace_placeholder "MAIL_SMTP_USERNAME" "$smtp_username"
+  replace_placeholder "MAIL_SMTP_PASSWORD" "$smtp_password"
   replace_placeholder "MAIL_FROM_EMAIL" "$from_email"
   replace_placeholder "MAIL_FROM_NAME" "$from_name"
   
-  log_success "Mailjet credentials configured"
+  log_success "Email configured"
 }
 
 # SSL setup
@@ -317,7 +328,7 @@ main() {
   
   # Third-party credentials
   setup_stripe_credentials
-  setup_mail_credentials
+  setup_email_credentials
   
   # SSL certificates
   setup_ssl_certificates "$domain"

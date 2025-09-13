@@ -41,11 +41,14 @@ type AuthConfig struct {
 }
 
 type EmailConfig struct {
-	Enabled   bool // toggle for enabling/disabling the email service
-	APIKey    string
-	APISecret string
-	FromEmail string
-	FromName  string
+	Enabled  bool
+	Host     string
+	Port     int
+	Username string
+	Password string
+	UseTLS   bool
+	From     string
+	FromName string
 }
 
 type JWTConfig struct {
