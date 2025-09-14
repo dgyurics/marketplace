@@ -39,6 +39,7 @@ export const useCheckoutStore = defineStore('checkout', {
       amount: 0,
       tax_amount: 0,
       total_amount: 0,
+      shipping_amount: 0,
       status: 'pending',
       items: [],
     },

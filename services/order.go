@@ -77,14 +77,8 @@ func (os *orderService) CancelStaleOrders(ctx context.Context) {
 	wg.Wait()
 }
 
-// GetOrders retrieves a list of orders for the current user, with pagination support.
 func (os *orderService) GetOrders(ctx context.Context, page, limit int) ([]types.Order, error) {
-	var userID = getUserID(ctx)
-	orders, err := os.orderRepo.GetOrders(ctx, userID, page, limit)
-	if err != nil {
-		return nil, err
-	}
-	return orders, nil
+	return os.orderRepo.GetOrders(ctx, page, limit)
 }
 
 func (os *orderService) CreateOrder(ctx context.Context) (types.Order, error) {

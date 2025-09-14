@@ -18,7 +18,7 @@ type OrderRepository interface {
 	CreateOrder(ctx context.Context, order *types.Order) error
 	GetOrder(ctx context.Context, orderID, userID string) (types.Order, error)
 	GetPendingOrder(ctx context.Context, userID string) (types.Order, error)
-	GetOrders(ctx context.Context, userID string, page, limit int) ([]types.Order, error)
+	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
 	UpdateOrder(ctx context.Context, params types.OrderParams) (types.Order, error)
 }
 
@@ -344,8 +344,8 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderPar
 	return ord, nil
 }
 
-// GetOrders retrieves all orders for a user
-func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, limit int) ([]types.Order, error) {
+// GetOrders retrieves all orders in descending order
+func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]types.Order, error) {
 	query := `
 		SELECT
 			o.id,
@@ -368,11 +368,10 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 			o.updated_at
 		FROM orders o
 		JOIN addresses a ON o.address_id = a.id
-		WHERE o.user_id = $1 AND o.status != 'pending'
 		ORDER BY o.created_at DESC
-		LIMIT $2 OFFSET $3
+		LIMIT $1 OFFSET $2
 	`
-	rows, err := r.db.QueryContext(ctx, query, userID, limit, (page-1)*limit)
+	rows, err := r.db.QueryContext(ctx, query, limit, (page-1)*limit)
 	if err != nil {
 		return nil, err
 	}

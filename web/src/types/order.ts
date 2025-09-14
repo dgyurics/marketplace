@@ -25,6 +25,7 @@ export type OrderStatus =
 export interface Order {
   id: string
   user_id?: string
+  email: string
   address?: Address
   items: OrderItem[]
   status: OrderStatus
@@ -33,4 +34,6 @@ export interface Order {
   tax_amount: number
   shipping_amount: number
   total_amount: number
+  created_at: string
+  updated_at: string
 }

@@ -8,7 +8,7 @@
           <input
             v-model="editProduct.price"
             type="number"
-            step="1.00"
+            step="any"
             placeholder="Price"
             required
             @input="handlePriceInput"

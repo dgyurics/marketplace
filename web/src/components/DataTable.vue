@@ -29,9 +29,10 @@ defineProps<{
 <style scoped>
 .data-table {
   width: 100%;
-  background-color: white;
+  background-color: #f8f9fa;
   border-radius: 4px;
-  border: 1px solid #ddd;
+  /* border: 1px solid #ddd; */
+  color: #212529;
   overflow: hidden;
   font-family: monospace;
 }
@@ -41,9 +42,9 @@ table {
   border-collapse: collapse;
 }
 
-thead {
+/* thead {
   background-color: #f9f9f9;
-}
+} */
 
 th {
   padding: 12px 15px;
@@ -62,7 +63,7 @@ td {
 }
 
 tbody tr:hover {
-  background-color: #f9f9f9;
+  /* background-color: #f9f9f9; */
 }
 
 tbody tr:last-child td {

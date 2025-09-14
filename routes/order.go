@@ -166,6 +166,6 @@ func (h *OrderRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/orders", h.secure(h.CreateOrder)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}", h.secure(h.Update)).Methods(http.MethodPatch)
 	h.muxRouter.Handle("/orders/{id}/confirm", h.secure(h.Confirm)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/orders", h.secure(h.GetOrders)).Methods(http.MethodGet)
+	h.muxRouter.Handle("/orders", h.secureAdmin(h.GetOrders)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/orders/{id}/tax-estimate", h.secure(h.EstimateTax)).Methods(http.MethodGet)
 }

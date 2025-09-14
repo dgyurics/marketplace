@@ -38,7 +38,7 @@ func TestGetOrders_RepoError(t *testing.T) {
 	}
 
 	ctx := contextWithUserID(context.Background(), "user-123")
-	mockRepo.On("GetOrders", ctx, "user-123", 1, 10).Return(nil, errors.New("db error"))
+	mockRepo.On("GetOrders", ctx, 1, 10).Return(nil, errors.New("db error"))
 
 	result, err := svc.GetOrders(ctx, 1, 10)
 	if err == nil {
@@ -191,13 +191,12 @@ func TestUpdateOrder_Error(t *testing.T) {
 func strPtr(s string) *string { return &s }
 func int64Ptr(i int64) *int64 { return &i }
 
-func (m *mockOrderRepo) GetOrders(ctx context.Context, userID string, page, limit int) ([]types.Order, error) {
-	args := m.Called(ctx, userID, page, limit)
-	var orders []types.Order
+func (m *mockOrderRepo) GetOrders(ctx context.Context, page, limit int) ([]types.Order, error) {
+	args := m.Called(ctx, page, limit)
 	if v := args.Get(0); v != nil {
-		orders = v.([]types.Order)
+		return v.([]types.Order), args.Error(1)
 	}
-	return orders, args.Error(1)
+	return nil, args.Error(1)
 }
 
 func (m *mockOrderRepo) CreateOrder(ctx context.Context, order *types.Order) error {
