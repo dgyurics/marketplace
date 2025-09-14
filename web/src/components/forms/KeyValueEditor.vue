@@ -175,7 +175,7 @@ defineExpose({
 .pair-row {
   position: relative;
   display: flex;
-  gap: 10px;
+  gap: 5px;
   align-items: flex-start;
   margin-bottom: 10px;
 }
@@ -200,19 +200,24 @@ defineExpose({
 }
 
 .remove-btn {
-  width: 24px;
-  height: 24px;
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
   border: none;
-  background: none;
-  color: #333;
+  background: rgba(255, 255, 255, 0.9);
+  color: #666;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-  flex-shrink: 0;
+  border-radius: 3px;
+  z-index: 1;
 }
 
 .remove-btn:disabled {
