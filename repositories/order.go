@@ -427,7 +427,8 @@ func (r *orderRepository) GetOrders(ctx context.Context, userID string, page, li
 
 	// Populate order items for each order
 	for idx, order := range result {
-		// TODO wrap in goroutine
+		// FIXME this is expensive
+		// look into doing this in a single query
 		result[idx].Items, err = r.populateOrderItems(ctx, order.ID)
 		if err != nil {
 			slog.Error("Failed to populate order items", "order_id", order.ID, "error", err)
@@ -466,7 +467,7 @@ func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string
 	defer rows.Close()
 
 	// Process query results
-	var items []types.OrderItem
+	items := []types.OrderItem{}
 	for rows.Next() {
 		item := types.OrderItem{}
 		if err := rows.Scan(
