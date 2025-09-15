@@ -36,14 +36,14 @@ func NewOrderRoutes(
 
 func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	ord, err := h.orderService.GetPendingOrderForUser(r.Context())
-	if err == types.ErrNotFound {
-		// No pending order found, create a new one
-	} else if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	} else {
+	if err == nil {
 		// Pending order exists, return it
 		u.RespondWithJSON(w, http.StatusOK, ord)
+		return
+	}
+
+	if err != types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
