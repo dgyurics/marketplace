@@ -11,7 +11,6 @@ var SupportedCountries = map[string]bool{
 	"AT": true,
 	"AU": true,
 	"BE": true,
-	"BG": true,
 	"BR": true,
 	"CA": true,
 	"CH": true,
@@ -62,7 +61,6 @@ var SupportedCountries = map[string]bool{
 	"PL": true,
 	"PT": true,
 	"RO": true,
-	"RS": true,
 	"SA": true,
 	"SE": true,
 	"SG": true,
@@ -91,7 +89,6 @@ var SupportedCurrencies = map[string]bool{
 	"BAM": true,
 	"BBD": true,
 	"BDT": true,
-	"BGN": true,
 	"BIF": true,
 	"BMD": true,
 	"BND": true,
@@ -175,7 +172,6 @@ var SupportedCurrencies = map[string]bool{
 	"PYG": true,
 	"QAR": true,
 	"RON": true,
-	"RSD": true,
 	"RWF": true,
 	"SAR": true,
 	"SBD": true,
@@ -219,7 +215,6 @@ var PostalCodePatterns = map[string]*regexp.Regexp{
 	"AT": regexp.MustCompile(`^\d{4}$`),                               // Austria 1234
 	"AU": regexp.MustCompile(`^\d{4}$`),                               // Australia 4000
 	"BE": regexp.MustCompile(`^\d{4}$`),                               // Belgium 1234
-	"BG": regexp.MustCompile(`^\d{4}$`),                               // Bulgaria 1234
 	"BR": regexp.MustCompile(`^\d{5}-\d{3}$`),                         // Brazil 12345-678
 	"CA": regexp.MustCompile(`^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$`), // Canada A1A 1A1
 	"CH": regexp.MustCompile(`^\d{4}$`),                               // Switzerland 1234
@@ -270,7 +265,6 @@ var PostalCodePatterns = map[string]*regexp.Regexp{
 	"PL": regexp.MustCompile(`^\d{2}-\d{3}$`),                         // Poland 12-345
 	"PT": regexp.MustCompile(`^\d{4}-\d{3}$`),                         // Portugal 1234-567
 	"RO": regexp.MustCompile(`^\d{6}$`),                               // Romania 123456
-	"RS": regexp.MustCompile(`^\d{5}$`),                               // Serbia 11000
 	"SA": regexp.MustCompile(`^\d{5}$`),                               // Saudi Arabia (example: 11564)
 	"SE": regexp.MustCompile(`^\d{3} ?\d{2}$`),                        // Sweden 123 45
 	"SG": regexp.MustCompile(`^\d{6}$`),                               // Singapore 560123
