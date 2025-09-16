@@ -1,13 +1,6 @@
 <template>
   <div class="home-container">
     <div class="feature-container">
-      <img
-        class="feature-image autumn-image"
-        src="@/assets/roberto-nickson-bg.webp"
-        alt="Background Image"
-        loading="eager"
-        decoding="async"
-      />
       <div class="hero-content unselectable">
         <h1 class="hero-title">essential living</h1>
         <div class="hero-buttons">
@@ -21,12 +14,17 @@
 
 <style scoped>
 .home-container {
-  position: relative;
-  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  background-color: #000;
+  overflow: hidden;
   z-index: 1;
 }
 
@@ -63,12 +61,11 @@
 }
 
 .hero-title {
-  font-size: 2.2rem;
-  font-weight: 200;
+  font-size: 3rem;
+  font-weight: 100;
   margin: 0;
   text-transform: uppercase;
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
-  letter-spacing: 4px;
+  font-family: 'Josefin Sans', sans-serif;
   position: relative;
 }
 

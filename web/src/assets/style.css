@@ -1,11 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+/* Import local fonts */
+@import './fonts.css';
 
 :root {
-  /* font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; */
-  font-family: "Playfair Display", serif;
+  font-family: 'Open Sans', sans-serif;
   font-size: 16px;
   line-height: 1.5;
-  font-weight: 400;
 
   color-scheme: light;
   color: #000;
@@ -17,7 +16,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Reset default styles for a cleaner look */
+/* Reset default styles */
 * {
   margin: 0;
   padding: 0;
@@ -113,6 +112,10 @@ button:disabled:hover {
   cursor: default;
 }
 
+textarea {
+  font-family: inherit;
+}
+
 /* Headings */
 h1,
 h2,
@@ -146,7 +149,7 @@ h6 {
     font-size: 14px;
     padding: 8px 16px;
     min-width: 140px;
-  }  
+  }
 }
 
 .container {

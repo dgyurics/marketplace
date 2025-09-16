@@ -9,7 +9,6 @@
 .not-found {
   text-align: center;
   padding: 4rem 2rem;
-  font-family: 'Playfair Display', serif;
 }
 
 h1 {

@@ -267,7 +267,6 @@ onMounted(() => {
   font-size: 16px;
   background-color: white;
   resize: vertical;
-  font-family: inherit;
   line-height: 1.4;
 }
 

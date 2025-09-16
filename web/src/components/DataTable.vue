@@ -31,20 +31,16 @@ defineProps<{
   width: 100%;
   background-color: #f8f9fa;
   border-radius: 4px;
-  /* border: 1px solid #ddd; */
+  border: 1px solid #ddd;
   color: #212529;
   overflow: hidden;
-  font-family: monospace;
+  font-family: 'Roboto Mono', monospace;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
 }
-
-/* thead {
-  background-color: #f9f9f9;
-} */
 
 th {
   padding: 12px 15px;
@@ -60,10 +56,6 @@ td {
   font-size: 12px;
   color: #666;
   border-bottom: 1px solid #f0f0f0;
-}
-
-tbody tr:hover {
-  /* background-color: #f9f9f9; */
 }
 
 tbody tr:last-child td {

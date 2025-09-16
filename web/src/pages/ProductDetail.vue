@@ -246,7 +246,7 @@ const addToCart = async () => {
 .product-details {
   font-size: 14px; /* Match details section */
   font-weight: normal;
-  font-family: 'Arial', sans-serif;
+  font-family: 'Open Sans', sans-serif;
   color: #222;
 }
 

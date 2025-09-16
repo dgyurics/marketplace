@@ -7,11 +7,11 @@
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://m.stripe.network;
-    style-src 'self' 'unsafe-inline' https://m.stripe.network https://fonts.googleapis.com;
+    style-src 'self' 'unsafe-inline' https://m.stripe.network;
     frame-src https://js.stripe.com;
     media-src 'self';
     img-src 'self' data:;
-    font-src 'self' data: https://fonts.gstatic.com;
+    font-src 'self' data:;
     connect-src 'self' https://api.stripe.com;
   ">
   <title>Marketplace</title>
@@ -19,13 +19,9 @@
   <!-- Favicon -->
   <link rel="icon" href="/favicon.ico" />
 
-  <!-- Google Fonts Preconnect for Performance -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&display=swap" rel="stylesheet">
-
-  <!-- Preload homepage image -->
-  <link rel="preload" as="image" href="/assets/roberto-nickson-bg.webp">
+  <!-- Preload critical fonts -->
+  <link rel="preload" as="font" type="font/woff2" href="/assets/fonts/open-sans-v43-latin_latin-ext-regular.woff2">
+  <link rel="preload" as="font" type="font/woff2" href="/assets/fonts/josefin-sans-v34-latin_latin-ext-100.woff2">
 </head>
 
 <body>

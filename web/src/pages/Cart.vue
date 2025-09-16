@@ -191,7 +191,7 @@ ul {
   align-items: flex-start;
   flex: 1;
   min-width: 120px; /* Prevents shrinking */
-  font-family: 'Inter', sans-serif;
+  font-family: 'Open Sans', sans-serif;
   font-size: 14px;
 }
 
@@ -207,8 +207,7 @@ ul {
 .cart-total {
   text-align: right;
   font-size: 14px;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Open Sans', sans-serif;
   color: #444;
   margin-top: 20px;
   margin-bottom: 10px;

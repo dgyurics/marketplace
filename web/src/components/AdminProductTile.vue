@@ -109,10 +109,9 @@ const handleClick = () => {
 
 .product-id {
   font-size: 10px;
-  font-weight: 400;
   color: #888;
   margin-bottom: 5px;
-  font-family: monospace;
+  font-family: 'Roboto Mono', monospace;
 }
 
 .product-price {
@@ -133,10 +132,10 @@ const handleClick = () => {
 
 .product-tax-code {
   font-size: 10px;
-  font-weight: 600;
-  color: #555;
+  color: #888;
   margin-top: 5px;
-  font-family: monospace;
+  font-family: 'Roboto Mono', monospace;
+  text-transform: uppercase;
 }
 
 .product-details {
@@ -164,7 +163,7 @@ const handleClick = () => {
   background-color: #f5f5f5;
   padding: 2px 4px;
   border-radius: 2px;
-  font-family: monospace;
+  font-family: 'Roboto Mono', monospace;
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;

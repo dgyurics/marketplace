@@ -265,7 +265,7 @@ onUnmounted(() => {
 }
 
 .id-cell {
-  font-family: monospace;
+  font-family: 'Roboto Mono', monospace;
   font-size: 12px;
   color: #6c757d;
   width: 120px;
@@ -280,7 +280,7 @@ onUnmounted(() => {
   color: #007bff;
   cursor: pointer;
   text-decoration: underline;
-  font-family: monospace;
+  font-family: 'Roboto Mono', monospace;
   font-size: 12px;
   display: block;
   word-break: break-all;
@@ -381,7 +381,7 @@ onUnmounted(() => {
 }
 
 .preview-id {
-  font-family: monospace;
+  font-family: 'Roboto Mono', monospace;
   font-size: 11px;
   color: #6c757d;
 }

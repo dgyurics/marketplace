@@ -124,7 +124,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Open Sans', sans-serif;
   margin-top: 20px;
 }
 </style>

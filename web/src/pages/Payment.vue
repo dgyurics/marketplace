@@ -97,7 +97,7 @@ const elementStyles = {
     base: {
       color: '#333',
       fontWeight: 'normal',
-      fontFamily: 'Playfair Display, serif',
+      fontFamily: 'Open Sans, sans-serif',
       fontSize: '16px' /* Match address input font-size */,
       lineHeight: '1.5' /* Improve readability */,
       padding: '10px' /* Match padding */,

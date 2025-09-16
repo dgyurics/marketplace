@@ -85,14 +85,8 @@ nav {
 
 .logo {
   text-transform: uppercase;
-  /* font-size: 0.85rem; */
-  font-weight: 400;
   letter-spacing: 0.05em;
-
   font-size: 1rem;
-  font-weight: 400;
-  font-family: 'Playfair Display', serif;
-  /* text-transform: lowercase; */
   letter-spacing: 0.05em;
   color: #000;
 }
@@ -122,7 +116,6 @@ nav {
 .nav-text {
   text-transform: uppercase;
   font-size: 0.85rem;
-  font-weight: 400;
   letter-spacing: 0.05em;
 }
 

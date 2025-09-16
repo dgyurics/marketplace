@@ -3,7 +3,7 @@ import { createApp } from 'vue'
 
 import App from './App.vue'
 import { createAppRouter } from './router'
-import './style.css'
+import './assets/style.css'
 
 async function initApp() {
   const app = createApp(App)

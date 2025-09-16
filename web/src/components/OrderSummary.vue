@@ -41,7 +41,7 @@ defineProps<{ order: Order | null }>()
   background: #fafafa;
   border-radius: 6px;
   font-size: 14px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Open Sans', sans-serif;
 }
 
 .order-summary h3 {
