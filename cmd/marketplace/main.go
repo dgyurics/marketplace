@@ -1,3 +1,9 @@
+/*
+Marketplace - Open Source E-commerce Platform
+Created by Dennis Gyurics
+https://github.com/dgyurics/marketplace
+Licensed under MIT License
+*/
 package main
 
 import (
