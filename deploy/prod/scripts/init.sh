@@ -12,6 +12,7 @@ set -euo pipefail
 # 4. Setting up third-party service credentials
 # =============================================================================
 
+
 # Colors for output
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -87,11 +88,11 @@ replace_placeholder() {
   
   # Cross-platform sed: detect OS and use appropriate syntax
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
-    sed -i '' "s/{{$placeholder}}/$value/g" "$file"
+    # macOS - using | as delimiter instead of /
+    sed -i '' "s|{{$placeholder}}|$value|g" "$file"
   else
-    # Linux and others
-    sed -i "s/{{$placeholder}}/$value/g" "$file"
+    # Linux and others - using | as delimiter instead of /
+    sed -i "s|{{$placeholder}}|$value|g" "$file"
   fi
 }
 
@@ -259,7 +260,13 @@ setup_email_credentials() {
   read -p "Enter your MAIL_SMTP_PORT (25 for local, 587 for TLS, 465 for SSL): " -r smtp_port
   validate_input "$smtp_port" "MAIL_SMTP_PORT"
 
-  local smtp_tls=$(confirm_action "Enable SMTP TLS?" "Y" && echo "true" || echo "false")
+  # FIXME when local mailserver used (empty username + password), tls should be false; otherwise should be true
+  local smtp_tls
+  if confirm_action "Enable SMTP TLS?" "Y"; then
+    smtp_tls="true"
+  else
+    smtp_tls="false"
+  fi
 
   read -p "Enter your MAIL_SMTP_USERNAME (optional for local SMTP): " -r smtp_username
   validate_input "$smtp_username" "MAIL_SMTP_USERNAME"
