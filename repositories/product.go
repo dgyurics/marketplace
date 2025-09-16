@@ -68,6 +68,7 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 			&product.ID,
 			&product.Name,
 			&product.Price,
+			&product.TaxCode,
 			&product.Summary,
 			&product.Details,
 			&imagesJSON,
@@ -98,7 +99,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 	var queryBuilder strings.Builder
 	if len(filter.Categories) == 0 {
 		queryBuilder.WriteString(`
-			SELECT p.id, p.name, p.price, p.summary, p.details, p.images
+			SELECT p.id, p.name, p.price, p.tax_code, p.summary, p.details, p.images
 			FROM v_products p
 			WHERE true
 		`)
@@ -115,7 +116,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 				SELECT c.id FROM categories c
 				JOIN category_tree ct ON c.parent_id = ct.id
 			)
-			SELECT p.id, p.name, p.price, p.summary, p.details, p.images
+			SELECT p.id, p.name, p.price, p.tax_code, p.summary, p.details, p.images
 			FROM v_products p
 			JOIN category_tree ct ON ct.id = p.category_id
 			WHERE true
