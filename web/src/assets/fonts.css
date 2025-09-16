@@ -1,6 +1,6 @@
 /* josefin-sans-100 - latin_latin-ext */
 @font-face {
-  font-display: swap;
+  font-display: block; /* Block for logo font - prevent flash */
   font-family: 'Josefin Sans';
   font-style: normal;
   font-weight: 100;
@@ -18,7 +18,7 @@
 
 /* open-sans-300 - latin_latin-ext */
 @font-face {
-  font-display: swap;
+  font-display: block; /* Block for body text - smoother experience */
   font-family: 'Open Sans';
   font-style: normal;
   font-weight: 300;
@@ -27,7 +27,7 @@
 
 /* open-sans-regular - latin_latin-ext */
 @font-face {
-  font-display: swap;
+  font-display: block; /* Block for body text - smoother experience */
   font-family: 'Open Sans';
   font-style: normal;
   font-weight: 400;
