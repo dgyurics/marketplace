@@ -18,17 +18,20 @@ A self-hosted e-commerce framework designed for local businesses and community c
 
 ## Planned Enhancements
 
-* Containerized mail server via docker-mailserver
-* Offline payment methods for trusted customers
-* Comprehensive admin dashboard and management tools
-* Database backup and recovery toolkit
-* API caching and rate limiting for improved performance
-* Partial and full refund support
-* Full-text search using PostgreSQL trigrams
-* Product variants and SKU management (size, color, etc.)
-* Multi-currency and language support
-* Customer pickup scheduling
+* Admin dashboard and management tools
+* Database backup and recovery utilities
+* Mobile-responsive design (phone/tablet support)
+* Self-hosted mail server via docker-mailserver
+* API caching and rate limiting
+* Partial and full refund capabilities
+* Product full-text search with filtering
+* Product variants (size, color, material, etc.)
+* Multi-currency and localization support
+* Address validation via libpostal
 * Discount codes and promotional campaigns
+* Geographic access control via Nginx and GeoIP2
+* Chat integration for verified customers
+* Offline payment options for verified customers
 
 ## Local Development
 
