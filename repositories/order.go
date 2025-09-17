@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/dgyurics/marketplace/types"
-	"github.com/dgyurics/marketplace/types/stripe"
 )
 
 type OrderRepository interface {
@@ -356,7 +355,6 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			o.tax_amount,
 			o.total_amount,
 			o.status,
-			o.stripe_payment_intent,
 			a.id AS address_id,
 			a.addressee,
 			a.line1,
@@ -379,7 +377,6 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 
 	result := []types.Order{}
 	for rows.Next() {
-		var rawIntent []byte
 		order := types.Order{
 			Address: &types.Address{},
 		}
@@ -393,7 +390,6 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			&order.TaxAmount,
 			&order.TotalAmount,
 			&order.Status,
-			&rawIntent,
 			&order.Address.ID,
 			&order.Address.Addressee,
 			&order.Address.Line1,
@@ -408,14 +404,6 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			return nil, err
 		}
 
-		if len(rawIntent) > 0 {
-			var spi stripe.PaymentIntent
-			if err := json.Unmarshal(rawIntent, &spi); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal Stripe payment intent: %w", err)
-			}
-			order.StripePaymentIntent = &spi
-		}
-
 		result = append(result, order)
 	}
 
@@ -424,10 +412,9 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 		return nil, err
 	}
 
+	// FIXME this is expensive - look into doing this in a single query
 	// Populate order items for each order
 	for idx, order := range result {
-		// FIXME this is expensive
-		// look into doing this in a single query
 		result[idx].Items, err = r.populateOrderItems(ctx, order.ID)
 		if err != nil {
 			slog.Error("Failed to populate order items", "order_id", order.ID, "error", err)
@@ -491,6 +478,11 @@ func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string
 	return items, nil
 }
 
+// TODO
+func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (types.Order, error) {
+	return types.Order{}, nil
+}
+
 func (r *orderRepository) GetOrderForUser(ctx context.Context, orderID, userID string) (types.Order, error) {
 	var order types.Order
 	if orderID == "" {
@@ -509,7 +501,6 @@ func (r *orderRepository) GetOrderForUser(ctx context.Context, orderID, userID s
 			o.tax_amount,
 			o.total_amount,
 			o.status,
-			o.stripe_payment_intent,
 			o.address_id,
 			a.addressee,
 			a.line1,
@@ -528,7 +519,6 @@ func (r *orderRepository) GetOrderForUser(ctx context.Context, orderID, userID s
 	`
 
 	// Execute the query
-	var rawIntent []byte
 	var address struct {
 		ID         sql.NullString
 		Addressee  sql.NullString
@@ -548,7 +538,6 @@ func (r *orderRepository) GetOrderForUser(ctx context.Context, orderID, userID s
 		&order.TaxAmount,
 		&order.TotalAmount,
 		&order.Status,
-		&rawIntent,
 		&address.ID,
 		&address.Addressee,
 		&address.Line1,
@@ -565,16 +554,6 @@ func (r *orderRepository) GetOrderForUser(ctx context.Context, orderID, userID s
 	}
 	if err != nil {
 		return order, err
-	}
-
-	// Unmarshal the Stripe payment intent if it exists
-	if len(rawIntent) > 0 {
-		var payInt stripe.PaymentIntent
-		err = json.Unmarshal(rawIntent, &payInt)
-		if err != nil {
-			return order, fmt.Errorf("failed to unmarshal Stripe payment intent: %w", err)
-		}
-		order.StripePaymentIntent = &payInt
 	}
 
 	// Populate address if it exists
@@ -614,7 +593,6 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 			o.tax_amount,
 			o.total_amount,
 			o.status,
-			o.stripe_payment_intent,
 			o.address_id,
 			a.addressee,
 			a.line1,
@@ -634,7 +612,6 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 	` // LIMIT 1 added, but technically shouldn't be needed (system should limit users to one pending order)
 
 	// Execute the query
-	var rawIntent []byte
 	var address struct {
 		ID         sql.NullString
 		Addressee  sql.NullString
@@ -654,7 +631,6 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 		&order.TaxAmount,
 		&order.TotalAmount,
 		&order.Status,
-		&rawIntent,
 		&address.ID,
 		&address.Addressee,
 		&address.Line1,
@@ -671,16 +647,6 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 	}
 	if err != nil {
 		return order, err
-	}
-
-	// Unmarshal the Stripe payment intent if it exists
-	if len(rawIntent) > 0 {
-		var payInt stripe.PaymentIntent
-		err = json.Unmarshal(rawIntent, &payInt)
-		if err != nil {
-			return order, fmt.Errorf("failed to unmarshal Stripe payment intent: %w", err)
-		}
-		order.StripePaymentIntent = &payInt
 	}
 
 	// Populate address if it exists

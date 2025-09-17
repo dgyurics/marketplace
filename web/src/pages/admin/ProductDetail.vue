@@ -5,10 +5,11 @@
       <form @submit.prevent="handleSubmit">
         <div class="form-row">
           <input v-model="editProduct.name" type="text" placeholder="Product Name" required />
+          <!-- TODO replace with custom currency input; this would, in theory, work differnet based on locale -->
           <input
             v-model="editProduct.price"
             type="number"
-            step="any"
+            step="0.01"
             placeholder="Price"
             required
             @input="handlePriceInput"

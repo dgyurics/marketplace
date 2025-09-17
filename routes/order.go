@@ -147,7 +147,7 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 		TotalAmount:         &totalAmount,
 		StripePaymentIntent: &pi,
 	}
-	ord, err := h.orderService.UpdateOrder(r.Context(), params)
+	_, err = h.orderService.UpdateOrder(r.Context(), params)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -159,7 +159,7 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusOK, stripe.PaymentIntentResponse{ClientSecret: ord.StripePaymentIntent.ClientSecret})
+	u.RespondWithJSON(w, http.StatusOK, stripe.PaymentIntentResponse{ClientSecret: pi.ClientSecret})
 }
 
 func (h *OrderRoutes) RegisterRoutes() {

@@ -54,7 +54,6 @@ func (r *paymentRepository) GetOrder(ctx context.Context, paymentIntentID string
 			o.tax_amount,
 			o.total_amount,
 			o.status,
-			o.stripe_payment_intent,
 			a.id AS address_id,
 			a.addressee,
 			a.line1,
@@ -67,13 +66,11 @@ func (r *paymentRepository) GetOrder(ctx context.Context, paymentIntentID string
 		FROM orders o
 		JOIN addresses a ON o.address_id = a.id
 		WHERE o.stripe_payment_intent->>'id' = $1
-	`
+	` // TODO find a way to include order ID metadata in payment intent events -- then we can remove payment_intent entirely from order table
 
 	// Execute the query
 	var order types.Order
 	order.Address = &types.Address{}
-	order.StripePaymentIntent = &stripe.PaymentIntent{}
-	var rawIntent []byte
 	err := r.QueryRowContext(ctx, query, paymentIntentID).Scan(
 		&order.ID,
 		&order.UserID,
@@ -83,7 +80,6 @@ func (r *paymentRepository) GetOrder(ctx context.Context, paymentIntentID string
 		&order.TaxAmount,
 		&order.TotalAmount,
 		&order.Status,
-		&rawIntent,
 		&order.Address.ID,
 		&order.Address.Addressee,
 		&order.Address.Line1,
@@ -99,11 +95,6 @@ func (r *paymentRepository) GetOrder(ctx context.Context, paymentIntentID string
 	}
 	if err != nil {
 		return order, err
-	}
-
-	// Unmarshal payment intent
-	if err := json.Unmarshal(rawIntent, order.StripePaymentIntent); err != nil {
-		return order, fmt.Errorf("failed to unmarshal Stripe payment intent: %w", err)
 	}
 
 	return order, nil
