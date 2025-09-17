@@ -74,7 +74,7 @@ func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
 
 func (h *OrderRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
 	orderID := mux.Vars(r)["id"]
-	order, err := h.orderService.GetOrder(r.Context(), orderID)
+	order, err := h.orderService.GetOrderForUser(r.Context(), orderID)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
 		return
@@ -118,7 +118,7 @@ func (h *OrderRoutes) Update(w http.ResponseWriter, r *http.Request) {
 // Confirm finalizes an order by calculating actual tax and generating a payment intent.
 func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 	orderID := mux.Vars(r)["id"]
-	order, err := h.orderService.GetOrder(r.Context(), orderID)
+	order, err := h.orderService.GetOrderForUser(r.Context(), orderID)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
 		return

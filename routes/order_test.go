@@ -35,7 +35,7 @@ func (m *MockOrderService) GetOrders(ctx context.Context, page, limit int) ([]ty
 	return args.Get(0).([]types.Order), args.Error(1)
 }
 
-func (m *MockOrderService) GetOrder(ctx context.Context, orderID string) (types.Order, error) {
+func (m *MockOrderService) GetOrderForUser(ctx context.Context, orderID string) (types.Order, error) {
 	args := m.Called(ctx, orderID)
 	if args.Get(0) == nil {
 		return types.Order{}, args.Error(1)

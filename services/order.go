@@ -19,7 +19,7 @@ type OrderService interface {
 	CreateOrder(ctx context.Context) (types.Order, error)
 	UpdateOrder(ctx context.Context, order types.OrderParams) (types.Order, error)
 	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
-	GetOrder(ctx context.Context, orderID string) (types.Order, error)
+	GetOrderForUser(ctx context.Context, orderID string) (types.Order, error)
 	CancelStaleOrders(ctx context.Context)
 	GetPendingOrderForUser(ctx context.Context) (types.Order, error)
 }
@@ -106,8 +106,8 @@ func (os *orderService) CreateOrder(ctx context.Context) (types.Order, error) {
 	return order, nil
 }
 
-func (os *orderService) GetOrder(ctx context.Context, orderID string) (types.Order, error) {
-	return os.orderRepo.GetOrder(ctx, orderID, getUserID(ctx))
+func (os *orderService) GetOrderForUser(ctx context.Context, orderID string) (types.Order, error) {
+	return os.orderRepo.GetOrderForUser(ctx, orderID, getUserID(ctx))
 }
 
 func (os *orderService) GetPendingOrderForUser(ctx context.Context) (types.Order, error) {

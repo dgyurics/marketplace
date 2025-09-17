@@ -158,7 +158,7 @@ func TestOrderRepository_GetOrder_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Retrieve order
-	fetchedOrder, err := orderRepo.GetOrder(ctx, order.ID, user.ID)
+	fetchedOrder, err := orderRepo.GetOrderForUser(ctx, order.ID, user.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, order.ID, fetchedOrder.ID)
 	assert.Equal(t, user.ID, fetchedOrder.UserID)

@@ -16,7 +16,7 @@ import (
 type OrderRepository interface {
 	CancelPendingOrders(ctx context.Context, interval time.Duration) ([]string, error) // TODO refactor, returning just stripe IDs is hacky
 	CreateOrder(ctx context.Context, order *types.Order) error
-	GetOrder(ctx context.Context, orderID, userID string) (types.Order, error)
+	GetOrderForUser(ctx context.Context, orderID, userID string) (types.Order, error)
 	GetPendingOrder(ctx context.Context, userID string) (types.Order, error)
 	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
 	UpdateOrder(ctx context.Context, params types.OrderParams) (types.Order, error)
@@ -330,7 +330,7 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderPar
 		return ord, err
 	}
 
-	ord, err = r.GetOrder(ctx, params.ID, params.UserID)
+	ord, err = r.GetOrderForUser(ctx, params.ID, params.UserID)
 	if err != nil {
 		slog.Error("Failed to retrieve updated order", "error", err, "order_id", params.ID, "user_id", params.UserID)
 		return ord, err
@@ -491,7 +491,7 @@ func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string
 	return items, nil
 }
 
-func (r *orderRepository) GetOrder(ctx context.Context, orderID, userID string) (types.Order, error) {
+func (r *orderRepository) GetOrderForUser(ctx context.Context, orderID, userID string) (types.Order, error) {
 	var order types.Order
 	if orderID == "" {
 		return order, errors.New("order ID is required")
