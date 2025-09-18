@@ -85,12 +85,25 @@ func TestGetOrder_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
+func (m *mockOrderRepo) GetOrderByID(ctx context.Context, orderID string) (types.Order, error) {
+	args := m.Called(ctx, orderID)
+	if v := args.Get(0); v != nil {
+		return v.(types.Order), args.Error(1)
+	}
+	return types.Order{}, args.Error(1)
+}
+
 func (m *mockOrderRepo) GetOrderForUser(ctx context.Context, orderID, userID string) (types.Order, error) {
 	args := m.Called(ctx, orderID, userID)
 	if v := args.Get(0); v != nil {
 		return v.(types.Order), args.Error(1)
 	}
 	return types.Order{}, args.Error(1)
+}
+
+func (m *mockOrderRepo) MarkOrderAsPaid(ctx context.Context, orderID string) error {
+	args := m.Called(ctx, orderID)
+	return args.Error(0)
 }
 
 func TestGetOrder_NotFound(t *testing.T) {
@@ -220,6 +233,6 @@ func (m *mockOrderRepo) GetPendingOrder(ctx context.Context, userID string) (typ
 	return types.Order{}, args.Error(1)
 }
 
-func (m *mockOrderRepo) CancelPendingOrders(ctx context.Context, interval time.Duration) ([]string, error) {
-	return nil, nil
+func (m *mockOrderRepo) CancelPendingOrders(ctx context.Context, interval time.Duration) error {
+	return nil
 }

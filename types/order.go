@@ -2,8 +2,6 @@ package types
 
 import (
 	"time"
-
-	"github.com/dgyurics/marketplace/types/stripe"
 )
 
 type OrderStatus string
@@ -19,33 +17,31 @@ const (
 )
 
 type OrderParams struct {
-	ID                  string                `json:"id"`
-	UserID              string                `json:"user_id"`
-	AddressID           *string               `json:"address_id"`
-	Email               *string               `json:"email"`
-	Amount              *int64                `json:"amount"`
-	TaxAmount           *int64                `json:"tax_amount"`
-	ShippingAmount      *int64                `json:"shipping_amount"`
-	TotalAmount         *int64                `json:"total_amount"`
-	Status              *OrderStatus          `json:"status"`
-	StripePaymentIntent *stripe.PaymentIntent `json:"stripe_payment_intent"`
+	ID             string       `json:"id"`
+	UserID         string       `json:"user_id"`
+	AddressID      *string      `json:"address_id"`
+	Email          *string      `json:"email"`
+	Amount         *int64       `json:"amount"`
+	TaxAmount      *int64       `json:"tax_amount"`
+	ShippingAmount *int64       `json:"shipping_amount"`
+	TotalAmount    *int64       `json:"total_amount"`
+	Status         *OrderStatus `json:"status"`
 }
 
 type Order struct {
-	ID                  string                `json:"id"`
-	UserID              string                `json:"-"`
-	Email               string                `json:"email"`
-	Address             *Address              `json:"address"` // TODO change to shipping address
-	StripePaymentIntent *stripe.PaymentIntent `json:"-"`       // TODO remove this
-	Currency            string                `json:"currency"`
-	Amount              int64                 `json:"amount"`
-	TaxAmount           int64                 `json:"tax_amount"`
-	ShippingAmount      int64                 `json:"shipping_amount"`
-	TotalAmount         int64                 `json:"total_amount"`
-	Status              OrderStatus           `json:"status"`
-	Items               []OrderItem           `json:"items"`
-	CreatedAt           time.Time             `json:"created_at"`
-	UpdatedAt           time.Time             `json:"updated_at"`
+	ID             string      `json:"id"`
+	UserID         string      `json:"-"`
+	Email          string      `json:"email"`
+	Address        *Address    `json:"address"` // TODO change to shipping address
+	Currency       string      `json:"currency"`
+	Amount         int64       `json:"amount"`
+	TaxAmount      int64       `json:"tax_amount"`
+	ShippingAmount int64       `json:"shipping_amount"`
+	TotalAmount    int64       `json:"total_amount"`
+	Status         OrderStatus `json:"status"`
+	Items          []OrderItem `json:"items"`
+	CreatedAt      time.Time   `json:"created_at"`
+	UpdatedAt      time.Time   `json:"updated_at"`
 }
 
 type OrderItem struct {

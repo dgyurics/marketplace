@@ -142,10 +142,9 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 
 	totalAmount := order.TotalAmount + tax
 	params := types.OrderParams{
-		ID:                  orderID,
-		TaxAmount:           &tax,
-		TotalAmount:         &totalAmount,
-		StripePaymentIntent: &pi,
+		ID:          orderID,
+		TaxAmount:   &tax,
+		TotalAmount: &totalAmount,
 	}
 	_, err = h.orderService.UpdateOrder(r.Context(), params)
 	if err != nil {
@@ -165,6 +164,8 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 func (h *OrderRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/orders", h.secure(h.CreateOrder)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}", h.secure(h.Update)).Methods(http.MethodPatch)
+	// h.muxRouter.Handle("/orders/{id}", h.secure(h.Get)).Methods(http.MethodGet) // one for user
+	// h.muxRouter.Handle("/orders/{id}", h.secure(h.Get)).Methods(http.MethodGet) // one for admin
 	h.muxRouter.Handle("/orders/{id}/confirm", h.secure(h.Confirm)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secureAdmin(h.GetOrders)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/orders/{id}/tax-estimate", h.secure(h.EstimateTax)).Methods(http.MethodGet)

@@ -12,12 +12,13 @@ type Data struct {
 }
 
 type PaymentIntent struct {
-	ID           string `json:"id"`
-	Status       string `json:"status"`
-	Amount       int64  `json:"amount"`
-	ClientSecret string `json:"client_secret"`
-	Currency     string `json:"currency"`
-	Error        string `json:"error,omitempty"`
+	ID           string            `json:"id"`
+	Status       string            `json:"status"`
+	Amount       int64             `json:"amount"`
+	ClientSecret string            `json:"client_secret"`
+	Currency     string            `json:"currency"`
+	Metadata     map[string]string `json:"metadata"`
+	Error        string            `json:"error,omitempty"`
 }
 
 type PaymentIntentResponse struct {

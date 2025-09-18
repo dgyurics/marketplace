@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/dgyurics/marketplace/repositories"
@@ -19,8 +18,9 @@ type OrderService interface {
 	CreateOrder(ctx context.Context) (types.Order, error)
 	UpdateOrder(ctx context.Context, order types.OrderParams) (types.Order, error)
 	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
+	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
 	GetOrderForUser(ctx context.Context, orderID string) (types.Order, error)
-	CancelStaleOrders(ctx context.Context)
+	CancelStaleOrders(ctx context.Context) error
 	GetPendingOrderForUser(ctx context.Context) (types.Order, error)
 }
 
@@ -56,25 +56,11 @@ func (os *orderService) UpdateOrder(ctx context.Context, params types.OrderParam
 	return os.orderRepo.UpdateOrder(ctx, params)
 }
 
-func (os *orderService) CancelStaleOrders(ctx context.Context) {
-	interval := 10 * time.Minute // Cancel orders older than 10 minutes with status "pending"
-	paymentIntentIDs, err := os.orderRepo.CancelPendingOrders(ctx, interval)
-	if err != nil {
-		slog.Error("Error canceling stale orders", "error", err)
-	}
-
-	var wg sync.WaitGroup
-	for _, id := range paymentIntentIDs {
-		wg.Add(1)
-		go func(pID string) {
-			defer wg.Done()
-			slog.Debug("Cancelling payment intent", "id", id)
-			if err := os.paymentService.CancelPaymentIntent(ctx, pID); err != nil {
-				slog.Error("Error canceling payment intent", "id", pID)
-			}
-		}(id)
-	}
-	wg.Wait()
+func (os *orderService) CancelStaleOrders(ctx context.Context) error {
+	// Cancel orders older than 10 minutes with status "pending"
+	// TODO make this configurable to match expires_at in payments
+	interval := 10 * time.Minute
+	return os.orderRepo.CancelPendingOrders(ctx, interval)
 }
 
 func (os *orderService) GetOrders(ctx context.Context, page, limit int) ([]types.Order, error) {
@@ -104,6 +90,10 @@ func (os *orderService) CreateOrder(ctx context.Context) (types.Order, error) {
 		"amount", order.Amount,
 	)
 	return order, nil
+}
+
+func (os *orderService) GetOrderByID(ctx context.Context, orderID string) (types.Order, error) {
+	return os.orderRepo.GetOrderByID(ctx, orderID)
 }
 
 func (os *orderService) GetOrderForUser(ctx context.Context, orderID string) (types.Order, error) {

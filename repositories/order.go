@@ -13,12 +13,14 @@ import (
 )
 
 type OrderRepository interface {
-	CancelPendingOrders(ctx context.Context, interval time.Duration) ([]string, error) // TODO refactor, returning just stripe IDs is hacky
+	CancelPendingOrders(ctx context.Context, interval time.Duration) error
 	CreateOrder(ctx context.Context, order *types.Order) error
 	GetOrderForUser(ctx context.Context, orderID, userID string) (types.Order, error)
+	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
 	GetPendingOrder(ctx context.Context, userID string) (types.Order, error)
 	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
 	UpdateOrder(ctx context.Context, params types.OrderParams) (types.Order, error)
+	MarkOrderAsPaid(ctx context.Context, orderID string) error
 }
 
 type orderRepository struct {
@@ -29,32 +31,17 @@ func NewOrderRepository(db *sql.DB) OrderRepository {
 	return &orderRepository{db: db}
 }
 
-func (r *orderRepository) CancelPendingOrders(ctx context.Context, interval time.Duration) ([]string, error) {
+func (r *orderRepository) CancelPendingOrders(ctx context.Context, interval time.Duration) error {
 	intervalStr := fmt.Sprintf("%d seconds", int(interval.Seconds()))
 	query := `
 		UPDATE orders
 		SET status = 'canceled', updated_at = CURRENT_TIMESTAMP
 		WHERE status = 'pending' AND updated_at < NOW() - ($1)::INTERVAL
-		RETURNING stripe_payment_intent->>'id' AS payment_intent_id
 	`
-	rows, err := r.db.QueryContext(ctx, query, intervalStr)
-	if err != nil {
-		return nil, err
+	if _, err := r.db.ExecContext(ctx, query, intervalStr); err != nil {
+		return err
 	}
-	var stripeIDs []string
-	for rows.Next() {
-		var id sql.NullString
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		if id.Valid {
-			stripeIDs = append(stripeIDs, id.String)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return stripeIDs, r.restockCanceledOrderItems(ctx)
+	return r.restockCanceledOrderItems(ctx)
 }
 
 func (r *orderRepository) restockCanceledOrderItems(ctx context.Context) error {
@@ -298,18 +285,6 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderPar
 		argCount++
 	}
 
-	if params.StripePaymentIntent != nil {
-		intentJSON, err := json.Marshal(*params.StripePaymentIntent)
-		if err != nil {
-			return ord, fmt.Errorf("failed to encode stripe payment intent: %w", err)
-		}
-
-		attrs = append(attrs, slog.String("stripe_payment_intent", string(intentJSON)))
-		query += fmt.Sprintf(", stripe_payment_intent = $%d", argCount)
-		args = append(args, intentJSON)
-		argCount++
-	}
-
 	if len(args) == 0 {
 		return ord, fmt.Errorf("no fields to update")
 	}
@@ -478,11 +453,6 @@ func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string
 	return items, nil
 }
 
-// TODO
-func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (types.Order, error) {
-	return types.Order{}, nil
-}
-
 func (r *orderRepository) GetOrderForUser(ctx context.Context, orderID, userID string) (types.Order, error) {
 	var order types.Order
 	if orderID == "" {
@@ -576,6 +546,105 @@ func (r *orderRepository) GetOrderForUser(ctx context.Context, orderID, userID s
 	}
 
 	return order, nil
+}
+
+func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (types.Order, error) {
+	var order types.Order
+	query := `
+		SELECT
+			o.id,
+			o.user_id,
+			COALESCE(o.email, '') AS email,
+			o.currency,
+			o.amount,
+			o.tax_amount,
+			o.total_amount,
+			o.status,
+			o.address_id,
+			a.addressee,
+			a.line1,
+			a.line2,
+			a.city,
+			a.state,
+			a.postal_code,
+			a.country,
+			o.created_at,
+			o.updated_at
+		FROM orders o
+		LEFT JOIN addresses a ON o.address_id = a.id
+		WHERE o.id = $1
+	`
+
+	// Execute the query
+	var address struct {
+		ID         sql.NullString
+		Addressee  sql.NullString
+		Line1      sql.NullString
+		Line2      sql.NullString
+		City       sql.NullString
+		State      sql.NullString
+		PostalCode sql.NullString
+		Country    sql.NullString
+	}
+	err := r.db.QueryRowContext(ctx, query, orderID).Scan(
+		&order.ID,
+		&order.UserID,
+		&order.Email,
+		&order.Currency,
+		&order.Amount,
+		&order.TaxAmount,
+		&order.TotalAmount,
+		&order.Status,
+		&address.ID,
+		&address.Addressee,
+		&address.Line1,
+		&address.Line2,
+		&address.City,
+		&address.State,
+		&address.PostalCode,
+		&address.Country,
+		&order.CreatedAt,
+		&order.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return order, types.ErrNotFound
+	}
+	if err != nil {
+		return order, err
+	}
+
+	// Populate address if it exists
+	if address.ID.Valid {
+		order.Address = &types.Address{
+			ID:         address.ID.String,
+			Addressee:  &address.Addressee.String,
+			Line1:      address.Line1.String,
+			Line2:      &address.Line2.String,
+			City:       address.City.String,
+			State:      address.State.String,
+			PostalCode: address.PostalCode.String,
+			Country:    address.Country.String,
+		}
+	}
+
+	// Populate order items for this order
+	if order.Items, err = r.populateOrderItems(ctx, order.ID); err != nil {
+		return order, fmt.Errorf("failed to populate order items: %w", err)
+	}
+
+	return order, nil
+}
+
+func (r *orderRepository) MarkOrderAsPaid(ctx context.Context, orderID string) error {
+	query := `
+		UPDATE orders
+		SET
+			status = 'paid',
+			updated_at = NOW()
+		WHERE id = $1
+	`
+	_, err := r.db.ExecContext(ctx, query, orderID)
+	return err
 }
 
 func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (types.Order, error) {

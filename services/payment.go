@@ -25,7 +25,6 @@ type PaymentService interface {
 	EventHandler(ctx context.Context, event stripe.Event) error
 	SignatureVerifier(payload []byte, sigHeader string) error
 	CreatePaymentIntent(ctx context.Context, refID string, amount int64) (stripe.PaymentIntent, error)
-	CancelPaymentIntent(ctx context.Context, paymentIntentID string) error
 }
 
 type paymentService struct {
@@ -35,7 +34,7 @@ type paymentService struct {
 	serviceEmail EmailService
 	serviceTmp   TemplateService
 	serviceUser  UserService
-	repo         repositories.PaymentRepository
+	repo         repositories.OrderRepository
 }
 
 func NewPaymentService(
@@ -45,7 +44,7 @@ func NewPaymentService(
 	serviceEmail EmailService,
 	serviceTmp TemplateService,
 	serviceUser UserService,
-	repo repositories.PaymentRepository) PaymentService {
+	repo repositories.OrderRepository) PaymentService {
 	return &paymentService{
 		HttpClient:   httpClient,
 		stripeConfig: stripeConfig,
@@ -57,26 +56,32 @@ func NewPaymentService(
 	}
 }
 
-func (s *paymentService) EventHandler(ctx context.Context, event stripe.Event) error {
-	// save raw event
-	if err := s.repo.SaveEvent(ctx, event); err != nil {
-		slog.Error("Failed to save event", "error", err)
-		return err
-	}
-
+func (s *paymentService) EventHandler(ctx context.Context, event stripe.Event) (err error) {
 	// process event based on type
 	switch stripe.EventType(event.Type) {
 	case stripe.EventTypePaymentIntentCreated:
-		return s.handlePaymentIntentCreated(ctx, event)
+		err = s.handlePaymentIntentCreated(ctx, event)
 	case stripe.EventTypePaymentIntentSucceeded:
-		return s.handlePaymentIntentSucceeded(ctx, event)
+		err = s.handlePaymentIntentSucceeded(ctx, event)
 	case stripe.EventTypePaymentIntentCanceled:
-		slog.Debug("Payment intent canceled", "id", event.Data.Object.ID)
+		err = s.handlePaymentIntentCancelled(ctx, event)
 	case stripe.EventTypePaymentIntentPaymentFailed:
-		slog.Debug("Payment intent payment failed", "id", event.Data.Object.ID)
+		err = s.handlePaymentIntentFailed(ctx, event)
 	default:
+		// Unhandled events - consider implementing for advanced features:
+		// - charge.updated: payment retries, fees, risk scores
+		// - charge.dispute.*: chargeback/dispute handling
+		// - charge.refunded: refund confirmations and partial refunds
 		slog.Debug("Unhandled Stripe event type", "type", event.Type)
 	}
+
+	if err != nil {
+		slog.Error("Error handling event", "type", event.Type, "error", err)
+		return err
+	}
+
+	// Successfully processed
+	slog.Debug("Successfully processed Stripe event", "type", event.Type, "id", event.ID)
 	return nil
 }
 
@@ -138,7 +143,7 @@ func (s *paymentService) SignatureVerifier(payload []byte, sigHeader string) err
 }
 
 // CreatePaymentIntent creates a new Stripe Payment Intent.
-// [refID] is a unique reference ID for idempotency.
+// [refID] is a unique reference ID for idempotency. Currently this is the order ID
 // [amount] is the amount in the smallest currency unit (e.g., cents for USD).
 func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, amount int64) (pi stripe.PaymentIntent, err error) {
 	// Build request
@@ -147,6 +152,8 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 		"amount":                 {fmt.Sprintf("%d", amount)},
 		"currency":               {s.localeConfig.Currency},
 		"payment_method_types[]": {"card"},
+		"metadata[order_id]":     {refID},
+		"expires_at":             {fmt.Sprintf("%d", time.Now().Add(10*time.Minute).Unix())}, // TODO make this configurable to match order.CancelStaleOrders
 	}
 	reqBody := strings.NewReader(payload.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, reqBody)
@@ -188,19 +195,26 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 // If the order is not pending or the amounts do not match, it returns an error.
 // This function is called when a PaymentIntentCreated event is received.
 func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, event stripe.Event) error {
-	paymentIntent := event.Data.Object
-	order, err := s.repo.GetOrder(ctx, paymentIntent.ID)
+	pi := event.Data.Object
+
+	// Get order ID from metadata instead of querying by payment intent ID
+	orderID := pi.Metadata["order_id"]
+	if orderID == "" {
+		return fmt.Errorf("order_id not found in payment intent metadata")
+	}
+
+	order, err := s.repo.GetOrderByID(ctx, orderID)
 	if err != nil {
 		return err
 	}
 	if order.Status != types.OrderPending {
 		return nil
 	}
-	if order.TotalAmount != paymentIntent.Amount {
-		return fmt.Errorf("payment intent amount does not match expected amount")
+	if order.TotalAmount != pi.Amount {
+		return fmt.Errorf("amount mismatch: expected %d, got %d, order_id=%s", order.TotalAmount, pi.Amount, order.ID)
 	}
-	if !strings.EqualFold(order.Currency, paymentIntent.Currency) {
-		return fmt.Errorf("payment intent currency does not match expected currency")
+	if !strings.EqualFold(order.Currency, pi.Currency) {
+		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", order.Currency, pi.Currency, order.ID)
 	}
 	return nil
 }
@@ -211,10 +225,16 @@ func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, event s
 // If the order is not pending or the amounts do not match, it returns an error.
 // This function is called when a PaymentIntentSucceeded event is received.
 func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event stripe.Event) error {
-	paymentIntent := event.Data.Object
+	pi := event.Data.Object
+
+	// Get order ID from metadata instead of querying by payment intent ID
+	orderID := pi.Metadata["order_id"]
+	if orderID == "" {
+		return fmt.Errorf("order_id not found in payment intent metadata")
+	}
 
 	// do some basic validation
-	order, err := s.repo.GetOrder(ctx, paymentIntent.ID)
+	order, err := s.repo.GetOrderByID(ctx, orderID)
 	if err != nil {
 		return err
 	}
@@ -222,23 +242,20 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 		slog.Debug("Payment intent succeeded for non-pending order", "order_id", order.ID, "status", order.Status)
 		return nil
 	}
-	if order.TotalAmount != paymentIntent.Amount {
-		slog.Error("Payment intent amount does not match expected amount", "order_id", order.ID)
-		return fmt.Errorf("payment intent amount does not match expected amount")
+	if order.TotalAmount != pi.Amount {
+		return fmt.Errorf("amount mismatch: expected %d, got %d, order_id=%s", order.TotalAmount, pi.Amount, order.ID)
 	}
-	if !strings.EqualFold(order.Currency, paymentIntent.Currency) {
-		slog.Error("Payment intent currency does not match expected currency", "order_id", order.ID)
-		return fmt.Errorf("payment intent currency does not match expected currency")
+	if !strings.EqualFold(order.Currency, pi.Currency) {
+		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", order.Currency, pi.Currency, order.ID)
 	}
 
 	// mark order as paid
-	err = s.repo.MarkOrderAsPaid(ctx, order.ID, paymentIntent)
+	err = s.repo.MarkOrderAsPaid(ctx, order.ID)
 	if err != nil {
-		slog.Error("Error marking order as paid", "order_id", order.ID, "error", err)
-		return err
+		return fmt.Errorf("failed to mark order as paid: order_id=%s, error=%w", order.ID, err)
 	}
 
-	slog.Info("Order marked as paid", "order_id", order.ID, "payment_intent_id", paymentIntent.ID)
+	slog.Info("Order marked as paid", "order_id", order.ID, "payment_intent_id", pi.ID)
 
 	// Send payment success email
 	go func(recEmail, orderID string) {
@@ -257,7 +274,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 			IsHTML:  true,
 		}
 		if err := s.serviceEmail.Send(email); err != nil {
-			slog.Error("Error sending order confirmation email: ", "error", err)
+			slog.Error("Error sending order confirmation email: ", "order_id", order.ID, "error", err)
 		}
 	}(order.Email, order.ID)
 
@@ -294,53 +311,28 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 			IsHTML:  true,
 		}
 		if err := s.serviceEmail.Send(email); err != nil {
-			slog.Error("Error sending order confirmation email (admins): ", "error", err)
+			slog.Error("Error sending order confirmation email (admins): ", "order_id", order.ID, "error", err)
 		}
 	}(order)
 
 	return nil
 }
 
-func (s *paymentService) CancelPaymentIntent(ctx context.Context, paymentIntentID string) error {
-	reqURL := fmt.Sprintf("%s/payment_intents/%s/cancel", s.stripeConfig.BaseURL, paymentIntentID)
-	req, err := http.NewRequestWithContext(ctx, "POST", reqURL, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create Stripe cancel request: %w", err)
+func (s *paymentService) handlePaymentIntentCancelled(_ context.Context, event stripe.Event) error {
+	orderID := event.Data.Object.Metadata["order_id"]
+	if orderID == "" {
+		return fmt.Errorf("order_id not found in payment intent metadata")
 	}
-	req.SetBasicAuth(s.stripeConfig.SecretKey, "")
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	slog.Debug("Payment intent canceled", "id", event.Data.Object.ID, "order_id", orderID)
+	return nil
+}
 
-	resp, err := s.HttpClient.Do(req)
-	if err != nil {
-		slog.Error("Error sending cancel request to Stripe", "url", reqURL, "error", err)
-		return fmt.Errorf("failed to send cancel request to Stripe: %w", err)
+func (s *paymentService) handlePaymentIntentFailed(_ context.Context, event stripe.Event) error {
+	orderID := event.Data.Object.Metadata["order_id"]
+	if orderID == "" {
+		return fmt.Errorf("order_id not found in payment intent metadata")
 	}
-
-	defer resp.Body.Close()
-
-	// Handle response
-	if resp.StatusCode != http.StatusOK {
-		slog.Error("Stripe returned error on payment intent cancel", "status", resp.StatusCode, "url", reqURL)
-		return fmt.Errorf("cancel payment intent request failed with status %d", resp.StatusCode)
-	}
-
-	// Parse response
-	var result struct {
-		ID     string `json:"id"`
-		Status string `json:"status"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		slog.Error("Failed to parse Stripe cancel response", "error", err)
-		return fmt.Errorf("failed to decode Stripe cancel response: %w", err)
-	}
-
-	// Ensure the intent was canceled
-	if result.Status != "canceled" {
-		slog.Error("Payment intent not canceled", "id", result.ID, "status", result.Status)
-		return fmt.Errorf("payment intent %s was not canceled, current status: %s", result.ID, result.Status)
-	}
-
-	slog.Debug("Payment intent canceled successfully", "id", result.ID)
+	slog.Debug("Payment intent payment failed", "id", event.Data.Object.ID, "order_id", orderID)
 	return nil
 }
 

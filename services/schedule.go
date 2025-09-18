@@ -49,7 +49,9 @@ func (s *scheduleService) Start(ctx context.Context) {
 			// run job every 10 minutes
 			if s.schedRepo.RunJob(ctx, types.StaleOrders, 10*time.Minute) {
 				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
-				s.orderSrv.CancelStaleOrders(ctxTimeout)
+				if err := s.orderSrv.CancelStaleOrders(ctxTimeout); err != nil {
+					slog.Error("Error canceling stale orders", "error", err)
+				}
 				cancel()
 			}
 		}

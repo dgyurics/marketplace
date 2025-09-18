@@ -195,14 +195,11 @@ CREATE TABLE IF NOT EXISTS orders (
     shipping_amount BIGINT NOT NULL DEFAULT 0,
     total_amount BIGINT NOT NULL DEFAULT 0,
     status order_status_enum NOT NULL DEFAULT 'pending',
-    stripe_payment_intent JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
     FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE RESTRICT
 );
-CREATE INDEX idx_orders_stripe_payment_intent_id
-ON orders ((stripe_payment_intent->>'id'));
 
 -- when checking out, create an order from the user's cart
 -- and move the cart items to order_items
@@ -233,15 +230,6 @@ SELECT
 FROM order_items oi
 JOIN products p ON oi.product_id = p.id
 LEFT JOIN images i ON i.product_id = p.id AND i.type = 'thumbnail';
-
-CREATE TABLE stripe_events (
-    id VARCHAR(255) UNIQUE NOT NULL,
-    event_type VARCHAR(100) NOT NULL,
-    payload JSONB NOT NULL,
-    processed_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-REVOKE UPDATE, DELETE ON stripe_events FROM PUBLIC; -- make stripe_events insert only
 
 -- required for schedule service
 CREATE TABLE IF NOT EXISTS job_schedules (
