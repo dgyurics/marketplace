@@ -153,7 +153,6 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 		"currency":               {s.localeConfig.Currency},
 		"payment_method_types[]": {"card"},
 		"metadata[order_id]":     {refID},
-		"expires_at":             {fmt.Sprintf("%d", time.Now().Add(10*time.Minute).Unix())}, // TODO make this configurable to match order.CancelStaleOrders
 	}
 	reqBody := strings.NewReader(payload.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, reqBody)
