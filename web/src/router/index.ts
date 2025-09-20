@@ -8,6 +8,7 @@ import AdminProducts from '@/pages/admin/Product.vue'
 import AdminProductEdit from '@/pages/admin/ProductDetail.vue'
 import AdminUsers from '@/pages/admin/User.vue'
 import Cart from '@/pages/Cart.vue'
+import Error from '@/pages/Error.vue'
 import Home from '@/pages/Home.vue'
 import LoginRegister from '@/pages/LoginRegister.vue'
 import NotFound from '@/pages/NotFound.vue'
@@ -26,6 +27,7 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/auth/update', component: AccountSetup },
     { path: '/auth', component: LoginRegister },
     { path: '/cart', component: Cart },
+    { path: '/error', component: Error },
     { path: '/products/:id', component: ProductDetails, props: true },
     { path: '/checkout/shipping', component: ShippingAddress },
     { path: '/checkout/payment', component: Payment },

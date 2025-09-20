@@ -1,14 +1,14 @@
 <template>
-  <div class="not-found">
-    <h1>404</h1>
-    <p>Page not found</p>
+  <div class="error">
+    <h1>500</h1>
+    <p>Something went wrong</p>
   </div>
 </template>
 
 <!-- TODO notify service of error -->
 
 <style scoped>
-.not-found {
+.error {
   text-align: center;
   padding: 4rem 2rem;
 }
