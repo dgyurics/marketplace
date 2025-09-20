@@ -7,6 +7,7 @@ import (
 type OrderStatus string
 
 const (
+	// OrderCreated    OrderStatus = "created" // TODO use this status for new orders with no address or email
 	OrderPending    OrderStatus = "pending"
 	OrderPaid       OrderStatus = "paid"
 	OrderRefunded   OrderStatus = "refunded"
