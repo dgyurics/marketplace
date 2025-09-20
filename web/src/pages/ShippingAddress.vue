@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div v-if="!isInitializing" class="container">
     <h2>Checkout</h2>
     <div>
       <h3>shipping address</h3>
@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import ShippingAddressForm from '@/components/forms/ShippingAddressForm.vue'
@@ -18,15 +18,38 @@ import type { Address } from '@/types'
 
 const checkoutStore = useCheckoutStore()
 const router = useRouter()
+const isInitializing = ref(true)
 
 onMounted(async () => {
-  await checkoutStore.initializeOrder()
+  try {
+    await checkoutStore.initializeOrder()
+  } catch (error: any) {
+    const status = error.response?.status
+    if (status === 400) {
+      router.push('/')
+      return
+    }
+    if (status === 401) {
+      router.push('/auth')
+      return
+    }
+    // Network error or 500
+    router.push('/error')
+    return
+  } finally {
+    isInitializing.value = false
+  }
 })
 
 async function handleShippingSubmit(address: Address, email: string) {
-  await checkoutStore.saveShippingAddress(address, email)
-  if (checkoutStore.canProceedToPayment) {
-    router.push('/checkout/payment')
+  try {
+    await checkoutStore.saveShippingAddress(address, email)
+    // FIXME refactor shouldn't need this if above throws no error
+    if (checkoutStore.canProceedToPayment) {
+      router.push('/checkout/payment')
+    }
+  } catch {
+    router.push('/error')
   }
 }
 </script>

@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div if="!isInitializing" class="container">
     <h2>Checkout</h2>
     <OrderSummary :order="checkoutStore.order" />
     <h3>payment details</h3>
@@ -78,6 +78,7 @@ import { useCheckoutStore } from '@/store/checkout'
 const checkoutStore = useCheckoutStore()
 const router = useRouter()
 const isSubmitting = ref(false)
+const isInitializing = ref(true)
 
 let cardElement: StripeCardNumberElement,
   expiryElement: StripeCardExpiryElement,
@@ -90,6 +91,7 @@ onMounted(async () => {
   }
   await initializeStripe()
   await checkoutStore.estimateTax()
+  isInitializing.value = false
 })
 
 const elementStyles = {

@@ -46,7 +46,6 @@ import { useRouter } from 'vue-router'
 
 import { login as apiLogin, register as apiRegister, logout as apiLogout } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
-import type { ApiError } from '@/types'
 
 const authStore = useAuthStore()
 
@@ -137,27 +136,15 @@ const handleLogout = async () => {
   }
 }
 
-const handleApiError = (error: unknown): string => {
-  if (error && typeof error === 'object' && 'response' in error) {
-    const apiError = error as ApiError
-
-    switch (apiError.response?.status) {
-      case 409:
-        return 'Email already in use.'
-      case 401:
-        return 'Invalid credentials. Try again.' // TODO have this return a button, disguised as a link, to reset password
-      case 500:
-        return 'Server error. Please try again later.'
-      default:
-        return apiError.message || 'An error occurred during registration.'
-    }
+const handleApiError = (error: any): string => {
+  const status = error.response?.status
+  if (status === 409) {
+    return 'Email already in use.'
   }
-
-  if (error instanceof Error) {
-    return error.message
+  if (status === 401) {
+    return 'Invalid credentials'
   }
-
-  return 'An unexpected error occurred. Please try again.'
+  return 'Something went wrong'
 }
 </script>
 

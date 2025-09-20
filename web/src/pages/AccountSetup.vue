@@ -29,7 +29,6 @@ import { useRouter } from 'vue-router'
 
 import { updateCredentials as apiUpdateCredentials } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
-import type { ApiError } from '@/types'
 
 const authStore = useAuthStore()
 
@@ -67,30 +66,14 @@ const handleUpdate = async () => {
     const authTokens = await apiUpdateCredentials(email.value, password.value)
     authStore.setTokens(authTokens)
     router.push('/')
-  } catch (error) {
-    errorMessage.value = handleApiError(error)
-  }
-}
-
-const handleApiError = (error: unknown): string => {
-  if (error && typeof error === 'object' && 'response' in error) {
-    const apiError = error as ApiError
-
-    switch (apiError.response?.status) {
-      case 409:
-        return 'Email already in use.'
-      case 500:
-        return 'Server error. Please try again later.'
-      default:
-        return apiError.message || 'An error occurred updating your credentials.'
+  } catch (error: any) {
+    const status = error.response?.status
+    if (status === 409) {
+      errorMessage.value = 'Email already in use.'
+      return
     }
+    errorMessage.value = 'Something went wrong'
   }
-
-  if (error instanceof Error) {
-    return error.message
-  }
-
-  return 'An unexpected error occurred. Please try again.'
 }
 </script>
 

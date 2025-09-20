@@ -50,27 +50,25 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 
 import { uploadImage } from '@/services/api'
+import type { Image, ImageType } from '@/types'
 
-const props = defineProps({
-  productId: {
-    type: String,
-    required: true,
-  },
-  images: {
-    type: Array,
-    default: () => [],
-  },
-})
+const props = defineProps<{
+  productId: string
+  images: Image[]
+}>()
+
+// Provide default for images
+const images = computed(() => props.images || [])
 
 const emit = defineEmits(['upload-success', 'upload-error'])
 
-const fileInput = ref(null)
-const selectedFile = ref(null)
-const imageType = ref('gallery')
+const fileInput = ref<HTMLInputElement | null>(null)
+const selectedFile = ref<File | null>(null)
+const imageType = ref<ImageType>('gallery')
 const removeBackground = ref(false)
 const uploading = ref(false)
 const errorMessage = ref('')
@@ -78,7 +76,7 @@ const successMessage = ref('')
 
 // Compute available image types based on existing images
 const availableImageTypes = computed(() => {
-  const existingTypes = props.images.map((img) => img.type)
+  const existingTypes = images.value.map((img) => img.type)
   const hasHero = existingTypes.includes('hero')
   const hasThumbnail = existingTypes.includes('thumbnail')
 
@@ -105,21 +103,21 @@ const availableImageTypes = computed(() => {
 const setDefaultImageType = () => {
   const availableOption = availableImageTypes.value.find((opt) => !opt.disabled)
   if (availableOption) {
-    imageType.value = availableOption.value
+    imageType.value = availableOption.value as ImageType
   }
 }
 
 // Watch for changes in images to update default
 watch(
-  () => props.images,
+  images,
   () => {
     setDefaultImageType()
   },
   { immediate: true }
 )
 
-const handleFileSelect = (event) => {
-  const target = event.target
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
     selectedFile.value = target.files[0]
     errorMessage.value = ''
@@ -166,33 +164,24 @@ const resetForm = () => {
   }
 }
 
-const getErrorMessage = (error) => {
-  if (error && typeof error === 'object' && 'response' in error) {
-    switch (error.response?.status) {
-      case 400:
-        return 'Invalid request. Please check the file format.'
-      case 401:
-        return 'Unauthorized. Please log in again.'
-      case 403:
-        return 'Forbidden. You do not have permission to upload images.'
-      case 404:
-        return 'Product not found.'
-      case 413:
-        return 'File too large. Please choose a smaller image.'
-      case 415:
-        return 'Unsupported file format. Please use JPEG, PNG, WebP, GIF, BMP, or TIFF.'
-      case 500:
-        return 'Server error. Please try again later.'
-      default:
-        return error.response?.data?.message || 'An error occurred uploading the image.'
-    }
+const getErrorMessage = (error: unknown) => {
+  const status = (error as { response?: { status?: number } }).response?.status
+  switch (status) {
+    case 400:
+      return 'Invalid request. Please check the file format.'
+    case 401:
+      return 'Unauthorized. Please log in again.'
+    case 403:
+      return 'Forbidden. You do not have permission to upload images.'
+    case 404:
+      return 'Product not found.'
+    case 413:
+      return 'File too large. Please choose a smaller image.'
+    case 415:
+      return 'Unsupported file format. Please use JPEG, PNG, WebP, GIF, BMP, or TIFF.'
+    default:
+      return 'Something went wrong'
   }
-
-  if (error instanceof Error) {
-    return error.message
-  }
-
-  return 'An unexpected error occurred. Please try again.'
 }
 
 // Expose methods for parent component
