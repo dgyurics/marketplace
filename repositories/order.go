@@ -15,12 +15,14 @@ import (
 type OrderRepository interface {
 	CancelPendingOrders(ctx context.Context, interval time.Duration) error
 	CreateOrder(ctx context.Context, order *types.Order) error
-	GetOrderForUser(ctx context.Context, orderID, userID string) (types.Order, error)
-	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
-	GetPendingOrder(ctx context.Context, userID string) (types.Order, error)
-	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
 	UpdateOrder(ctx context.Context, params types.OrderParams) (types.Order, error)
 	MarkOrderAsPaid(ctx context.Context, orderID string) error
+	/* GET order(s) */
+	GetOrderByIDAndUser(ctx context.Context, orderID, userID string) (types.Order, error)
+	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
+	GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error)
+	GetPendingOrder(ctx context.Context, userID string) (types.Order, error)
+	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
 }
 
 type orderRepository struct {
@@ -304,7 +306,7 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderPar
 		return ord, err
 	}
 
-	ord, err = r.GetOrderForUser(ctx, params.ID, params.UserID)
+	ord, err = r.GetOrderByIDAndUser(ctx, params.ID, params.UserID)
 	if err != nil {
 		slog.Error("Failed to retrieve updated order", "error", err, "order_id", params.ID, "user_id", params.UserID)
 		return ord, err
@@ -453,7 +455,7 @@ func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string
 	return items, nil
 }
 
-func (r *orderRepository) GetOrderForUser(ctx context.Context, orderID, userID string) (types.Order, error) {
+func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, userID string) (types.Order, error) {
 	var order types.Order
 	if orderID == "" {
 		return order, errors.New("order ID is required")
@@ -546,6 +548,11 @@ func (r *orderRepository) GetOrderForUser(ctx context.Context, orderID, userID s
 	}
 
 	return order, nil
+}
+
+func (r *orderRepository) GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error) {
+	// TODO
+	return types.Order{}, nil
 }
 
 func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (types.Order, error) {
@@ -678,7 +685,7 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 			o.user_id = $1 AND
 			o.status = 'pending'
 		LIMIT 1
-	` // LIMIT 1 added, but technically shouldn't be needed (system should limit users to one pending order)
+	` // LIMIT 1 added, but technically shouldn't be needed; system should limit users to a single pending order
 
 	// Execute the query
 	var address struct {

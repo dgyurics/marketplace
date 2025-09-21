@@ -2,9 +2,9 @@
   <div class="auth-container">
     <template v-if="authStore.user?.role === 'user' || authStore.user?.role === 'admin'">
       <h2>You are logged in</h2>
-      <button @click="handleLogout">Logout</button>
+      <button class="logout-button" @click="handleLogout">Logout</button>
       <div v-if="authStore.user?.role === 'admin'">
-        <div class="button-group">
+        <div class="button-group admin-buttons">
           <button @click="goToCategories">Categories</button>
           <button @click="goToProducts">Products</button>
           <button @click="goToOrders">Orders</button>
@@ -204,5 +204,24 @@ input:focus {
   justify-content: space-between;
   margin-top: 30px;
   gap: 8px;
+}
+
+/* Admin button group - vertical layout */
+.button-group.admin-buttons {
+  flex-direction: column;
+  align-items: center;
+  max-width: 200px;
+  margin: 30px auto 0;
+}
+
+.button-group.admin-buttons button {
+  width: 100%;
+}
+
+/* Single logout button */
+.logout-button {
+  width: 200px;
+  margin: 20px auto 0;
+  display: block;
 }
 </style>

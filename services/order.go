@@ -17,11 +17,13 @@ const (
 type OrderService interface {
 	CreateOrder(ctx context.Context) (types.Order, error)
 	UpdateOrder(ctx context.Context, order types.OrderParams) (types.Order, error)
-	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
-	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
-	GetOrderForUser(ctx context.Context, orderID string) (types.Order, error)
 	CancelStaleOrders(ctx context.Context) error
+	/* GET order(s) */
+	GetOrderByIDAndUser(ctx context.Context, orderID string) (types.Order, error)
+	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
+	GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error)
 	GetPendingOrderForUser(ctx context.Context) (types.Order, error)
+	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
 }
 
 type orderService struct {
@@ -56,10 +58,9 @@ func (os *orderService) UpdateOrder(ctx context.Context, params types.OrderParam
 	return os.orderRepo.UpdateOrder(ctx, params)
 }
 
+// CancelStaleOrders cancels orders which have been in pending status for too long
 func (os *orderService) CancelStaleOrders(ctx context.Context) error {
-	// Cancel orders older than 10 minutes with status "pending"
-	// TODO make this configurable to match expires_at in payments
-	interval := 10 * time.Minute
+	interval := 10 * time.Minute // TODO make this configurable
 	return os.orderRepo.CancelPendingOrders(ctx, interval)
 }
 
@@ -96,8 +97,12 @@ func (os *orderService) GetOrderByID(ctx context.Context, orderID string) (types
 	return os.orderRepo.GetOrderByID(ctx, orderID)
 }
 
-func (os *orderService) GetOrderForUser(ctx context.Context, orderID string) (types.Order, error) {
-	return os.orderRepo.GetOrderForUser(ctx, orderID, getUserID(ctx))
+func (os *orderService) GetOrderByIDAndUser(ctx context.Context, orderID string) (types.Order, error) {
+	return os.orderRepo.GetOrderByIDAndUser(ctx, orderID, getUserID(ctx))
+}
+
+func (os *orderService) GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error) {
+	return os.orderRepo.GetOrderByIDPublic(ctx, orderID)
 }
 
 func (os *orderService) GetPendingOrderForUser(ctx context.Context) (types.Order, error) {

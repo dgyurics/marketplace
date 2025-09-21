@@ -212,6 +212,11 @@ export const getOrders = async (page: number = 1, limit: number = 50): Promise<O
   return response.data
 }
 
+export const getOrderById = async (orderId: string): Promise<Order> => {
+  const response = await apiClient.post(`/orders/${orderId}/admin`)
+  return response.data
+}
+
 export const getTaxEstimate = async (orderId: string): Promise<{ tax_amount: number }> => {
   const response = await apiClient.get(`/orders/${orderId}/tax-estimate`)
   return response.data

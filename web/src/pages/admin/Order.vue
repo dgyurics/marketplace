@@ -1,16 +1,18 @@
 <template>
   <div class="order-container">
-    <DataTable :columns="columns" :data="formattedOrders" />
+    <DataTable :columns="columns" :data="formattedOrders" :on-row-click="handleRowClick" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 import DataTable from '@/components/DataTable.vue'
 import { getOrders } from '@/services/api'
 import type { Order } from '@/types'
 
+const router = useRouter()
 const orders = ref<Order[]>([])
 
 const columns = [
@@ -56,8 +58,14 @@ const formattedOrders = computed(() =>
       minute: '2-digit',
       hour12: false,
     }),
+    _originalOrder: order, // Keep reference to original order
   }))
 )
+
+const handleRowClick = (row: { [key: string]: unknown }) => {
+  const originalOrder = row['_originalOrder'] as Order
+  router.push(`/admin/orders/${originalOrder.id}`)
+}
 
 const fetchOrders = async () => {
   try {

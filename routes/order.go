@@ -61,6 +61,27 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, ord)
 }
 
+func (h *OrderRoutes) GetOrderPublic(w http.ResponseWriter, r *http.Request) {
+	// TODO
+}
+
+func (h *OrderRoutes) GetOrderOwner(w http.ResponseWriter, r *http.Request) {
+	// TODO
+}
+
+func (h *OrderRoutes) GetOrderAdmin(w http.ResponseWriter, r *http.Request) {
+	order, err := h.orderService.GetOrderByID(r.Context(), mux.Vars(r)["id"])
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u.RespondWithJSON(w, http.StatusOK, order)
+}
+
 func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
 	params := u.ParsePaginationParams(r, 1, 25)
 	orders, err := h.orderService.GetOrders(r.Context(), params.Page, params.Limit)
@@ -74,7 +95,7 @@ func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
 
 func (h *OrderRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
 	orderID := mux.Vars(r)["id"]
-	order, err := h.orderService.GetOrderForUser(r.Context(), orderID)
+	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), orderID)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
 		return
@@ -118,7 +139,7 @@ func (h *OrderRoutes) Update(w http.ResponseWriter, r *http.Request) {
 // Confirm finalizes an order by calculating actual tax and generating a payment intent.
 func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 	orderID := mux.Vars(r)["id"]
-	order, err := h.orderService.GetOrderForUser(r.Context(), orderID)
+	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), orderID)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
 		return
@@ -128,6 +149,7 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// FIXME look into removing this and using automatic tax calculation for payment intents
 	tax, err := h.taxService.CalculateTax(r.Context(), order.ID, *order.Address, order.Items)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
@@ -164,8 +186,9 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 func (h *OrderRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/orders", h.secure(h.CreateOrder)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}", h.secure(h.Update)).Methods(http.MethodPatch)
-	// h.muxRouter.Handle("/orders/{id}", h.secure(h.Get)).Methods(http.MethodGet) // one for user
-	// h.muxRouter.Handle("/orders/{id}", h.secure(h.Get)).Methods(http.MethodGet) // one for admin
+	h.muxRouter.HandleFunc("/orders/{id}", h.GetOrderPublic).Methods(http.MethodGet)
+	h.muxRouter.Handle("/orders/{id}/owner", h.secure(h.GetOrderOwner)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/orders/{id}/admin", h.secureAdmin(h.GetOrderAdmin)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/confirm", h.secure(h.Confirm)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secureAdmin(h.GetOrders)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/orders/{id}/tax-estimate", h.secure(h.EstimateTax)).Methods(http.MethodGet)

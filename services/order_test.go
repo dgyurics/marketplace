@@ -66,9 +66,9 @@ func TestGetOrder_Success(t *testing.T) {
 	}
 
 	ctx := contextWithUserID(context.Background(), userID)
-	mockRepo.On("GetOrderForUser", ctx, orderID, userID).Return(expectedOrder, nil)
+	mockRepo.On("GetOrderByIDAndUser", ctx, orderID, userID).Return(expectedOrder, nil)
 
-	result, err := svc.GetOrderForUser(ctx, orderID)
+	result, err := svc.GetOrderByIDAndUser(ctx, orderID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -93,7 +93,15 @@ func (m *mockOrderRepo) GetOrderByID(ctx context.Context, orderID string) (types
 	return types.Order{}, args.Error(1)
 }
 
-func (m *mockOrderRepo) GetOrderForUser(ctx context.Context, orderID, userID string) (types.Order, error) {
+func (m *mockOrderRepo) GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error) {
+	args := m.Called(ctx, orderID)
+	if v := args.Get(0); v != nil {
+		return v.(types.Order), args.Error(1)
+	}
+	return types.Order{}, args.Error(1)
+}
+
+func (m *mockOrderRepo) GetOrderByIDAndUser(ctx context.Context, orderID, userID string) (types.Order, error) {
 	args := m.Called(ctx, orderID, userID)
 	if v := args.Get(0); v != nil {
 		return v.(types.Order), args.Error(1)
@@ -116,9 +124,9 @@ func TestGetOrder_NotFound(t *testing.T) {
 	orderID := "missing-order"
 	ctx := contextWithUserID(context.Background(), userID)
 
-	mockRepo.On("GetOrderForUser", ctx, orderID, userID).Return(types.Order{}, types.ErrNotFound)
+	mockRepo.On("GetOrderByIDAndUser", ctx, orderID, userID).Return(types.Order{}, types.ErrNotFound)
 
-	result, err := svc.GetOrderForUser(ctx, orderID)
+	result, err := svc.GetOrderByIDAndUser(ctx, orderID)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

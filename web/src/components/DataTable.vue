@@ -9,7 +9,12 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(row, index) in data" :key="index">
+        <tr
+          v-for="(row, index) in data"
+          :key="index"
+          :class="{ 'clickable-row': onRowClick }"
+          @click="handleRowClick(row, index)"
+        >
           <td v-for="column in columns" :key="column">
             {{ row[column] }}
           </td>
@@ -20,10 +25,19 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+interface Props {
   columns: string[]
   data: { [key: string]: unknown }[]
-}>()
+  onRowClick?: (row: { [key: string]: unknown }, index: number) => void
+}
+
+const props = defineProps<Props>()
+
+const handleRowClick = (row: { [key: string]: unknown }, index: number) => {
+  if (props.onRowClick) {
+    props.onRowClick(row, index)
+  }
+}
 </script>
 
 <style scoped>
@@ -60,5 +74,14 @@ td {
 
 tbody tr:last-child td {
   border-bottom: none;
+}
+
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clickable-row:hover {
+  background-color: #f0f0f0;
 }
 </style>

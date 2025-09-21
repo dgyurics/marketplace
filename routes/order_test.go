@@ -43,7 +43,15 @@ func (m *MockOrderService) GetOrderByID(ctx context.Context, orderID string) (ty
 	return args.Get(0).(types.Order), args.Error(1)
 }
 
-func (m *MockOrderService) GetOrderForUser(ctx context.Context, orderID string) (types.Order, error) {
+func (m *MockOrderService) GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error) {
+	args := m.Called(ctx, orderID)
+	if args.Get(0) == nil {
+		return types.Order{}, args.Error(1)
+	}
+	return args.Get(0).(types.Order), args.Error(1)
+}
+
+func (m *MockOrderService) GetOrderByIDAndUser(ctx context.Context, orderID string) (types.Order, error) {
 	args := m.Called(ctx, orderID)
 	if args.Get(0) == nil {
 		return types.Order{}, args.Error(1)
