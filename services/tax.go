@@ -23,29 +23,26 @@ type TaxService interface {
 }
 
 type taxService struct {
-	HttpClient   utilities.HTTPClient
-	repo         repositories.TaxRepository
-	stripeConfig types.StripeConfig
-	localeConfig types.LocaleConfig
+	HttpClient utilities.HTTPClient
+	repo       repositories.TaxRepository
+	config     types.PaymentConfig
 }
 
 func NewTaxService(
 	repo repositories.TaxRepository,
-	strpConfig types.StripeConfig,
-	locConfig types.LocaleConfig,
+	config types.PaymentConfig,
 	HttpClient utilities.HTTPClient,
 ) TaxService {
 	return &taxService{
-		repo:         repo,
-		stripeConfig: strpConfig,
-		localeConfig: locConfig,
-		HttpClient:   HttpClient,
+		repo:       repo,
+		config:     config,
+		HttpClient: HttpClient,
 	}
 }
 
 func (s *taxService) CalculateTax(ctx context.Context, refID string, address types.Address, items []types.OrderItem) (int64, error) {
 	form := url.Values{}
-	form.Set("currency", s.localeConfig.Currency)
+	form.Set("currency", s.config.Locale.Currency)
 
 	// Customer Address
 	form.Set("customer_details[address_source]", "shipping")
@@ -68,22 +65,22 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 		itmQty := int64(item.Quantity)
 		taxCode := item.Product.TaxCode
 		if taxCode == "" {
-			taxCode = s.localeConfig.FallbackTaxCode
+			taxCode = s.config.Locale.FallbackTaxCode
 		}
 		form.Set(fmt.Sprintf("line_items[%d][amount]", i), strconv.FormatInt(item.UnitPrice*itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][quantity]", i), strconv.FormatInt(itmQty, 10))
-		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), string(s.localeConfig.TaxBehavior))
+		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), string(s.config.Locale.TaxBehavior))
 		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), taxCode)
 		form.Set(fmt.Sprintf("line_items[%d][reference]", i), fmt.Sprintf("%s:%s", refID, item.Product.ID))
 	}
 
-	url := fmt.Sprintf("%s/tax/calculations", s.stripeConfig.BaseURL)
+	url := fmt.Sprintf("%s/tax/calculations", s.config.Stripe.BaseURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBufferString(form.Encode()))
 	if err != nil {
 		return 0, err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.stripeConfig.SecretKey))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.config.Stripe.SecretKey))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Idempotency-Key", fmt.Sprintf("tax-calculation-%s", refID))
 

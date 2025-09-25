@@ -129,8 +129,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
 	cartService := services.NewCartService(cartRepository)
-	// TODO refactor this
-	paymentService := services.NewPaymentService(httpClient, config.Stripe, config.Locale, emailService, templateService, userService, orderRepository, config.BaseURL)
+	paymentService := services.NewPaymentService(httpClient, config.Payment, emailService, templateService, userService, orderRepository)
 	orderService := services.NewOrderService(orderRepository, cartRepository, paymentService, config.Locale, httpClient)
 	inviteService := services.NewInviteService(inviteRepository, config.Auth.HMACSecret)
 	imageService := services.NewImageService(httpClient, imageRepository, config.Image)
@@ -138,7 +137,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	jwtService := services.NewJWTService(config.JWT)
 	scheduleService := services.NewScheduleService(orderService, scheduleRepository)
-	taxService := services.NewTaxService(taxRepository, config.Stripe, config.Locale, httpClient)
+	taxService := services.NewTaxService(taxRepository, config.Payment, httpClient)
 
 	return servicesContainer{
 		Address:  addressService,

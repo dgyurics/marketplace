@@ -29,33 +29,27 @@ type PaymentService interface {
 
 type paymentService struct {
 	HttpClient   utilities.HTTPClient
-	stripeConfig types.StripeConfig
-	localeConfig types.LocaleConfig
+	config       types.PaymentConfig
 	serviceEmail EmailService
 	serviceTmp   TemplateService
 	serviceUser  UserService
 	repo         repositories.OrderRepository
-	baseURL      string
 }
 
 func NewPaymentService(
 	httpClient utilities.HTTPClient,
-	stripeConfig types.StripeConfig,
-	localeConfig types.LocaleConfig,
+	config types.PaymentConfig,
 	serviceEmail EmailService,
 	serviceTmp TemplateService,
 	serviceUser UserService,
-	repo repositories.OrderRepository,
-	baseURL string) PaymentService {
+	repo repositories.OrderRepository) PaymentService {
 	return &paymentService{
 		HttpClient:   httpClient,
-		stripeConfig: stripeConfig,
-		localeConfig: localeConfig,
+		config:       config,
 		serviceEmail: serviceEmail,
 		serviceTmp:   serviceTmp,
 		serviceUser:  serviceUser,
 		repo:         repo,
-		baseURL:      baseURL,
 	}
 }
 
@@ -134,7 +128,7 @@ func (s *paymentService) SignatureVerifier(payload []byte, sigHeader string) err
 	// Compare expected signature with provided signatures
 	// Use a constant-time comparison function to mitigate timing attacks
 	// If a matching signature is found, return nil
-	expectedSignature := ComputeSignature(ts, payload, s.stripeConfig.WebhookSigningSecret)
+	expectedSignature := ComputeSignature(ts, payload, s.config.Stripe.WebhookSigningSecret)
 	for _, signature := range signatures {
 		if hmac.Equal(signature, expectedSignature) {
 			return nil
@@ -152,12 +146,13 @@ func (s *paymentService) SignatureVerifier(payload []byte, sigHeader string) err
 // [amount] is the amount in the smallest currency unit (e.g., cents for USD).
 func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, amount int64) (pi stripe.PaymentIntent, err error) {
 	// Build request
-	reqURL := fmt.Sprintf("%s/payment_intents", s.stripeConfig.BaseURL)
+	reqURL := fmt.Sprintf("%s/payment_intents", s.config.Stripe.BaseURL)
 	payload := url.Values{
 		"amount":                 {fmt.Sprintf("%d", amount)},
-		"currency":               {s.localeConfig.Currency},
+		"currency":               {s.config.Locale.Currency},
 		"payment_method_types[]": {"card"},
 		"metadata[order_id]":     {refID},
+		// TODO send receipt to customer "receipt_email": {order.Email}
 	}
 	reqBody := strings.NewReader(payload.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, reqBody)
@@ -166,10 +161,10 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 	}
 
 	// Set request headers
-	req.SetBasicAuth(s.stripeConfig.SecretKey, "")
+	req.SetBasicAuth(s.config.Stripe.SecretKey, "")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Idempotency-Key", fmt.Sprintf("payment-intent-%s", refID))
-	req.Header.Set("Stripe-Version", s.stripeConfig.Version)
+	req.Header.Set("Stripe-Version", s.config.Stripe.Version)
 
 	// Execute request
 	res, err := s.HttpClient.Do(req)
@@ -180,7 +175,7 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 
 	// Handle response
 	if res.StatusCode != http.StatusOK {
-		slog.Error("Stripe API returned non-OK status", "status", res.StatusCode, "url", s.stripeConfig.BaseURL)
+		slog.Error("Stripe API returned non-OK status", "status", res.StatusCode, "url", s.config.Stripe.BaseURL)
 		return pi, fmt.Errorf("failed to create payment intent: %s", res.Status)
 	}
 
@@ -263,7 +258,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 
 	// Send payment success email
 	go func(recEmail, orderID string) {
-		detailsLink := fmt.Sprintf("%s/orders/%s", s.baseURL, orderID)
+		detailsLink := fmt.Sprintf("%s/orders/%s", s.config.BaseURL, orderID)
 		data := map[string]string{
 			"OrderID":     orderID,
 			"DetailsLink": detailsLink,

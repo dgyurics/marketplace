@@ -6,20 +6,19 @@ import (
 	"time"
 )
 
-// FIXME use pointers
 type Config struct {
 	Auth         AuthConfig
 	BaseURL      string
 	Database     DBConfig
 	Email        EmailConfig
 	Environment  Environment
+	Image        ImageConfig
 	JWT          JWTConfig
 	Locale       LocaleConfig
 	Logger       LoggerConfig
 	MachineID    uint8
+	Payment      PaymentConfig
 	Server       ServerConfig
-	Stripe       StripeConfig
-	Image        ImageConfig
 	TemplatesDir string // path to directory containing email templates
 }
 
@@ -108,4 +107,10 @@ type ImageConfig struct {
 	BaseURLImgproxy string // base URL for imgproxy, e.g. http://localhost:8002
 	BaseURLRembg    string // base URL for rembg, e.g. http://localhost:7001
 	ImageUploadPath string // directory for storing images, e.g. /images
+}
+
+type PaymentConfig struct {
+	Stripe  StripeConfig
+	Locale  LocaleConfig
+	BaseURL string
 }

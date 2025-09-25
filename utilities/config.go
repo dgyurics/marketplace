@@ -14,20 +14,24 @@ import (
 
 // LoadConfig loads the configuration from environment variables
 func LoadConfig() types.Config {
+	// Load shared configs once
+	locale := loadLocaleConfig()
+	baseURL := loadBaseURL()
+
 	return types.Config{
 		Server:       loadServerConfig(),
 		Environment:  loadEnvironment(),
 		Auth:         loadAuthConfig(),
 		Database:     loadDBConfig(),
 		Email:        loadEmailConfig(),
-		Locale:       loadLocaleConfig(),
+		Locale:       locale,
 		Logger:       loadLoggerConfig(),
 		MachineID:    loadMachineID(),
-		Stripe:       loadStripeConfig(),
+		Payment:      loadPaymentConfig(locale, baseURL),
 		JWT:          loadJWTConfig(),
 		Image:        loadImageConfig(),
 		TemplatesDir: loadTemplatesDir(),
-		BaseURL:      loadBaseURL(),
+		BaseURL:      baseURL,
 	}
 }
 
@@ -142,6 +146,14 @@ func loadLocaleConfig() types.LocaleConfig {
 	}
 
 	return config
+}
+
+func loadPaymentConfig(locale types.LocaleConfig, baseURL string) types.PaymentConfig {
+	return types.PaymentConfig{
+		Stripe:  loadStripeConfig(),
+		Locale:  locale,
+		BaseURL: baseURL,
+	}
 }
 
 func loadStripeConfig() types.StripeConfig {
