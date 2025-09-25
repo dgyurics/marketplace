@@ -35,6 +35,7 @@ type paymentService struct {
 	serviceTmp   TemplateService
 	serviceUser  UserService
 	repo         repositories.OrderRepository
+	baseURL      string
 }
 
 func NewPaymentService(
@@ -44,7 +45,8 @@ func NewPaymentService(
 	serviceEmail EmailService,
 	serviceTmp TemplateService,
 	serviceUser UserService,
-	repo repositories.OrderRepository) PaymentService {
+	repo repositories.OrderRepository,
+	baseURL string) PaymentService {
 	return &paymentService{
 		HttpClient:   httpClient,
 		stripeConfig: stripeConfig,
@@ -53,6 +55,7 @@ func NewPaymentService(
 		serviceTmp:   serviceTmp,
 		serviceUser:  serviceUser,
 		repo:         repo,
+		baseURL:      baseURL,
 	}
 }
 
@@ -142,6 +145,8 @@ func (s *paymentService) SignatureVerifier(payload []byte, sigHeader string) err
 	return errors.New("signature verification failed: no matching v1 signature found")
 }
 
+// FIXME impose a minimum cart-total when using Stripe checkout
+// For example, USD is $0.50 (equivalent to the cost of executing the transaction)
 // CreatePaymentIntent creates a new Stripe Payment Intent.
 // [refID] is a unique reference ID for idempotency. Currently this is the order ID
 // [amount] is the amount in the smallest currency unit (e.g., cents for USD).
@@ -258,8 +263,10 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 
 	// Send payment success email
 	go func(recEmail, orderID string) {
+		detailsLink := fmt.Sprintf("%s/orders/%s", s.baseURL, orderID)
 		data := map[string]string{
-			"OrderID": orderID,
+			"OrderID":     orderID,
+			"DetailsLink": detailsLink,
 		}
 		body, err := s.serviceTmp.RenderToString(PaymentSuccess, data)
 		if err != nil {

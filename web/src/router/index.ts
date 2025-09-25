@@ -14,6 +14,7 @@ import Home from '@/pages/Home.vue'
 import LoginRegister from '@/pages/LoginRegister.vue'
 import NotFound from '@/pages/NotFound.vue'
 import OrderConfirmation from '@/pages/OrderConfirmation.vue'
+import OrderDetail from '@/pages/OrderDetail.vue'
 import Payment from '@/pages/Payment.vue'
 import Product from '@/pages/Product.vue'
 import ProductDetails from '@/pages/ProductDetail.vue'
@@ -29,10 +30,12 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/auth', component: LoginRegister },
     { path: '/cart', component: Cart },
     { path: '/error', component: Error },
+    { path: '/not-found', component: NotFound },
     { path: '/products/:id', component: ProductDetails, props: true },
     { path: '/checkout/shipping', component: ShippingAddress },
     { path: '/checkout/payment', component: Payment },
     { path: '/checkout/confirmation', component: OrderConfirmation },
+    { path: '/orders/:id', component: OrderDetail },
     { path: '/unsupported', component: Unsupported },
     { path: '/admin/products', component: AdminProducts, beforeEnter: requireAdmin },
     { path: '/admin/products/:id', component: AdminProductEdit, beforeEnter: requireAdmin },

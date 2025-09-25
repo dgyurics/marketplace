@@ -61,12 +61,30 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, ord)
 }
 
-func (h *OrderRoutes) GetOrderPublic(w http.ResponseWriter, r *http.Request) {
-	// TODO
+func (h *OrderRoutes) GetOrderOwner(w http.ResponseWriter, r *http.Request) {
+	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), mux.Vars(r)["id"])
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u.RespondWithJSON(w, http.StatusOK, order)
 }
 
-func (h *OrderRoutes) GetOrderOwner(w http.ResponseWriter, r *http.Request) {
-	// TODO
+func (h *OrderRoutes) GetOrderPublic(w http.ResponseWriter, r *http.Request) {
+	order, err := h.orderService.GetOrderByIDPublic(r.Context(), mux.Vars(r)["id"])
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u.RespondWithJSON(w, http.StatusOK, order)
 }
 
 func (h *OrderRoutes) GetOrderAdmin(w http.ResponseWriter, r *http.Request) {
@@ -186,7 +204,7 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 func (h *OrderRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/orders", h.secure(h.CreateOrder)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}", h.secure(h.Update)).Methods(http.MethodPatch)
-	h.muxRouter.HandleFunc("/orders/{id}", h.GetOrderPublic).Methods(http.MethodGet)
+	h.muxRouter.HandleFunc("/orders/{id}/public", h.GetOrderPublic).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/owner", h.secure(h.GetOrderOwner)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/admin", h.secureAdmin(h.GetOrderAdmin)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/confirm", h.secure(h.Confirm)).Methods(http.MethodPost)

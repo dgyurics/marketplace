@@ -551,8 +551,43 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 }
 
 func (r *orderRepository) GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error) {
-	// TODO
-	return types.Order{}, nil
+	var order types.Order
+	query := `
+		SELECT
+			o.id,
+			o.currency,
+			o.amount,
+			o.tax_amount,
+			o.total_amount,
+			o.status,
+			o.created_at,
+			o.updated_at
+		FROM orders o
+		WHERE o.id = $1
+	`
+	err := r.db.QueryRowContext(ctx, query, orderID).Scan(
+		&order.ID,
+		&order.Currency,
+		&order.Amount,
+		&order.TaxAmount,
+		&order.TotalAmount,
+		&order.Status,
+		&order.CreatedAt,
+		&order.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return order, types.ErrNotFound
+	}
+	if err != nil {
+		return order, err
+	}
+
+	// Populate order items for this order
+	if order.Items, err = r.populateOrderItems(ctx, order.ID); err != nil {
+		return order, fmt.Errorf("failed to populate order items: %w", err)
+	}
+
+	return order, nil
 }
 
 func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (types.Order, error) {

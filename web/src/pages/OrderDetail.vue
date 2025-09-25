@@ -13,7 +13,7 @@
       </div>
 
       <div class="order-info">
-        <div class="info-row">
+        <div v-if="order.email" class="info-row">
           <label>Email:</label>
           <span>{{ order.email }}</span>
         </div>
@@ -82,10 +82,6 @@
           <span>${{ (order.total_amount / 100).toFixed(2) }}</span>
         </div>
       </div>
-
-      <button type="button" class="btn-full-width btn-outline mt-30" @click="goBack">
-        Back to Orders
-      </button>
     </div>
   </div>
 </template>
@@ -94,7 +90,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getOrderAdmin } from '@/services/api'
+import { getOrderOwner, getOrderPublic } from '@/services/api'
 import type { Order } from '@/types'
 
 const route = useRoute()
@@ -103,13 +99,43 @@ const router = useRouter()
 const order = ref<Order | null>(null)
 const loading = ref(true)
 
+const tryGetOrder = async (orderId: string): Promise<Order | null> => {
+  // Try owner endpoint first
+  try {
+    return await getOrderOwner(orderId)
+  } catch (error: any) {
+    const status = error.response?.status
+
+    // If not authorized, try public endpoint
+    if (status === 401 || status === 404) {
+      return await getOrderPublic(orderId)
+    }
+
+    // Re-throw for other errors
+    throw error
+  }
+}
+
 const fetchOrder = async () => {
+  const orderId = route.params['id'] as string
+
   try {
     loading.value = true
-    const orderId = route.params['id'] as string
-    const data = await getOrderAdmin(orderId)
-    order.value = data
-  } catch {
+    order.value = await tryGetOrder(orderId)
+  } catch (error: any) {
+    const status = error.response?.status
+
+    if (status === 404) {
+      router.push('/not-found')
+      return
+    }
+
+    if (status >= 500) {
+      router.push('/error')
+      return
+    }
+
+    // For other errors, just clear the order
     order.value = null
   } finally {
     loading.value = false
@@ -125,10 +151,6 @@ const formatDate = (dateString: string) => {
     minute: '2-digit',
     hour12: false,
   })
-}
-
-const goBack = () => {
-  router.push('/admin/orders')
 }
 
 onMounted(() => {
