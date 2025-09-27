@@ -28,8 +28,8 @@ func NewProductRepository(db *sql.DB) ProductRepository {
 
 func (r *productRepository) CreateProduct(ctx context.Context, product *types.Product, categorySlug string) error {
 	query := `
-		INSERT INTO products (id, name, price, summary, description, details, tax_code, inventory, category_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, (SELECT id FROM categories WHERE slug = $9))
+		INSERT INTO products (id, name, price, summary, description, details, tax_code, inventory, cart_limit, category_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, (SELECT id FROM categories WHERE slug = $10))
 		RETURNING id`
 	if err := r.db.QueryRowContext(ctx,
 		query,
@@ -44,6 +44,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 			Valid:  strings.TrimSpace(product.TaxCode) != "",
 		},
 		product.Inventory,
+		product.CartLimit,
 		categorySlug,
 	).Scan(&product.ID); err != nil {
 		return err
@@ -150,6 +151,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		p.details,
 		p.images,
 		p.inventory,
+		p.cart_limit,
 		c.id,
 		c.name,
 		c.slug,
@@ -173,6 +175,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		&product.Details,
 		&imagesJSON,
 		&product.Inventory,
+		&product.CartLimit,
 		&categoryID,
 		&categoryName,
 		&categorySlug,
@@ -224,9 +227,10 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 		tax_code = $6,
 		category_id = $7,
 		inventory = $8,
-		is_deleted = $9,
+		cart_limit = $9,
+		is_deleted = $10,
 		updated_at = NOW()
-		WHERE id = $10
+		WHERE id = $11
 	`
 	result, err := r.db.ExecContext(ctx, query,
 		product.Name,
@@ -237,6 +241,7 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 		product.TaxCode,
 		categoryID,
 		product.Inventory,
+		product.CartLimit,
 		false,
 		product.ID,
 	)

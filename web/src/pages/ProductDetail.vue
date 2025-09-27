@@ -31,13 +31,16 @@
           </div>
         </div>
         <div>
-          <button class="btn-lg" :disabled="isOutOfStock" @click="addToCart">
+          <button class="btn-lg" :disabled="isOutOfStock || hasReachedCartLimit" @click="addToCart">
             <span v-if="!addedToCart && !isOutOfStock">Add to Cart</span>
             <span v-else-if="isOutOfStock">Out of Stock</span>
             <span v-else class="checkmark-animation">&#10003;</span>
           </button>
-          <p v-if="isLowStock" class="low-stock-warning">
+          <p v-if="showLowStockWarning" class="low-stock-warning">
             Only {{ product.inventory }} left in stock
+          </p>
+          <p v-else-if="hasReachedCartLimit" class="limit-reached-warning">
+            Limit {{ product.cart_limit }} per customer
           </p>
         </div>
       </div>
@@ -82,12 +85,20 @@ const product = reactive<Product>({
   images: [],
   details: {},
   inventory: 0,
+  cart_limit: 0,
 })
 
 const addedToCart = ref(false)
 
-const isOutOfStock = computed(() => product.inventory === 0)
 const isLowStock = computed(() => product.inventory > 0 && product.inventory <= 20)
+const currentQuantityInCart = computed(() => cartStore.itemCountByProductId(product.id))
+const hasReachedCartLimit = computed(
+  () => product.cart_limit > 0 && currentQuantityInCart.value >= product.cart_limit
+)
+const isOutOfStock = computed(() => currentQuantityInCart.value >= product.inventory)
+const showLowStockWarning = computed(
+  () => isLowStock.value && !isOutOfStock.value && !hasReachedCartLimit.value
+)
 
 onMounted(async () => {
   try {
@@ -255,6 +266,7 @@ const addToCart = async () => {
   animation: scaleIn 0.4s ease-in-out;
 }
 
+.limit-reached-warning,
 .low-stock-warning {
   text-align: center;
   font-size: 12px;

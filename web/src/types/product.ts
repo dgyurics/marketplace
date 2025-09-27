@@ -11,6 +11,7 @@ export interface Product {
   category?: Category
   tax_code?: string
   inventory: number
+  cart_limit: number
   created_at?: string
   updated_at?: string
 }

@@ -45,10 +45,13 @@ func (h *CartRoutes) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Attempt to add item to cart
 	item.Product.ID = mux.Vars(r)["id"]
 	err := h.cartService.AddItemToCart(r.Context(), &item)
-	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusConflict, "insufficient stock for product")
+
+	// Error handling
+	if err == types.ErrConstraintViolation {
+		u.RespondWithError(w, r, http.StatusBadRequest, "product cart constraint reached")
 		return
 	}
 	if err != nil {

@@ -15,6 +15,7 @@
           <input v-model="newProduct.summary" type="text" placeholder="Summary" required />
           <input v-model="newProduct.tax_code" type="text" placeholder="Tax Code (optional)" />
           <input v-model="newProduct.inventory" type="number" placeholder="Quantity" required />
+          <input v-model="newProduct.cart_limit" type="number" placeholder="Cart Limit" required />
           <select v-model="selectedCategorySlug" required>
             <option value="">Select Category</option>
             <option v-for="category in categories" :key="category.id" :value="category.slug">
@@ -69,6 +70,7 @@ const newProduct = ref({
   tax_code: '',
   details: {},
   inventory: '',
+  cart_limit: '',
 })
 
 const fetchProducts = async () => {
@@ -109,6 +111,7 @@ const handleSubmit = async () => {
       tax_code: newProduct.value.tax_code || undefined,
       details: newProduct.value.details,
       inventory: newProduct.value.inventory,
+      cart_limit: newProduct.value.cart_limit,
     }
 
     await createProduct(productData, selectedCategorySlug.value)
@@ -122,6 +125,7 @@ const handleSubmit = async () => {
       tax_code: '',
       details: {},
       inventory: '',
+      cart_limit: '',
     }
     selectedCategorySlug.value = ''
     detailsEditor.value?.reset()

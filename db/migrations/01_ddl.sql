@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS products (
     tax_code VARCHAR(50),
     category_id BIGINT,
     inventory INT NOT NULL DEFAULT 0,
+    cart_limit INT NOT NULL DEFAULT 10, -- Negative value means no limit
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- TODO rename to enabled/disabled
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -83,6 +84,7 @@ SELECT
     p.details,
     p.category_id,
     p.inventory,
+    p.cart_limit,
     COALESCE(p.tax_code, '') AS tax_code,
     c.slug AS category_slug,
     COALESCE(imgs.images, '[]') AS images,
@@ -120,6 +122,7 @@ SELECT
     updated_at
 FROM users;
 
+-- TODO make table UNLOGGED
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -132,6 +135,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+-- TODO make table UNLOGGED
 CREATE TABLE IF NOT EXISTS password_reset_codes (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -231,6 +235,7 @@ FROM order_items oi
 JOIN products p ON oi.product_id = p.id
 LEFT JOIN images i ON i.product_id = p.id AND i.type = 'thumbnail';
 
+-- TODO make table UNLOGGED
 -- required for schedule service
 CREATE TABLE IF NOT EXISTS job_schedules (
     job_name     TEXT PRIMARY KEY,

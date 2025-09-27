@@ -15,6 +15,7 @@
             @input="handlePriceInput"
           />
           <input v-model="editProduct.inventory" type="number" placeholder="Quantity" required />
+          <input v-model="editProduct.cart_limit" type="number" placeholder="Cart Limit" required />
           <input v-model="editProduct.summary" type="text" placeholder="Summary" required />
           <input v-model="editProduct.tax_code" type="text" placeholder="Tax Code (optional)" />
           <select v-model="selectedCategorySlug" required>
@@ -95,6 +96,7 @@ const editProduct = ref({
   details: {},
   category: '',
   inventory: '',
+  cart_limit: '',
 })
 
 const fetchProduct = async () => {
@@ -114,6 +116,7 @@ const fetchProduct = async () => {
       details: data.details,
       category: data.category,
       inventory: data.inventory,
+      cart_limit: data.cart_limit,
     }
 
     // Set the category slug for the dropdown
@@ -160,6 +163,7 @@ const handleSubmit = async () => {
       tax_code: editProduct.value.tax_code || undefined,
       details: editProduct.value.details,
       inventory: editProduct.value.inventory,
+      cart_limit: editProduct.value.cart_limit,
       // Include category if one is selected
       ...(selectedCategory && { category: { id: selectedCategory.id } }),
     }

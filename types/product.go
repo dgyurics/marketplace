@@ -16,6 +16,7 @@ type Product struct {
 	Category    *Category       `json:"category"`
 	TaxCode     string          `json:"tax_code"`
 	Inventory   int             `json:"inventory"`
+	CartLimit   int             `json:"cart_limit"`
 	CreatedAt   string          `json:"created_at"`
 	UpdatedAt   string          `json:"updated_at"`
 }
