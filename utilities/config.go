@@ -50,7 +50,6 @@ func loadAuthConfig() types.AuthConfig {
 	return types.AuthConfig{
 		HMACSecret:    []byte(mustLookupEnv("HMAC_SECRET")),
 		RefreshExpiry: mustParseDuration("REFRESH_EXPIRY"),
-		InviteReq:     isFeatureEnabled("INVITE_REQUIRED"),
 	}
 }
 

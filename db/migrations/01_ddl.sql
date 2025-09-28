@@ -147,13 +147,6 @@ CREATE TABLE IF NOT EXISTS password_reset_codes (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Used to limit registration to users with an invitation code
-CREATE TABLE IF NOT EXISTS invitation_codes (
-    code CHAR(6) PRIMARY KEY CHECK (code ~ '^[A-Z0-9]{6}$'),
-    used_at TIMESTAMP DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS cart_items (
     user_id BIGINT,
     product_id BIGINT,

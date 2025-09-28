@@ -62,15 +62,10 @@ export const login = async (email: string, password: string): Promise<AuthTokens
   return response.data
 }
 
-export const register = async (
-  email: string,
-  password: string,
-  inviteCode?: string
-): Promise<AuthTokens> => {
+export const register = async (email: string, password: string): Promise<AuthTokens> => {
   const response = await apiClient.post('/users/register', {
     email,
     password,
-    invite_code: inviteCode,
   })
   return response.data
 }

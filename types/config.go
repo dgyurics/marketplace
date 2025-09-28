@@ -36,7 +36,6 @@ type ServerConfig struct {
 type AuthConfig struct {
 	HMACSecret    []byte
 	RefreshExpiry time.Duration // duration for which the refresh token is valid
-	InviteReq     bool          // flag for requiring an invite to register
 }
 
 type EmailConfig struct {

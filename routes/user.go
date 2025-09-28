@@ -2,7 +2,6 @@ package routes
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"net/mail"
 	"regexp"
@@ -16,7 +15,6 @@ import (
 type UserRoutes struct {
 	router
 	userService    services.UserService
-	inviteService  services.InviteService
 	jwtService     services.JWTService
 	refreshService services.RefreshService
 	config         types.AuthConfig
@@ -24,7 +22,6 @@ type UserRoutes struct {
 
 func NewUserRoutes(
 	userService services.UserService,
-	inviteService services.InviteService,
 	jwtService services.JWTService,
 	refreshService services.RefreshService,
 	config types.AuthConfig,
@@ -32,7 +29,6 @@ func NewUserRoutes(
 	return &UserRoutes{
 		router:         router,
 		userService:    userService,
-		inviteService:  inviteService,
 		jwtService:     jwtService,
 		refreshService: refreshService,
 		config:         config,
@@ -75,30 +71,12 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate invite code if invite_required is set
-	inviteCodeReq := h.config.InviteReq
-	if inviteCodeReq && len(credentials.InviteCode) != 6 {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invite code is required")
-		return
-	}
-
-	valid, err := h.inviteService.ValidateCode(r.Context(), credentials.InviteCode, inviteCodeReq)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	if !valid {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid invite code")
-		return
-	}
-
 	// Create the user
 	usr := types.User{
 		Email:    credentials.Email,
 		Password: credentials.Password,
 	}
-	err = h.userService.CreateUser(r.Context(), &usr)
+	err := h.userService.CreateUser(r.Context(), &usr)
 	if err == types.ErrUniqueConstraintViolation {
 		u.RespondWithError(w, r, http.StatusConflict, "User with this email already exists")
 		return
@@ -106,11 +84,6 @@ func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
-	}
-
-	// Mark the invite code as used
-	if err := h.inviteService.StoreCode(r.Context(), credentials.InviteCode, true); err != nil {
-		slog.Error("Failed to update invite code", "code", credentials.InviteCode, "error", err)
 	}
 
 	// Generate access token
@@ -381,22 +354,6 @@ func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusCreated, users)
 }
 
-func (h *UserRoutes) GenerateInviteCode(w http.ResponseWriter, r *http.Request) {
-	// Generate a new invite code
-	code, err := h.inviteService.GenerateCode(r.Context())
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-	// Store the invite code in the database
-	if err = h.inviteService.StoreCode(r.Context(), code, false); err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	u.RespondWithJSON(w, http.StatusCreated, code)
-}
-
 func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/users/register", h.Register).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
@@ -405,7 +362,5 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/users/guest", h.CreateGuestUser).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/logout", h.secure(h.Logout)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/credentials", h.secure(h.UpdatedCredentials)).Methods(http.MethodPut)
-	// Admin routes
 	h.muxRouter.Handle("/users", h.secureAdmin(h.GetAllUsers)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/users/invite", h.secureAdmin(h.GenerateInviteCode)).Methods(http.MethodPost)
 }
