@@ -12,6 +12,21 @@ import (
 	"github.com/dgyurics/marketplace/types"
 )
 
+// TODO rename this to SMTPService
+// to indicate low-level SMTP communication
+// Low-level SMTP
+// type SMTPService interface {
+//     Send(email *types.Email) error
+// }
+
+// TODO build a higher level service
+// This will elimininate the need to import 3 services/files just to send email
+// High-level business emails
+// type MailerService interface {
+//     SendPasswordReset(recipientEmail, code string) error
+//     SendPaymentSuccess(recipientEmail, orderID string) error
+// }
+
 type EmailService interface {
 	Send(email *types.Email) error
 }
