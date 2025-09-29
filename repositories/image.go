@@ -23,16 +23,10 @@ func NewImageRepository(db *sql.DB) ImageRepository {
 }
 
 func (r *imageRepository) ProductExists(ctx context.Context, productID string) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM products WHERE id = $1)`
 	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM products WHERE id = $1)`
 	err := r.db.QueryRowContext(ctx, query, productID).Scan(&exists)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return false, nil // Product does not exist
-		}
-		return false, err // Other error
-	}
-	return exists, nil // Product exists
+	return exists, err
 }
 
 func (r *imageRepository) CreateImage(ctx context.Context, image *types.Image) error {
