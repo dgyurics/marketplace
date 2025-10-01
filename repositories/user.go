@@ -25,25 +25,22 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
+// SetCredentials used for one-time setup of new admin accounts
 func (r *userRepository) SetCredentials(ctx context.Context, user *types.User) error {
 	query := `
 		UPDATE users
 		SET
 			email = $1,
 			password_hash = $2,
-			role = $3,
 			requires_setup = false,
 			updated_at = CURRENT_TIMESTAMP
-		WHERE id = $4 AND requires_setup = true
+		WHERE
+			id = $3 AND
+			requires_setup = true
 	`
 
-	// Update role if user is a guest
-	if user.IsGuest() {
-		user.Role = "user"
-	}
-
 	// Execute the update query
-	result, err := r.db.ExecContext(ctx, query, user.Email, user.PasswordHash, user.Role, user.ID)
+	result, err := r.db.ExecContext(ctx, query, user.Email, user.PasswordHash, user.ID)
 	if isUniqueViolation(err) {
 		return types.ErrUniqueConstraintViolation
 	}
@@ -62,8 +59,8 @@ func (r *userRepository) SetCredentials(ctx context.Context, user *types.User) e
 
 func (r *userRepository) CreateGuest(ctx context.Context, user *types.User) error {
 	query := `
-		INSERT INTO users (id, role, requires_setup)
-		VALUES ($1, 'guest', true)
+		INSERT INTO users (id, role)
+		VALUES ($1, 'guest')
 		RETURNING id, role, updated_at
 	`
 	return r.db.QueryRowContext(ctx, query, user.ID).
@@ -107,7 +104,7 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*typ
 			email,
 			password_hash,
 			role,
-			requires_setup,
+			COALESCE(requires_setup, false) AS requires_setup,
 			updated_at
 		FROM users
 		WHERE email = $1

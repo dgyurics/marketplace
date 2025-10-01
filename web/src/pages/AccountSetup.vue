@@ -65,7 +65,7 @@ const handleUpdate = async () => {
   try {
     const authTokens = await apiUpdateCredentials(email.value, password.value)
     authStore.setTokens(authTokens)
-    router.push('/')
+    router.push('/auth')
   } catch (error: any) {
     const status = error.response?.status
     if (status === 409) {
