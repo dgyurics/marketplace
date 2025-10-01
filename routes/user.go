@@ -52,68 +52,6 @@ func isValidEmail(email string) bool {
 	return err == nil
 }
 
-func (h *UserRoutes) Register(w http.ResponseWriter, r *http.Request) {
-	var credentials types.Credential
-	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
-		return
-	}
-
-	credentials.Email = strings.ToLower(credentials.Email) // store email in lowercase
-
-	if credentials.Email == "" || !isValidEmail(credentials.Email) {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
-		return
-	}
-
-	if credentials.Password == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Password is required")
-		return
-	}
-
-	// Create the user
-	usr := types.User{
-		Email:    credentials.Email,
-		Password: credentials.Password,
-	}
-	err := h.userService.CreateUser(r.Context(), &usr)
-	if err == types.ErrUniqueConstraintViolation {
-		u.RespondWithError(w, r, http.StatusConflict, "User with this email already exists")
-		return
-	}
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Generate access token
-	accessToken, err := h.jwtService.GenerateToken(usr)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Generate refresh token
-	var token string
-	token, err = h.refreshService.GenerateToken()
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Store refresh token
-	err = h.refreshService.StoreToken(r.Context(), usr.ID, token)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	u.RespondWithJSON(w, http.StatusCreated, map[string]string{
-		"token":         accessToken,
-		"refresh_token": token,
-	})
-}
-
 func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 	var credentials types.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
@@ -167,32 +105,6 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 		"refresh_token":  refreshToken,
 		"requires_setup": usr.RequiresSetup,
 	})
-}
-
-// Exists checks if a user with the given email exists
-func (h *UserRoutes) Exists(w http.ResponseWriter, r *http.Request) {
-	var credentials types.Credential
-	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
-		return
-	}
-
-	// Validate the email
-	credentials.Email = strings.ToLower(credentials.Email)
-	if credentials.Email == "" || !isValidEmail(credentials.Email) {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
-		return
-	}
-
-	// Check if the user exists
-	usr, err := h.userService.GetUserByEmail(r.Context(), credentials.Email)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	usrExists := usr != nil
-	u.RespondWithJSON(w, http.StatusOK, map[string]bool{"exists": usrExists})
 }
 
 // RefreshToken generates a new access token using a valid refresh token
@@ -283,6 +195,7 @@ func (h *UserRoutes) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// FIXME this allows for any email to be used (without verification)
 // UpdatedCredentials is used as a one-time update to convert an authenticated guest to a user.
 // It is also used for overriding the default admin account, on system setup
 func (h *UserRoutes) UpdatedCredentials(w http.ResponseWriter, r *http.Request) {
@@ -357,12 +270,10 @@ func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserRoutes) RegisterRoutes() {
-	h.muxRouter.HandleFunc("/users/register", h.Register).Methods(http.MethodPost)
+	h.muxRouter.Handle("/users/credentials", h.secure(h.UpdatedCredentials)).Methods(http.MethodPut)
 	h.muxRouter.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/refresh-token", h.RefreshToken).Methods(http.MethodPost)
-	h.muxRouter.HandleFunc("/users/exists", h.Exists).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/users/guest", h.CreateGuestUser).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/logout", h.secure(h.Logout)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users/credentials", h.secure(h.UpdatedCredentials)).Methods(http.MethodPut)
 	h.muxRouter.Handle("/users", h.secureAdmin(h.GetAllUsers)).Methods(http.MethodGet)
 }
