@@ -1,6 +1,6 @@
 import { jwtDecode } from 'jwt-decode'
 
-import type { User } from '@/types/user'
+import type { JwtUser } from '@/types/user'
 
 /**
  * Retrieves the refresh token from local storage.
@@ -29,17 +29,17 @@ export function removeRefreshToken(): void {
  * Decodes a JWT token into a User object.
  * @throws {Error} If the token is invalid or malformed.
  */
-export function decodeJWT(token: string): User {
-  return jwtDecode<User>(token)
+export function decodeJWT(token: string): JwtUser {
+  return jwtDecode<JwtUser>(token)
 }
 
 /**
  * Checks if the JWT token is expired.
- * @param {User} jwt - The decoded JWT token.
+ * @param {JwtUser} jwt - The decoded JWT token.
  * @param {number} [buffer=60] - Optional buffer in seconds to check before expiration.
  * @returns {boolean} True if the token is expired, false otherwise.
  */
-export function isTokenExpired(jwt: User, buffer: number = 60): boolean {
+export function isTokenExpired(jwt: JwtUser, buffer: number = 60): boolean {
   const now = Math.floor(Date.now() / 1000)
   return jwt.exp - now < buffer
 }

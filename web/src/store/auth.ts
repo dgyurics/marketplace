@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-import type { AuthTokens, User } from '@/types'
+import type { AuthTokens, JwtUser } from '@/types'
 import {
   decodeJWT,
   isTokenExpired as checkTokenExpired,
@@ -17,7 +17,7 @@ export const useAuthStore = defineStore('auth', {
       role: 'guest',
       exp: 0,
       iat: 0,
-    } as User,
+    } as JwtUser,
     accessToken: '',
     refreshToken: getRefreshToken(),
     loading: false,
@@ -30,7 +30,7 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    setUser(user: User) {
+    setUser(user: JwtUser) {
       this.user = user
     },
 

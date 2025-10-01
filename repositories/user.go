@@ -130,9 +130,15 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*typ
 func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error) {
 	users := []types.User{}
 	query := `
-		SELECT id, email, role, updated_at
+		SELECT
+			id,
+			email,
+			role,
+			COALESCE(requires_setup, false) AS requires_setup,
+			updated_at,
+			created_at
 		FROM users
-		WHERE role = 'user'
+		WHERE role != 'guest'
 		LIMIT $1 OFFSET $2
 	`
 	rows, err := r.db.QueryContext(ctx, query, limit, (page-1)*limit)
@@ -142,7 +148,13 @@ func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]ty
 	defer rows.Close()
 	for rows.Next() {
 		var user types.User
-		err = rows.Scan(&user.ID, &user.Email, &user.Role, &user.UpdatedAt)
+		err = rows.Scan(
+			&user.ID,
+			&user.Email,
+			&user.Role,
+			&user.RequiresSetup,
+			&user.UpdatedAt,
+			&user.CreatedAt)
 		if err != nil {
 			return nil, err
 		}

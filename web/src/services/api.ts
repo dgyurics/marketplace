@@ -14,6 +14,7 @@ import type {
   CreateProductRequest,
   UpdateProductRequest,
   ProductFilters,
+  UserRecord,
 } from '@/types'
 
 const apiClient = axios.create({
@@ -203,6 +204,17 @@ export const removeItemFromCart = async (productId: string) => {
 
 export const createOrder = async (): Promise<Order> => {
   const response = await apiClient.post('/orders', {})
+  return response.data
+}
+
+export const getUsers = async (page: number = 1, limit: number = 50): Promise<UserRecord[]> => {
+  const params = new URLSearchParams()
+
+  // Add pagination
+  params.append('page', page.toString())
+  params.append('limit', limit.toString())
+
+  const response = await apiClient.get(`/users?${params}`)
   return response.data
 }
 
