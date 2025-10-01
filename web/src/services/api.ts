@@ -62,10 +62,20 @@ export const login = async (email: string, password: string): Promise<AuthTokens
   return response.data
 }
 
-export const register = async (email: string, password: string): Promise<AuthTokens> => {
-  const response = await apiClient.post('/users/register', {
+export const register = async (email: string): Promise<void> => {
+  const response = await apiClient.post('/register', { email })
+  return response.data
+}
+
+export const registerConfirm = async (
+  email: string,
+  password: string,
+  registrationCode: string
+): Promise<AuthTokens> => {
+  const response = await apiClient.post('/register/confirm', {
     email,
     password,
+    registration_code: registrationCode,
   })
   return response.data
 }

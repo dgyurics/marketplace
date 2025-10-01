@@ -211,6 +211,8 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse the refresh token
+	// FIXME better error handling
+	// does not distinguish between bad input and system errors
 	usr, err := h.refreshService.VerifyToken(r.Context(), requestBody.RefreshToken)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusUnauthorized, "Invalid or expired refresh token")

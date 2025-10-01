@@ -64,6 +64,19 @@ CREATE INDEX idx_images_source ON images(source);
 
 CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest');
 
+CREATE TABLE IF NOT EXISTS pending_users (
+    id BIGINT PRIMARY KEY,
+    email VARCHAR(255),
+    code_hash TEXT NOT NULL,
+    used BOOLEAN DEFAULT FALSE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+-- For quick look-ups by email
+CREATE INDEX idx_pending_users_email
+ON pending_users(email);
+
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY,
     email VARCHAR(255) UNIQUE,

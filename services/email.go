@@ -12,16 +12,21 @@ import (
 	"github.com/dgyurics/marketplace/types"
 )
 
-// TODO rename this to SMTPService
-// to indicate low-level SMTP communication
-// Low-level SMTP
+// TODO: Refactor email architecture into two layers:
+//
+// 1. SMTPService (low-level) - handles raw email delivery via SMTP protocol
+//    - Replaces current EmailService
+//    - Responsible only for transport layer
+//    - Interface: Send(email *types.Email) error
+//
+// 2. MailerService (high-level) - handles business email operations
+//    - Aggregates SMTPService + TemplateService + config (baseURL)
+//    - Provides semantic methods like SendPasswordReset(), SendOrderConfirmation()
+//    - Eliminates need to inject 3 separate dependencies everywhere
+//    - Single import point for all email functionality across routes/services
 // type SMTPService interface {
 //     Send(email *types.Email) error
 // }
-
-// TODO build a higher level service
-// This will elimininate the need to import 3 services/files just to send email
-// High-level business emails
 // type MailerService interface {
 //     SendPasswordReset(recipientEmail, code string) error
 //     SendPaymentSuccess(recipientEmail, orderID string) error

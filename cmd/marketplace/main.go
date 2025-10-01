@@ -82,6 +82,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewPasswordRoutes(services.Password, services.User, services.Email, services.Template, config.BaseURL, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, baseRouter),
 		routes.NewProductRoutes(services.Product, baseRouter),
+		routes.NewRegisterRoutes(services.Register, services.User, services.JWT, services.Refresh, baseRouter),
 		routes.NewUserRoutes(services.User, services.JWT, services.Refresh, config.Auth, baseRouter),
 	)
 
@@ -108,6 +109,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	cartRepository := repositories.NewCartRepository(db)
 	orderRepository := repositories.NewOrderRepository(db)
 	passwordRepository := repositories.NewPasswordRepository(db)
+	registerRepository := repositories.NewRegisterRepository(db)
 	scheduleRepository := repositories.NewScheduleRepository(db)
 	refreshTokenRepository := repositories.NewRefreshRepository(db)
 	taxRepository := repositories.NewTaxRepository(db)
@@ -132,6 +134,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	orderService := services.NewOrderService(orderRepository, cartRepository, paymentService, config.Locale, httpClient)
 	imageService := services.NewImageService(httpClient, imageRepository, config.Image)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
+	registerService := services.NewRegisterService(registerRepository, emailService, templateService, config.BaseURL)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	jwtService := services.NewJWTService(config.JWT)
 	scheduleService := services.NewScheduleService(orderService, scheduleRepository)
@@ -146,6 +149,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		Order:    orderService,
 		Image:    imageService,
 		Password: passwordService,
+		Register: registerService,
 		Refresh:  refreshService,
 		Payment:  paymentService,
 		Email:    emailService,
@@ -169,6 +173,7 @@ type servicesContainer struct {
 	Password services.PasswordService
 	Payment  services.PaymentService
 	Product  services.ProductService
+	Register services.RegisterService
 	Refresh  services.RefreshService
 	Schedule services.ScheduleService
 	Tax      services.TaxService

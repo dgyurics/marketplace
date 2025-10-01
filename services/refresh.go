@@ -64,7 +64,7 @@ func (s *refreshService) StoreToken(ctx context.Context, userID, token string) e
 func (s *refreshService) VerifyToken(ctx context.Context, token string) (*types.User, error) {
 	now := time.Now()
 	tokenHash := hashString(token, s.config.HMACSecret)
-	refreshToken, err := s.repo.GetToken(ctx, tokenHash) // FIXME
+	refreshToken, err := s.repo.GetToken(ctx, tokenHash)
 
 	if err != nil {
 		return nil, err

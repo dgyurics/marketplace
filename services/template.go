@@ -14,6 +14,7 @@ const (
 	PasswordReset     Template = "password_reset.html"
 	PaymentSuccess    Template = "payment_success.html"
 	OrderReceived     Template = "order_received.html"
+	Registration      Template = "registration.html"
 )
 
 // TemplateService defines methods for managing HTML templates.

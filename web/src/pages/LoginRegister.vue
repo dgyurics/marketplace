@@ -15,7 +15,6 @@
     <template v-else>
       <h2>Sign In or Create an Account</h2>
 
-      <!-- TODO move this to form component -->
       <form @submit.prevent>
         <div class="form-group">
           <label for="email">Email</label>
@@ -35,6 +34,7 @@
         </div>
 
         <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+        <p v-if="successMessage" class="success">{{ successMessage }}</p>
       </form>
     </template>
   </div>
@@ -52,6 +52,7 @@ const authStore = useAuthStore()
 const email = ref('')
 const password = ref('')
 const errorMessage = ref<string | null>(null)
+const successMessage = ref<string | null>(null)
 
 const isValidEmail = (email: string) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -66,6 +67,7 @@ const router = useRouter()
 
 const handleLogin = async () => {
   errorMessage.value = null
+  successMessage.value = null
 
   if (!isValidEmail(email.value)) {
     errorMessage.value = 'Invalid email address.'
@@ -81,30 +83,39 @@ const handleLogin = async () => {
     const authTokens = await apiLogin(email.value, password.value)
     authStore.setTokens(authTokens)
 
-    const redirectUri = authTokens.requires_setup ? '/auth/update' : '/'
-    router.push(redirectUri)
+    if (authTokens.requires_setup) {
+      router.push('/auth/update')
+    }
+    // Clear email + password field after successful login
+    email.value = ''
+    password.value = ''
   } catch (error) {
     errorMessage.value = handleApiError(error)
   }
 }
 
 const handleRegister = async () => {
+  const emailCpy = email.value.trim()
   errorMessage.value = null
+  successMessage.value = null
 
-  if (!isValidEmail(email.value)) {
+  if (!isValidEmail(emailCpy)) {
     errorMessage.value = 'Invalid email address.'
     return
   }
 
-  if (!isValidPassword(password.value)) {
-    errorMessage.value = 'Password must be between 3 and 50 characters.'
-    return
-  }
-
   try {
-    const authTokens = await apiRegister(email.value, password.value)
-    authStore.setTokens(authTokens)
-    router.push('/')
+    await apiRegister(emailCpy)
+    successMessage.value = 'Email sent containing confirmation link (check your junk mail)'
+    // Clear email + password field after successful registration
+    email.value = ''
+    password.value = ''
+
+    // Redirect with email as query parameter
+    router.push({
+      path: '/auth/register-confirm',
+      query: { email: emailCpy },
+    })
   } catch (error) {
     errorMessage.value = handleApiError(error)
   }
@@ -130,16 +141,15 @@ const handleLogout = async () => {
   try {
     await apiLogout()
     authStore.clearTokens()
-    router.push('/')
   } catch (error) {
-    errorMessage.value = handleApiError(error)
+    console.error('Logout error:', error)
   }
 }
 
 const handleApiError = (error: any): string => {
   const status = error.response?.status
   if (status === 409) {
-    return 'Email already in use.'
+    return 'Email already in use'
   }
   if (status === 401) {
     return 'Invalid credentials'
@@ -223,5 +233,18 @@ input:focus {
   width: 200px;
   margin: 20px auto 0;
   display: block;
+}
+
+/* Error message */
+.error {
+  color: #d32f2f;
+  font-size: 14px;
+  margin-top: 15px;
+}
+
+/* Success message */
+.success {
+  font-size: 14px;
+  margin-top: 15px;
 }
 </style>

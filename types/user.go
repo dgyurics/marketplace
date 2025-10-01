@@ -4,6 +4,16 @@ import (
 	"time"
 )
 
+type PendingUser struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	CodeHash  string    `json:"-"`
+	Used      bool      `json:"used"`
+	ExpiresAt time.Time `json:"expires_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type User struct {
 	ID            string    `json:"id"`
 	Email         string    `json:"email"`
