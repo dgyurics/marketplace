@@ -11,6 +11,7 @@ import { useRouter } from 'vue-router'
 import DataTable from '@/components/DataTable.vue'
 import { getOrders } from '@/services/api'
 import type { Order } from '@/types'
+import { formatDate } from '@/utilities/dateFormat'
 
 const router = useRouter()
 const orders = ref<Order[]>([])
@@ -42,22 +43,8 @@ const formattedOrders = computed(() =>
     tax: `$${(order.tax_amount / 100).toFixed(2)}`,
     shipping: `$${(order.shipping_amount / 100).toFixed(2)}`,
     total: `$${(order.total_amount / 100).toFixed(2)}`,
-    updated: new Date(order.updated_at).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }),
-    created: new Date(order.created_at).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }),
+    updated: formatDate(new Date(order.updated_at)),
+    created: formatDate(new Date(order.created_at)),
     _originalOrder: order, // Keep reference to original order
   }))
 )

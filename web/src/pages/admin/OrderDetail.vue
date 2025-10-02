@@ -96,6 +96,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { getOrderAdmin } from '@/services/api'
 import type { Order } from '@/types'
+import { formatDate } from '@/utilities/dateFormat'
 
 const route = useRoute()
 const router = useRouter()
@@ -114,17 +115,6 @@ const fetchOrder = async () => {
   } finally {
     loading.value = false
   }
-}
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
 }
 
 const goBack = () => {

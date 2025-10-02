@@ -10,6 +10,7 @@ import { ref, computed, onMounted } from 'vue'
 import DataTable from '@/components/DataTable.vue'
 import { getUsers } from '@/services/api'
 import type { UserRecord } from '@/types'
+import { formatDate } from '@/utilities/dateFormat'
 
 const users = ref<UserRecord[]>([])
 
@@ -21,22 +22,8 @@ const formattedUsers = computed(() =>
     email: user.email,
     role: user.role,
     requires_setup: user.requires_setup,
-    created: new Date(user.created_at).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }),
-    updated: new Date(user.updated_at).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }),
+    created: formatDate(new Date(user.created_at)),
+    updated: formatDate(new Date(user.updated_at)),
   }))
 )
 
