@@ -76,6 +76,7 @@ import KeyValueEditor from '@/components/forms/KeyValueEditor.vue'
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import { getProductById, getCategories, updateProduct } from '@/services/api'
+import { formatPrice } from '@/utilities'
 
 const route = useRoute()
 const router = useRouter()
@@ -109,7 +110,7 @@ const fetchProduct = async () => {
     // Populate form with existing data
     editProduct.value = {
       name: data.name,
-      price: (data.price / 100).toFixed(2),
+      price: formatPrice(data.price),
       summary: data.summary,
       description: data.description,
       tax_code: data.tax_code ?? '',

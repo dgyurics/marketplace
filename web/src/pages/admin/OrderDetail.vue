@@ -55,9 +55,9 @@
             </div>
             <div class="item-details">
               <span class="item-quantity">Qty: {{ item.quantity }}</span>
-              <span class="item-price">${{ (item.unit_price / 100).toFixed(2) }}</span>
+              <span class="item-price">{{ formatPrice(item.unit_price) }}</span>
               <span class="item-total">
-                ${{ ((item.unit_price * item.quantity) / 100).toFixed(2) }}
+                {{ formatPrice(item.unit_price * item.quantity) }}
               </span>
             </div>
           </div>
@@ -67,19 +67,19 @@
       <div class="totals-section">
         <div class="total-row">
           <label>Subtotal:</label>
-          <span>${{ (order.amount / 100).toFixed(2) }}</span>
+          <span>{{ formatPrice(order.amount) }}</span>
         </div>
         <div class="total-row">
           <label>Tax:</label>
-          <span>${{ (order.tax_amount / 100).toFixed(2) }}</span>
+          <span>{{ formatPrice(order.tax_amount) }}</span>
         </div>
         <div class="total-row">
           <label>Shipping:</label>
-          <span>${{ (order.shipping_amount / 100).toFixed(2) }}</span>
+          <span>{{ formatPrice(order.shipping_amount) }}</span>
         </div>
         <div class="total-row total">
           <label>Total:</label>
-          <span>${{ (order.total_amount / 100).toFixed(2) }}</span>
+          <span>{{ formatPrice(order.total_amount) }}</span>
         </div>
       </div>
 
@@ -96,6 +96,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { getOrderAdmin } from '@/services/api'
 import type { Order } from '@/types'
+import { formatPrice } from '@/utilities/currency'
 import { formatDate } from '@/utilities/dateFormat'
 
 const route = useRoute()

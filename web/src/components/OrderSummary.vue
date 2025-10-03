@@ -6,19 +6,19 @@
       <div class="details">
         <h4>{{ item.product.name }}</h4>
         <p>Quantity: {{ item.quantity }}</p>
-        <p>Unit Price: ${{ (item.unit_price / 100).toFixed(2) }}</p>
+        <p>Unit Price: {{ formatPrice(item.unit_price) }}</p>
       </div>
     </div>
     <div class="totals">
       <p>
-        <span>Subtotal</span><span>${{ (order.amount / 100).toFixed(2) }}</span>
+        <span>Subtotal</span><span>{{ formatPrice(order.amount) }}</span>
       </p>
       <p>
         <span>Tax <span class="italic">(estimate)</span></span
-        ><span>${{ (order.tax_amount / 100).toFixed(2) }}</span>
+        ><span>{{ formatPrice(order.tax_amount) }}</span>
       </p>
       <p>
-        <span>Total</span><span>${{ (order.total_amount / 100).toFixed(2) }}</span>
+        <span>Total</span><span>{{ formatPrice(order.total_amount) }}</span>
       </p>
     </div>
   </div>
@@ -26,6 +26,8 @@
 
 <script setup lang="ts">
 import type { Order } from '@/types'
+import { formatPrice } from '@/utilities'
+
 defineProps<{ order: Order | null }>()
 </script>
 

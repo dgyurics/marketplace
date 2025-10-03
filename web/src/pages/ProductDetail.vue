@@ -18,7 +18,7 @@
         <h1 class="product-title">{{ product.name }}</h1>
         <p class="product-summary">{{ product.summary }}</p>
         <p class="product-description" v-html="product.description"></p>
-        <p class="product-price">${{ (product.price / 100).toFixed(2) }}</p>
+        <p class="product-price">{{ formatPrice(product.price) }}</p>
       </div>
 
       <div class="product-actions">
@@ -60,6 +60,7 @@ import { getProductById, createGuestUser as apiCreateGuestUser } from '@/service
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
 import type { AuthTokens, Product } from '@/types'
+import { formatPrice } from '@/utilities/currency'
 
 // @ts-ignore
 import 'swiper/css'

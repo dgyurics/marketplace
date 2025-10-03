@@ -1,3 +1,5 @@
+import { getAppLocale } from './locale'
+
 const DEFAULT_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',
   month: 'numeric',
@@ -5,11 +7,6 @@ const DEFAULT_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   hour: '2-digit',
   minute: '2-digit',
   hour12: false,
-}
-
-// TODO retrieve from environment/config
-function getLocale(): string {
-  return 'en-US'
 }
 
 /**
@@ -21,7 +18,7 @@ export function formatDate(
   locale?: string
 ): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date
-  const targetLocale = locale ?? getLocale()
+  const targetLocale = locale ?? getAppLocale()
 
   return dateObj.toLocaleString(targetLocale, options)
 }

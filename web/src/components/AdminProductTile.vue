@@ -4,7 +4,7 @@
     <div class="product-info">
       <h3 class="product-title">{{ product.name }}</h3>
       <p class="product-id">ID: {{ product.id }}</p>
-      <p class="product-price">${{ (product.price / 100).toFixed(2) }}</p>
+      <p class="product-price">{{ formatPrice(product.price) }}</p>
       <p v-if="product.summary" class="product-summary">{{ product.summary }}</p>
       <p v-if="product.tax_code" class="product-tax-code">Tax Code: {{ product.tax_code }}</p>
       <div class="product-details">
@@ -27,6 +27,7 @@
 import { useRouter } from 'vue-router'
 
 import type { Product } from '@/types'
+import { formatPrice } from '@/utilities/currency'
 
 const props = defineProps<{ product: Product }>()
 const emit = defineEmits<{

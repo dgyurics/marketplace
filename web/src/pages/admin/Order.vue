@@ -11,6 +11,7 @@ import { useRouter } from 'vue-router'
 import DataTable from '@/components/DataTable.vue'
 import { getOrders } from '@/services/api'
 import type { Order } from '@/types'
+import { formatPrice } from '@/utilities/currency'
 import { formatDate } from '@/utilities/dateFormat'
 
 const router = useRouter()
@@ -39,10 +40,10 @@ const formattedOrders = computed(() =>
     location: order.address
       ? [order.address.city, order.address.state].filter(Boolean).join(', ')
       : '',
-    amount: `$${(order.amount / 100).toFixed(2)}`,
-    tax: `$${(order.tax_amount / 100).toFixed(2)}`,
-    shipping: `$${(order.shipping_amount / 100).toFixed(2)}`,
-    total: `$${(order.total_amount / 100).toFixed(2)}`,
+    amount: formatPrice(order.amount),
+    tax: formatPrice(order.tax_amount),
+    shipping: formatPrice(order.shipping_amount),
+    total: formatPrice(order.total_amount),
     updated: formatDate(new Date(order.updated_at)),
     created: formatDate(new Date(order.created_at)),
     _originalOrder: order, // Keep reference to original order

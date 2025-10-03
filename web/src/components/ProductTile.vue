@@ -6,7 +6,7 @@
     <div class="product-info">
       <h3 class="product-title">{{ product.name }}</h3>
       <p class="product-summary">{{ product.summary }}</p>
-      <p class="product-price">${{ (product.price / 100).toFixed(2) }}</p>
+      <p class="product-price">{{ formatPrice(product.price) }}</p>
     </div>
   </div>
 </template>
@@ -16,6 +16,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type { Product } from '@/types'
+import { formatPrice } from '@/utilities/currency'
 
 const props = defineProps<{ product: Product }>()
 

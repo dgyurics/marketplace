@@ -17,7 +17,7 @@
         </div>
         <div class="divider"></div>
         <div class="item-details">
-          <span class="item-price">${{ (item.unit_price / 100).toFixed(2) }}</span>
+          <span class="item-price">{{ formatPrice(item.unit_price) }}</span>
           <span class="item-quantity">Qty: {{ item.quantity }}</span>
         </div>
         <button class="remove-button" @click="removeFromCart(item.product.id)">
@@ -28,7 +28,7 @@
 
     <!-- Display the subtotal and checkout button -->
     <div v-if="items.length > 0" class="cart-total">
-      <strong>Subtotal:</strong> ${{ (subtotal / 100).toFixed(2) }}
+      <strong>Subtotal:</strong> {{ formatPrice(subtotal) }}
     </div>
     <button v-if="items.length > 0" class="btn-full-width mt-15" @click="goToCheckout">
       Proceed to Checkout
@@ -47,6 +47,7 @@ import { createGuestUser as apiCreateGuestUser } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
 import type { AuthTokens } from '@/types'
+import { formatPrice } from '@/utilities/currency'
 
 const authStore = useAuthStore()
 const { isAuthenticated } = storeToRefs(authStore)
