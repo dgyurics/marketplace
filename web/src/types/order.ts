@@ -29,7 +29,6 @@ export interface Order {
   address?: Address
   items: OrderItem[]
   status: OrderStatus
-  currency: string
   amount: number
   tax_amount: number
   shipping_amount: number

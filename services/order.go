@@ -30,7 +30,6 @@ type orderService struct {
 	orderRepo      repositories.OrderRepository
 	cartRepo       repositories.CartRepository
 	HttpClient     utilities.HTTPClient
-	locConfig      types.LocaleConfig
 	paymentService PaymentService
 }
 
@@ -38,7 +37,6 @@ func NewOrderService(
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository,
 	paymentService PaymentService,
-	locConfig types.LocaleConfig,
 	httpClient utilities.HTTPClient,
 ) OrderService {
 	if httpClient == nil {
@@ -49,7 +47,6 @@ func NewOrderService(
 		cartRepo:       cartRepo,
 		HttpClient:     httpClient,
 		paymentService: paymentService,
-		locConfig:      locConfig,
 	}
 }
 
@@ -71,7 +68,6 @@ func (os *orderService) GetOrders(ctx context.Context, page, limit int) ([]types
 func (os *orderService) CreateOrder(ctx context.Context) (types.Order, error) {
 	var order types.Order
 	order.UserID = getUserID(ctx)
-	order.Currency = os.locConfig.Currency
 	order.Status = types.OrderPending
 
 	id, err := utilities.GenerateIDString()
@@ -87,7 +83,6 @@ func (os *orderService) CreateOrder(ctx context.Context) (types.Order, error) {
 	slog.Info("Order created",
 		"order_id", order.ID,
 		"user_id", order.UserID,
-		"currency", order.Currency,
 		"amount", order.Amount,
 	)
 	return order, nil

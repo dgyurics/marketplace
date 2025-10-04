@@ -199,7 +199,6 @@ CREATE TABLE IF NOT EXISTS orders (
     user_id BIGINT NOT NULL,
     email VARCHAR(255),
     address_id BIGINT,
-    currency VARCHAR(10) NOT NULL DEFAULT 'usd',
     amount BIGINT NOT NULL DEFAULT 0,
     tax_amount BIGINT NOT NULL DEFAULT 0,
     shipping_amount BIGINT NOT NULL DEFAULT 0,

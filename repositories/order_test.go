@@ -29,9 +29,8 @@ func TestOrderRepository_CreateOrder_Minimal(t *testing.T) {
 	addToCart(t, dbPool, user.ID, productID, 1)
 
 	order := &types.Order{
-		ID:       utilities.MustGenerateIDString(),
-		UserID:   user.ID,
-		Currency: "usd",
+		ID:     utilities.MustGenerateIDString(),
+		UserID: user.ID,
 		Address: &types.Address{
 			ID: addressID,
 		},
@@ -108,9 +107,8 @@ func TestOrderRepository_CreateOrder_EmptyCart(t *testing.T) {
 	addressID := createTestAddress(t, dbPool, user.ID)
 
 	order := &types.Order{
-		ID:       utilities.MustGenerateIDString(),
-		UserID:   user.ID,
-		Currency: "usd",
+		ID:     utilities.MustGenerateIDString(),
+		UserID: user.ID,
 		Address: &types.Address{
 			ID: addressID,
 		},
@@ -140,9 +138,8 @@ func TestOrderRepository_GetOrder_Success(t *testing.T) {
 
 	// Create order
 	order := &types.Order{
-		ID:       utilities.MustGenerateIDString(),
-		UserID:   user.ID,
-		Currency: "usd",
+		ID:     utilities.MustGenerateIDString(),
+		UserID: user.ID,
 		Address: &types.Address{
 			ID: addressID,
 		},
@@ -192,9 +189,8 @@ func TestOrderRepository_UpdateOrder(t *testing.T) {
 
 	// Create initial order
 	order := &types.Order{
-		ID:       utilities.MustGenerateIDString(),
-		UserID:   user.ID,
-		Currency: "usd",
+		ID:     utilities.MustGenerateIDString(),
+		UserID: user.ID,
 		Address: &types.Address{
 			ID: addressID,
 		},

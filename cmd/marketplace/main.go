@@ -131,7 +131,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	productService := services.NewProductService(productRepository)
 	cartService := services.NewCartService(cartRepository)
 	paymentService := services.NewPaymentService(httpClient, config.Payment, emailService, templateService, userService, orderRepository)
-	orderService := services.NewOrderService(orderRepository, cartRepository, paymentService, config.Locale, httpClient)
+	orderService := services.NewOrderService(orderRepository, cartRepository, paymentService, httpClient)
 	imageService := services.NewImageService(httpClient, imageRepository, config.Image)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	registerService := services.NewRegisterService(registerRepository, emailService, templateService, config.BaseURL)

@@ -212,8 +212,8 @@ func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, event s
 	if order.TotalAmount != pi.Amount {
 		return fmt.Errorf("amount mismatch: expected %d, got %d, order_id=%s", order.TotalAmount, pi.Amount, order.ID)
 	}
-	if !strings.EqualFold(order.Currency, pi.Currency) {
-		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", order.Currency, pi.Currency, order.ID)
+	if !strings.EqualFold(s.config.Locale.Currency, pi.Currency) {
+		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", s.config.Locale.Currency, pi.Currency, order.ID)
 	}
 	return nil
 }
@@ -244,8 +244,8 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 	if order.TotalAmount != pi.Amount {
 		return fmt.Errorf("amount mismatch: expected %d, got %d, order_id=%s", order.TotalAmount, pi.Amount, order.ID)
 	}
-	if !strings.EqualFold(order.Currency, pi.Currency) {
-		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", order.Currency, pi.Currency, order.ID)
+	if !strings.EqualFold(s.config.Locale.Currency, pi.Currency) {
+		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", s.config.Locale.Currency, pi.Currency, order.ID)
 	}
 
 	// mark order as paid

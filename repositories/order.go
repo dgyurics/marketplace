@@ -71,9 +71,6 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	if order.UserID == "" {
 		return errors.New("user ID is required")
 	}
-	if order.Currency == "" {
-		return errors.New("currency is required")
-	}
 	if order.ID == "" {
 		return errors.New("order ID is required")
 	}
@@ -154,19 +151,17 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 
 	// create a new order with pending status
 	query = `
-		INSERT INTO orders (id, user_id, currency, amount, total_amount) VALUES ($1, $2, $3, $4, $4)
-		RETURNING id, user_id, currency, amount, total_amount, status, created_at
+		INSERT INTO orders (id, user_id, amount, total_amount) VALUES ($1, $2, $3, $3)
+		RETURNING id, user_id, amount, total_amount, status, created_at
 	`
 	if err = tx.QueryRowContext(
 		ctx, query,
 		order.ID,
 		order.UserID,
-		order.Currency,
 		amount,
 	).Scan(
 		&order.ID,
 		&order.UserID,
-		&order.Currency,
 		&order.Amount,
 		&order.TotalAmount,
 		&order.Status,
@@ -327,7 +322,6 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			o.id,
 			o.user_id,
 			o.email,
-			o.currency,
 			o.amount,
 			o.tax_amount,
 			o.total_amount,
@@ -362,7 +356,6 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			&order.ID,
 			&order.UserID,
 			&order.Email,
-			&order.Currency,
 			&order.Amount,
 			&order.TaxAmount,
 			&order.TotalAmount,
@@ -468,7 +461,6 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 			o.id,
 			o.user_id,
 			COALESCE(o.email, '') AS email,
-			o.currency,
 			o.amount,
 			o.tax_amount,
 			o.total_amount,
@@ -505,7 +497,6 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 		&order.ID,
 		&order.UserID,
 		&order.Email,
-		&order.Currency,
 		&order.Amount,
 		&order.TaxAmount,
 		&order.TotalAmount,
@@ -555,7 +546,6 @@ func (r *orderRepository) GetOrderByIDPublic(ctx context.Context, orderID string
 	query := `
 		SELECT
 			o.id,
-			o.currency,
 			o.amount,
 			o.tax_amount,
 			o.total_amount,
@@ -567,7 +557,6 @@ func (r *orderRepository) GetOrderByIDPublic(ctx context.Context, orderID string
 	`
 	err := r.db.QueryRowContext(ctx, query, orderID).Scan(
 		&order.ID,
-		&order.Currency,
 		&order.Amount,
 		&order.TaxAmount,
 		&order.TotalAmount,
@@ -597,7 +586,6 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 			o.id,
 			o.user_id,
 			COALESCE(o.email, '') AS email,
-			o.currency,
 			o.amount,
 			o.tax_amount,
 			o.total_amount,
@@ -632,7 +620,6 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 		&order.ID,
 		&order.UserID,
 		&order.Email,
-		&order.Currency,
 		&order.Amount,
 		&order.TaxAmount,
 		&order.TotalAmount,
@@ -699,7 +686,6 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 			o.id,
 			o.user_id,
 			COALESCE(o.email, '') AS email,
-			o.currency,
 			o.amount,
 			o.tax_amount,
 			o.total_amount,
@@ -737,7 +723,6 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 		&order.ID,
 		&order.UserID,
 		&order.Email,
-		&order.Currency,
 		&order.Amount,
 		&order.TaxAmount,
 		&order.TotalAmount,
