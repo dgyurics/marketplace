@@ -5,7 +5,6 @@
       <form @submit.prevent="handleSubmit">
         <div class="form-row">
           <input v-model="editProduct.name" type="text" placeholder="Product Name" required />
-          <!-- TODO replace with custom currency input; this would, in theory, work differnet based on locale -->
           <input
             v-model="editProduct.price"
             type="number"
@@ -76,7 +75,7 @@ import KeyValueEditor from '@/components/forms/KeyValueEditor.vue'
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import { getProductById, getCategories, updateProduct } from '@/services/api'
-import { formatPrice } from '@/utilities'
+import { toMinorUnits, toMajorUnits } from '@/utilities'
 
 const route = useRoute()
 const router = useRouter()
@@ -110,7 +109,7 @@ const fetchProduct = async () => {
     // Populate form with existing data
     editProduct.value = {
       name: data.name,
-      price: formatPrice(data.price),
+      price: toMajorUnits(data.price),
       summary: data.summary,
       description: data.description,
       tax_code: data.tax_code ?? '',
@@ -158,7 +157,7 @@ const handleSubmit = async () => {
     const _updateData = {
       id: product.value.id,
       name: editProduct.value.name,
-      price: Math.round(parseFloat(editProduct.value.price) * 100), // Convert to cents
+      price: toMinorUnits(parseFloat(editProduct.value.price)), // Use locale-aware conversion
       summary: editProduct.value.summary,
       description: editProduct.value.description || undefined,
       tax_code: editProduct.value.tax_code || undefined,
