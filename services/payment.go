@@ -260,10 +260,9 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 	go func(recEmail, orderID string) {
 		detailsLink := fmt.Sprintf("%s/orders/%s", s.config.BaseURL, orderID)
 		data := map[string]string{
-			"OrderID":     orderID,
 			"DetailsLink": detailsLink,
 		}
-		body, err := s.serviceTmp.RenderToString(PaymentSuccess, data)
+		body, err := s.serviceTmp.RenderToString(OrderConfirmation, data)
 		if err != nil {
 			slog.Error("Error loading email template: ", "error", err)
 			return
@@ -279,7 +278,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 		}
 	}(order.Email, order.ID)
 
-	// Send order received email to admins
+	// Send order notification email to admins
 	go func(order types.Order) {
 		admins, err := s.serviceUser.GetAllAdmins(context.Background())
 		if err != nil {
@@ -293,26 +292,25 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 			adminEmails[i] = admin.Email
 		}
 
+		detailsLink := fmt.Sprintf("%s/admin/orders/%s", s.config.BaseURL, orderID)
 		data := map[string]string{
-			"OrderID":     order.ID,
-			"UserID":      order.UserID,
-			"UserEmail":   order.Email,
-			"TotalAmount": fmt.Sprintf("$%.2f", float64(order.TotalAmount)/100), // FIXME display using local currency
-			"UpdatedAt":   order.UpdatedAt.Format("Jan 2, 2006 at 3:04 PM UTC"), // FIXME display using local format + time
+			"OrderID":       order.ID,
+			"CustomerEmail": order.Email,
+			"DetailsLink":   detailsLink,
 		}
-		body, err := s.serviceTmp.RenderToString(OrderReceived, data)
+		body, err := s.serviceTmp.RenderToString(OrderNotification, data)
 		if err != nil {
 			slog.Error("Error loading email template: ", "error", err)
 			return
 		}
 		email := &types.Email{
 			To:      adminEmails,
-			Subject: "Order Received",
+			Subject: "Order Notification",
 			Body:    body,
 			IsHTML:  true,
 		}
 		if err := s.serviceEmail.Send(email); err != nil {
-			slog.Error("Error sending order confirmation email (admins): ", "order_id", order.ID, "error", err)
+			slog.Error("Error sending order notification email: ", "order_id", order.ID, "error", err)
 		}
 	}(order)
 

@@ -88,19 +88,19 @@ func (s *registerService) Register(ctx context.Context, email string) (string, e
 		data := map[string]string{
 			"DetailsLink": detailsLink,
 		}
-		body, err := s.serviceTmp.RenderToString(Registration, data)
+		body, err := s.serviceTmp.RenderToString(EmailVerification, data)
 		if err != nil {
 			slog.Error("Error loading email template: ", "error", err)
 			return
 		}
 		payload := &types.Email{
 			To:      []string{email},
-			Subject: "New Account Registration",
+			Subject: "New User Registration",
 			Body:    body,
 			IsHTML:  true,
 		}
 		if err := s.serviceEmail.Send(payload); err != nil {
-			slog.Error("Error sending new account registration email: ", "email", email, "error", err)
+			slog.Error("Error sending new user registration email: ", "email", email, "error", err)
 		}
 	}(email, code)
 

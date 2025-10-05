@@ -15,5 +15,5 @@ func TestRenderToString(t *testing.T) {
 	}
 	output, err := tmplMgr.RenderToString("password_reset.html", data)
 	assert.NoError(t, err, "Rendering should not return an error")
-	assert.Contains(t, output, "If you did not request a password reset, please disregard this email.")
+	assert.Contains(t, output, "If you did not request a password reset, disregard this email.")
 }
