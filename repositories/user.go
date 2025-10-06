@@ -118,6 +118,7 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*typ
 			&user.RequiresSetup,
 			&user.UpdatedAt)
 
+	// FIXME better to return types.ErrNotFound
 	if err == sql.ErrNoRows {
 		return nil, nil // Return nil, nil when no user is found
 	}

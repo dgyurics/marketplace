@@ -30,7 +30,7 @@ export async function confirmCardPayment(
 ): Promise<PaymentIntentResult> {
   const stripe = await getStripe()
   if (!stripe) {
-    throw new Error('Stripe failed to initialize.')
+    throw new Error('Stripe failed to initialize')
   }
 
   const result = await stripe.confirmCardPayment(clientSecret, {

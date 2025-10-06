@@ -81,8 +81,23 @@ export const registerConfirm = async (
   return response.data
 }
 
+// Send password reset email
 export const passwordReset = async (email: string): Promise<void> => {
   const response = await apiClient.post('/users/password-reset', { email })
+  return response.data
+}
+
+// Update password using reset code (code in email link)
+export const passwordUpdate = async (
+  email: string,
+  newPassword: string,
+  resetCode: string
+): Promise<void> => {
+  const response = await apiClient.post('/users/password-reset/confirm', {
+    email,
+    password: newPassword,
+    reset_code: resetCode,
+  })
   return response.data
 }
 

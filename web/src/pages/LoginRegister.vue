@@ -33,8 +33,7 @@
           <button type="button" class="btn-outline" @click="handleRegister">Register</button>
         </div>
 
-        <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-        <p v-if="successMessage" class="success">{{ successMessage }}</p>
+        <p v-if="errorMessage" class="error" v-html="errorMessage"></p>
       </form>
     </template>
   </div>
@@ -52,7 +51,6 @@ const authStore = useAuthStore()
 const email = ref('')
 const password = ref('')
 const errorMessage = ref<string | null>(null)
-const successMessage = ref<string | null>(null)
 
 const isValidEmail = (email: string) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -67,15 +65,14 @@ const router = useRouter()
 
 const handleLogin = async () => {
   errorMessage.value = null
-  successMessage.value = null
 
   if (!isValidEmail(email.value)) {
-    errorMessage.value = 'Invalid email address.'
+    errorMessage.value = 'Invalid email address'
     return
   }
 
   if (!isValidPassword(password.value)) {
-    errorMessage.value = 'Password must be between 3 and 50 characters.'
+    errorMessage.value = 'Password must be between 3 and 50 characters'
     return
   }
 
@@ -97,16 +94,14 @@ const handleLogin = async () => {
 const handleRegister = async () => {
   const emailCpy = email.value.trim()
   errorMessage.value = null
-  successMessage.value = null
 
   if (!isValidEmail(emailCpy)) {
-    errorMessage.value = 'Invalid email address.'
+    errorMessage.value = 'Invalid email address'
     return
   }
 
   try {
     await apiRegister(emailCpy)
-    successMessage.value = 'Email sent containing confirmation link (check your junk mail)'
     // Clear email + password field after successful registration
     email.value = ''
     password.value = ''
@@ -152,7 +147,12 @@ const handleApiError = (error: any): string => {
     return 'Email already in use'
   }
   if (status === 401) {
-    return 'Invalid credentials'
+    return (
+      `Invalid credentials<br>` +
+      `<span class="reset-password-text">` +
+      `Click <a href="/auth/email/${email.value}/password-reset" class="forgot-password-link">here</a> to reset password` +
+      `</span>`
+    )
   }
   return 'Something went wrong'
 }
@@ -246,5 +246,16 @@ input:focus {
 .success {
   font-size: 14px;
   margin-top: 15px;
+}
+
+/* Reset password text - make entire line black */
+.error :deep(.reset-password-text) {
+  color: #000 !important;
+}
+
+/* Forgot password link styling - keep underline but inherit black color */
+.error :deep(a) {
+  color: inherit;
+  text-decoration: underline;
 }
 </style>

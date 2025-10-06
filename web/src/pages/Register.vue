@@ -50,12 +50,12 @@ const handleSubmit = async () => {
   errorMessage.value = null
 
   if (!isValidEmail(email)) {
-    errorMessage.value = 'Invalid email address.'
+    errorMessage.value = 'Invalid email address'
     return
   }
 
   if (!isValidPassword(password.value)) {
-    errorMessage.value = 'Password must be between 3 and 50 characters.'
+    errorMessage.value = 'Password must be between 3 and 50 characters'
     return
   }
 

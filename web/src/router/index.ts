@@ -15,6 +15,8 @@ import LoginRegister from '@/pages/LoginRegister.vue'
 import NotFound from '@/pages/NotFound.vue'
 import OrderConfirmation from '@/pages/OrderConfirmation.vue'
 import OrderDetail from '@/pages/OrderDetail.vue'
+import PasswordReset from '@/pages/PasswordReset.vue'
+import PasswordResetRequest from '@/pages/PasswordResetRequest.vue'
 import Payment from '@/pages/Payment.vue'
 import Product from '@/pages/Product.vue'
 import ProductDetails from '@/pages/ProductDetail.vue'
@@ -40,6 +42,12 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/error', component: Error },
     { path: '/not-found', component: NotFound },
     { path: '/products/:id', component: ProductDetails, props: true },
+    { path: '/auth/email/:email(.*)/password-reset', component: PasswordResetRequest, props: true },
+    {
+      path: '/auth/email/:email(.*)/password-reset/:resetCode',
+      component: PasswordReset,
+      props: true,
+    },
     { path: '/checkout/shipping', component: ShippingAddress },
     { path: '/checkout/payment', component: Payment },
     { path: '/checkout/confirmation', component: OrderConfirmation },

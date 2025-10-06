@@ -1,21 +1,15 @@
 <template>
   <div class="setup-container">
-    <h2>Update your credentials</h2>
+    <h2>Password Reset</h2>
     <form @submit.prevent>
       <div class="form-group">
-        <label for="email">Email</label>
-        <input id="email" v-model="email" type="email" required />
-        <div class="underline"></div>
-      </div>
-
-      <div class="form-group">
-        <label for="password">Password</label>
+        <label for="password">New Password</label>
         <input id="password" v-model="password" type="password" required />
         <div class="underline"></div>
       </div>
 
       <div class="button-group">
-        <button type="button" @click="handleUpdate">Update</button>
+        <button type="button" @click="handleSubmit">Submit</button>
       </div>
 
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
@@ -25,37 +19,23 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
-import { updateCredentials as apiUpdateCredentials } from '@/services/api'
-import { useAuthStore } from '@/store/auth'
+import { passwordUpdate } from '@/services/api'
 
-const authStore = useAuthStore()
+const route = useRoute()
+const router = useRouter()
 
-const email = ref('')
 const password = ref('')
 const errorMessage = ref<string | null>(null)
-
-// TODO move to util; duplicated logic
-const isValidEmail = (email: string) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
-}
 
 // TODO move to util; duplicated logic
 const isValidPassword = (password: string) => {
   return password.length >= 3 && password.length <= 50
 }
 
-const router = useRouter()
-
-const handleUpdate = async () => {
+const handleSubmit = async () => {
   errorMessage.value = null
-
-  if (!isValidEmail(email.value)) {
-    errorMessage.value = 'Invalid email address'
-    return
-  }
 
   if (!isValidPassword(password.value)) {
     errorMessage.value = 'Password must be between 3 and 50 characters'
@@ -63,15 +43,17 @@ const handleUpdate = async () => {
   }
 
   try {
-    const authTokens = await apiUpdateCredentials(email.value, password.value)
-    authStore.setTokens(authTokens)
+    const resetCode = route.params['resetCode'] as string
+    const email = route.params['email'] as string
+    await passwordUpdate(email, password.value, resetCode)
     router.push('/auth')
   } catch (error: any) {
-    const status = error.response?.status
-    if (status === 409) {
-      errorMessage.value = 'Email already in use'
-      return
-    }
+    console.dir(error)
+    // const status = error.response?.status
+    // if (status === 400) {
+    //   errorMessage.value = 'Invalid email or registration code'
+    //   return
+    // }
     errorMessage.value = 'Something went wrong'
   }
 }
@@ -115,6 +97,16 @@ input {
 
 input:focus {
   border-bottom: 2px solid black;
+}
+
+input.readonly {
+  color: #666;
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+input.readonly:focus {
+  border-bottom: 2px solid #999;
 }
 
 /* Underline effect */

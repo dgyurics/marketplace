@@ -168,17 +168,17 @@ const getErrorMessage = (error: unknown) => {
   const status = (error as { response?: { status?: number } }).response?.status
   switch (status) {
     case 400:
-      return 'Invalid request. Please check the file format.'
+      return 'Invalid request. Check the file format'
     case 401:
-      return 'Unauthorized. Please log in again.'
+      return 'Unauthorized. Try logging in again'
     case 403:
-      return 'Forbidden. You do not have permission to upload images.'
+      return 'Forbidden. You do not have permission to upload images'
     case 404:
-      return 'Product not found.'
+      return 'Product not found'
     case 413:
-      return 'File too large. Please choose a smaller image.'
+      return 'File too large. Choose a smaller image'
     case 415:
-      return 'Unsupported file format. Please use JPEG, PNG, WebP, GIF, BMP, or TIFF.'
+      return 'Unsupported file format. Use JPEG, PNG, WebP, GIF, BMP, or TIFF'
     default:
       return 'Something went wrong'
   }

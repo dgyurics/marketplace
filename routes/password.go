@@ -56,8 +56,11 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	// If user does not exist, respond with success to avoid email enumeration
 	if usr == nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "User does not exist")
+		slog.Warn("Password reset requested for non-existing email: ", "email", credentials.Email)
+		u.RespondSuccess(w)
 		return
 	}
 
@@ -77,7 +80,7 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	// Send password reset email
 	go func(recEmail, code string) {
 		data := map[string]string{
-			"ResetLink": fmt.Sprintf("%s/users/password-reset/confirm?email=%s&code=%s", h.baseUrl, recEmail, code),
+			"ResetLink": fmt.Sprintf("%s/auth/email/%s/password-reset/%s", h.baseUrl, recEmail, code),
 		}
 		body, err := h.serviceTemplate.RenderToString(services.PasswordReset, data)
 		if err != nil {
@@ -98,6 +101,8 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	u.RespondSuccess(w)
 }
 
+// TODO return unique status code when code has expired (allows frontend to show specific message)
+// TODO redesign to work with just the code (no email) - code should be unique enough
 func (h *PasswordRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *http.Request) {
 	var credentials types.Credential
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {

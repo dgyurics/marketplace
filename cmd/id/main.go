@@ -19,7 +19,7 @@ func main() {
 		generateIDs(*n)
 	case "decode-id":
 		if flag.NArg() < 1 {
-			fmt.Println("Please provide an ID to decode")
+			fmt.Println("You must provide an ID to decode")
 			return
 		}
 		decodeID(flag.Arg(0))

@@ -117,7 +117,7 @@ const elementStyles = {
 async function initializeStripe() {
   const stripe = await getStripe()
   if (!stripe) {
-    console.error('Stripe initialization failed.')
+    console.error('Stripe initialization failed')
     return
   }
 
@@ -177,11 +177,11 @@ const submitPayment = async () => {
       checkoutStore.confirmOrder()
       router.push('/checkout/confirmation')
     } else {
-      alert('Payment processing or additional verification required.')
+      alert('Payment processing or additional verification required')
     }
   } catch (error) {
     console.error('Payment submission failed:', error)
-    alert('Payment submission failed. Please try again.')
+    alert('Payment submission failed. Try again')
   } finally {
     isSubmitting.value = false
   }
