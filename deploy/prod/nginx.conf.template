@@ -1,3 +1,14 @@
+# Rate limiting zones - define the limits
+limit_req_zone $binary_remote_addr zone=users:10m rate=10r/m;
+limit_req_zone $binary_remote_addr zone=orders:10m rate=5r/m;
+limit_req_zone $binary_remote_addr zone=webhooks:10m rate=100r/m;
+limit_req_zone $binary_remote_addr zone=api_general:10m rate=20r/m;
+limit_req_zone $binary_remote_addr zone=images:10m rate=100r/m;
+limit_req_zone $binary_remote_addr zone=frontend:10m rate=20r/m;
+
+# Return 429 instead of 503 for rate limit errors
+limit_req_status 429;
+
 # Define cache path
 proxy_cache_path /var/cache/nginx/images
     levels=1:2
@@ -42,6 +53,34 @@ server {
     ssl_session_cache shared:SSL:10m;
     ssl_session_timeout 10m;
 
+    # Rate limited API endpoints
+    location ~ ^/api/users/(.*)$ {
+        proxy_pass http://api_backend/users/$1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        limit_req zone=users burst=10 nodelay;
+    }
+
+    location ~ ^/api/orders/(.*)$ {
+        proxy_pass http://api_backend/orders/$1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        limit_req zone=orders burst=5 nodelay;
+    }
+
+    location /api/payment/events {
+        proxy_pass http://api_backend/payment/events;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        limit_req zone=webhooks burst=100 nodelay;
+    }
+
     # Specific route first - larger body size for product image uploads
     location /api/images/products/ {
         client_max_body_size 50M;
@@ -60,6 +99,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        limit_req zone=api_general burst=20 nodelay;
     }
 
     # Image proxy routes - send /images/* to imgproxy
@@ -69,6 +109,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        limit_req zone=images burst=100 nodelay;
 
         # Enable caching
         proxy_cache images;
@@ -98,5 +139,6 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        limit_req zone=frontend burst=20 nodelay;
     }
 }
