@@ -71,14 +71,16 @@ import { useRouter } from 'vue-router'
 
 import BillingAddressForm from '@/components/forms/BillingAddressForm.vue'
 import OrderSummary from '@/components/OrderSummary.vue'
-import { COUNTRY } from '@/config'
 import { getStripe, confirmCardPayment } from '@/services/stripe'
 import { useCheckoutStore } from '@/store/checkout'
+import { getCountryForLocale, getAppLocale } from '@/utilities'
 
 const checkoutStore = useCheckoutStore()
 const router = useRouter()
 const isSubmitting = ref(false)
 const isInitializing = ref(true)
+
+const country = getCountryForLocale(getAppLocale())
 
 let cardElement: StripeCardNumberElement,
   expiryElement: StripeCardExpiryElement,
@@ -145,7 +147,7 @@ const submitPayment = async () => {
       city: selectedAddress.city,
       state: selectedAddress.state,
       postal_code: selectedAddress.postal_code,
-      country: COUNTRY,
+      country,
     },
   }
 

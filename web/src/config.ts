@@ -17,7 +17,6 @@ const env = import.meta.env as ImportMetaEnv
 
 export const API_URL = env.VITE_API_URL
 export const STRIPE_PUBLISHABLE_KEY = env.VITE_STRIPE_PUBLISHABLE_KEY
-export const COUNTRY = env.VITE_COUNTRY
 export const LOCALE = env.VITE_LOCALE
 
 export const TEST_MODE = env.VITE_TEST_MODE ?? false
