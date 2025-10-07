@@ -73,7 +73,7 @@ func (h *AddressRoutes) RemoveAddress(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AddressRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/addresses", h.secure(h.CreateAddress)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/addresses", h.secure(h.CreateAddress)).Methods(http.MethodPost) // TODO rate limit to prevent abuse
 	h.muxRouter.Handle("/addresses", h.secure(h.GetAddresses)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/addresses/{id}", h.secure(h.RemoveAddress)).Methods(http.MethodDelete)
+	h.muxRouter.Handle("/addresses/{id}", h.secure(h.RemoveAddress)).Methods(http.MethodDelete) // TODO rate limit to prevent abuse
 }

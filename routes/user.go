@@ -195,9 +195,8 @@ func (h *UserRoutes) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// FIXME this allows for any email to be used (without verification)
-// UpdatedCredentials is used as a one-time update to convert an authenticated guest to a user.
-// It is also used for overriding the default admin account, on system setup
+// UpdatedCredentials is used used for overriding the default admin account, on system setup
+// FIXME allows for any email to be used (without verification)
 func (h *UserRoutes) UpdatedCredentials(w http.ResponseWriter, r *http.Request) {
 	// verify request contains email and password
 	var credentials types.Credential
@@ -270,10 +269,10 @@ func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/users/credentials", h.secure(h.UpdatedCredentials)).Methods(http.MethodPut)
-	h.muxRouter.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
-	h.muxRouter.HandleFunc("/users/refresh-token", h.RefreshToken).Methods(http.MethodPost)
-	h.muxRouter.HandleFunc("/users/guest", h.CreateGuestUser).Methods(http.MethodPost)
+	h.muxRouter.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)                // TODO rate limit to prevent abuse
+	h.muxRouter.HandleFunc("/users/refresh-token", h.RefreshToken).Methods(http.MethodPost) // TODO rate limit to prevent abuse
+	h.muxRouter.HandleFunc("/users/guest", h.CreateGuestUser).Methods(http.MethodPost)      // TODO rate limit to prevent abuse
+	h.muxRouter.Handle("/users/credentials", h.secureAdmin(h.UpdatedCredentials)).Methods(http.MethodPut)
 	h.muxRouter.Handle("/users/logout", h.secure(h.Logout)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users", h.secureAdmin(h.GetAllUsers)).Methods(http.MethodGet)
 }
