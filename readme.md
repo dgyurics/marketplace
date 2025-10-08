@@ -23,7 +23,6 @@ A self-hosted e-commerce framework designed for local businesses and community c
 * Self-hosted mail server via docker-mailserver
 * Database backup and recovery utilities
 * Partial and full refund capabilities
-* Multi-currency and localization support
 * Mobile-responsive design (phone/tablet support)
 * Product full-text search with filtering
 * Offline payment options for verified customers
