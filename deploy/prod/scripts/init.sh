@@ -291,6 +291,27 @@ setup_email_credentials() {
   log_success "Email configured"
 }
 
+setup_localization() {
+  log_info "Setting up Localization..."
+
+  read -p "Enter your COUNTRY (ISO 3166-1 alpha-2 code, e.g., US, CA, GB): " -r country
+  validate_input "$country" "COUNTRY"
+  country=$(echo "$country" | tr '[:lower:]' '[:upper:]')
+
+  read -p "Enter your CURRENCY (ISO 4217 code, e.g., USD, CAD, GBP): " -r currency
+  validate_input "$currency" "CURRENCY"
+  currency=$(echo "$currency" | tr '[:lower:]' '[:upper:]')
+
+  read -p "Enter your LOCALE (Unicode locale identifier for browsers, e.g., en-US for US English): " -r locale
+  validate_input "$locale" "VITE_LOCALE"
+
+  replace_placeholder "COUNTRY" "$country"
+  replace_placeholder "CURRENCY" "$currency"
+  replace_placeholder "LOCALE" "$locale"
+
+  log_success "Localization configured"
+}
+
 # SSL setup
 setup_ssl_certificates() {
   local domain="$1"
@@ -337,6 +358,9 @@ main() {
   setup_stripe_credentials
   setup_email_credentials
   
+  # Localization settings
+  setup_localization
+
   # SSL certificates
   setup_ssl_certificates "$domain"
   

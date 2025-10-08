@@ -1,8 +1,7 @@
 interface ImportMetaEnv {
-  readonly VITE_LOCALE: string
+  readonly VITE_LOCALE: string // Unicode locale identifier
   readonly VITE_API_URL: string
   readonly VITE_STRIPE_PUBLISHABLE_KEY: string
-  readonly VITE_COUNTRY: string
   readonly VITE_TEST_MODE?: boolean
   readonly VITE_REQUEST_TIMEOUT?: string
   // Vite built-in properties
