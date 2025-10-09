@@ -1,3 +1,6 @@
+# Hide nginx version
+server_tokens off;
+
 # Rate limiting zones - define the limits
 limit_req_zone $binary_remote_addr zone=users:10m rate=10r/m;
 limit_req_zone $binary_remote_addr zone=orders:10m rate=5r/m;
@@ -52,6 +55,13 @@ server {
     ssl_prefer_server_ciphers off;
     ssl_session_cache shared:SSL:10m;
     ssl_session_timeout 10m;
+
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header X-Permitted-Cross-Domain-Policies "none" always;
 
     # Rate limited API endpoints
     location ~ ^/api/users/(.*)$ {
@@ -139,6 +149,6 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        limit_req zone=frontend burst=20 nodelay;
+        limit_req zone=frontend burst=100 nodelay;
     }
 }
