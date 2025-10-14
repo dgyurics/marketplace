@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/dgyurics/marketplace/services"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/types/stripe"
 	u "github.com/dgyurics/marketplace/utilities"
 )
@@ -49,7 +50,12 @@ func (h *PaymentRoutes) EventHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.paymentService.EventHandler(r.Context(), event); err != nil {
+	err = h.paymentService.EventHandler(r.Context(), event)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
