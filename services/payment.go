@@ -53,8 +53,26 @@ func NewPaymentService(
 	}
 }
 
+func (s *paymentService) shouldSkipEvent(event stripe.Event) bool {
+	if event.Data == nil || event.Data.Object.Metadata == nil {
+		return false
+	}
+
+	eventEnv := event.Data.Object.Metadata["environment"]
+	currentEnv := string(s.config.Environment)
+
+	if eventEnv != "" && eventEnv != currentEnv {
+		slog.Debug("Skipping event from different environment",
+			"eventEnv", eventEnv, "currentEnv", currentEnv, "eventID", event.ID)
+		return true
+	}
+	return false
+}
+
 func (s *paymentService) EventHandler(ctx context.Context, event stripe.Event) (err error) {
-	// process event based on type
+	if s.shouldSkipEvent(event) {
+		return nil
+	}
 	switch stripe.EventType(event.Type) {
 	case stripe.EventTypePaymentIntentCreated:
 		err = s.handlePaymentIntentCreated(ctx, event)
@@ -152,6 +170,7 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 		"currency":               {s.config.Locale.Currency},
 		"payment_method_types[]": {"card"},
 		"metadata[order_id]":     {refID},
+		"metadata[environment]":  {string(s.config.Environment)},
 		// TODO send receipt to customer "receipt_email": {order.Email}
 	}
 	reqBody := strings.NewReader(payload.Encode())

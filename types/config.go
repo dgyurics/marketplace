@@ -109,7 +109,8 @@ type ImageConfig struct {
 }
 
 type PaymentConfig struct {
-	Stripe  StripeConfig
-	Locale  LocaleConfig
-	BaseURL string
+	Stripe      StripeConfig
+	Locale      LocaleConfig
+	BaseURL     string
+	Environment Environment
 }
