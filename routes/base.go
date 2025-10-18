@@ -26,12 +26,12 @@ func NewRouter(muxRouter *mux.Router, authMiddleware middleware.Authorizer) rout
 }
 
 // restrict endpoint to authenticated users
-func (h *router) secure(next http.HandlerFunc) http.Handler {
+func (h *router) secure(next http.HandlerFunc) http.HandlerFunc {
 	return h.authMiddleware.AuthenticateUser(next)
 }
 
 // restrict endpoint to admin users
-func (h *router) secureAdmin(next http.HandlerFunc) http.Handler {
+func (h *router) secureAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return h.authMiddleware.AuthenticateAdmin(next)
 }
 

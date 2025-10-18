@@ -15,10 +15,10 @@ import (
 
 type dummyAuth struct{}
 
-func (d dummyAuth) AuthenticateUser(next http.HandlerFunc) http.Handler {
+func (d dummyAuth) AuthenticateUser(next http.HandlerFunc) http.HandlerFunc {
 	return next
 }
-func (d dummyAuth) AuthenticateAdmin(next http.HandlerFunc) http.Handler {
+func (d dummyAuth) AuthenticateAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return next
 }
 

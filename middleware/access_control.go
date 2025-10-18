@@ -11,8 +11,8 @@ import (
 )
 
 type Authorizer interface {
-	AuthenticateUser(next http.HandlerFunc) http.Handler
-	AuthenticateAdmin(next http.HandlerFunc) http.Handler
+	AuthenticateUser(next http.HandlerFunc) http.HandlerFunc
+	AuthenticateAdmin(next http.HandlerFunc) http.HandlerFunc
 }
 
 type authorizer struct {
@@ -26,7 +26,7 @@ func NewAccessControl(jwtService services.JWTService) *authorizer {
 // AuthenticateUser verifies the Authorization header.
 // If the token is valid, the user is stored in the request context.
 // If the token is invalid, or does not exist, a 401 Unauthorized response is returned.
-func (a *authorizer) AuthenticateUser(next http.HandlerFunc) http.Handler {
+func (a *authorizer) AuthenticateUser(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := a.authenticateToken(r)
 		if err != nil {
@@ -42,7 +42,7 @@ func (a *authorizer) AuthenticateUser(next http.HandlerFunc) http.Handler {
 // If the token is valid and the user is an admin, the user is stored in the request context.
 // If the token is invalid, or does not exist, a 401 Unauthorized response is returned.
 // If the user is not an admin, a 403 Forbidden response is returned.
-func (a *authorizer) AuthenticateAdmin(next http.HandlerFunc) http.Handler {
+func (a *authorizer) AuthenticateAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := a.authenticateToken(r)
 		if err != nil {
