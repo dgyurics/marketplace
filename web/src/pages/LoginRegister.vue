@@ -146,6 +146,9 @@ const handleApiError = (error: any): string => {
   if (status === 409) {
     return 'Email already in use'
   }
+  if (status === 429) {
+    return 'Too many failed attempts'
+  }
   if (status === 401) {
     return (
       `Invalid credentials<br>` +

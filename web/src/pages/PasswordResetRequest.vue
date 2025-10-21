@@ -22,11 +22,11 @@ const router = useRouter()
 const route = useRoute()
 const email = ref('')
 
-onMounted(() => {
+onMounted(async () => {
   try {
     // Get email from route parameters
     email.value = route.params.email
-    passwordReset(email.value)
+    await passwordReset(email.value)
   } catch (error) {
     console.error('Error sending password reset email:', error)
     router.push('/error')

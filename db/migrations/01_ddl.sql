@@ -246,3 +246,11 @@ CREATE TABLE IF NOT EXISTS job_schedules (
     job_name     TEXT PRIMARY KEY,
     last_run_at  TIMESTAMP NOT NULL
 );
+
+CREATE UNLOGGED TABLE IF NOT EXISTS rate_limits (
+    ip_address INET,
+    path TEXT,
+    hit_count INTEGER DEFAULT 1,
+    expires_at TIMESTAMP,
+    PRIMARY KEY (ip_address, path)
+);

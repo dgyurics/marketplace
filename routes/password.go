@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
@@ -146,6 +147,6 @@ func (h *PasswordRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *http.Req
 }
 
 func (h *PasswordRoutes) RegisterRoutes() {
-	h.muxRouter.HandleFunc("/users/password-reset", h.ResetPassword).Methods(http.MethodPost)
-	h.muxRouter.HandleFunc("/users/password-reset/confirm", h.ResetPasswordConfirm).Methods(http.MethodPost)
+	h.muxRouter.Handle("/users/password-reset", h.limit(h.ResetPassword, 1, time.Hour*6)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/users/password-reset/confirm", h.limit(h.ResetPasswordConfirm, 1, time.Hour*6)).Methods(http.MethodPost)
 }

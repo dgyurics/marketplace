@@ -6,6 +6,7 @@ import (
 	"net/mail"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
@@ -72,6 +73,7 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 	// Verify user credentials
 	usr, err := h.userService.Login(r.Context(), &credentials)
 	if err == types.ErrNotFound {
+		h.recordHit(r, time.Hour*6) // record failed login attempt for rate limiting
 		u.RespondWithError(w, r, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
@@ -269,9 +271,9 @@ func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserRoutes) RegisterRoutes() {
-	h.muxRouter.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)                // TODO rate limit to prevent abuse
-	h.muxRouter.HandleFunc("/users/refresh-token", h.RefreshToken).Methods(http.MethodPost) // TODO rate limit to prevent abuse
-	h.muxRouter.HandleFunc("/users/guest", h.CreateGuestUser).Methods(http.MethodPost)      // TODO rate limit to prevent abuse
+	h.muxRouter.Handle("/users/login", h.guardLimit(h.Login, 5)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/users/refresh-token", h.limit(h.RefreshToken, 5, time.Hour)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/users/guest", h.limit(h.CreateGuestUser, 3, time.Hour)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/credentials", h.secureAdmin(h.UpdatedCredentials)).Methods(http.MethodPut)
 	h.muxRouter.Handle("/users/logout", h.secure(h.Logout)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users", h.secureAdmin(h.GetAllUsers)).Methods(http.MethodGet)

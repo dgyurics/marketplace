@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
@@ -141,6 +142,6 @@ func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *RegisterRoutes) RegisterRoutes() {
-	h.muxRouter.HandleFunc("/register", h.Register).Methods(http.MethodPost)                // TODO rate limit to prevent abuse
-	h.muxRouter.HandleFunc("/register/confirm", h.RegisterConfirm).Methods(http.MethodPost) // TODO rate limit to prevent abuse
+	h.muxRouter.Handle("/register", h.limit(h.Register, 2, time.Hour)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/register/confirm", h.limit(h.RegisterConfirm, 2, time.Hour)).Methods(http.MethodPost)
 }

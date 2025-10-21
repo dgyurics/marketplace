@@ -23,6 +23,7 @@ func NewScheduleRepository(db *sql.DB) ScheduleRepository {
 	}
 }
 
+// RunJob checks if a job can be run based on its last run time and the specified interval.
 func (s scheduleRepository) RunJob(ctx context.Context, job types.Job, interval time.Duration) bool {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
