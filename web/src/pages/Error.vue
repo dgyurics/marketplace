@@ -1,6 +1,6 @@
 <template>
   <div class="error">
-    <h1>500</h1>
+    <h1>{{ $route.query['status'] || '500' }}</h1>
     <p>Something went wrong</p>
   </div>
 </template>
@@ -11,15 +11,11 @@
 .error {
   text-align: center;
   padding: 4rem 2rem;
+  color: #555;
 }
 
 h1 {
   font-size: 2rem;
   margin-bottom: 1rem;
-}
-
-p {
-  margin-bottom: 2rem;
-  color: #555;
 }
 </style>

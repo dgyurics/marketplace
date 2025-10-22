@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div v-if="emailSent" class="container">
     <h2>Password Reset</h2>
     <div class="confirmation-message mt-45">
       <p class="confirmation-note">
@@ -21,15 +21,16 @@ import { passwordReset } from '@/services/api'
 const router = useRouter()
 const route = useRoute()
 const email = ref('')
+const emailSent = ref(false)
 
 onMounted(async () => {
   try {
     // Get email from route parameters
     email.value = route.params.email
     await passwordReset(email.value)
+    emailSent.value = true
   } catch (error) {
-    console.error('Error sending password reset email:', error)
-    router.push('/error')
+    router.push(`/error?status=${error.response?.status || 500}`)
   }
 })
 </script>

@@ -24,7 +24,7 @@ onMounted(async () => {
   try {
     await checkoutStore.initializeOrder()
   } catch (error: any) {
-    const status = error.response?.status
+    const status = error.response?.status || 500
     if (status === 400) {
       router.push('/')
       return
@@ -33,9 +33,7 @@ onMounted(async () => {
       router.push('/auth')
       return
     }
-    // Network error or 500
-    router.push('/error')
-    return
+    router.push(`/error?status=${status}`)
   } finally {
     isInitializing.value = false
   }
