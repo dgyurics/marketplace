@@ -86,8 +86,19 @@ const handleLogin = async () => {
     // Clear email + password field after successful login
     email.value = ''
     password.value = ''
-  } catch (error) {
-    errorMessage.value = handleApiError(error)
+  } catch (error: any) {
+    const status = error.response?.status
+    if (status === 401) {
+      errorMessage.value =
+        `Invalid credentials<br>` +
+        `<span class="reset-password-text">` +
+        `Click <a href="/auth/email/${email.value}/password-reset" class="forgot-password-link">here</a> to reset password` +
+        `</span>`
+    } else if (status === 429) {
+      errorMessage.value = 'Too many failed attempts'
+    } else {
+      errorMessage.value = 'Something went wrong'
+    }
   }
 }
 
@@ -111,8 +122,15 @@ const handleRegister = async () => {
       path: '/auth/register-confirm',
       query: { email: emailCpy },
     })
-  } catch (error) {
-    errorMessage.value = handleApiError(error)
+  } catch (error: any) {
+    const status = error.response?.status
+    if (status === 409) {
+      errorMessage.value = 'Email already in use'
+    } else if (status === 429) {
+      errorMessage.value = 'You are doing that too much'
+    } else {
+      errorMessage.value = 'Something went wrong'
+    }
   }
 }
 
@@ -139,25 +157,6 @@ const handleLogout = async () => {
   } catch (error) {
     console.error('Logout error:', error)
   }
-}
-
-const handleApiError = (error: any): string => {
-  const status = error.response?.status
-  if (status === 409) {
-    return 'Email already in use'
-  }
-  if (status === 429) {
-    return 'Too many failed attempts'
-  }
-  if (status === 401) {
-    return (
-      `Invalid credentials<br>` +
-      `<span class="reset-password-text">` +
-      `Click <a href="/auth/email/${email.value}/password-reset" class="forgot-password-link">here</a> to reset password` +
-      `</span>`
-    )
-  }
-  return 'Something went wrong'
 }
 </script>
 
