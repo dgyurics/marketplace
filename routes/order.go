@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
@@ -202,12 +203,12 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/orders", h.secure(h.CreateOrder)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/orders", h.secure(h.limit(h.CreateOrder, 5, time.Hour))).Methods(http.MethodPost)
+	h.muxRouter.Handle("/orders/{id}/confirm", h.secure(h.limit(h.Confirm, 1, time.Minute*15))).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}", h.secure(h.Update)).Methods(http.MethodPatch)
 	h.muxRouter.HandleFunc("/orders/{id}/public", h.GetOrderPublic).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/owner", h.secure(h.GetOrderOwner)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/admin", h.secureAdmin(h.GetOrderAdmin)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/orders/{id}/confirm", h.secure(h.Confirm)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secureAdmin(h.GetOrders)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/orders/{id}/tax-estimate", h.secure(h.EstimateTax)).Methods(http.MethodGet)
 }

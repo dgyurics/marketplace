@@ -142,6 +142,6 @@ func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *RegisterRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/register", h.limit(h.Register, 2, time.Hour)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/register/confirm", h.limit(h.RegisterConfirm, 2, time.Hour)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/register", h.limit(h.Register, 2, time.Hour*6)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/register/confirm", h.limit(h.RegisterConfirm, 2, time.Hour*6)).Methods(http.MethodPost)
 }
