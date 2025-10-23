@@ -19,7 +19,6 @@ A self-hosted e-commerce framework designed for local businesses and community c
 
 ## Planned Enhancements
 
-* API caching and rate limiting
 * Self-hosted mail server via docker-mailserver
 * Database backup and recovery utilities
 * Partial and full refund capabilities
