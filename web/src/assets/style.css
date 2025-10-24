@@ -101,6 +101,18 @@ button:hover {
   color: #fff;
 }
 
+.btn-subtle {
+  background: #f8f9fa;
+  color: #6c757d;
+  border: 1px solid #dee2e6;
+}
+
+.btn-subtle:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  color: #495057;
+}
+
 button:disabled {
   opacity: 0.5;
   background: #ccc;
