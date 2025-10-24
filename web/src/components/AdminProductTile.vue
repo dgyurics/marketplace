@@ -1,6 +1,5 @@
 <template>
   <div class="product-tile" @click="handleClick">
-    <button class="delete-button" title="Delete product" @click="handleDelete">×</button>
     <div class="product-info">
       <h3 class="product-title">{{ product.name }}</h3>
       <p class="product-id">ID: {{ product.id }}</p>
@@ -30,16 +29,7 @@ import type { Product } from '@/types'
 import { formatPrice } from '@/utilities/currency'
 
 const props = defineProps<{ product: Product }>()
-const emit = defineEmits<{
-  delete: [productId: string]
-}>()
-
 const router = useRouter()
-
-const handleDelete = (event: Event) => {
-  event.stopPropagation()
-  emit('delete', props.product.id)
-}
 
 const handleClick = () => {
   router.push(`/admin/products/${props.product.id}`)
@@ -65,29 +55,7 @@ const handleClick = () => {
     box-shadow 0.2s ease-in-out;
 }
 
-.delete-button {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: none;
-  color: #333;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-.delete-button:hover {
-  color: #000;
-}
-
-.product-tile:hover .delete-button {
+.product-tile:hover {
   opacity: 1;
 }
 

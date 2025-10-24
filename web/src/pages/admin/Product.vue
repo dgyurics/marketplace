@@ -41,12 +41,7 @@
       </form>
     </div>
     <div class="product-grid">
-      <AdminProductTile
-        v-for="product in products"
-        :key="product.id"
-        :product="product"
-        @delete="handleDelete"
-      />
+      <AdminProductTile v-for="product in products" :key="product.id" :product="product" />
     </div>
   </div>
 </template>
@@ -56,7 +51,7 @@ import { ref, onMounted } from 'vue'
 
 import AdminProductTile from '@/components/AdminProductTile.vue'
 import KeyValueEditor from '@/components/forms/KeyValueEditor.vue'
-import { getProducts, createProduct, removeProduct, getCategories } from '@/services/api'
+import { getProducts, createProduct, getCategories } from '@/services/api'
 
 const products = ref([])
 const categories = ref([])
@@ -130,16 +125,6 @@ const handleSubmit = async () => {
     selectedCategorySlug.value = ''
     detailsEditor.value?.reset()
 
-    // Refresh products
-    await fetchProducts()
-  } catch {
-    // Handle error silently
-  }
-}
-
-const handleDelete = async (productId) => {
-  try {
-    await removeProduct(productId)
     // Refresh products
     await fetchProducts()
   } catch {

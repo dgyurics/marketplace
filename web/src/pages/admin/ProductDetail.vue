@@ -55,10 +55,11 @@
         />
 
         <div class="form-actions">
-          <button type="submit" class="btn-full-width mt-15" :disabled="saving">
-            Save Changes
-          </button>
+          <button type="submit" class="btn-full-width mt-15">Save</button>
           <button type="button" class="btn-full-width btn-outline" @click="goBack">Cancel</button>
+          <button type="button" class="btn-full-width btn-subtle" @click="handleDelete">
+            Remove
+          </button>
         </div>
       </form>
     </div>
@@ -74,7 +75,7 @@ import { useRoute, useRouter } from 'vue-router'
 import KeyValueEditor from '@/components/forms/KeyValueEditor.vue'
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
-import { getProductById, getCategories, updateProduct } from '@/services/api'
+import { getProductById, getCategories, updateProduct, removeProduct } from '@/services/api'
 import { toMinorUnits, toMajorUnits } from '@/utilities'
 
 const route = useRoute()
@@ -83,7 +84,6 @@ const router = useRouter()
 const product = ref(null)
 const categories = ref([])
 const loading = ref(true)
-const saving = ref(false)
 const selectedCategorySlug = ref('')
 const detailsEditor = ref(null)
 
@@ -149,8 +149,6 @@ const handleSubmit = async () => {
   }
 
   try {
-    saving.value = true
-
     // Find the selected category by slug
     const selectedCategory = categories.value.find((cat) => cat.slug === selectedCategorySlug.value)
 
@@ -174,13 +172,20 @@ const handleSubmit = async () => {
     goBack()
   } catch {
     // Handle error silently
-  } finally {
-    saving.value = false
   }
 }
 
 const goBack = () => {
   router.back()
+}
+
+const handleDelete = async () => {
+  try {
+    await removeProduct(product.value.id)
+    router.push('/admin/products')
+  } catch {
+    // Handle error silently
+  }
 }
 
 const handleImageUploadSuccess = async () => {
