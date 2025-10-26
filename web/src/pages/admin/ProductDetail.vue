@@ -60,11 +60,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import InputNumber from '@/components/forms/InputNumber.vue'
-import InputText from '@/components/forms/InputText.vue'
-import KeyValueEditor from '@/components/forms/KeyValueEditor.vue'
-import SelectInput from '@/components/forms/SelectInput.vue'
-import TextArea from '@/components/forms/TextArea.vue'
+import { InputNumber, InputText, KeyValueEditor, SelectInput, TextArea } from '@/components/forms'
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import { getProductById, getCategories, updateProduct, removeProduct } from '@/services/api'

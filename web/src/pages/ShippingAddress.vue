@@ -12,7 +12,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import ShippingAddressForm from '@/components/forms/ShippingAddressForm.vue'
+import { ShippingAddressForm } from '@/components/forms'
 import { useCheckoutStore } from '@/store/checkout'
 import type { Address } from '@/types'
 

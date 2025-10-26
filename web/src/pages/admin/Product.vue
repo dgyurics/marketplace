@@ -50,7 +50,7 @@
 import { ref, onMounted } from 'vue'
 
 import AdminProductTile from '@/components/AdminProductTile.vue'
-import KeyValueEditor from '@/components/forms/KeyValueEditor.vue'
+import { KeyValueEditor } from '@/components/forms'
 import { getProducts, createProduct, getCategories } from '@/services/api'
 
 const products = ref([])
