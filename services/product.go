@@ -9,7 +9,7 @@ import (
 )
 
 type ProductService interface {
-	CreateProduct(ctx context.Context, product *types.Product, categorySlug string) error
+	CreateProduct(ctx context.Context, product *types.Product) error
 	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
 	GetProductByID(ctx context.Context, id string) (types.Product, error)
 	UpdateProduct(ctx context.Context, product types.Product) error
@@ -24,13 +24,13 @@ func NewProductService(repo repositories.ProductRepository) ProductService {
 	return &productService{repo: repo}
 }
 
-func (s *productService) CreateProduct(ctx context.Context, product *types.Product, categorySlug string) error {
+func (s *productService) CreateProduct(ctx context.Context, product *types.Product) error {
 	productID, err := utilities.GenerateIDString()
 	if err != nil {
 		return err
 	}
 	product.ID = productID
-	return s.repo.CreateProduct(ctx, product, categorySlug)
+	return s.repo.CreateProduct(ctx, product)
 }
 
 func (s *productService) GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error) {

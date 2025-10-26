@@ -14,14 +14,6 @@ func TestCreateProduct(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
 
-	product := &types.Product{
-		Name:        "Test Product with Category",
-		Price:       150000,
-		Description: "A test product with category description",
-		Details:     []byte(`{"key": "value"}`),
-	}
-	product.ID, _ = utilities.GenerateIDString()
-
 	// create category
 	catRepo := NewCategoryRepository(dbPool)
 	categoryID, _ := utilities.GenerateIDString()
@@ -34,7 +26,16 @@ func TestCreateProduct(t *testing.T) {
 	err := catRepo.CreateCategory(ctx, &category)
 	assert.NoError(t, err, "Expected no error on category creation")
 
-	err = repo.CreateProduct(ctx, product, category.Slug)
+	product := &types.Product{
+		Name:        "Test Product with Category",
+		Price:       150000,
+		Description: "A test product with category description",
+		Details:     []byte(`{"key": "value"}`),
+		Category:    &category,
+	}
+	product.ID, _ = utilities.GenerateIDString()
+
+	err = repo.CreateProduct(ctx, product)
 	assert.NoError(t, err, "Expected no error on product creation with category")
 	assert.NotEmpty(t, product.ID, "Expected product ID to be set")
 	assert.Equal(t, "Test Product with Category", product.Name, "Expected product name to match")
@@ -54,15 +55,6 @@ func TestGetProducts(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
 
-	// Add a test product for retrieval
-	product := &types.Product{
-		Name:        "Test Product for GetAll",
-		Price:       200000,
-		Description: "A test product for get all",
-		Details:     []byte(`{"key": "value"}`),
-	}
-	product.ID, _ = utilities.GenerateIDString()
-
 	// create category
 	catRepo := NewCategoryRepository(dbPool)
 	categoryID, _ := utilities.GenerateIDString()
@@ -75,7 +67,17 @@ func TestGetProducts(t *testing.T) {
 	err := catRepo.CreateCategory(ctx, &category)
 	assert.NoError(t, err, "Expected no error on category creation")
 
-	err = repo.CreateProduct(ctx, product, category.Slug)
+	// Add a test product for retrieval
+	product := &types.Product{
+		Name:        "Test Product for GetAll",
+		Price:       200000,
+		Description: "A test product for get all",
+		Details:     []byte(`{"key": "value"}`),
+		Category:    &category,
+	}
+	product.ID, _ = utilities.GenerateIDString()
+
+	err = repo.CreateProduct(ctx, product)
 	assert.NoError(t, err, "Expected no error on product creation")
 	assert.NotEmpty(t, product.ID, "Expected product ID to be set")
 
@@ -123,10 +125,11 @@ func TestGetProductsByCategory(t *testing.T) {
 		Price:       200000,
 		Description: "A test product with a category",
 		Details:     []byte(`{"key": "value"}`),
+		Category:    &category,
 	}
 	product.ID, _ = utilities.GenerateIDString()
 
-	err = repo.CreateProduct(ctx, product, category.Slug)
+	err = repo.CreateProduct(ctx, product)
 	require.NoError(t, err, "Expected no error on product creation with category")
 	require.NotEmpty(t, product.ID, "Expected product ID to be set")
 
@@ -161,15 +164,6 @@ func TestGetProductByID(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
 
-	// Add a test product for retrieval
-	product := &types.Product{
-		Name:        "Test Product for GetByID",
-		Price:       250000,
-		Description: "A test product for get by ID",
-		Details:     []byte(`{"key": "value"}`),
-	}
-	product.ID, _ = utilities.GenerateIDString()
-
 	// create category
 	catRepo := NewCategoryRepository(dbPool)
 	categoryID, _ := utilities.GenerateIDString()
@@ -182,7 +176,17 @@ func TestGetProductByID(t *testing.T) {
 	err := catRepo.CreateCategory(ctx, &category)
 	assert.NoError(t, err, "Expected no error on category creation")
 
-	err = repo.CreateProduct(ctx, product, category.Slug)
+	// Add a test product for retrieval
+	product := &types.Product{
+		Name:        "Test Product for GetByID",
+		Price:       250000,
+		Description: "A test product for get by ID",
+		Details:     []byte(`{"key": "value"}`),
+		Category:    &category,
+	}
+	product.ID, _ = utilities.GenerateIDString()
+
+	err = repo.CreateProduct(ctx, product)
 	assert.NoError(t, err, "Expected no error on product creation")
 
 	// Get product by ID
@@ -206,15 +210,6 @@ func TestDeleteProduct(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
 
-	// Add a test product for deletion
-	product := &types.Product{
-		Name:        "Test Product for Deletion",
-		Price:       300000,
-		Description: "A test product for deletion",
-		Details:     []byte(`{"key": "value"}`),
-	}
-	product.ID, _ = utilities.GenerateIDString()
-
 	// create category
 	catRepo := NewCategoryRepository(dbPool)
 	categoryID, _ := utilities.GenerateIDString()
@@ -227,7 +222,17 @@ func TestDeleteProduct(t *testing.T) {
 	err := catRepo.CreateCategory(ctx, &category)
 	assert.NoError(t, err, "Expected no error on category creation")
 
-	err = repo.CreateProduct(ctx, product, category.Slug)
+	// Add a test product for deletion
+	product := &types.Product{
+		Name:        "Test Product for Deletion",
+		Price:       300000,
+		Description: "A test product for deletion",
+		Details:     []byte(`{"key": "value"}`),
+		Category:    &category,
+	}
+	product.ID, _ = utilities.GenerateIDString()
+
+	err = repo.CreateProduct(ctx, product)
 	assert.NoError(t, err, "Expected no error on product creation")
 
 	// Delete the product

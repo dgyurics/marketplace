@@ -11,7 +11,7 @@ import (
 )
 
 type ProductRepository interface {
-	CreateProduct(ctx context.Context, product *types.Product, categorySlug string) error
+	CreateProduct(ctx context.Context, product *types.Product) error
 	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
 	GetProductByID(ctx context.Context, id string) (types.Product, error)
 	UpdateProduct(ctx context.Context, product types.Product) error
@@ -26,11 +26,15 @@ func NewProductRepository(db *sql.DB) ProductRepository {
 	return &productRepository{db: db}
 }
 
-func (r *productRepository) CreateProduct(ctx context.Context, product *types.Product, categorySlug string) error {
+func (r *productRepository) CreateProduct(ctx context.Context, product *types.Product) error {
+	var categoryID sql.NullString
+	if product.Category != nil {
+		categoryID = sql.NullString{String: product.Category.ID, Valid: true}
+	}
 	query := `
 		INSERT INTO products (id, name, price, summary, description, details, tax_code, inventory, cart_limit, category_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, (SELECT id FROM categories WHERE slug = $10))
-		RETURNING id`
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id
+	`
 	if err := r.db.QueryRowContext(ctx,
 		query,
 		product.ID,
@@ -45,7 +49,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		},
 		product.Inventory,
 		product.CartLimit,
-		categorySlug,
+		categoryID,
 	).Scan(&product.ID); err != nil {
 		return err
 	}

@@ -27,18 +27,13 @@ type MockProductService struct {
 	mock.Mock
 }
 
-func (m *MockProductService) CreateProduct(ctx context.Context, product *types.Product, categoryID string) error {
-	args := m.Called(ctx, product, categoryID)
+func (m *MockProductService) CreateProduct(ctx context.Context, product *types.Product) error {
+	args := m.Called(ctx, product)
 	return args.Error(0)
 }
 
 func (m *MockProductService) GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error) {
 	args := m.Called(ctx, filter)
-	return args.Get(0).([]types.Product), args.Error(1)
-}
-
-func (m *MockProductService) GetProductsByCategory(ctx context.Context, categorySlug string, filter types.ProductFilter) ([]types.Product, error) {
-	args := m.Called(ctx, categorySlug, filter)
 	return args.Get(0).([]types.Product), args.Error(1)
 }
 
