@@ -4,29 +4,17 @@
     <div v-else-if="product" class="edit-form">
       <form @submit.prevent="handleSubmit">
         <div class="form-row">
-          <input v-model="editProduct.name" type="text" placeholder="Product Name" required />
-          <input
-            v-model="editProduct.price"
-            type="number"
-            step="0.01"
-            placeholder="Price"
-            required
-            @input="handlePriceInput"
-          />
-          <input v-model="editProduct.inventory" type="number" placeholder="Quantity" required />
-          <input v-model="editProduct.cart_limit" type="number" placeholder="Cart Limit" required />
-          <input v-model="editProduct.summary" type="text" placeholder="Summary" required />
-          <input v-model="editProduct.tax_code" type="text" placeholder="Tax Code (optional)" />
-          <select v-model="selectedCategorySlug" required>
-            <option value="">Select Category</option>
-            <option v-for="category in categories" :key="category.id" :value="category.slug">
-              {{ category.slug }}
-            </option>
-          </select>
+          <InputText v-model="editProduct.name" label="name" required />
+          <InputNumber v-model="displayPrice" label="Price" step="0.01" required />
+          <InputNumber v-model="editProduct.inventory" label="inventory" required />
+          <InputNumber v-model="editProduct.cart_limit" label="cart limit" required />
+          <InputText v-model="editProduct.tax_code" label="Tax Code" />
+          <SelectInput v-model="editProduct.category" label="category" :options="categoryOptions" />
+          <InputText v-model="editProduct.summary" label="Summary" required />
         </div>
 
         <div class="textarea-row">
-          <textarea v-model="editProduct.description" placeholder="Description" rows="4"></textarea>
+          <TextArea v-model="editProduct.description" label="Description"></TextArea>
         </div>
 
         <!-- Details Section -->
@@ -69,10 +57,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import InputNumber from '@/components/forms/InputNumber.vue'
+import InputText from '@/components/forms/InputText.vue'
 import KeyValueEditor from '@/components/forms/KeyValueEditor.vue'
+import SelectInput from '@/components/forms/SelectInput.vue'
+import TextArea from '@/components/forms/TextArea.vue'
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import { getProductById, getCategories, updateProduct, removeProduct } from '@/services/api'
@@ -84,8 +76,16 @@ const router = useRouter()
 const product = ref(null)
 const categories = ref([])
 const loading = ref(true)
-const selectedCategorySlug = ref('')
 const detailsEditor = ref(null)
+
+const categoryOptions = computed(() =>
+  categories.value.map((category) => ({ value: category.slug, label: category.name }))
+)
+
+const displayPrice = computed({
+  get: () => toMajorUnits(editProduct.value.price),
+  set: (value) => (editProduct.value.price = toMinorUnits(value)),
+})
 
 const editProduct = ref({
   name: '',
@@ -109,18 +109,15 @@ const fetchProduct = async () => {
     // Populate form with existing data
     editProduct.value = {
       name: data.name,
-      price: toMajorUnits(data.price),
+      price: data.price,
       summary: data.summary,
       description: data.description,
       tax_code: data.tax_code ?? '',
       details: data.details,
-      category: data.category,
+      category: data.category?.slug ?? '',
       inventory: data.inventory,
       cart_limit: data.cart_limit,
     }
-
-    // Set the category slug for the dropdown
-    selectedCategorySlug.value = data.category?.slug ?? ''
   } catch {
     // Handle error silently
     product.value = null
@@ -138,10 +135,6 @@ const fetchCategories = async () => {
   }
 }
 
-const handlePriceInput = (event) => {
-  editProduct.value.price = event.target.value
-}
-
 const handleSubmit = async () => {
   // Check for validation errors in details
   if (detailsEditor.value?.hasErrors()) {
@@ -149,13 +142,12 @@ const handleSubmit = async () => {
   }
 
   try {
-    // Find the selected category by slug
-    const selectedCategory = categories.value.find((cat) => cat.slug === selectedCategorySlug.value)
+    const categoryId = categories.value.find((cat) => cat.slug === editProduct.value.category)?.id
 
     const _updateData = {
       id: product.value.id,
       name: editProduct.value.name,
-      price: toMinorUnits(parseFloat(editProduct.value.price)), // Use locale-aware conversion
+      price: editProduct.value.price,
       summary: editProduct.value.summary,
       description: editProduct.value.description || undefined,
       tax_code: editProduct.value.tax_code || undefined,
@@ -163,7 +155,7 @@ const handleSubmit = async () => {
       inventory: editProduct.value.inventory,
       cart_limit: editProduct.value.cart_limit,
       // Include category if one is selected
-      ...(selectedCategory && { category: { id: selectedCategory.id } }),
+      ...(categoryId && { category: { id: categoryId } }),
     }
 
     await updateProduct(_updateData)
@@ -254,37 +246,8 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-.textarea-row {
-  margin-bottom: 20px;
-}
-
-.form-row input,
-.form-row select {
-  flex: 1;
-  min-width: 200px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
-  background-color: white;
-}
-
-.textarea-row textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
-  background-color: white;
-  resize: vertical;
-  line-height: 1.4;
-}
-
-.form-row input:focus,
-.form-row select:focus,
-.textarea-row textarea:focus {
-  outline: none;
-  border-color: #007bff;
+.form-row :deep(.input-container) {
+  flex: 1 1 calc(33.333% - 10px);
 }
 
 .form-actions {
