@@ -1,7 +1,9 @@
 <template>
   <div class="input-container">
     <select v-model="value" :required="required || false" class="input-field">
-      <option value="">{{ placeholder || 'Select...' }}</option>
+      <option value="" v-bind="required ? { disabled: true } : {}">
+        <!-- {{ `Select a ${label}` }} -->
+      </option>
       <option v-for="option in options" :key="option.value" :value="option.value">
         {{ option.label }}
       </option>
@@ -25,7 +27,6 @@ const props = defineProps<{
   label?: string
   required?: boolean
   options: Option[]
-  placeholder?: string
 }>()
 
 const emit = defineEmits<{
