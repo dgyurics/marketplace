@@ -1,6 +1,12 @@
 <template>
   <div class="input-container">
-    <input v-model="value" type="number" :required="required || false" class="input-field" />
+    <input
+      v-model="value"
+      type="number"
+      v-bind="step ? { step } : {}"
+      :required="required || false"
+      class="input-field"
+    />
     <span v-if="label" class="input-label" :class="{ 'input-label--optional': !required }">
       {{ label }}
     </span>
@@ -14,6 +20,7 @@ const props = defineProps<{
   modelValue: string
   label?: string
   required?: boolean
+  step?: string | number
 }>()
 
 const emit = defineEmits<{
