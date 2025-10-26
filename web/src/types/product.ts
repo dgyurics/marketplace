@@ -32,6 +32,7 @@ export interface CreateProductRequest {
   details: Record<string, unknown>
   description: string
   tax_code?: string
+  category?: {}
 }
 
 type RequireOnly<T, K extends keyof T> = Partial<T> & Pick<T, K>

@@ -295,11 +295,8 @@ export const removeCategory = async (categoryId: string): Promise<void> => {
   await apiClient.delete(`/categories/${categoryId}`)
 }
 
-export const createProduct = async (
-  product: CreateProductRequest,
-  categorySlug: string
-): Promise<Product> => {
-  const reponse = await apiClient.post(`/products/categories/${categorySlug}`, product)
+export const createProduct = async (product: CreateProductRequest): Promise<Product> => {
+  const reponse = await apiClient.post('/products', product)
   return reponse.data
 }
 

@@ -8,13 +8,13 @@
           <InputNumber v-model="displayPrice" label="Price" step="0.01" required />
           <InputNumber v-model="editProduct.inventory" label="inventory" required />
           <InputNumber v-model="editProduct.cart_limit" label="cart limit" required />
-          <InputText v-model="editProduct.tax_code" label="Tax Code" />
+          <InputText v-model="editProduct.tax_code" label="tax code" />
           <SelectInput v-model="editProduct.category" label="category" :options="categoryOptions" />
-          <InputText v-model="editProduct.summary" label="Summary" required />
+          <InputText v-model="editProduct.summary" label="summary" required />
         </div>
 
         <div class="textarea-row">
-          <TextArea v-model="editProduct.description" label="Description"></TextArea>
+          <TextArea v-model="editProduct.description" label="description"></TextArea>
         </div>
 
         <!-- Details Section -->

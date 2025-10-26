@@ -3,29 +3,17 @@
     <div class="new-product-form">
       <form @submit.prevent="handleSubmit">
         <div class="form-row">
-          <input v-model="newProduct.name" type="text" placeholder="Product Name" required />
-          <input
-            v-model="newProduct.price"
-            type="number"
-            step="0.01"
-            placeholder="Price"
-            required
-            @input="handlePriceInput"
-          />
-          <input v-model="newProduct.summary" type="text" placeholder="Summary" required />
-          <input v-model="newProduct.tax_code" type="text" placeholder="Tax Code (optional)" />
-          <input v-model="newProduct.inventory" type="number" placeholder="Quantity" required />
-          <input v-model="newProduct.cart_limit" type="number" placeholder="Cart Limit" required />
-          <select v-model="selectedCategorySlug" required>
-            <option value="">Select Category</option>
-            <option v-for="category in categories" :key="category.id" :value="category.slug">
-              {{ category.slug }}
-            </option>
-          </select>
+          <InputText v-model="newProduct.name" label="name" required />
+          <InputNumber v-model="displayPrice" label="price" step="0.01" required />
+          <InputNumber v-model="newProduct.inventory" label="inventory" required />
+          <InputNumber v-model="newProduct.cart_limit" label="cart limit" required />
+          <InputText v-model="newProduct.tax_code" label="tax code" />
+          <SelectInput v-model="newProduct.category" label="category" :options="categoryOptions" />
+          <InputText v-model="newProduct.summary" label="summary" required />
         </div>
 
         <div class="textarea-row">
-          <textarea v-model="newProduct.description" placeholder="Description" rows="3"></textarea>
+          <TextArea v-model="newProduct.description" label="description"></TextArea>
         </div>
 
         <!-- Details Section -->
@@ -47,15 +35,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 import AdminProductTile from '@/components/AdminProductTile.vue'
-import { KeyValueEditor } from '@/components/forms'
+import { InputNumber, InputText, KeyValueEditor, SelectInput, TextArea } from '@/components/forms'
 import { getProducts, createProduct, getCategories } from '@/services/api'
+import { toMinorUnits, toMajorUnits } from '@/utilities'
+
+const displayPrice = computed({
+  get: () => (newProduct.value.price === '' ? '' : toMajorUnits(newProduct.value.price)),
+  set: (value) => (newProduct.value.price = toMinorUnits(value)),
+})
+
+const categoryOptions = computed(() =>
+  categories.value.map((category) => ({ value: category.slug, label: category.name }))
+)
 
 const products = ref([])
 const categories = ref([])
-const selectedCategorySlug = ref('')
 const detailsEditor = ref(null)
 const newProduct = ref({
   name: '',
@@ -66,6 +63,7 @@ const newProduct = ref({
   details: {},
   inventory: '',
   cart_limit: '',
+  category: '',
 })
 
 const fetchProducts = async () => {
@@ -86,11 +84,6 @@ const fetchCategories = async () => {
   }
 }
 
-const handlePriceInput = (event) => {
-  // Keep the displayed value as-is for user input
-  newProduct.value.price = event.target.value
-}
-
 const handleSubmit = async () => {
   // Check for validation errors in details
   if (detailsEditor.value?.hasErrors()) {
@@ -98,18 +91,22 @@ const handleSubmit = async () => {
   }
 
   try {
+    const categoryId = categories.value.find((cat) => cat.slug === newProduct.value.category)?.id
+
     const productData = {
       name: newProduct.value.name,
-      price: Math.round(parseFloat(newProduct.value.price) * 100), // Convert to cents
+      price: newProduct.value.price,
       summary: newProduct.value.summary,
       description: newProduct.value.description || undefined,
       tax_code: newProduct.value.tax_code || undefined,
       details: newProduct.value.details,
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit,
+      // Include category if one is selected
+      ...(categoryId && { category: { id: categoryId } }),
     }
 
-    await createProduct(productData, selectedCategorySlug.value)
+    await createProduct(productData)
 
     // Reset form
     newProduct.value = {
@@ -122,7 +119,6 @@ const handleSubmit = async () => {
       inventory: '',
       cart_limit: '',
     }
-    selectedCategorySlug.value = ''
     detailsEditor.value?.reset()
 
     // Refresh products
@@ -159,30 +155,8 @@ onMounted(() => {
   margin-bottom: 15px;
 }
 
-.textarea-row {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 15px;
-}
-
-.form-row textarea,
-.form-row input,
-.form-row select,
-.textarea-row textarea {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
-  background-color: transparent;
-  min-width: 200px;
-  font-family: inherit;
-}
-
-.textarea-row textarea {
-  width: 100%;
-  max-width: 600px;
-  resize: vertical;
-  line-height: 1.4;
+.form-row :deep(.input-container) {
+  flex: 1 1 calc(25% - 10px);
 }
 
 .product-grid {
