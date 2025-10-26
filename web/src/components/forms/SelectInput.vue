@@ -52,6 +52,8 @@ const value = computed({
   font-size: 16px;
   box-sizing: border-box;
   background-color: white;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .input-label {
