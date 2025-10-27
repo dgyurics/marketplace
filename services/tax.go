@@ -14,7 +14,7 @@ import (
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/types/stripe"
-	"github.com/dgyurics/marketplace/utilities"
+	util "github.com/dgyurics/marketplace/utilities"
 )
 
 type TaxService interface {
@@ -23,7 +23,7 @@ type TaxService interface {
 }
 
 type taxService struct {
-	HttpClient utilities.HTTPClient
+	HttpClient util.HTTPClient
 	repo       repositories.TaxRepository
 	config     types.PaymentConfig
 }
@@ -31,7 +31,7 @@ type taxService struct {
 func NewTaxService(
 	repo repositories.TaxRepository,
 	config types.PaymentConfig,
-	HttpClient utilities.HTTPClient,
+	HttpClient util.HTTPClient,
 ) TaxService {
 	return &taxService{
 		repo:       repo,
@@ -64,13 +64,13 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 	for i, item := range items {
 		itmQty := int64(item.Quantity)
 		taxCode := item.Product.TaxCode
-		if taxCode == "" {
-			taxCode = s.config.Locale.FallbackTaxCode
+		if taxCode == nil {
+			taxCode = util.String(s.config.Locale.FallbackTaxCode)
 		}
 		form.Set(fmt.Sprintf("line_items[%d][amount]", i), strconv.FormatInt(item.UnitPrice*itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][quantity]", i), strconv.FormatInt(itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), string(s.config.Locale.TaxBehavior))
-		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), taxCode)
+		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), *taxCode)
 		form.Set(fmt.Sprintf("line_items[%d][reference]", i), fmt.Sprintf("%s:%s", refID, item.Product.ID))
 	}
 
@@ -109,7 +109,7 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 func (s *taxService) EstimateTax(ctx context.Context, shippingAddress types.Address, items []types.OrderItem) (int64, error) {
 	var totalTax int64
 	for _, item := range items {
-		rate, err := s.repo.GetTaxRates(ctx, shippingAddress, item.Product.TaxCode)
+		rate, err := s.repo.GetTaxRates(ctx, shippingAddress, *item.Product.TaxCode)
 		if err != nil {
 			return 0, err
 		}

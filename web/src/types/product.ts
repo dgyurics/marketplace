@@ -5,12 +5,12 @@ export interface Product {
   name: string
   price: number
   summary: string
-  description?: string
   details: Record<string, unknown>
   images: Image[]
-  category?: Category
-  tax_code?: string
   inventory: number
+  category?: Category
+  description?: string
+  tax_code?: string
   cart_limit?: number
   created_at?: string
   updated_at?: string

@@ -14,10 +14,10 @@ type Product struct {
 	Price       int64           `json:"price"`
 	Details     json.RawMessage `json:"details"`
 	Summary     string          `json:"summary"`
-	Description *string         `json:"description"`
+	Description *string         `json:"description,omitempty"`
 	Images      []Image         `json:"images"`
 	Category    *Category       `json:"category"`
-	TaxCode     string          `json:"tax_code"` // FIXME make this a pointer too
+	TaxCode     *string         `json:"tax_code,omitempty"`
 	Inventory   int             `json:"inventory"`
 	CartLimit   *int            `json:"cart_limit,omitempty"`
 	CreatedAt   string          `json:"created_at"`

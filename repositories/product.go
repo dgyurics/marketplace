@@ -43,10 +43,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		product.Summary,
 		product.Description,
 		product.Details,
-		sql.NullString{
-			String: product.TaxCode,
-			Valid:  strings.TrimSpace(product.TaxCode) != "",
-		},
+		product.TaxCode,
 		product.Inventory,
 		product.CartLimit,
 		categoryID,
