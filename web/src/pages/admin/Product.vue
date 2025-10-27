@@ -6,10 +6,10 @@
           <InputText v-model="newProduct.name" label="name" required />
           <InputNumber v-model="displayPrice" label="price" step="0.01" required />
           <InputNumber v-model="newProduct.inventory" label="inventory" required />
-          <InputNumber v-model="newProduct.cart_limit" label="cart limit" required />
-          <InputText v-model="newProduct.tax_code" label="tax code" />
-          <SelectInput v-model="newProduct.category" label="category" :options="categoryOptions" />
           <InputText v-model="newProduct.summary" label="summary" required />
+          <SelectInput v-model="newProduct.category" label="category" :options="categoryOptions" />
+          <InputText v-model="newProduct.tax_code" label="tax code" />
+          <InputNumber v-model="newProduct.cart_limit" label="cart limit" />
         </div>
 
         <div class="textarea-row">
@@ -101,7 +101,7 @@ const handleSubmit = async () => {
       tax_code: newProduct.value.tax_code || undefined,
       details: newProduct.value.details,
       inventory: newProduct.value.inventory,
-      cart_limit: newProduct.value.cart_limit,
+      cart_limit: newProduct.value.cart_limit || undefined,
       // Include category if one is selected
       ...(categoryId && { category: { id: categoryId } }),
     }

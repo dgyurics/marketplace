@@ -93,8 +93,12 @@ const addedToCart = ref(false)
 
 const isLowStock = computed(() => product.inventory > 0 && product.inventory <= 20)
 const currentQuantityInCart = computed(() => cartStore.itemCountByProductId(product.id))
-const hasReachedCartLimit = computed(
-  () => product.cart_limit > 0 && currentQuantityInCart.value >= product.cart_limit
+const hasReachedCartLimit = computed(() =>
+  Boolean(
+    product.cart_limit &&
+      product.cart_limit > 0 &&
+      currentQuantityInCart.value >= product.cart_limit
+  )
 )
 const isOutOfStock = computed(() => currentQuantityInCart.value >= product.inventory)
 const showLowStockWarning = computed(

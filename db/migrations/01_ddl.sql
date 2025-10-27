@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS products (
     tax_code VARCHAR(50),
     category_id BIGINT,
     inventory INT NOT NULL DEFAULT 0,
-    cart_limit INT NOT NULL DEFAULT 10, -- Negative value means no limit
+    cart_limit INT,
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- TODO rename to enabled/disabled
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,

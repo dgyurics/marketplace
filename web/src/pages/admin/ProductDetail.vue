@@ -7,7 +7,7 @@
           <InputText v-model="editProduct.name" label="name" required />
           <InputNumber v-model="displayPrice" label="Price" step="0.01" required />
           <InputNumber v-model="editProduct.inventory" label="inventory" required />
-          <InputNumber v-model="editProduct.cart_limit" label="cart limit" required />
+          <InputNumber v-model="editProduct.cart_limit" label="cart limit" />
           <InputText v-model="editProduct.tax_code" label="tax code" />
           <SelectInput v-model="editProduct.category" label="category" :options="categoryOptions" />
           <InputText v-model="editProduct.summary" label="summary" required />
@@ -149,7 +149,7 @@ const handleSubmit = async () => {
       tax_code: editProduct.value.tax_code || undefined,
       details: editProduct.value.details,
       inventory: editProduct.value.inventory,
-      cart_limit: editProduct.value.cart_limit,
+      cart_limit: editProduct.value.cart_limit || undefined,
       // Include category if one is selected
       ...(categoryId && { category: { id: categoryId } }),
     }

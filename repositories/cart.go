@@ -88,7 +88,8 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 	}
 
 	// Check inventory availability and cart limit
-	var availableQuantity, cartLimit int
+	var availableQuantity int
+	var cartLimit *int
 	if err := r.db.QueryRowContext(ctx, "SELECT inventory, cart_limit FROM products WHERE id = $1", item.Product.ID).Scan(&availableQuantity, &cartLimit); err != nil {
 		return err
 	}
@@ -100,7 +101,7 @@ func (r *cartRepository) AddItemToCart(ctx context.Context, userID string, item 
 	}
 
 	// If cart limit reached, return an error
-	if cartLimit > 0 && cartLimit < (existingQuantity+item.Quantity) {
+	if cartLimit != nil && *cartLimit < (existingQuantity+item.Quantity) {
 		slog.Info("Cart limit exceeded for product", "product_id", item.Product.ID, "cart_limit", cartLimit, "requested", item.Quantity)
 		return types.ErrConstraintViolation
 	}
