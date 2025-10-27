@@ -63,14 +63,10 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 	// Line Items
 	for i, item := range items {
 		itmQty := int64(item.Quantity)
-		taxCode := item.Product.TaxCode
-		if taxCode == nil {
-			taxCode = util.String(s.config.Locale.FallbackTaxCode)
-		}
 		form.Set(fmt.Sprintf("line_items[%d][amount]", i), strconv.FormatInt(item.UnitPrice*itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][quantity]", i), strconv.FormatInt(itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), string(s.config.Locale.TaxBehavior))
-		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), *taxCode)
+		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), util.StringValue(item.Product.TaxCode, s.config.Locale.FallbackTaxCode))
 		form.Set(fmt.Sprintf("line_items[%d][reference]", i), fmt.Sprintf("%s:%s", refID, item.Product.ID))
 	}
 
@@ -109,7 +105,7 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 func (s *taxService) EstimateTax(ctx context.Context, shippingAddress types.Address, items []types.OrderItem) (int64, error) {
 	var totalTax int64
 	for _, item := range items {
-		rate, err := s.repo.GetTaxRates(ctx, shippingAddress, *item.Product.TaxCode)
+		rate, err := s.repo.GetTaxRates(ctx, shippingAddress, item.Product.TaxCode)
 		if err != nil {
 			return 0, err
 		}

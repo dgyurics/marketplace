@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dgyurics/marketplace/types"
+	util "github.com/dgyurics/marketplace/utilities"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -62,7 +63,7 @@ func TestGetOrder_Success(t *testing.T) {
 	expectedOrder := types.Order{
 		ID:     orderID,
 		UserID: userID,
-		Email:  "test@example.com",
+		Email:  util.String("test@example.com"),
 	}
 
 	ctx := contextWithUserID(context.Background(), userID)
@@ -79,7 +80,7 @@ func TestGetOrder_Success(t *testing.T) {
 		t.Errorf("expected user ID %s, got %s", expectedOrder.UserID, result.UserID)
 	}
 	if result.Email != expectedOrder.Email {
-		t.Errorf("expected email %s, got %s", expectedOrder.Email, result.Email)
+		t.Errorf("expected email %v, got %v", expectedOrder.Email, result.Email)
 	}
 
 	mockRepo.AssertExpectations(t)
@@ -151,13 +152,13 @@ func TestUpdateOrder_Success(t *testing.T) {
 
 	params := types.OrderParams{
 		ID:        "order-789",
-		Email:     strPtr("newemail@example.com"),
-		TaxAmount: int64Ptr(500),
+		Email:     util.String("newemail@example.com"),
+		TaxAmount: util.Ptr(int64(500)),
 	}
 
 	expected := types.Order{
 		ID:    "order-789",
-		Email: "newemail@example.com",
+		Email: util.String("newemail@example.com"),
 	}
 
 	paramsWithUser := params
@@ -173,7 +174,7 @@ func TestUpdateOrder_Success(t *testing.T) {
 		t.Errorf("expected order ID %s, got %s", expected.ID, result.ID)
 	}
 	if result.Email != expected.Email {
-		t.Errorf("expected email %s, got %s", expected.Email, result.Email)
+		t.Errorf("expected email %v, got %v", expected.Email, result.Email)
 	}
 
 	mockRepo.AssertExpectations(t)
@@ -190,7 +191,7 @@ func TestUpdateOrder_Error(t *testing.T) {
 
 	params := types.OrderParams{
 		ID:    "order-789",
-		Email: strPtr("fail@example.com"),
+		Email: util.String("fail@example.com"),
 	}
 
 	paramsWithUser := params
@@ -208,9 +209,6 @@ func TestUpdateOrder_Error(t *testing.T) {
 
 	mockRepo.AssertExpectations(t)
 }
-
-func strPtr(s string) *string { return &s }
-func int64Ptr(i int64) *int64 { return &i }
 
 func (m *mockOrderRepo) GetOrders(ctx context.Context, page, limit int) ([]types.Order, error) {
 	args := m.Called(ctx, page, limit)

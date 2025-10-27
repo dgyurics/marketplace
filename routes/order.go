@@ -130,6 +130,10 @@ func (h *OrderRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
 	}
 
 	taxEstimate, err := h.taxService.EstimateTax(r.Context(), *order.Address, order.Items)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, "tax data not found")
+		return
+	}
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return

@@ -18,7 +18,7 @@ import (
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/types/stripe"
-	"github.com/dgyurics/marketplace/utilities"
+	util "github.com/dgyurics/marketplace/utilities"
 )
 
 type PaymentService interface {
@@ -28,7 +28,7 @@ type PaymentService interface {
 }
 
 type paymentService struct {
-	HttpClient   utilities.HTTPClient
+	HttpClient   util.HTTPClient
 	config       types.PaymentConfig
 	serviceEmail EmailService
 	serviceTmp   TemplateService
@@ -37,7 +37,7 @@ type paymentService struct {
 }
 
 func NewPaymentService(
-	httpClient utilities.HTTPClient,
+	httpClient util.HTTPClient,
 	config types.PaymentConfig,
 	serviceEmail EmailService,
 	serviceTmp TemplateService,
@@ -295,7 +295,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 		if err := s.serviceEmail.Send(email); err != nil {
 			slog.Error("Error sending order confirmation email: ", "order_id", order.ID, "error", err)
 		}
-	}(order.Email, order.ID)
+	}(util.StringValue(order.Email, ""), order.ID)
 
 	// Send order notification email to admins
 	go func(order types.Order) {
@@ -314,7 +314,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 		detailsLink := fmt.Sprintf("%s/admin/orders/%s", s.config.BaseURL, orderID)
 		data := map[string]string{
 			"OrderID":       order.ID,
-			"CustomerEmail": order.Email,
+			"CustomerEmail": util.StringValue(order.Email, ""),
 			"DetailsLink":   detailsLink,
 		}
 		body, err := s.serviceTmp.RenderToString(OrderNotification, data)

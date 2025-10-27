@@ -585,7 +585,7 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 		SELECT
 			o.id,
 			o.user_id,
-			COALESCE(o.email, '') AS email,
+			o.email,
 			o.amount,
 			o.tax_amount,
 			o.total_amount,
@@ -685,7 +685,7 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 		SELECT
 			o.id,
 			o.user_id,
-			COALESCE(o.email, '') AS email,
+			o.email,
 			o.amount,
 			o.tax_amount,
 			o.total_amount,
