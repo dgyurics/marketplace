@@ -5,7 +5,7 @@ export interface Product {
   name: string
   price: number
   summary: string
-  description: string
+  description?: string
   details: Record<string, unknown>
   images: Image[]
   category?: Category

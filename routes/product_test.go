@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/dgyurics/marketplace/types"
+	util "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -76,7 +77,7 @@ func TestGetProductByID(t *testing.T) {
 		Name:        "Test Product",
 		Price:       100000,
 		Summary:     "This is a test product summary",
-		Description: "This is a test product description",
+		Description: util.String("This is a test product description"),
 		Inventory:   10,
 	}
 
@@ -131,14 +132,14 @@ func TestGetProducts(t *testing.T) {
 			Name:        "Test Product 1",
 			Price:       100000,
 			Summary:     "This is the first test product summary",
-			Description: "This is the first test product description",
+			Description: util.String("This is the first test product description"),
 		},
 		{
 			ID:          "2",
 			Name:        "Test Product 2",
 			Price:       200000,
 			Summary:     "This is the second test product summary",
-			Description: "This is the second test product description",
+			Description: util.String("This is the second test product description"),
 		},
 	}
 
