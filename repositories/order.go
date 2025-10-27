@@ -234,7 +234,6 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderPar
 
 	query := `UPDATE orders SET updated_at = CURRENT_TIMESTAMP`
 	args := []interface{}{}
-	argCount := 1
 
 	attrs := []slog.Attr{
 		slog.String("order_id", params.ID),
@@ -242,57 +241,49 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderPar
 
 	if params.Status != nil {
 		attrs = append(attrs, slog.String("status", string(*params.Status)))
-		query += fmt.Sprintf(", status = $%d", argCount)
+		query += fmt.Sprintf(", status = $%d", len(args)+1)
 		args = append(args, *params.Status)
-		argCount++
 	}
 
 	if params.AddressID != nil {
 		attrs = append(attrs, slog.String("address_id", *params.AddressID))
-		query += fmt.Sprintf(", address_id = $%d", argCount)
+		query += fmt.Sprintf(", address_id = $%d", len(args)+1)
 		args = append(args, *params.AddressID)
-		argCount++
 	}
 
 	if params.TaxAmount != nil {
 		attrs = append(attrs, slog.Int64("tax_amount", *params.TaxAmount))
-		query += fmt.Sprintf(", tax_amount = $%d", argCount)
+		query += fmt.Sprintf(", tax_amount = $%d", len(args)+1)
 		args = append(args, *params.TaxAmount)
-		argCount++
 	}
 
 	if params.ShippingAmount != nil {
 		attrs = append(attrs, slog.Int64("shipping_amount", *params.ShippingAmount))
-		query += fmt.Sprintf(", shipping_amount = $%d", argCount)
+		query += fmt.Sprintf(", shipping_amount = $%d", len(args)+1)
 		args = append(args, *params.ShippingAmount)
-		argCount++
 	}
 
 	if params.TotalAmount != nil {
 		attrs = append(attrs, slog.Int64("total_amount", *params.TotalAmount))
-		query += fmt.Sprintf(", total_amount = $%d", argCount)
+		query += fmt.Sprintf(", total_amount = $%d", len(args)+1)
 		args = append(args, *params.TotalAmount)
-		argCount++
 	}
 
 	if params.Email != nil {
 		attrs = append(attrs, slog.String("email", *params.Email))
-		query += fmt.Sprintf(", email = $%d", argCount)
+		query += fmt.Sprintf(", email = $%d", len(args)+1)
 		args = append(args, *params.Email)
-		argCount++
 	}
 
 	if len(args) == 0 {
 		return ord, fmt.Errorf("no fields to update")
 	}
 
-	query += fmt.Sprintf(" WHERE id = $%d", argCount)
+	query += fmt.Sprintf(" WHERE id = $%d", len(args)+1)
 	args = append(args, params.ID)
-	argCount++
 
-	query += fmt.Sprintf(" AND user_id = $%d", argCount)
+	query += fmt.Sprintf(" AND user_id = $%d", len(args)+1)
 	args = append(args, params.UserID)
-	argCount++
 
 	slog.LogAttrs(ctx, slog.LevelDebug, "Updating order", attrs...)
 
