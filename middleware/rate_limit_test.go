@@ -47,7 +47,7 @@ func TestLimit_WithinLimit(t *testing.T) {
 			return nil
 		},
 	}
-	rateLimit := NewRateLimit(mockService)
+	rateLimit := NewRateLimit(mockService, true)
 
 	req := httptest.NewRequest(http.MethodPost, "/users/login", nil)
 	req.RemoteAddr = "192.168.1.100:12345"
@@ -73,7 +73,7 @@ func TestLimit_LimitReached(t *testing.T) {
 			return nil
 		},
 	}
-	rateLimit := NewRateLimit(mockService)
+	rateLimit := NewRateLimit(mockService, true)
 
 	req := httptest.NewRequest(http.MethodPost, "/users/login", nil)
 	req.RemoteAddr = "192.168.1.100:12345"
@@ -95,7 +95,7 @@ func TestLimit_ServiceError(t *testing.T) {
 			return errors.New("database error")
 		},
 	}
-	rateLimit := NewRateLimit(mockService)
+	rateLimit := NewRateLimit(mockService, true)
 
 	req := httptest.NewRequest(http.MethodPost, "/users/login", nil)
 	req.RemoteAddr = "192.168.1.100:12345"
@@ -128,7 +128,7 @@ func TestLimitAndRecordHit_Success(t *testing.T) {
 			return nil
 		},
 	}
-	rateLimit := NewRateLimit(mockService)
+	rateLimit := NewRateLimit(mockService, true)
 
 	req := httptest.NewRequest(http.MethodPost, "/users/login", nil)
 	req.RemoteAddr = "192.168.1.100:12345"
@@ -156,7 +156,7 @@ func TestLimitAndRecordHit_ExceedsLimit(t *testing.T) {
 			return nil
 		},
 	}
-	rateLimit := NewRateLimit(mockService)
+	rateLimit := NewRateLimit(mockService, true)
 
 	req := httptest.NewRequest(http.MethodPost, "/users/login", nil)
 	req.RemoteAddr = "192.168.1.100:12345"
@@ -180,7 +180,7 @@ func TestRecordHit_Success(t *testing.T) {
 			return nil
 		},
 	}
-	rateLimit := NewRateLimit(mockService)
+	rateLimit := NewRateLimit(mockService, true)
 
 	req := httptest.NewRequest(http.MethodPost, "/users/login", nil)
 	req.RemoteAddr = "192.168.1.100:12345"

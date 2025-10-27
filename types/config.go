@@ -18,6 +18,7 @@ type Config struct {
 	Logger       LoggerConfig
 	MachineID    uint8
 	Payment      PaymentConfig
+	RateLimit    bool
 	Server       ServerConfig
 	TemplatesDir string // path to directory containing email templates
 }

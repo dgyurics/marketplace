@@ -66,7 +66,7 @@ func main() {
 func initializeServer(config types.Config, services servicesContainer) *http.Server {
 	// create middleware
 	authorizer := middleware.NewAccessControl(services.JWT)
-	rateLimit := middleware.NewRateLimit(services.RateLimit)
+	rateLimit := middleware.NewRateLimit(services.RateLimit, config.RateLimit)
 
 	// create router
 	router := mux.NewRouter()

@@ -20,10 +20,11 @@ type rateLimit struct {
 	service services.RateLimitService
 }
 
-func NewRateLimit(service services.RateLimitService) RateLimit {
-	return &rateLimit{
-		service,
+func NewRateLimit(service services.RateLimitService, enabled bool) RateLimit {
+	if enabled {
+		return &rateLimit{service}
 	}
+	return &noopRateLimit{}
 }
 
 // Limit checks if the request exceeds the rate limit.
@@ -106,4 +107,20 @@ func getClientIP(r *http.Request) string {
 	}
 
 	return ip
+}
+
+// No-op rate limiter (does nothing)
+type noopRateLimit struct{}
+
+// No-op implementation - just passes through
+func (m *noopRateLimit) Limit(next http.HandlerFunc, limit int) http.HandlerFunc {
+	return next
+}
+
+func (m *noopRateLimit) LimitAndRecordHit(next http.HandlerFunc, limit int, expiry time.Duration) http.HandlerFunc {
+	return next
+}
+
+func (m *noopRateLimit) RecordHit(r *http.Request, expiry time.Duration) {
+	// Do nothing
 }

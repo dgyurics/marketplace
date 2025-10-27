@@ -32,6 +32,7 @@ func LoadConfig() types.Config {
 		JWT:          loadJWTConfig(),
 		Image:        loadImageConfig(),
 		TemplatesDir: loadTemplatesDir(),
+		RateLimit:    loadRateLimit(),
 		BaseURL:      baseURL,
 	}
 }
@@ -184,6 +185,10 @@ func loadTemplatesDir() string {
 
 func loadBaseURL() string {
 	return mustLookupEnv("BASE_URL")
+}
+
+func loadRateLimit() bool {
+	return isFeatureEnabled("RATE_LIMIT_ENABLED")
 }
 
 func loadEmailConfig() types.EmailConfig {
