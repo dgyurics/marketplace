@@ -32,8 +32,8 @@ type OrderParams struct {
 type Order struct {
 	ID             string      `json:"id"`
 	UserID         string      `json:"-"`
-	Email          *string     `json:"email"`
-	Address        *Address    `json:"address"` // TODO change to shipping address
+	Email          *string     `json:"email,omitempty"`
+	Address        *Address    `json:"address,omitempty"`
 	Amount         int64       `json:"amount"`
 	TaxAmount      int64       `json:"tax_amount"`
 	ShippingAmount int64       `json:"shipping_amount"`

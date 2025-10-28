@@ -11,7 +11,7 @@ type Credential struct {
 
 type RefreshToken struct {
 	ID        string    `json:"id"`
-	User      *User     `json:"user"`
+	User      *User     `json:"user,omitempty"`
 	TokenHash string    `json:"token_hash"`
 	ExpiresAt time.Time `json:"expires_at"`
 	Revoked   bool      `json:"revoked"`
@@ -22,7 +22,7 @@ type RefreshToken struct {
 
 type PasswordReset struct {
 	ID        string    `json:"id"`
-	User      *User     `json:"user"`
+	User      *User     `json:"user,omitempty"`
 	CodeHash  string    `json:"code_hash"`
 	ExpiresAt time.Time `json:"expires_at"`
 	Used      bool      `json:"used"`
