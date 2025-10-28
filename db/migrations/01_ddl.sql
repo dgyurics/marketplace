@@ -66,7 +66,7 @@ CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest');
 
 CREATE TABLE IF NOT EXISTS pending_users (
     id BIGINT PRIMARY KEY,
-    email VARCHAR(255),
+    email VARCHAR(255) NOT NULL,
     code_hash TEXT NOT NULL,
     used BOOLEAN DEFAULT FALSE NOT NULL,
     expires_at TIMESTAMP NOT NULL,
