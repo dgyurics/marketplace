@@ -182,7 +182,7 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 	// Set request headers
 	req.SetBasicAuth(s.config.Stripe.SecretKey, "")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Idempotency-Key", fmt.Sprintf("payment-intent-%s", refID))
+	//req.Header.Set("Idempotency-Key", fmt.Sprintf("payment-intent-%s", refID))
 	req.Header.Set("Stripe-Version", s.config.Stripe.Version)
 
 	// Execute request
