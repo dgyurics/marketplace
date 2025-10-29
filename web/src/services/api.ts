@@ -15,6 +15,7 @@ import type {
   UpdateProductRequest,
   ProductFilters,
   UserRecord,
+  UpdateCategoryRequest,
 } from '@/types'
 
 const apiClient = axios.create({
@@ -286,8 +287,18 @@ export const createCategory = async (category: Partial<Category>): Promise<Categ
   return response.data
 }
 
+export const updateCategory = async (category: UpdateCategoryRequest): Promise<Category> => {
+  const response = await apiClient.put('/categories', category)
+  return response.data
+}
+
 export const getCategories = async (): Promise<Category[]> => {
   const response = await apiClient.get('/categories')
+  return response.data
+}
+
+export const getCategoryById = async (categoryId: string): Promise<Category> => {
+  const response = await apiClient.get(`/categories/${categoryId}`)
   return response.data
 }
 
