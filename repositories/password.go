@@ -89,17 +89,14 @@ func (r *passwordRepository) MarkResetCodeUsed(ctx context.Context, email string
 		AND used = FALSE
 		AND expires_at > NOW()
 	`
-	result, err := r.db.ExecContext(ctx, query, email)
+	res, err := r.db.ExecContext(ctx, query, email)
 	if err != nil {
 		return err
 	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowsAffected == 0 {
-		return errors.New("no valid password reset code found for user")
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return types.ErrNotFound
 	}
 	return nil
 }

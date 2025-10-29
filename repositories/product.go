@@ -15,7 +15,7 @@ type ProductRepository interface {
 	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
 	GetProductByID(ctx context.Context, id string) (types.Product, error)
 	UpdateProduct(ctx context.Context, product types.Product) error
-	DeleteProduct(ctx context.Context, id string) error
+	RemoveProduct(ctx context.Context, id string) error
 }
 
 type productRepository struct {
@@ -218,7 +218,6 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 	if product.Category != nil {
 		categoryID = sql.NullString{String: product.Category.ID, Valid: true}
 	}
-
 	query := `UPDATE products SET
 		name = $1,
 		price = $2,
@@ -233,7 +232,7 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 		updated_at = NOW()
 		WHERE id = $11
 	`
-	result, err := r.db.ExecContext(ctx, query,
+	res, err := r.db.ExecContext(ctx, query,
 		product.Name,
 		product.Price,
 		product.Summary,
@@ -249,19 +248,23 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 	if err != nil {
 		return err
 	}
-	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
 		return types.ErrNotFound
 	}
 	return nil
 }
 
-func (r *productRepository) DeleteProduct(ctx context.Context, id string) error {
+func (r *productRepository) RemoveProduct(ctx context.Context, id string) error {
 	query := `UPDATE products SET is_deleted = true WHERE id = $1`
-	result, err := r.db.ExecContext(ctx, query, id)
+	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
-	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
 		return types.ErrNotFound
 	}
 	return nil

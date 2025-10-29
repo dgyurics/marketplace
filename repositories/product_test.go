@@ -236,7 +236,7 @@ func TestDeleteProduct(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on product creation")
 
 	// Delete the product
-	err = repo.DeleteProduct(ctx, product.ID)
+	err = repo.RemoveProduct(ctx, product.ID)
 	assert.NoError(t, err, "Expected no error on product deletion")
 
 	// Verify the product no longer exists

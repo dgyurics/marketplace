@@ -138,7 +138,12 @@ func (h *PasswordRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *http.Req
 	}
 
 	// Reset the password
-	if err := h.servicePassword.ResetPassword(r.Context(), credentials.ResetCode, credentials.Email, credentials.Password); err != nil {
+	err = h.servicePassword.ResetPassword(r.Context(), credentials.ResetCode, credentials.Email, credentials.Password)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}

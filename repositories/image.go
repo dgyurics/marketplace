@@ -51,15 +51,13 @@ func (r *imageRepository) PromoteImage(ctx context.Context, id string) error {
 		SET updated_at = NOW()
 		WHERE id = $1
 	`
-	result, err := r.db.ExecContext(ctx, query, id)
+	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowsAffected == 0 {
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
 		return types.ErrNotFound
 	}
 	return nil
@@ -88,25 +86,22 @@ func (r *imageRepository) RemoveImage(ctx context.Context, id string) (ImageDele
 		WHERE id = $1
 	`
 	err = tx.QueryRowContext(ctx, srcQuery, id).Scan(&result.ProductID, &result.SourceImage)
+	if err == sql.ErrNoRows {
+		return result, types.ErrNotFound
+	}
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return result, types.ErrNotFound
-		}
 		return result, err
 	}
 
 	// 2. remove the specified image
 	deleteQuery := `DELETE FROM images WHERE id = $1`
-	deleteResult, err := tx.ExecContext(ctx, deleteQuery, id)
+	res, err := tx.ExecContext(ctx, deleteQuery, id)
 	if err != nil {
 		return result, err
 	}
-
-	rowsAffected, err := deleteResult.RowsAffected()
-	if err != nil {
-		return result, err
-	}
-	if rowsAffected == 0 {
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
 		return result, types.ErrNotFound
 	}
 

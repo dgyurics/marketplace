@@ -9,6 +9,7 @@ import (
 
 type CategoryRepository interface {
 	CreateCategory(ctx context.Context, category *types.Category) error
+	UpdateCategory(ctx context.Context, category types.Category) error
 	GetAllCategories(ctx context.Context) ([]types.Category, error)
 	GetCategoryByID(ctx context.Context, id string) (*types.Category, error)
 	RemoveCategory(ctx context.Context, id string) error
@@ -35,6 +36,34 @@ func (r *categoryRepository) CreateCategory(ctx context.Context, category *types
 		category.Description,
 		category.ParentID,
 	).Scan(&category.CreatedAt, &category.UpdatedAt)
+}
+
+func (r *categoryRepository) UpdateCategory(ctx context.Context, category types.Category) error {
+	query := `
+		UPDATE categories SET
+			name = $1,
+			slug = $2,
+			description = $3,
+			parent_id = $4,
+			updated_at = NOW()
+		WHERE id = $5
+	`
+	res, err := r.db.ExecContext(ctx, query,
+		category.Name,
+		category.Slug,
+		category.Description,
+		category.ParentID,
+		category.ID,
+	)
+	if err != nil {
+		return err
+	}
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return types.ErrNotFound
+	}
+	return nil
 }
 
 func (r *categoryRepository) GetAllCategories(ctx context.Context) ([]types.Category, error) {
@@ -110,15 +139,13 @@ func (r *categoryRepository) RemoveCategory(ctx context.Context, id string) erro
 		DELETE FROM categories
 		WHERE id = $1
 	`
-	result, err := r.db.ExecContext(ctx, query, id)
+	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowsAffected == 0 {
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
 		return types.ErrNotFound
 	}
 	return nil

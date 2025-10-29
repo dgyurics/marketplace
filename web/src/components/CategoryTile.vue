@@ -1,6 +1,5 @@
 <template>
-  <div class="category-tile">
-    <button class="delete-button" title="Delete category" @click="handleDelete">×</button>
+  <div class="category-tile" @click="handleClick">
     <div class="category-info">
       <h3 class="category-title">{{ category.name }}</h3>
       <p v-if="category.description" class="category-description">{{ category.description }}</p>
@@ -12,14 +11,13 @@
 <script setup lang="ts">
 import type { Category } from '@/types'
 
-const props = defineProps<{ category: Category }>()
+defineProps<{ category: Category }>()
 const emit = defineEmits<{
-  delete: [categoryId: string]
+  click: []
 }>()
 
-const handleDelete = (event: Event) => {
-  event.stopPropagation()
-  emit('delete', props.category.id)
+const handleClick = () => {
+  emit('click')
 }
 </script>
 
@@ -36,34 +34,13 @@ const handleDelete = (event: Event) => {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   border-radius: 8px;
   background-color: #fff;
+  cursor: pointer;
   transition:
     transform 0.2s ease-in-out,
     box-shadow 0.2s ease-in-out;
 }
 
-.delete-button {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: none;
-  color: #333;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-.delete-button:hover {
-  color: #000;
-}
-
-.category-tile:hover .delete-button {
+.category-tile:hover {
   opacity: 1;
 }
 

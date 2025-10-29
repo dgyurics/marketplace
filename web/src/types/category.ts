@@ -7,3 +7,9 @@ export interface Category {
   created_at?: string
   updated_at?: string
 }
+
+// FIXME move this to some shared types file
+// exists in product.ts too
+type RequireOnly<T, K extends keyof T> = Partial<T> & Pick<T, K>
+
+export type UpdateCategoryRequest = RequireOnly<Category, 'id'>

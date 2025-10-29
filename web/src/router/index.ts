@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import AccountSetup from '@/pages/AccountSetup.vue'
 import AdminCategories from '@/pages/admin/Category.vue'
+import AdminCategoryDetail from '@/pages/admin/CategoryDetail.vue'
 import AdminOrders from '@/pages/admin/Order.vue'
 import AdminOrderDetail from '@/pages/admin/OrderDetail.vue'
 import AdminProducts from '@/pages/admin/Product.vue'
@@ -56,6 +57,7 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/admin/products', component: AdminProducts, beforeEnter: requireAdmin },
     { path: '/admin/products/:id', component: AdminProductEdit, beforeEnter: requireAdmin },
     { path: '/admin/categories', component: AdminCategories, beforeEnter: requireAdmin },
+    { path: '/admin/categories/:id', component: AdminCategoryDetail, beforeEnter: requireAdmin },
     { path: '/admin/orders', component: AdminOrders, beforeEnter: requireAdmin },
     { path: '/admin/orders/:id', component: AdminOrderDetail, beforeEnter: requireAdmin },
     { path: '/admin/users', component: AdminUsers, beforeEnter: requireAdmin },
