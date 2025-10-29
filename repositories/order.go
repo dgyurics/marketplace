@@ -197,7 +197,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 
 func reduceInventory(ctx context.Context, tx *sql.Tx, items []types.CartItem) error {
 	for _, item := range items {
-		result, err := tx.ExecContext(ctx, `
+		res, err := tx.ExecContext(ctx, `
 			UPDATE products
 			SET inventory = inventory - $1
 			WHERE inventory >= $1 AND id = $2
@@ -205,11 +205,9 @@ func reduceInventory(ctx context.Context, tx *sql.Tx, items []types.CartItem) er
 		if err != nil {
 			return err
 		}
-		rowsAffected, err := result.RowsAffected()
-		if err != nil {
-			return err
-		}
-		if rowsAffected == 0 {
+		// lib/pq always returns nil error for RowsAffected()
+		rows, _ := res.RowsAffected()
+		if rows == 0 {
 			return fmt.Errorf("%s is out of stock or insufficient quantity remains", item.Product.ID)
 		}
 	}

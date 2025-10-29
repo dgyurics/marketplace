@@ -165,11 +165,14 @@ func (r *cartRepository) RemoveItemFromCart(ctx context.Context, userID string, 
 	deleteQuery := `
 		DELETE FROM cart_items
 		WHERE user_id = $1 AND product_id = $2`
-	result, err := r.db.ExecContext(ctx, deleteQuery, userID, productID)
+
+	res, err := r.db.ExecContext(ctx, deleteQuery, userID, productID)
 	if err != nil {
 		return err
 	}
-	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
 		return types.ErrNotFound
 	}
 	return nil

@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/dgyurics/marketplace/types"
 )
@@ -162,19 +161,14 @@ func (r *addressRepository) RemoveAddress(ctx context.Context, userID, addressID
 		DELETE FROM addresses
 		WHERE id = $1 AND user_id = $2
 	`
-
-	result, err := r.db.ExecContext(ctx, query, addressID, userID)
+	res, err := r.db.ExecContext(ctx, query, addressID, userID)
 	if err != nil {
 		return err
 	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return types.ErrNotFound
 	}
-	if rowsAffected == 0 {
-		return fmt.Errorf("address with ID %s not found", addressID)
-	}
-
 	return nil
 }

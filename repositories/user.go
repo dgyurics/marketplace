@@ -40,18 +40,16 @@ func (r *userRepository) SetCredentials(ctx context.Context, user *types.User) e
 	`
 
 	// Execute the update query
-	result, err := r.db.ExecContext(ctx, query, user.Email, user.PasswordHash, user.ID)
+	res, err := r.db.ExecContext(ctx, query, user.Email, user.PasswordHash, user.ID)
 	if isUniqueViolation(err) {
 		return types.ErrUniqueConstraintViolation
 	}
 	if err != nil {
 		return err
 	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowsAffected == 0 {
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
 		return types.ErrNotFound
 	}
 	return nil

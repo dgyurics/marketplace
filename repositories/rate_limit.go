@@ -53,11 +53,7 @@ func (r *rateLimitRepository) Cleanup(ctx context.Context) error {
 	query := `
 		DELETE FROM rate_limits WHERE expires_at < NOW()
 	`
-	result, err := r.db.ExecContext(ctx, query)
-	if err != nil {
-		return err
-	}
-	_, err = result.RowsAffected()
+	_, err := r.db.ExecContext(ctx, query)
 	return err
 }
 
