@@ -20,6 +20,11 @@ func (m *MockCategoryRepository) CreateCategory(ctx context.Context, category *t
 	return args.Error(0)
 }
 
+func (m *MockCategoryRepository) UpdateCategory(ctx context.Context, category types.Category) error {
+	args := m.Called(ctx, category)
+	return args.Error(0)
+}
+
 func (m *MockCategoryRepository) GetAllCategories(ctx context.Context) ([]types.Category, error) {
 	args := m.Called(ctx)
 	return args.Get(0).([]types.Category), args.Error(1)

@@ -86,12 +86,15 @@ func (h *ProductRoutes) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
 		return
 	}
-	// FIXME Ensure the product ID is set
-	if err := h.productService.UpdateProduct(r.Context(), product); err != nil {
+	err := h.productService.UpdateProduct(r.Context(), product)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, "Product not found")
+		return
+	}
+	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-
 	u.RespondSuccess(w)
 }
 
