@@ -42,7 +42,7 @@ func (s *productService) GetProductByID(ctx context.Context, id string) (types.P
 }
 
 func (s *productService) RemoveProduct(ctx context.Context, id string) error {
-	return s.repo.DeleteProduct(ctx, id)
+	return s.repo.RemoveProduct(ctx, id)
 }
 
 func (s *productService) UpdateProduct(ctx context.Context, product types.Product) error {

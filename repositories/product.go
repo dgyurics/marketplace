@@ -15,7 +15,7 @@ type ProductRepository interface {
 	GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error)
 	GetProductByID(ctx context.Context, id string) (types.Product, error)
 	UpdateProduct(ctx context.Context, product types.Product) error
-	DeleteProduct(ctx context.Context, id string) error
+	RemoveProduct(ctx context.Context, id string) error
 }
 
 type productRepository struct {
@@ -255,7 +255,7 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 	return nil
 }
 
-func (r *productRepository) DeleteProduct(ctx context.Context, id string) error {
+func (r *productRepository) RemoveProduct(ctx context.Context, id string) error {
 	query := `UPDATE products SET is_deleted = true WHERE id = $1`
 	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
