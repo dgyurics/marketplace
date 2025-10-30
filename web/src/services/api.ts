@@ -16,6 +16,7 @@ import type {
   ProductFilters,
   UserRecord,
   UpdateCategoryRequest,
+  UpdateAddress,
 } from '@/types'
 
 const apiClient = axios.create({
@@ -119,13 +120,13 @@ export const getNewAccessToken = async (refreshToken: string): Promise<AuthToken
   return response.data
 }
 
-export const getUserAddresses = async (): Promise<Address[]> => {
-  const response = await apiClient.get('/addresses')
+export const createAddress = async (address: Address): Promise<Address> => {
+  const response = await apiClient.post('/addresses', address)
   return response.data
 }
 
-export const createAddress = async (address: Address): Promise<Address> => {
-  const response = await apiClient.post('/addresses', address)
+export const updateAddress = async (address: UpdateAddress): Promise<Address> => {
+  const response = await apiClient.put('/addresses', address)
   return response.data
 }
 

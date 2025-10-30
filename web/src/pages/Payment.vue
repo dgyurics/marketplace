@@ -1,17 +1,12 @@
 <template>
-  <div if="!isInitializing" class="container">
+  <div v-if="!isInitializing" class="container">
     <h2>Checkout</h2>
     <OrderSummary :order="checkoutStore.order" />
     <h3>payment details</h3>
     <form @submit.prevent="submitPayment">
       <div class="form-group-flex">
         <label for="cardholder-name">Name on Card</label>
-        <input
-          id="cardholder-name"
-          v-model="checkoutStore.paymentInfo.cardholderName"
-          type="text"
-          required
-        />
+        <input id="cardholder-name" v-model="cardholderName" type="text" required />
       </div>
 
       <div class="form-group-flex">
@@ -66,7 +61,7 @@ import type {
   StripeCardExpiryElement,
   StripeCardNumberElement,
 } from '@stripe/stripe-js'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { BillingAddressForm } from '@/components/forms'
@@ -79,6 +74,7 @@ const checkoutStore = useCheckoutStore()
 const router = useRouter()
 const isSubmitting = ref(false)
 const isInitializing = ref(true)
+const cardholderName = ref('')
 
 const country = getCountryForLocale(getAppLocale())
 
@@ -91,9 +87,13 @@ onMounted(async () => {
     router.push('/checkout/shipping')
     return
   }
-  await initializeStripe()
+
   await checkoutStore.estimateTax()
   isInitializing.value = false
+
+  // Wait for next tick to ensure DOM elements are rendered
+  await nextTick()
+  await initializeStripe()
 })
 
 const elementStyles = {
@@ -119,7 +119,6 @@ const elementStyles = {
 async function initializeStripe() {
   const stripe = await getStripe()
   if (!stripe) {
-    console.error('Stripe initialization failed')
     return
   }
 
@@ -139,7 +138,7 @@ const submitPayment = async () => {
   const selectedAddress = checkoutStore.selectedBillingAddress
 
   const billingDetails = {
-    name: checkoutStore.paymentInfo.cardholderName,
+    name: cardholderName.value,
     email: checkoutStore.email,
     address: {
       line1: selectedAddress.line1,
@@ -164,7 +163,6 @@ const submitPayment = async () => {
     )
 
     if (error) {
-      console.error('Payment confirmation failed:', error)
       alert(`Payment failed: ${error.message}`)
       return
     }
@@ -175,8 +173,7 @@ const submitPayment = async () => {
     } else {
       alert('Payment processing or additional verification required')
     }
-  } catch (error) {
-    console.error('Payment submission failed:', error)
+  } catch {
     alert('Payment submission failed. Try again')
   } finally {
     isSubmitting.value = false

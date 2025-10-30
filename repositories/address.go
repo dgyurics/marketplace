@@ -9,7 +9,7 @@ import (
 
 type AddressRepository interface {
 	CreateAddress(ctx context.Context, address *types.Address) error
-	GetAddresses(ctx context.Context, userID string) ([]types.Address, error)
+	UpdateAddress(ctx context.Context, userID string, product types.Address) error
 	RemoveAddress(ctx context.Context, userID, addressID string) error
 }
 
@@ -74,6 +74,40 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 	return tx.Commit()
 }
 
+func (r *addressRepository) UpdateAddress(ctx context.Context, userID string, address types.Address) error {
+	query := `UPDATE addresses SET
+		addressee = $1,
+		line1 = $2,
+		line2 = $3,
+		city = $4,
+		state = $5,
+		postal_code = $6,
+		country = $7,
+		updated_at = NOW()
+		WHERE user_id = $8 AND id = $9
+	`
+	res, err := r.db.ExecContext(ctx, query,
+		address.Addressee,
+		address.Line1,
+		address.Line2,
+		address.City,
+		address.State,
+		address.PostalCode,
+		address.Country,
+		userID,
+		address.ID,
+	)
+	if err != nil {
+		return err
+	}
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return types.ErrNotFound
+	}
+	return nil
+}
+
 func (r *addressRepository) createAddress(ctx context.Context, tx *sql.Tx, address *types.Address) error {
 	query := `
 		INSERT INTO addresses (
@@ -86,8 +120,7 @@ func (r *addressRepository) createAddress(ctx context.Context, tx *sql.Tx, addre
 			state,
 			postal_code,
 			country
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, user_id, created_at
 	`
 
@@ -102,58 +135,6 @@ func (r *addressRepository) createAddress(ctx context.Context, tx *sql.Tx, addre
 		address.PostalCode,
 		address.Country,
 	).Scan(&address.ID, &address.UserID, &address.CreatedAt)
-}
-
-func (r *addressRepository) GetAddresses(ctx context.Context, userID string) ([]types.Address, error) {
-	query := `
-		SELECT
-			id,
-			user_id,
-			addressee,
-			line1,
-			line2,
-			city,
-			state,
-			postal_code,
-			country,
-			is_deleted,
-			created_at
-		FROM addresses
-		WHERE user_id = $1 AND is_deleted = FALSE
-	`
-
-	addresses := []types.Address{}
-	rows, err := r.db.QueryContext(ctx, query, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var address types.Address
-		if err := rows.Scan(
-			&address.ID,
-			&address.UserID,
-			&address.Addressee,
-			&address.Line1,
-			&address.Line2,
-			&address.City,
-			&address.State,
-			&address.PostalCode,
-			&address.Country,
-			&address.IsDeleted,
-			&address.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		addresses = append(addresses, address)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return addresses, nil
 }
 
 func (r *addressRepository) RemoveAddress(ctx context.Context, userID, addressID string) error {
