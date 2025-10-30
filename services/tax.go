@@ -78,7 +78,7 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.config.Stripe.SecretKey))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Idempotency-Key", fmt.Sprintf("tax-calculation-%s", refID))
+	//req.Header.Set("Idempotency-Key", fmt.Sprintf("tax-calculation-%s", refID))
 
 	resp, err := s.HttpClient.Do(req)
 	if err != nil {
