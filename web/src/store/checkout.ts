@@ -57,20 +57,8 @@ export const useCheckoutStore = defineStore('checkout', {
   getters: {
     canProceedToPayment: (state) => state.shippingAddress.id && state.email && state.order.id,
 
-    canProceedToReview: (state) =>
-      state.shippingAddress.id &&
-      state.email &&
-      state.order.id &&
-      state.paymentInfo.cardholderName &&
-      (state.useShippingAddress || state.billingAddress.id),
-
     selectedBillingAddress: (state) =>
       state.useShippingAddress ? state.shippingAddress : state.billingAddress,
-
-    isShippingCompleted: (state) => state.shippingAddress.id && state.email,
-
-    isPaymentCompleted: (state) =>
-      state.paymentInfo.cardholderName && state.paymentInfo.stripeElements,
   },
 
   actions: {
@@ -168,11 +156,6 @@ export const useCheckoutStore = defineStore('checkout', {
       }
     },
 
-    savePaymentInfo(cardholderName: string, stripeElements: any) {
-      this.paymentInfo.cardholderName = cardholderName
-      this.paymentInfo.stripeElements = stripeElements
-    },
-
     confirmOrder() {
       this.orderConfirmed = true
     },
@@ -221,12 +204,6 @@ export const useCheckoutStore = defineStore('checkout', {
 
       // Reset Stripe client secret
       this.stripe_client_secret = ''
-
-      // Reset payment info
-      Object.assign(this.paymentInfo, {
-        cardholderName: '',
-        stripeElements: null,
-      })
     },
   },
 })

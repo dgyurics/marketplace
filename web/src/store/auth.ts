@@ -30,10 +30,6 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    setUser(user: JwtUser) {
-      this.user = user
-    },
-
     isTokenExpired() {
       return checkTokenExpired(this.user)
     },

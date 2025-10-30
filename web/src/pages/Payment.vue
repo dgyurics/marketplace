@@ -151,12 +151,6 @@ const submitPayment = async () => {
     },
   }
 
-  // Save payment info to the store before processing
-  checkoutStore.savePaymentInfo(checkoutStore.paymentInfo.cardholderName, {
-    cardElement,
-    expiryElement,
-    cvcElement,
-  })
   try {
     // Disable the submit button to prevent multiple submissions
     isSubmitting.value = true
