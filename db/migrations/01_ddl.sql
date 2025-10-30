@@ -180,6 +180,7 @@ CREATE TABLE IF NOT EXISTS addresses (
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- when existing order references address, we have to soft delete
     country CHAR(2) NOT NULL, -- ISO 3166-1 alpha-2 country code
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 );
 

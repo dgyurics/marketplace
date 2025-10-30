@@ -41,20 +41,71 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
 
 import type { Address } from '@/types'
+import { getCountryForLocale, getAppLocale } from '@/utilities'
 
-// Extend the form data to include email
-const formData = reactive({
-  email: '',
+interface Props {
+  initialAddress?: Address
+  initialEmail?: string
+}
+
+const props = defineProps<Props>()
+
+// Provide default values
+const defaultAddress: Address = {
   addressee: '',
   line1: '',
   line2: '',
   city: '',
   state: '',
   postal_code: '',
+  country: getCountryForLocale(getAppLocale()),
+}
+
+const initialAddress = props.initialAddress || defaultAddress
+const initialEmail = props.initialEmail || ''
+
+// Extend the form data to include email
+const formData = reactive({
+  email: initialEmail,
+  addressee: initialAddress.addressee || '',
+  line1: initialAddress.line1 || '',
+  line2: initialAddress.line2 || '',
+  city: initialAddress.city || '',
+  state: initialAddress.state || '',
+  postal_code: initialAddress.postal_code || '',
+  country: initialAddress.country || '',
 })
+
+// Watch for prop changes to update form data
+watch(
+  () => props.initialAddress,
+  (newAddress) => {
+    if (newAddress) {
+      Object.assign(formData, {
+        addressee: newAddress.addressee || '',
+        line1: newAddress.line1 || '',
+        line2: newAddress.line2 || '',
+        city: newAddress.city || '',
+        state: newAddress.state || '',
+        postal_code: newAddress.postal_code || '',
+        country: newAddress.country || '',
+      })
+    }
+  },
+  { deep: true }
+)
+
+watch(
+  () => props.initialEmail,
+  (newEmail) => {
+    if (newEmail !== undefined) {
+      formData.email = newEmail
+    }
+  }
+)
 
 const emit = defineEmits<{
   submit: [address: Address, email: string]

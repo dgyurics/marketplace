@@ -35,6 +35,8 @@ func NewOrderRoutes(
 	}
 }
 
+// CreateOrder creates a new order in pending status
+// Use update order to specify shipping address and customer email
 func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	ord, err := h.orderService.GetPendingOrderForUser(r.Context())
 	if err == nil {
@@ -48,7 +50,7 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// No pending order, create a new one
+	// Customer has no pending order, create a new one
 	ord, err = h.orderService.CreateOrder(r.Context())
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
