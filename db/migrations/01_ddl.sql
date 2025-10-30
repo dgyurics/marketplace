@@ -135,8 +135,7 @@ SELECT
     updated_at
 FROM users;
 
--- TODO make table UNLOGGED
-CREATE TABLE IF NOT EXISTS refresh_tokens (
+CREATE UNLOGGED TABLE IF NOT EXISTS refresh_tokens (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     token_hash TEXT NOT NULL,
@@ -148,8 +147,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
--- TODO make table UNLOGGED
-CREATE TABLE IF NOT EXISTS password_reset_codes (
+CREATE UNLOGGED TABLE IF NOT EXISTS password_reset_codes (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     code_hash TEXT NOT NULL,
@@ -240,9 +238,8 @@ FROM order_items oi
 JOIN products p ON oi.product_id = p.id
 LEFT JOIN images i ON i.product_id = p.id AND i.type = 'thumbnail';
 
--- TODO make table UNLOGGED
 -- required for schedule service
-CREATE TABLE IF NOT EXISTS job_schedules (
+CREATE UNLOGGED TABLE IF NOT EXISTS job_schedules (
     job_name     TEXT PRIMARY KEY,
     last_run_at  TIMESTAMP NOT NULL
 );
