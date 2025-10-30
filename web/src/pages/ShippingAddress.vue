@@ -3,7 +3,11 @@
     <h2>Checkout</h2>
     <div>
       <h3>shipping address</h3>
-      <ShippingAddressForm @submit="handleShippingSubmit" />
+      <ShippingAddressForm
+        :initial-address="checkoutStore.shippingAddress"
+        :initial-email="checkoutStore.email"
+        @submit="handleShippingSubmit"
+      />
     </div>
   </div>
 </template>
@@ -23,8 +27,12 @@ const isInitializing = ref(true)
 onMounted(async () => {
   try {
     await checkoutStore.initializeOrder()
-  } catch (error: any) {
-    const status = error.response?.status || 500
+  } catch (error) {
+    let status = 500
+    if (error && typeof error === 'object' && 'response' in error) {
+      status = (error as { response?: { status?: number } }).response?.status || 500
+    }
+
     if (status === 400) {
       router.push('/')
       return
