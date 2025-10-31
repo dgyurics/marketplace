@@ -31,7 +31,7 @@
         <label for="email">Email</label>
         <input
           id="email"
-          v-model="checkoutStore.email"
+          v-model="checkoutStore.shippingAddress.email"
           type="email"
           required
           autocomplete="email"
@@ -139,7 +139,6 @@ const submitPayment = async () => {
 
   const billingDetails = {
     name: cardholderName.value,
-    email: checkoutStore.email,
     address: {
       line1: selectedAddress.line1,
       line2: selectedAddress.line2 ?? null,

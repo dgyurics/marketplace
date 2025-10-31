@@ -8,21 +8,20 @@ import {
   getTaxEstimate as apiGetTaxEstimate,
   updateOrder as apiUpdateOrder,
 } from '@/services/api'
-import type { Address, Order } from '@/types'
+import type { Address, BillingAddress, Order } from '@/types'
 
 export const useCheckoutStore = defineStore('checkout', {
   state: () => ({
-    email: '',
     orderConfirmed: false,
     shippingAddress: {} as Address,
-    billingAddress: {} as Address,
+    billingAddress: {} as BillingAddress,
     order: {} as Order,
     stripe_client_secret: '',
     useShippingAddress: true,
   }),
 
   getters: {
-    canProceedToPayment: (state) => state.shippingAddress.id && state.email && state.order.id,
+    canProceedToPayment: (state) => state.shippingAddress.id && state.order.id,
 
     selectedBillingAddress: (state) =>
       state.useShippingAddress ? state.shippingAddress : state.billingAddress,
@@ -37,16 +36,11 @@ export const useCheckoutStore = defineStore('checkout', {
       if (order.address) {
         this.shippingAddress = order.address
       }
-      if (order.email) {
-        this.email = order.email
-      }
 
       return this.order
     },
 
-    async saveShippingAddress(addressData: Address, emailData: string) {
-      this.email = emailData
-
+    async saveShippingAddress(addressData: Address) {
       // Check if we're updating an existing address or creating a new one
       const savedAddress = this.shippingAddress.id
         ? await apiUpdateAddress({ id: this.shippingAddress.id, ...addressData })
@@ -56,7 +50,7 @@ export const useCheckoutStore = defineStore('checkout', {
 
       // Update order with shipping address and email
       if (this.order.id && this.shippingAddress.id) {
-        this.order = await apiUpdateOrder(this.order.id, this.shippingAddress.id, emailData)
+        this.order = await apiUpdateOrder(this.order.id, this.shippingAddress.id)
 
         // Estimate tax with the new address
         await this.estimateTax()
@@ -98,7 +92,6 @@ export const useCheckoutStore = defineStore('checkout', {
     },
 
     resetCheckout() {
-      this.email = ''
       this.orderConfirmed = false
       this.useShippingAddress = true
       this.shippingAddress = {} as Address

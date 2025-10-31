@@ -48,7 +48,6 @@ import { getCountryForLocale, getAppLocale } from '@/utilities'
 
 interface Props {
   initialAddress?: Address
-  initialEmail?: string
 }
 
 const props = defineProps<Props>()
@@ -62,14 +61,13 @@ const defaultAddress: Address = {
   state: '',
   postal_code: '',
   country: getCountryForLocale(getAppLocale()),
+  email: '',
 }
 
 const initialAddress = props.initialAddress || defaultAddress
-const initialEmail = props.initialEmail || ''
 
 // Extend the form data to include email
 const formData = reactive({
-  email: initialEmail,
   addressee: initialAddress.addressee || '',
   line1: initialAddress.line1 || '',
   line2: initialAddress.line2 || '',
@@ -77,6 +75,7 @@ const formData = reactive({
   state: initialAddress.state || '',
   postal_code: initialAddress.postal_code || '',
   country: initialAddress.country || '',
+  email: initialAddress.email || '',
 })
 
 // Watch for prop changes to update form data
@@ -92,19 +91,11 @@ watch(
         state: newAddress.state || '',
         postal_code: newAddress.postal_code || '',
         country: newAddress.country || '',
+        email: newAddress.email || '',
       })
     }
   },
   { deep: true }
-)
-
-watch(
-  () => props.initialEmail,
-  (newEmail) => {
-    if (newEmail !== undefined) {
-      formData.email = newEmail
-    }
-  }
 )
 
 const emit = defineEmits<{

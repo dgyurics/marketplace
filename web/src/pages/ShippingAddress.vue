@@ -5,7 +5,6 @@
       <h3>shipping address</h3>
       <ShippingAddressForm
         :initial-address="checkoutStore.shippingAddress"
-        :initial-email="checkoutStore.email"
         @submit="handleShippingSubmit"
       />
     </div>
@@ -47,9 +46,9 @@ onMounted(async () => {
   }
 })
 
-async function handleShippingSubmit(address: Address, email: string) {
+async function handleShippingSubmit(address: Address) {
   try {
-    await checkoutStore.saveShippingAddress(address, email)
+    await checkoutStore.saveShippingAddress(address)
     // FIXME refactor shouldn't need this if above throws no error
     if (checkoutStore.canProceedToPayment) {
       router.push('/checkout/payment')

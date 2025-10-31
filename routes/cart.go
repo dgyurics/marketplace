@@ -121,6 +121,13 @@ func (h *CartRoutes) GetCart(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, cart)
 }
 
+// Reserve verifies the cart items are still available and reserves them for checkout
+func (h *CartRoutes) Reserve(w http.ResponseWriter, r *http.Request) {
+	// get order id
+	// call reserve function
+	// return ok
+}
+
 // cancelPendingOrder checks for a pending order and cancels it if found.
 // When a user checks out, a new order is created
 func (h *CartRoutes) cancelPendingOrder(ctx context.Context) error {
@@ -143,5 +150,6 @@ func (h *CartRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/carts/items/{id}", h.secure(h.AddItemToCart)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/carts/items/{id}", h.secure(h.UpdateCartItem)).Methods(http.MethodPatch)
 	h.muxRouter.Handle("/carts/items/{id}", h.secure(h.RemoveItemFromCart)).Methods(http.MethodDelete)
+	h.muxRouter.Handle("/carts/reserve", h.secure(h.Reserve)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/carts", h.secure(h.GetCart)).Methods(http.MethodGet)
 }

@@ -8,6 +8,7 @@ import (
 )
 
 type AddressRepository interface {
+	GetAddress(ctx context.Context, addressID string) (types.Address, error)
 	CreateAddress(ctx context.Context, address *types.Address) error
 	UpdateAddress(ctx context.Context, userID string, product types.Address) error
 	RemoveAddress(ctx context.Context, userID, addressID string) error
@@ -19,6 +20,26 @@ type addressRepository struct {
 
 func NewAddressRepository(db *sql.DB) AddressRepository {
 	return &addressRepository{db: db}
+}
+
+func (r *addressRepository) GetAddress(ctx context.Context, addressID string) (types.Address, error) {
+	var addr types.Address
+	query := `
+		SELECT id, user_id, addressee, line1, line2,
+			city, state, postal_code, country, email, created_at, updated_at
+		FROM addresses
+		WHERE id = $1
+	`
+	err := r.db.QueryRowContext(ctx, query, addressID).Scan(
+		&addr.ID, &addr.UserID, &addr.Addressee, &addr.Line1, &addr.Line2,
+		&addr.City, &addr.State, &addr.PostalCode, &addr.Country, &addr.Email, &addr.CreatedAt, &addr.UpdatedAt)
+	if err == sql.ErrNoRows {
+		return addr, types.ErrNotFound
+	}
+	if err != nil {
+		return addr, err
+	}
+	return addr, nil
 }
 
 func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Address) error {
@@ -42,7 +63,7 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 			state = $6 AND
 			postal_code = $7 AND
 			country = $8 AND
-			is_deleted = FALSE
+			email = $9
 	`,
 		address.UserID,
 		address.Addressee,
@@ -52,6 +73,7 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 		address.State,
 		address.PostalCode,
 		address.Country,
+		address.Email,
 	).Scan(&addressID)
 	if err == sql.ErrNoRows {
 		addressID = ""
@@ -83,8 +105,9 @@ func (r *addressRepository) UpdateAddress(ctx context.Context, userID string, ad
 		state = $5,
 		postal_code = $6,
 		country = $7,
+		email = $8,
 		updated_at = NOW()
-		WHERE user_id = $8 AND id = $9
+		WHERE user_id = $9 AND id = $10
 	`
 	res, err := r.db.ExecContext(ctx, query,
 		address.Addressee,
@@ -94,6 +117,7 @@ func (r *addressRepository) UpdateAddress(ctx context.Context, userID string, ad
 		address.State,
 		address.PostalCode,
 		address.Country,
+		address.Email,
 		userID,
 		address.ID,
 	)
@@ -119,8 +143,9 @@ func (r *addressRepository) createAddress(ctx context.Context, tx *sql.Tx, addre
 			city,
 			state,
 			postal_code,
-			country
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			country,
+			email
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, user_id, created_at
 	`
 
@@ -134,6 +159,7 @@ func (r *addressRepository) createAddress(ctx context.Context, tx *sql.Tx, addre
 		address.State,
 		address.PostalCode,
 		address.Country,
+		address.Email,
 	).Scan(&address.ID, &address.UserID, &address.CreatedAt)
 }
 

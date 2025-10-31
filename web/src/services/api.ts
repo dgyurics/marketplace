@@ -278,14 +278,9 @@ export const confirmOrder = async (orderId: string): Promise<StripePaymentIntent
   return response.data
 }
 
-export const updateOrder = async (
-  orderId: string,
-  addressId: string,
-  email: string
-): Promise<Order> => {
+export const updateOrder = async (orderId: string, addressId: string): Promise<Order> => {
   const response = await apiClient.patch(`/orders/${orderId}`, {
     address_id: addressId,
-    email,
   })
   return response.data
 }

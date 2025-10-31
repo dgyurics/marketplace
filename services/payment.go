@@ -171,7 +171,7 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 		"payment_method_types[]": {"card"},
 		"metadata[order_id]":     {refID},
 		"metadata[environment]":  {string(s.config.Environment)},
-		// TODO send receipt to customer "receipt_email": {order.Email}
+		// TODO send receipt to customer "receipt_email": {order.Address.Email}
 	}
 	reqBody := strings.NewReader(payload.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, reqBody)
@@ -295,7 +295,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 		if err := s.serviceEmail.Send(email); err != nil {
 			slog.Error("Error sending order confirmation email: ", "order_id", order.ID, "error", err)
 		}
-	}(util.StringValue(order.Email, ""), order.ID)
+	}(order.Address.Email, order.ID)
 
 	// Send order notification email to admins
 	go func(order types.Order) {
@@ -314,7 +314,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 		detailsLink := fmt.Sprintf("%s/admin/orders/%s", s.config.BaseURL, orderID)
 		data := map[string]string{
 			"OrderID":       order.ID,
-			"CustomerEmail": util.StringValue(order.Email, ""),
+			"CustomerEmail": order.Address.Email,
 			"DetailsLink":   detailsLink,
 		}
 		body, err := s.serviceTmp.RenderToString(OrderNotification, data)

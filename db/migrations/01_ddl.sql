@@ -177,8 +177,8 @@ CREATE TABLE IF NOT EXISTS addresses (
     city VARCHAR(255) NOT NULL, -- city, district, suburb, town, village
     state VARCHAR(50) NOT NULL, -- state, county, province, region
     postal_code VARCHAR(20) NOT NULL, -- zip code, postal code
-    is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- when existing order references address, we have to soft delete
     country CHAR(2) NOT NULL, -- ISO 3166-1 alpha-2 country code
+    email VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
@@ -196,7 +196,6 @@ CREATE TYPE order_status_enum AS ENUM (
 CREATE TABLE IF NOT EXISTS orders (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    email VARCHAR(255),
     address_id BIGINT,
     amount BIGINT NOT NULL DEFAULT 0,
     tax_amount BIGINT NOT NULL DEFAULT 0,

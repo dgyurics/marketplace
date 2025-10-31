@@ -30,14 +30,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Address } from '@/types'
+import type { BillingAddress } from '@/types'
 
 const props = defineProps<{
-  modelValue: Address
+  modelValue: BillingAddress
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: Address]
+  'update:modelValue': [value: BillingAddress]
 }>()
 
 const address = computed({

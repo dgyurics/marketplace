@@ -34,7 +34,7 @@ const columns = [
 const formattedOrders = computed(() =>
   orders.value.map((order) => ({
     id: order.id,
-    email: order.email,
+    email: order.address.email,
     status: order.status,
     items: order.items.reduce((sum, item) => sum + item.quantity, 0),
     location: order.address

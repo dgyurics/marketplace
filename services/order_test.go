@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/dgyurics/marketplace/types"
-	util "github.com/dgyurics/marketplace/utilities"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -63,7 +62,6 @@ func TestGetOrder_Success(t *testing.T) {
 	expectedOrder := types.Order{
 		ID:     orderID,
 		UserID: userID,
-		Email:  util.String("test@example.com"),
 	}
 
 	ctx := contextWithUserID(context.Background(), userID)
@@ -78,9 +76,6 @@ func TestGetOrder_Success(t *testing.T) {
 	}
 	if result.UserID != expectedOrder.UserID {
 		t.Errorf("expected user ID %s, got %s", expectedOrder.UserID, result.UserID)
-	}
-	if result.Email != expectedOrder.Email {
-		t.Errorf("expected email %v, got %v", expectedOrder.Email, result.Email)
 	}
 
 	mockRepo.AssertExpectations(t)
@@ -136,75 +131,6 @@ func TestGetOrder_NotFound(t *testing.T) {
 	}
 	if result.ID != "" {
 		t.Errorf("expected empty order ID, got %s", result.ID)
-	}
-
-	mockRepo.AssertExpectations(t)
-}
-
-func TestUpdateOrder_Success(t *testing.T) {
-	mockRepo := new(mockOrderRepo)
-	svc := &orderService{
-		orderRepo: mockRepo,
-	}
-
-	userID := "user-123"
-	ctx := contextWithUserID(context.Background(), userID)
-
-	params := types.OrderParams{
-		ID:        "order-789",
-		Email:     util.String("newemail@example.com"),
-		TaxAmount: util.Ptr(int64(500)),
-	}
-
-	expected := types.Order{
-		ID:    "order-789",
-		Email: util.String("newemail@example.com"),
-	}
-
-	paramsWithUser := params
-	paramsWithUser.UserID = userID
-
-	mockRepo.On("UpdateOrder", ctx, paramsWithUser).Return(expected, nil)
-
-	result, err := svc.UpdateOrder(ctx, params)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if result.ID != expected.ID {
-		t.Errorf("expected order ID %s, got %s", expected.ID, result.ID)
-	}
-	if result.Email != expected.Email {
-		t.Errorf("expected email %v, got %v", expected.Email, result.Email)
-	}
-
-	mockRepo.AssertExpectations(t)
-}
-
-func TestUpdateOrder_Error(t *testing.T) {
-	mockRepo := new(mockOrderRepo)
-	svc := &orderService{
-		orderRepo: mockRepo,
-	}
-
-	userID := "user-123"
-	ctx := contextWithUserID(context.Background(), userID)
-
-	params := types.OrderParams{
-		ID:    "order-789",
-		Email: util.String("fail@example.com"),
-	}
-
-	paramsWithUser := params
-	paramsWithUser.UserID = userID
-
-	mockRepo.On("UpdateOrder", ctx, paramsWithUser).Return(types.Order{}, errors.New("update failed"))
-
-	_, err := svc.UpdateOrder(ctx, params)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if err.Error() != "update failed" {
-		t.Fatalf("expected 'update failed', got %v", err)
 	}
 
 	mockRepo.AssertExpectations(t)

@@ -151,7 +151,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 
 	// create a new order with pending status
 	query = `
-		INSERT INTO orders (id, user_id, amount, total_amount) VALUES ($1, $2, $3, $3)
+		INSERT INTO orders (id, user_id, amount, total_amount, address_id) VALUES ($1, $2, $3, $3, $4)
 		RETURNING id, user_id, amount, total_amount, status, created_at
 	`
 	if err = tx.QueryRowContext(
@@ -159,6 +159,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		order.ID,
 		order.UserID,
 		amount,
+		order.Address.ID,
 	).Scan(
 		&order.ID,
 		&order.UserID,
@@ -243,12 +244,6 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderPar
 		args = append(args, *params.Status)
 	}
 
-	if params.AddressID != nil {
-		attrs = append(attrs, slog.String("address_id", *params.AddressID))
-		query += fmt.Sprintf(", address_id = $%d", len(args)+1)
-		args = append(args, *params.AddressID)
-	}
-
 	if params.TaxAmount != nil {
 		attrs = append(attrs, slog.Int64("tax_amount", *params.TaxAmount))
 		query += fmt.Sprintf(", tax_amount = $%d", len(args)+1)
@@ -265,12 +260,6 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderPar
 		attrs = append(attrs, slog.Int64("total_amount", *params.TotalAmount))
 		query += fmt.Sprintf(", total_amount = $%d", len(args)+1)
 		args = append(args, *params.TotalAmount)
-	}
-
-	if params.Email != nil {
-		attrs = append(attrs, slog.String("email", *params.Email))
-		query += fmt.Sprintf(", email = $%d", len(args)+1)
-		args = append(args, *params.Email)
 	}
 
 	if len(args) == 0 {
@@ -310,7 +299,6 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 		SELECT
 			o.id,
 			o.user_id,
-			o.email,
 			o.amount,
 			o.tax_amount,
 			o.total_amount,
@@ -322,6 +310,8 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			a.city,
 			a.state,
 			a.postal_code,
+			a.country,
+			a.email,
 			o.created_at,
 			o.updated_at
 		FROM orders o
@@ -344,7 +334,6 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 		err := rows.Scan(
 			&order.ID,
 			&order.UserID,
-			&order.Email,
 			&order.Amount,
 			&order.TaxAmount,
 			&order.TotalAmount,
@@ -356,6 +345,8 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			&order.Address.City,
 			&order.Address.State,
 			&order.Address.PostalCode,
+			&order.Address.Country,
+			&order.Address.Email,
 			&order.CreatedAt,
 			&order.UpdatedAt,
 		)
@@ -449,7 +440,6 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 		SELECT
 			o.id,
 			o.user_id,
-			COALESCE(o.email, '') AS email,
 			o.amount,
 			o.tax_amount,
 			o.total_amount,
@@ -462,6 +452,7 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 			a.state,
 			a.postal_code,
 			a.country,
+			a.email,
 			o.created_at,
 			o.updated_at
 		FROM orders o
@@ -481,11 +472,11 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 		State      sql.NullString
 		PostalCode sql.NullString
 		Country    sql.NullString
+		Email      sql.NullString
 	}
 	err := r.db.QueryRowContext(ctx, query, orderID, userID).Scan(
 		&order.ID,
 		&order.UserID,
-		&order.Email,
 		&order.Amount,
 		&order.TaxAmount,
 		&order.TotalAmount,
@@ -498,6 +489,7 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 		&address.State,
 		&address.PostalCode,
 		&address.Country,
+		&address.Email,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
@@ -519,6 +511,7 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 			State:      address.State.String,
 			PostalCode: address.PostalCode.String,
 			Country:    address.Country.String,
+			Email:      address.Email.String,
 		}
 	}
 
@@ -574,7 +567,6 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 		SELECT
 			o.id,
 			o.user_id,
-			o.email,
 			o.amount,
 			o.tax_amount,
 			o.total_amount,
@@ -587,6 +579,7 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 			a.state,
 			a.postal_code,
 			a.country,
+			a.email,
 			o.created_at,
 			o.updated_at
 		FROM orders o
@@ -604,11 +597,11 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 		State      sql.NullString
 		PostalCode sql.NullString
 		Country    sql.NullString
+		Email      sql.NullString
 	}
 	err := r.db.QueryRowContext(ctx, query, orderID).Scan(
 		&order.ID,
 		&order.UserID,
-		&order.Email,
 		&order.Amount,
 		&order.TaxAmount,
 		&order.TotalAmount,
@@ -621,6 +614,7 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 		&address.State,
 		&address.PostalCode,
 		&address.Country,
+		&address.Email,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
@@ -642,6 +636,7 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 			State:      address.State.String,
 			PostalCode: address.PostalCode.String,
 			Country:    address.Country.String,
+			Email:      address.Email.String,
 		}
 	}
 
@@ -674,7 +669,6 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 		SELECT
 			o.id,
 			o.user_id,
-			o.email,
 			o.amount,
 			o.tax_amount,
 			o.total_amount,
@@ -687,6 +681,7 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 			a.state,
 			a.postal_code,
 			a.country,
+			a.email,
 			o.created_at,
 			o.updated_at
 		FROM orders o
@@ -707,11 +702,11 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 		State      sql.NullString
 		PostalCode sql.NullString
 		Country    sql.NullString
+		Email      sql.NullString
 	}
 	err := r.db.QueryRowContext(ctx, query, userID).Scan(
 		&order.ID,
 		&order.UserID,
-		&order.Email,
 		&order.Amount,
 		&order.TaxAmount,
 		&order.TotalAmount,
@@ -724,6 +719,7 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 		&address.State,
 		&address.PostalCode,
 		&address.Country,
+		&address.Email,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
@@ -745,6 +741,7 @@ func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (t
 			State:      address.State.String,
 			PostalCode: address.PostalCode.String,
 			Country:    address.Country.String,
+			Email:      address.Email.String,
 		}
 	}
 

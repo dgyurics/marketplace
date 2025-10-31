@@ -58,8 +58,8 @@ func createTestAddress(t *testing.T, db *sql.DB, userID string) string {
 	addressID := utilities.MustGenerateIDString()
 
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO addresses (id, user_id, line1, city, state, postal_code, country)
-		VALUES ($1, $2, '123 Test St', 'Test City', 'CA', '12345', 'US')`,
+		INSERT INTO addresses (id, user_id, line1, city, state, postal_code, country, email)
+		VALUES ($1, $2, '123 Test St', 'Test City', 'CA', '12345', 'US', 'example@example.com')`,
 		addressID, userID)
 	assert.NoError(t, err)
 
@@ -145,13 +145,6 @@ func TestOrderRepository_GetOrder_Success(t *testing.T) {
 		},
 	}
 	err := orderRepo.CreateOrder(ctx, order)
-	assert.NoError(t, err)
-
-	_, err = orderRepo.UpdateOrder(ctx, types.OrderParams{
-		ID:        order.ID,
-		UserID:    user.ID,
-		AddressID: &addressID,
-	})
 	assert.NoError(t, err)
 
 	// Retrieve order

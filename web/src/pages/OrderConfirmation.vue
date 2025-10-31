@@ -4,7 +4,8 @@
     <div class="confirmation-message">
       <h3>Your order has been placed!</h3>
       <p class="confirmation-note">
-        A confirmation email has been sent to <strong>{{ checkoutStore.email }}</strong
+        A confirmation email has been sent to
+        <strong>{{ checkoutStore.shippingAddress.email }}</strong
         >.
       </p>
     </div>
