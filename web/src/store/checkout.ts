@@ -70,7 +70,10 @@ export const useCheckoutStore = defineStore('checkout', {
         return
       }
 
-      const estimate = await apiGetTaxEstimate(this.order.id)
+      const estimate = await apiGetTaxEstimate(
+        this.shippingAddress.state,
+        this.shippingAddress.country
+      )
       this.order.tax_amount = estimate.tax_amount
       this.order.total_amount = this.order.amount + estimate.tax_amount
     },

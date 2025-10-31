@@ -85,6 +85,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewPaymentRoutes(services.Payment, baseRouter),
 		routes.NewProductRoutes(services.Product, baseRouter),
 		routes.NewRegisterRoutes(services.Register, services.User, services.JWT, services.Refresh, baseRouter),
+		routes.NewTaxRoutes(services.Cart, services.Tax, baseRouter),
 		routes.NewUserRoutes(services.User, services.JWT, services.Refresh, config.Auth, baseRouter),
 	)
 

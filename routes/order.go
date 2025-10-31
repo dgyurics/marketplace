@@ -114,36 +114,6 @@ func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, orders)
 }
 
-func (h *OrderRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
-	orderID := mux.Vars(r)["id"]
-	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), orderID)
-	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
-		return
-	}
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	if order.Address == nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "order address is required for tax estimate")
-		return
-	}
-
-	taxEstimate, err := h.taxService.EstimateTax(r.Context(), *order.Address, order.Items)
-	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "tax data not found")
-		return
-	}
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	u.RespondWithJSON(w, http.StatusOK, types.TaxEstimateResponse{TaxAmount: taxEstimate})
-}
-
 func (h *OrderRoutes) Update(w http.ResponseWriter, r *http.Request) {
 	orderID := mux.Vars(r)["id"]
 	params := types.OrderParams{
@@ -209,12 +179,16 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderRoutes) RegisterRoutes() {
+	// modify to require shipping details id
 	h.muxRouter.Handle("/orders", h.secure(h.limit(h.CreateOrder, 5, time.Hour))).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/confirm", h.secure(h.limit(h.Confirm, 1, time.Minute*15))).Methods(http.MethodPost)
+	// combine email + address into shipping details
+	// then send a shipping details id when calling create order
+	// this eliminates need for patch orders endpoint
 	h.muxRouter.Handle("/orders/{id}", h.secure(h.Update)).Methods(http.MethodPatch)
 	h.muxRouter.HandleFunc("/orders/{id}/public", h.GetOrderPublic).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/owner", h.secure(h.GetOrderOwner)).Methods(http.MethodPost)
+	// admin
 	h.muxRouter.Handle("/orders/{id}/admin", h.secureAdmin(h.GetOrderAdmin)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secureAdmin(h.GetOrders)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/orders/{id}/tax-estimate", h.secure(h.EstimateTax)).Methods(http.MethodGet)
 }

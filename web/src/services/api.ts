@@ -261,8 +261,15 @@ export const getOrderAdmin = async (orderId: string): Promise<Order> => {
   return response.data
 }
 
-export const getTaxEstimate = async (orderId: string): Promise<{ tax_amount: number }> => {
-  const response = await apiClient.get(`/orders/${orderId}/tax-estimate`)
+export const getTaxEstimate = async (
+  state: string,
+  country: string
+): Promise<{ tax_amount: number }> => {
+  const params = new URLSearchParams()
+  params.append('state', state)
+  params.append('country', country)
+
+  const response = await apiClient.get(`/tax/estimate?${params}`)
   return response.data
 }
 
