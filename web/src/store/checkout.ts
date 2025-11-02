@@ -6,7 +6,6 @@ import {
   createOrder as apiCreateOrder,
   confirmOrder as apiConfirmOrder,
   getTaxEstimate as apiGetTaxEstimate,
-  updateOrder as apiUpdateOrder,
 } from '@/services/api'
 import type { Address, BillingAddress, Order } from '@/types'
 
@@ -21,49 +20,26 @@ export const useCheckoutStore = defineStore('checkout', {
   }),
 
   getters: {
-    canProceedToPayment: (state) => state.shippingAddress.id && state.order.id,
-
     selectedBillingAddress: (state) =>
       state.useShippingAddress ? state.shippingAddress : state.billingAddress,
   },
 
   actions: {
-    async initializeOrder() {
-      const order = await apiCreateOrder()
-      this.order = order
-
-      // Populate existing address and email if they exist in the order
-      if (order.address) {
-        this.shippingAddress = order.address
-      }
-
-      return this.order
+    async initializeOrder(addressID: string) {
+      this.order = await apiCreateOrder(addressID)
     },
 
-    async saveShippingAddress(addressData: Address) {
+    async saveShippingAddress(addressData: Address): Promise<Address> {
       // Check if we're updating an existing address or creating a new one
       const savedAddress = this.shippingAddress.id
         ? await apiUpdateAddress({ id: this.shippingAddress.id, ...addressData })
         : await apiCreateAddress(addressData)
 
       this.shippingAddress = savedAddress
-
-      // Update order with shipping address and email
-      if (this.order.id && this.shippingAddress.id) {
-        this.order = await apiUpdateOrder(this.order.id, this.shippingAddress.id)
-
-        // Estimate tax with the new address
-        await this.estimateTax()
-      }
-
-      return this.shippingAddress
+      return savedAddress
     },
 
     async estimateTax(): Promise<void> {
-      if (!this.order.id || !this.shippingAddress.id) {
-        return
-      }
-
       const estimate = await apiGetTaxEstimate(
         this.shippingAddress.state,
         this.shippingAddress.country

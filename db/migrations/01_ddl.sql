@@ -62,8 +62,6 @@ CREATE TABLE IF NOT EXISTS images (
 );
 CREATE INDEX idx_images_source ON images(source);
 
-CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest');
-
 CREATE TABLE IF NOT EXISTS pending_users (
     id BIGINT PRIMARY KEY,
     email VARCHAR(255) NOT NULL,
@@ -77,11 +75,13 @@ CREATE TABLE IF NOT EXISTS pending_users (
 CREATE INDEX idx_pending_users_email
 ON pending_users(email);
 
+CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest');
+
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY,
     email VARCHAR(255) UNIQUE,
     password_hash TEXT,
-    role user_role_enum DEFAULT 'guest' NOT NULL,
+    role user_role_enum NOT NULL,
     requires_setup BOOLEAN,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
@@ -185,6 +185,7 @@ CREATE TABLE IF NOT EXISTS addresses (
 );
 
 CREATE TYPE order_status_enum AS ENUM (
+    'created',
     'pending',
     'paid',
     'refunded',
@@ -196,12 +197,12 @@ CREATE TYPE order_status_enum AS ENUM (
 CREATE TABLE IF NOT EXISTS orders (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    address_id BIGINT,
+    address_id BIGINT NOT NULL,
     amount BIGINT NOT NULL DEFAULT 0,
     tax_amount BIGINT NOT NULL DEFAULT 0,
     shipping_amount BIGINT NOT NULL DEFAULT 0,
     total_amount BIGINT NOT NULL DEFAULT 0,
-    status order_status_enum NOT NULL DEFAULT 'pending',
+    status order_status_enum NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,

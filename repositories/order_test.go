@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestOrderRepository_CreateOrder_Minimal(t *testing.T) {
+func TestOrderRepository_CreateOrder(t *testing.T) {
 	ctx := context.Background()
 
 	orderRepo := NewOrderRepository(dbPool)
@@ -21,12 +21,6 @@ func TestOrderRepository_CreateOrder_Minimal(t *testing.T) {
 
 	// Create a test address
 	addressID := createTestAddress(t, dbPool, user.ID)
-
-	// Create a test product
-	productID := createTestProduct(t, dbPool, 5)
-
-	// Add product to user's cart
-	addToCart(t, dbPool, user.ID, productID, 1)
 
 	order := &types.Order{
 		ID:     utilities.MustGenerateIDString(),
@@ -39,15 +33,13 @@ func TestOrderRepository_CreateOrder_Minimal(t *testing.T) {
 	err := orderRepo.CreateOrder(ctx, order)
 	assert.NoError(t, err, "CreateOrder should succeed")
 	assert.Equal(t, user.ID, order.UserID)
-	assert.Equal(t, types.OrderPending, order.Status)
-	assert.Greater(t, order.Amount, int64(0))
-	assert.Equal(t, order.Amount, order.TotalAmount)
+	assert.Equal(t, types.OrderCreated, order.Status)
+	assert.Equal(t, int64(0), order.Amount)
+	assert.Equal(t, int64(0), order.TotalAmount)
+	assert.NotNil(t, order.CreatedAt)
 
 	// Cleanup
-	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, order.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
 }
@@ -66,62 +58,6 @@ func createTestAddress(t *testing.T, db *sql.DB, userID string) string {
 	return addressID
 }
 
-// Helper function to insert a product
-func createTestProduct(t *testing.T, db *sql.DB, quantity int) string {
-	ctx := context.Background()
-
-	productID := utilities.MustGenerateIDString()
-
-	var err error
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, summary, inventory) 
-		VALUES ($1, 'Test Product', 1000, 'Test product summary', $2)`,
-		productID, quantity)
-	assert.NoError(t, err)
-
-	return productID
-}
-
-// Helper function to add an item to the cart
-func addToCart(t *testing.T, db *sql.DB, userID, productID string, quantity int) {
-	ctx := context.Background()
-
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO cart_items (user_id, product_id, quantity, unit_price)
-		VALUES ($1, $2, $3, 1000)
-		ON CONFLICT (user_id, product_id) 
-		DO UPDATE SET quantity = EXCLUDED.quantity`, userID, productID, quantity)
-	assert.NoError(t, err)
-}
-
-func TestOrderRepository_CreateOrder_EmptyCart(t *testing.T) {
-	ctx := context.Background()
-
-	orderRepo := NewOrderRepository(dbPool)
-	userRepo := NewUserRepository(dbPool)
-
-	// Create a test user
-	user := createUniqueTestUser(t, userRepo)
-
-	// Create a test address
-	addressID := createTestAddress(t, dbPool, user.ID)
-
-	order := &types.Order{
-		ID:     utilities.MustGenerateIDString(),
-		UserID: user.ID,
-		Address: &types.Address{
-			ID: addressID,
-		},
-	}
-
-	err := orderRepo.CreateOrder(ctx, order)
-	assert.Error(t, err, "CreateOrder should return an error when cart is empty")
-
-	// Cleanup
-	dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
-	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
-}
-
 func TestOrderRepository_GetOrder_Success(t *testing.T) {
 	ctx := context.Background()
 
@@ -132,11 +68,7 @@ func TestOrderRepository_GetOrder_Success(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 	addressID := createTestAddress(t, dbPool, user.ID)
 
-	// Create product
-	productID := createTestProduct(t, dbPool, 2)
-	addToCart(t, dbPool, user.ID, productID, 1)
-
-	// Create order
+	// Create empty order with address
 	order := &types.Order{
 		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
@@ -152,16 +84,13 @@ func TestOrderRepository_GetOrder_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, order.ID, fetchedOrder.ID)
 	assert.Equal(t, user.ID, fetchedOrder.UserID)
-	assert.Equal(t, types.OrderPending, fetchedOrder.Status)
-	assert.NotEmpty(t, fetchedOrder.Items)
+	assert.Equal(t, types.OrderCreated, fetchedOrder.Status)
+	assert.Empty(t, fetchedOrder.Items) // No items in newly created order
 	assert.NotNil(t, fetchedOrder.Address)
 	assert.Equal(t, addressID, fetchedOrder.Address.ID)
 
 	// Cleanup
-	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, order.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
 }
@@ -176,11 +105,7 @@ func TestOrderRepository_UpdateOrder(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 	addressID := createTestAddress(t, dbPool, user.ID)
 
-	// Create a product and add to cart
-	productID := createTestProduct(t, dbPool, 3)
-	addToCart(t, dbPool, user.ID, productID, 2)
-
-	// Create initial order
+	// Create initial empty order
 	order := &types.Order{
 		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
@@ -203,10 +128,7 @@ func TestOrderRepository_UpdateOrder(t *testing.T) {
 	assert.Equal(t, status, updatedOrder.Status)
 
 	// Cleanup
-	dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, order.ID)
 	dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, order.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
-	dbPool.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, productID)
 	dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
 	dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
 }

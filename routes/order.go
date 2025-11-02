@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -35,23 +34,15 @@ func NewOrderRoutes(
 	}
 }
 
-// CreateOrder creates a new order in pending status
-// Use update order to specify shipping address and customer email
+// CreateOrder creates a new order using the provided shipping details ID.
 func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	ord, err := h.orderService.GetPendingOrderForUser(r.Context())
-	if err == nil {
-		// Pending order exists, return it
-		u.RespondWithJSON(w, http.StatusOK, ord)
+	shippingID := r.URL.Query().Get("shipping_id")
+	if shippingID == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "missing shipping_id query parameter")
 		return
 	}
 
-	if err != types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Customer has no pending order, create a new one
-	ord, err = h.orderService.CreateOrder(r.Context())
+	ord, err := h.orderService.CreateOrder(r.Context(), shippingID)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
@@ -114,23 +105,6 @@ func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, orders)
 }
 
-func (h *OrderRoutes) Update(w http.ResponseWriter, r *http.Request) {
-	orderID := mux.Vars(r)["id"]
-	params := types.OrderParams{
-		ID: orderID,
-	}
-	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
-		return
-	}
-	ord, err := h.orderService.UpdateOrder(r.Context(), params)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-	u.RespondWithJSON(w, http.StatusOK, ord)
-}
-
 // Confirm finalizes an order by calculating actual tax and generating a payment intent.
 func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 	orderID := mux.Vars(r)["id"]
@@ -179,16 +153,10 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderRoutes) RegisterRoutes() {
-	// modify to require shipping details id
 	h.muxRouter.Handle("/orders", h.secure(h.limit(h.CreateOrder, 5, time.Hour))).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/confirm", h.secure(h.limit(h.Confirm, 1, time.Minute*15))).Methods(http.MethodPost)
-	// combine email + address into shipping details
-	// then send a shipping details id when calling create order
-	// this eliminates need for patch orders endpoint
-	h.muxRouter.Handle("/orders/{id}", h.secure(h.Update)).Methods(http.MethodPatch)
 	h.muxRouter.HandleFunc("/orders/{id}/public", h.GetOrderPublic).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/owner", h.secure(h.GetOrderOwner)).Methods(http.MethodPost)
-	// admin
 	h.muxRouter.Handle("/orders/{id}/admin", h.secureAdmin(h.GetOrderAdmin)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secureAdmin(h.GetOrders)).Methods(http.MethodGet)
 }

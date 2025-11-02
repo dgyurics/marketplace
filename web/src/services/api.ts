@@ -219,8 +219,11 @@ export const removeItemFromCart = async (productId: string) => {
   return response.data
 }
 
-export const createOrder = async (): Promise<Order> => {
-  const response = await apiClient.post('/orders', {})
+export const createOrder = async (shippingID: string): Promise<Order> => {
+  const params = new URLSearchParams()
+  params.append('shipping_id', shippingID)
+
+  const response = await apiClient.post(`/orders?${params}`)
   return response.data
 }
 

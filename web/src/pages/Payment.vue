@@ -83,12 +83,12 @@ let cardElement: StripeCardNumberElement,
   cvcElement: StripeCardCvcElement
 
 onMounted(async () => {
-  if (!checkoutStore.canProceedToPayment) {
-    router.push('/checkout/shipping')
-    return
+  try {
+    await checkoutStore.estimateTax()
+  } catch {
+    // Handle estimation error silently
   }
 
-  await checkoutStore.estimateTax()
   isInitializing.value = false
 
   // Wait for next tick to ensure DOM elements are rendered

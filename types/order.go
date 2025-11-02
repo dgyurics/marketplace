@@ -7,8 +7,8 @@ import (
 type OrderStatus string
 
 const (
-	// OrderCreated    OrderStatus = "created" // TODO use this status for new orders with no address or email
-	OrderPending    OrderStatus = "pending"
+	OrderCreated    OrderStatus = "created" // order created with address, no items moved from cart
+	OrderPending    OrderStatus = "pending" // cart items moved/reserved in order, awaiting payment
 	OrderPaid       OrderStatus = "paid"
 	OrderRefunded   OrderStatus = "refunded"
 	OrderFullfilled OrderStatus = "fullfilled"
@@ -30,7 +30,7 @@ type OrderParams struct {
 type Order struct {
 	ID             string      `json:"id"`
 	UserID         string      `json:"-"`
-	Address        *Address    `json:"address,omitempty"`
+	Address        *Address    `json:"address,omitempty"` // Changed to non-pointer
 	Amount         int64       `json:"amount"`
 	TaxAmount      int64       `json:"tax_amount"`
 	ShippingAmount int64       `json:"shipping_amount"`

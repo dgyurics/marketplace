@@ -11,8 +11,8 @@ type MockOrderService struct {
 	mock.Mock
 }
 
-func (m *MockOrderService) CreateOrder(ctx context.Context) (types.Order, error) {
-	args := m.Called(ctx)
+func (m *MockOrderService) CreateOrder(ctx context.Context, shippingID string) (types.Order, error) {
+	args := m.Called(ctx, shippingID)
 	if args.Get(0) == nil {
 		return types.Order{}, args.Error(1)
 	}

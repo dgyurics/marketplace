@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
@@ -29,11 +28,6 @@ func NewCartRoutes(
 }
 
 func (h *CartRoutes) AddItemToCart(w http.ResponseWriter, r *http.Request) {
-	if err := h.cancelPendingOrder(r.Context()); err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
 	var item types.CartItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
@@ -63,11 +57,6 @@ func (h *CartRoutes) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CartRoutes) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
-	if err := h.cancelPendingOrder(r.Context()); err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
 	var item types.CartItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
@@ -94,11 +83,6 @@ func (h *CartRoutes) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CartRoutes) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) {
-	if err := h.cancelPendingOrder(r.Context()); err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
 	vars := mux.Vars(r)
 	productID := vars["id"]
 
@@ -126,24 +110,6 @@ func (h *CartRoutes) Reserve(w http.ResponseWriter, r *http.Request) {
 	// get order id
 	// call reserve function
 	// return ok
-}
-
-// cancelPendingOrder checks for a pending order and cancels it if found.
-// When a user checks out, a new order is created
-func (h *CartRoutes) cancelPendingOrder(ctx context.Context) error {
-	ord, err := h.orderService.GetPendingOrderForUser(ctx)
-	if err == types.ErrNotFound || ord.ID == "" {
-		return nil // No pending order to cancel
-	}
-	if err != nil {
-		return err
-	}
-	cancel := types.OrderCanceled
-	_, err = h.orderService.UpdateOrder(ctx, types.OrderParams{
-		ID:     ord.ID,
-		Status: &cancel,
-	})
-	return err
 }
 
 func (h *CartRoutes) RegisterRoutes() {

@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -21,7 +20,6 @@ type OrderRepository interface {
 	GetOrderByIDAndUser(ctx context.Context, orderID, userID string) (types.Order, error)
 	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
 	GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error)
-	GetPendingOrder(ctx context.Context, userID string) (types.Order, error)
 	GetOrders(ctx context.Context, page, limit int) ([]types.Order, error)
 }
 
@@ -63,164 +61,14 @@ func (r *orderRepository) restockCanceledOrderItems(ctx context.Context) error {
 	return err
 }
 
-// CreateOrder creates a new order from the user's cart items
 func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) error {
-	if order == nil {
-		return errors.New("order cannot be nil")
-	}
-	if order.UserID == "" {
-		return errors.New("user ID is required")
-	}
-	if order.ID == "" {
-		return errors.New("order ID is required")
-	}
-
-	// Begin a transaction
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Retrieve cart items
-	var cartItems []types.CartItem
 	query := `
-		SELECT
-			p.id,
-			p.name,
-			p.price,
-			p.tax_code,
-			p.images,
-			p.summary,
-			ci.quantity,
-			ci.unit_price
-		FROM cart_items ci
-		JOIN v_products p ON ci.product_id = p.id
-		WHERE ci.user_id = $1
+		INSERT INTO orders (id, user_id, address_id, status)
+		VALUES ($1, $2, $3, 'created')
+		RETURNING id, status, created_at
 	`
-	rows, err := tx.QueryContext(ctx, query, order.UserID)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var item types.CartItem
-		item.Product = types.Product{}
-		var imagesJSON []byte
-
-		if err = rows.Scan(
-			&item.Product.ID,
-			&item.Product.Name,
-			&item.Product.Price,
-			&item.Product.TaxCode,
-			&imagesJSON,
-			&item.Product.Summary,
-			&item.Quantity,
-			&item.UnitPrice,
-		); err != nil {
-			return err
-		}
-
-		// Convert JSON array to Go struct
-		// FIXME seems counterintuitive to convert images to JSON in view/database
-		// and then convert back to Go struct/array
-		if err := json.Unmarshal(imagesJSON, &item.Product.Images); err != nil {
-			return err
-		}
-
-		cartItems = append(cartItems, item)
-	}
-	if err = rows.Err(); err != nil {
-		return err
-	}
-
-	if len(cartItems) == 0 {
-		slog.Debug("CreateOrder: no items in cart", "user_id", order.UserID)
-		return types.ErrNotFound
-	}
-
-	// Calculate cart total, excluding tax + shipping.
-	// Tax and shipping will be calculated later.
-	amount := calculateOrderAmount(cartItems)
-
-	// Reduce inventory
-	if err = reduceInventory(ctx, tx, cartItems); err != nil {
-		return err
-	}
-
-	// create a new order with pending status
-	query = `
-		INSERT INTO orders (id, user_id, amount, total_amount, address_id) VALUES ($1, $2, $3, $3, $4)
-		RETURNING id, user_id, amount, total_amount, status, created_at
-	`
-	if err = tx.QueryRowContext(
-		ctx, query,
-		order.ID,
-		order.UserID,
-		amount,
-		order.Address.ID,
-	).Scan(
-		&order.ID,
-		&order.UserID,
-		&order.Amount,
-		&order.TotalAmount,
-		&order.Status,
-		&order.CreatedAt,
-	); err != nil {
-		return err
-	}
-
-	// Populate order_items table
-	query = `
-		INSERT INTO order_items (order_id, product_id, quantity, unit_price)
-		VALUES ($1, $2, $3, $4)
-	`
-	order.Items = make([]types.OrderItem, 0, len(cartItems))
-	for _, item := range cartItems {
-		if _, err = tx.ExecContext(ctx, query,
-			order.ID,
-			item.Product.ID,
-			item.Quantity,
-			item.UnitPrice,
-		); err != nil {
-			return err
-		}
-		order.Items = append(order.Items, types.OrderItem{
-			Product:   item.Product,
-			Quantity:  item.Quantity,
-			UnitPrice: item.UnitPrice,
-		})
-	}
-
-	return tx.Commit()
-}
-
-func reduceInventory(ctx context.Context, tx *sql.Tx, items []types.CartItem) error {
-	for _, item := range items {
-		res, err := tx.ExecContext(ctx, `
-			UPDATE products
-			SET inventory = inventory - $1
-			WHERE inventory >= $1 AND id = $2
-		`, item.Quantity, item.Product.ID)
-		if err != nil {
-			return err
-		}
-		// lib/pq always returns nil error for RowsAffected()
-		rows, _ := res.RowsAffected()
-		if rows == 0 {
-			return fmt.Errorf("%s is out of stock or insufficient quantity remains", item.Product.ID)
-		}
-	}
-	return nil
-}
-
-func calculateOrderAmount(items []types.CartItem) int64 {
-	var total int64
-	for _, item := range items {
-		total += item.UnitPrice * int64(item.Quantity)
-	}
-	return total
+	return r.db.QueryRowContext(ctx, query, order.ID, order.UserID, order.Address.ID).
+		Scan(&order.ID, &order.Status, &order.CreatedAt)
 }
 
 func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderParams) (ord types.Order, err error) {
@@ -658,97 +506,4 @@ func (r *orderRepository) MarkOrderAsPaid(ctx context.Context, orderID string) e
 	`
 	_, err := r.db.ExecContext(ctx, query, orderID)
 	return err
-}
-
-func (r *orderRepository) GetPendingOrder(ctx context.Context, userID string) (types.Order, error) {
-	var order types.Order
-	if userID == "" {
-		return order, errors.New("user ID is required")
-	}
-	query := `
-		SELECT
-			o.id,
-			o.user_id,
-			o.amount,
-			o.tax_amount,
-			o.total_amount,
-			o.status,
-			o.address_id,
-			a.addressee,
-			a.line1,
-			a.line2,
-			a.city,
-			a.state,
-			a.postal_code,
-			a.country,
-			a.email,
-			o.created_at,
-			o.updated_at
-		FROM orders o
-		LEFT JOIN addresses a ON o.address_id = a.id
-		WHERE
-			o.user_id = $1 AND
-			o.status = 'pending'
-		LIMIT 1
-	` // LIMIT 1 added, but technically shouldn't be needed; system should limit users to a single pending order
-
-	// Execute the query
-	var address struct {
-		ID         sql.NullString
-		Addressee  sql.NullString
-		Line1      sql.NullString
-		Line2      sql.NullString
-		City       sql.NullString
-		State      sql.NullString
-		PostalCode sql.NullString
-		Country    sql.NullString
-		Email      sql.NullString
-	}
-	err := r.db.QueryRowContext(ctx, query, userID).Scan(
-		&order.ID,
-		&order.UserID,
-		&order.Amount,
-		&order.TaxAmount,
-		&order.TotalAmount,
-		&order.Status,
-		&address.ID,
-		&address.Addressee,
-		&address.Line1,
-		&address.Line2,
-		&address.City,
-		&address.State,
-		&address.PostalCode,
-		&address.Country,
-		&address.Email,
-		&order.CreatedAt,
-		&order.UpdatedAt,
-	)
-	if err == sql.ErrNoRows {
-		return order, types.ErrNotFound
-	}
-	if err != nil {
-		return order, err
-	}
-
-	// Populate address if it exists
-	if address.ID.Valid {
-		order.Address = &types.Address{
-			ID:         address.ID.String,
-			Addressee:  &address.Addressee.String,
-			Line1:      address.Line1.String,
-			Line2:      &address.Line2.String,
-			City:       address.City.String,
-			State:      address.State.String,
-			PostalCode: address.PostalCode.String,
-			Country:    address.Country.String,
-			Email:      address.Email.String,
-		}
-	}
-
-	// Populate order items for this order
-	if order.Items, err = r.populateOrderItems(ctx, order.ID); err != nil {
-		return order, fmt.Errorf("failed to populate order items: %w", err)
-	}
-
-	return order, nil
 }
