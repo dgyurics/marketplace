@@ -176,7 +176,7 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 	result := []types.Order{}
 	for rows.Next() {
 		order := types.Order{
-			Address: &types.Address{},
+			Address: types.Address{},
 		}
 
 		err := rows.Scan(
@@ -210,26 +210,11 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 		return nil, err
 	}
 
-	// FIXME this is expensive - look into doing this in a single query
-	// Populate order items for each order
-	for idx, order := range result {
-		result[idx].Items, err = r.populateOrderItems(ctx, order.ID)
-		if err != nil {
-			slog.Error("Failed to populate order items", "order_id", order.ID, "error", err)
-		}
-	}
-
 	return result, nil
 }
 
 // populateOrderItems populates the order items for a list of orders
 func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string) ([]types.OrderItem, error) {
-	if orderID == "" {
-		return nil, errors.New("order ID is required")
-	}
-
-	// Query to fetch order items
-	// missing alt text, product name,
 	query := `
 		SELECT
 			product_id,
@@ -242,8 +227,6 @@ func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string
 		FROM v_order_items
 		WHERE order_id = $1
 	`
-
-	// Query to fetch order items
 	rows, err := r.db.QueryContext(ctx, query, orderID)
 	if err != nil {
 		return nil, err
@@ -309,19 +292,7 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 			o.id = $1 AND
 			o.user_id = $2
 	`
-
-	// Execute the query
-	var address struct {
-		ID         sql.NullString
-		Addressee  sql.NullString
-		Line1      sql.NullString
-		Line2      sql.NullString
-		City       sql.NullString
-		State      sql.NullString
-		PostalCode sql.NullString
-		Country    sql.NullString
-		Email      sql.NullString
-	}
+	order.Address = types.Address{}
 	err := r.db.QueryRowContext(ctx, query, orderID, userID).Scan(
 		&order.ID,
 		&order.UserID,
@@ -329,15 +300,15 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 		&order.TaxAmount,
 		&order.TotalAmount,
 		&order.Status,
-		&address.ID,
-		&address.Addressee,
-		&address.Line1,
-		&address.Line2,
-		&address.City,
-		&address.State,
-		&address.PostalCode,
-		&address.Country,
-		&address.Email,
+		&order.Address.ID,
+		&order.Address.Addressee,
+		&order.Address.Line1,
+		&order.Address.Line2,
+		&order.Address.City,
+		&order.Address.State,
+		&order.Address.PostalCode,
+		&order.Address.Country,
+		&order.Address.Email,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
@@ -348,22 +319,7 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 		return order, err
 	}
 
-	// Populate address if it exists
-	if address.ID.Valid {
-		order.Address = &types.Address{
-			ID:         address.ID.String,
-			Addressee:  &address.Addressee.String,
-			Line1:      address.Line1.String,
-			Line2:      &address.Line2.String,
-			City:       address.City.String,
-			State:      address.State.String,
-			PostalCode: address.PostalCode.String,
-			Country:    address.Country.String,
-			Email:      address.Email.String,
-		}
-	}
-
-	// Populate order items for this order
+	// Populate order items
 	if order.Items, err = r.populateOrderItems(ctx, order.ID); err != nil {
 		return order, fmt.Errorf("failed to populate order items: %w", err)
 	}
@@ -411,6 +367,7 @@ func (r *orderRepository) GetOrderByIDPublic(ctx context.Context, orderID string
 
 func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (types.Order, error) {
 	var order types.Order
+	order.Address = types.Address{}
 	query := `
 		SELECT
 			o.id,
@@ -434,19 +391,6 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 		LEFT JOIN addresses a ON o.address_id = a.id
 		WHERE o.id = $1
 	`
-
-	// Execute the query
-	var address struct {
-		ID         sql.NullString
-		Addressee  sql.NullString
-		Line1      sql.NullString
-		Line2      sql.NullString
-		City       sql.NullString
-		State      sql.NullString
-		PostalCode sql.NullString
-		Country    sql.NullString
-		Email      sql.NullString
-	}
 	err := r.db.QueryRowContext(ctx, query, orderID).Scan(
 		&order.ID,
 		&order.UserID,
@@ -454,15 +398,15 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 		&order.TaxAmount,
 		&order.TotalAmount,
 		&order.Status,
-		&address.ID,
-		&address.Addressee,
-		&address.Line1,
-		&address.Line2,
-		&address.City,
-		&address.State,
-		&address.PostalCode,
-		&address.Country,
-		&address.Email,
+		&order.Address.ID,
+		&order.Address.Addressee,
+		&order.Address.Line1,
+		&order.Address.Line2,
+		&order.Address.City,
+		&order.Address.State,
+		&order.Address.PostalCode,
+		&order.Address.Country,
+		&order.Address.Email,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
@@ -471,21 +415,6 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 	}
 	if err != nil {
 		return order, err
-	}
-
-	// Populate address if it exists
-	if address.ID.Valid {
-		order.Address = &types.Address{
-			ID:         address.ID.String,
-			Addressee:  &address.Addressee.String,
-			Line1:      address.Line1.String,
-			Line2:      &address.Line2.String,
-			City:       address.City.String,
-			State:      address.State.String,
-			PostalCode: address.PostalCode.String,
-			Country:    address.Country.String,
-			Email:      address.Email.String,
-		}
 	}
 
 	// Populate order items for this order

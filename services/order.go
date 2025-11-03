@@ -68,7 +68,7 @@ func (os *orderService) CreateOrder(ctx context.Context, shippingID string) (typ
 	var order types.Order
 	order.UserID = getUserID(ctx)
 	order.Status = types.OrderPending
-	order.Address = &types.Address{ID: shippingID}
+	order.Address = types.Address{ID: shippingID}
 
 	id, err := utilities.GenerateIDString()
 	if err != nil {

@@ -119,7 +119,7 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// FIXME look into removing this and using automatic tax calculation for payment intents
-	tax, err := h.taxService.CalculateTax(r.Context(), order.ID, *order.Address, order.Items)
+	tax, err := h.taxService.CalculateTax(r.Context(), order.ID, order.Address, order.Items)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return

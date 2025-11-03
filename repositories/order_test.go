@@ -25,7 +25,7 @@ func TestOrderRepository_CreateOrder(t *testing.T) {
 	order := &types.Order{
 		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
-		Address: &types.Address{
+		Address: types.Address{
 			ID: addressID,
 		},
 	}
@@ -72,7 +72,7 @@ func TestOrderRepository_GetOrder_Success(t *testing.T) {
 	order := &types.Order{
 		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
-		Address: &types.Address{
+		Address: types.Address{
 			ID: addressID,
 		},
 	}
@@ -109,7 +109,7 @@ func TestOrderRepository_UpdateOrder(t *testing.T) {
 	order := &types.Order{
 		ID:     utilities.MustGenerateIDString(),
 		UserID: user.ID,
-		Address: &types.Address{
+		Address: types.Address{
 			ID: addressID,
 		},
 	}
