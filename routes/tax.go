@@ -32,7 +32,7 @@ func (h *TaxRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
 		State:   r.URL.Query().Get("state"),
 	}
 
-	items, err := h.cartService.GetCart(r.Context())
+	items, err := h.cartService.GetItems(r.Context())
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return

@@ -19,32 +19,27 @@ type MockCartService struct {
 	mock.Mock
 }
 
-func (m *MockCartService) AddItemToCart(ctx context.Context, item *types.CartItem) error {
+func (m *MockCartService) AddItem(ctx context.Context, item *types.CartItem) error {
 	args := m.Called(ctx, item)
 	return args.Error(0)
 }
 
-func (m *MockCartService) GetCart(ctx context.Context) ([]types.CartItem, error) {
+func (m *MockCartService) GetItems(ctx context.Context) ([]types.CartItem, error) {
 	args := m.Called(ctx)
 	return args.Get(0).([]types.CartItem), args.Error(1)
 }
 
-func (m *MockCartService) UpdateCartItem(ctx context.Context, item *types.CartItem) error {
-	args := m.Called(ctx, item)
-	return args.Error(0)
-}
-
-func (m *MockCartService) RemoveItemFromCart(ctx context.Context, productID string) error {
+func (m *MockCartService) RemoveItem(ctx context.Context, productID string) error {
 	args := m.Called(ctx, productID)
 	return args.Error(0)
 }
 
-func (m *MockCartService) ClearCart(ctx context.Context) error {
+func (m *MockCartService) Clear(ctx context.Context) error {
 	args := m.Called(ctx)
 	return args.Error(0)
 }
 
-func TestAddItemToCart(t *testing.T) {
+func TestAddItem(t *testing.T) {
 	mockCartService := new(MockCartService)
 	mockOrderService := new(MockOrderService)
 	routes := &CartRoutes{
@@ -65,7 +60,7 @@ func TestAddItemToCart(t *testing.T) {
 		},
 	}
 
-	mockCartService.On("AddItemToCart", mock.Anything, &item).Return(nil)
+	mockCartService.On("AddItem", mock.Anything, &item).Return(nil)
 	mockOrderService.On("GetPendingOrderForUser", mock.Anything).Return(
 		types.Order{},
 		types.ErrNotFound,
@@ -81,7 +76,7 @@ func TestAddItemToCart(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	routes.muxRouter.HandleFunc("/carts/items/{id}", routes.AddItemToCart).Methods(http.MethodPost)
+	routes.muxRouter.HandleFunc("/carts/items/{id}", routes.AddItem).Methods(http.MethodPost)
 
 	// Serve the request via the router
 	routes.muxRouter.ServeHTTP(rr, req)
@@ -93,7 +88,7 @@ func TestAddItemToCart(t *testing.T) {
 	mockCartService.AssertExpectations(t)
 }
 
-func TestRemoveItemFromCart(t *testing.T) {
+func TestRemoveItem(t *testing.T) {
 	mockCartService := new(MockCartService)
 	mockOrderService := new(MockOrderService)
 	routes := &CartRoutes{
@@ -106,7 +101,7 @@ func TestRemoveItemFromCart(t *testing.T) {
 	}
 
 	productID := "test-product-id"
-	mockCartService.On("RemoveItemFromCart", mock.Anything, productID).Return(nil)
+	mockCartService.On("RemoveItem", mock.Anything, productID).Return(nil)
 	mockOrderService.On("GetPendingOrderForUser", mock.Anything).Return(
 		types.Order{},
 		types.ErrNotFound,
@@ -120,7 +115,7 @@ func TestRemoveItemFromCart(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	routes.muxRouter.HandleFunc("/carts/items/{id}", routes.RemoveItemFromCart).Methods(http.MethodDelete)
+	routes.muxRouter.HandleFunc("/carts/items/{id}", routes.RemoveItem).Methods(http.MethodDelete)
 
 	// Serve the request via the router
 	routes.muxRouter.ServeHTTP(rr, req)
@@ -132,7 +127,7 @@ func TestRemoveItemFromCart(t *testing.T) {
 	mockCartService.AssertExpectations(t)
 }
 
-func TestGetCart(t *testing.T) {
+func TestGet(t *testing.T) {
 	mockCartService := new(MockCartService)
 	mockOrderService := new(MockOrderService)
 	routes := &CartRoutes{
@@ -152,7 +147,7 @@ func TestGetCart(t *testing.T) {
 		},
 	}
 
-	mockCartService.On("GetCart", mock.Anything).Return(expectedCart, nil)
+	mockCartService.On("GetItems", mock.Anything).Return(expectedCart, nil)
 
 	// Create a new HTTP GET request with cartID in the URL
 	req, err := http.NewRequest(http.MethodGet, "/carts", nil)
@@ -162,7 +157,7 @@ func TestGetCart(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	routes.muxRouter.HandleFunc("/carts", routes.GetCart).Methods(http.MethodGet)
+	routes.muxRouter.HandleFunc("/carts", routes.GetItems).Methods(http.MethodGet)
 
 	// Serve the request via the router
 	routes.muxRouter.ServeHTTP(rr, req)

@@ -144,7 +144,7 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Clear user cart after order confirmation
-	if err := h.cartService.ClearCart(r.Context()); err != nil {
+	if err := h.cartService.Clear(r.Context()); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}

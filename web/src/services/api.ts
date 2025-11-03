@@ -209,11 +209,6 @@ export const addItemToCart = async (productId: string, quantity: number) => {
   return response.data
 }
 
-export const updateCartItem = async (productId: string, quantity: number) => {
-  const response = await apiClient.patch('/carts/items', { product_id: productId, quantity })
-  return response.data
-}
-
 export const removeItemFromCart = async (productId: string) => {
   const response = await apiClient.delete(`/carts/items/${productId}`)
   return response.data
