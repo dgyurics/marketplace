@@ -163,6 +163,8 @@ CREATE TABLE IF NOT EXISTS cart_items (
     product_id BIGINT,
     quantity INT NOT NULL,
     unit_price BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    
     PRIMARY KEY (user_id, product_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
@@ -209,15 +211,13 @@ CREATE TABLE IF NOT EXISTS orders (
     FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE RESTRICT
 );
 
--- when checking out, create an order from the user's cart
--- and move the cart items to order_items
 CREATE TABLE IF NOT EXISTS order_items (
     order_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
     quantity INT NOT NULL,
     unit_price BIGINT NOT NULL,
     PRIMARY KEY (order_id, product_id),
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE RESTRICT,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
 );
 CREATE INDEX idx_order_items_product_id_quantity

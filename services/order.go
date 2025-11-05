@@ -17,7 +17,6 @@ const (
 type OrderService interface {
 	CreateOrder(ctx context.Context, shippingID string) (types.Order, error)
 	UpdateOrder(ctx context.Context, order types.OrderParams) (types.Order, error)
-	CancelStaleOrders(ctx context.Context) error
 	/* GET order(s) */
 	GetOrderByIDAndUser(ctx context.Context, orderID string) (types.Order, error)
 	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
@@ -52,12 +51,6 @@ func NewOrderService(
 func (os *orderService) UpdateOrder(ctx context.Context, params types.OrderParams) (types.Order, error) {
 	params.UserID = getUserID(ctx)
 	return os.orderRepo.UpdateOrder(ctx, params)
-}
-
-// CancelStaleOrders cancels orders which have been in pending status for too long
-func (os *orderService) CancelStaleOrders(ctx context.Context) error {
-	interval := 10 * time.Minute // TODO make this configurable
-	return os.orderRepo.CancelPendingOrders(ctx, interval)
 }
 
 func (os *orderService) GetOrders(ctx context.Context, page, limit int) ([]types.Order, error) {

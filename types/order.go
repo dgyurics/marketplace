@@ -7,8 +7,8 @@ import (
 type OrderStatus string
 
 const (
-	OrderCreated    OrderStatus = "created" // order created with address, no items moved from cart
-	OrderPending    OrderStatus = "pending" // cart items moved/reserved in order, awaiting payment
+	OrderCreated    OrderStatus = "created" // order created with address
+	OrderPending    OrderStatus = "pending" // order awaiting payment
 	OrderPaid       OrderStatus = "paid"
 	OrderRefunded   OrderStatus = "refunded"
 	OrderFullfilled OrderStatus = "fullfilled"

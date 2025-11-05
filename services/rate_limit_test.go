@@ -2,7 +2,6 @@ package services_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -24,11 +23,6 @@ func (m *MockRateLimitRepository) GetHitCount(ctx context.Context, rl *types.Rat
 
 func (m *MockRateLimitRepository) RecordHit(ctx context.Context, rl *types.RateLimit) error {
 	args := m.Called(ctx, rl)
-	return args.Error(0)
-}
-
-func (m *MockRateLimitRepository) Cleanup(ctx context.Context) error {
-	args := m.Called(ctx)
 	return args.Error(0)
 }
 
@@ -64,29 +58,5 @@ func TestRateLimitService_RecordHit(t *testing.T) {
 	err := service.RecordHit(context.Background(), rl)
 
 	assert.NoError(t, err)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestRateLimitService_Cleanup(t *testing.T) {
-	mockRepo := new(MockRateLimitRepository)
-	service := services.NewRateLimitService(mockRepo)
-
-	mockRepo.On("Cleanup", mock.Anything).Return(nil)
-
-	err := service.Cleanup(context.Background())
-
-	assert.NoError(t, err)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestRateLimitService_Cleanup_Error(t *testing.T) {
-	mockRepo := new(MockRateLimitRepository)
-	service := services.NewRateLimitService(mockRepo)
-
-	mockRepo.On("Cleanup", mock.Anything).Return(errors.New("database error"))
-
-	err := service.Cleanup(context.Background())
-
-	assert.Error(t, err)
 	mockRepo.AssertExpectations(t)
 }

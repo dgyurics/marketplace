@@ -6,13 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/dgyurics/marketplace/types"
 )
 
 type OrderRepository interface {
-	CancelPendingOrders(ctx context.Context, interval time.Duration) error
 	CreateOrder(ctx context.Context, order *types.Order) error
 	UpdateOrder(ctx context.Context, params types.OrderParams) (types.Order, error)
 	MarkOrderAsPaid(ctx context.Context, orderID string) error
@@ -29,36 +27,6 @@ type orderRepository struct {
 
 func NewOrderRepository(db *sql.DB) OrderRepository {
 	return &orderRepository{db: db}
-}
-
-func (r *orderRepository) CancelPendingOrders(ctx context.Context, interval time.Duration) error {
-	intervalStr := fmt.Sprintf("%d seconds", int(interval.Seconds()))
-	query := `
-		UPDATE orders
-		SET status = 'canceled', updated_at = CURRENT_TIMESTAMP
-		WHERE status = 'pending' AND updated_at < NOW() - ($1)::INTERVAL
-	`
-	if _, err := r.db.ExecContext(ctx, query, intervalStr); err != nil {
-		return err
-	}
-	return r.restockCanceledOrderItems(ctx)
-}
-
-func (r *orderRepository) restockCanceledOrderItems(ctx context.Context) error {
-	query := `
-		WITH deleted_items AS (
-			DELETE FROM order_items oi
-			USING orders o
-			WHERE o.id = oi.order_id AND o.status = 'canceled'
-			RETURNING oi.product_id, oi.quantity
-		)
-		UPDATE products p
-		SET inventory = p.inventory + di.quantity
-		FROM deleted_items di
-		WHERE p.id = di.product_id;
-	`
-	_, err := r.db.ExecContext(ctx, query)
-	return err
 }
 
 func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) error {
@@ -131,11 +99,6 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderPar
 	if err != nil {
 		slog.Error("Failed to retrieve updated order", "error", err, "order_id", params.ID, "user_id", params.UserID)
 		return ord, err
-	}
-
-	// If the order was canceled, restock the items
-	if ord.Status == types.OrderCanceled {
-		return ord, r.restockCanceledOrderItems(ctx)
 	}
 
 	return ord, nil

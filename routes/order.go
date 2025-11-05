@@ -107,8 +107,7 @@ func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
 
 // Confirm finalizes an order by calculating actual tax and generating a payment intent.
 func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
-	orderID := mux.Vars(r)["id"]
-	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), orderID)
+	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), mux.Vars(r)["id"])
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
 		return
@@ -118,7 +117,8 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// FIXME look into removing this and using automatic tax calculation for payment intents
+	// TODO calculate totals using order_items table
+
 	tax, err := h.taxService.CalculateTax(r.Context(), order.ID, order.Address, order.Items)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
@@ -133,7 +133,7 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 
 	totalAmount := order.TotalAmount + tax
 	params := types.OrderParams{
-		ID:          orderID,
+		ID:          order.ID,
 		TaxAmount:   &tax,
 		TotalAmount: &totalAmount,
 	}
@@ -152,9 +152,14 @@ func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, stripe.PaymentIntentResponse{ClientSecret: pi.ClientSecret})
 }
 
+// Order flow
+// 1. POST /orders?shipping_id=123     → Create empty order with address
+// 2. POST /orders/{id}/confirm        → Calculate tax + totals, copy cart_items -> order_items, return newly created payment intent
 func (h *OrderRoutes) RegisterRoutes() {
+	// Order placement
 	h.muxRouter.Handle("/orders", h.secure(h.limit(h.CreateOrder, 5, time.Hour))).Methods(http.MethodPost)
-	h.muxRouter.Handle("/orders/{id}/confirm", h.secure(h.limit(h.Confirm, 1, time.Minute*15))).Methods(http.MethodPost)
+	h.muxRouter.Handle("/orders/{id}/confirm", h.secure(h.limit(h.Confirm, 5, time.Hour))).Methods(http.MethodPost)
+	// Order review
 	h.muxRouter.HandleFunc("/orders/{id}/public", h.GetOrderPublic).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/owner", h.secure(h.GetOrderOwner)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/admin", h.secureAdmin(h.GetOrderAdmin)).Methods(http.MethodPost)

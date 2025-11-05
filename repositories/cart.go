@@ -79,9 +79,16 @@ func (r *cartRepository) GetItems(ctx context.Context, userID string) ([]types.C
 }
 
 func (r *cartRepository) AddItem(ctx context.Context, userID string, item *types.CartItem) error {
+	// Begin a transaction
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	// Fetch the current quantity in the cart
 	var existingQuantity int
-	err := r.db.QueryRowContext(ctx, "SELECT quantity FROM cart_items WHERE user_id = $1 AND product_id = $2", userID, item.Product.ID).Scan(&existingQuantity)
+	err = tx.QueryRowContext(ctx, "SELECT quantity FROM cart_items WHERE user_id = $1 AND product_id = $2", userID, item.Product.ID).Scan(&existingQuantity)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -89,59 +96,93 @@ func (r *cartRepository) AddItem(ctx context.Context, userID string, item *types
 	// Check inventory availability and cart limit
 	var availableQuantity int
 	var cartLimit *int
-	if err := r.db.QueryRowContext(ctx, "SELECT inventory, cart_limit FROM products WHERE id = $1", item.Product.ID).Scan(&availableQuantity, &cartLimit); err != nil {
+	if err := tx.QueryRowContext(ctx, "SELECT inventory, cart_limit FROM products WHERE id = $1 FOR UPDATE", item.Product.ID).Scan(&availableQuantity, &cartLimit); err != nil {
 		return err
 	}
 
 	// If not enough inventory, return an error
-	if availableQuantity < (existingQuantity + item.Quantity) {
-		slog.Info("Insufficient inventory for product", "product_id", item.Product.ID, "available", availableQuantity, "requested", item.Quantity)
+	if availableQuantity == 0 {
+		slog.Info("Product is no longer available", "product_id", item.Product.ID)
 		return types.ErrConstraintViolation
 	}
 
 	// If cart limit reached, return an error
-	if cartLimit != nil && *cartLimit < (existingQuantity+item.Quantity) {
-		slog.Info("Cart limit exceeded for product", "product_id", item.Product.ID, "cart_limit", cartLimit, "requested", item.Quantity)
+	if cartLimit != nil && *cartLimit == existingQuantity {
+		slog.Info("Cart limit exceeded", "product_id", item.Product.ID, "cart_limit", cartLimit)
 		return types.ErrConstraintViolation
 	}
 
-	// Fetch unit_price from the product table
-	if err := r.db.QueryRowContext(ctx, "SELECT price FROM products WHERE id = $1", item.Product.ID).Scan(&item.UnitPrice); err != nil {
-		return err
-	}
-
-	// Add item to cart using the fetched unit_price
+	// decrement product.inventory by 1
+	// increment cart.quantity by 1
+	// update price in cart to reflect latest price in products table
 	query := `
+		WITH update_inventory AS (
+			UPDATE products
+			SET inventory = inventory - 1
+			WHERE id = $2
+			RETURNING price
+		)
 		INSERT INTO cart_items (user_id, product_id, quantity, unit_price)
-		VALUES ($1, $2, $3, $4)
+		SELECT $1, $2, $3, price FROM update_inventory
 		ON CONFLICT (user_id, product_id) DO UPDATE
-		SET quantity = cart_items.quantity + EXCLUDED.quantity,
-		    unit_price = EXCLUDED.unit_price`
-	_, err = r.db.ExecContext(ctx, query, userID, item.Product.ID, item.Quantity, item.UnitPrice)
-	return err
-}
-
-func (r *cartRepository) RemoveItem(ctx context.Context, userID string, productID string) error {
-	deleteQuery := `
-		DELETE FROM cart_items
-		WHERE user_id = $1 AND product_id = $2`
-
-	res, err := r.db.ExecContext(ctx, deleteQuery, userID, productID)
+		SET quantity = cart_items.quantity + 1,
+				unit_price = EXCLUDED.unit_price`
+	_, err = tx.ExecContext(ctx, query, userID, item.Product.ID, item.Quantity)
 	if err != nil {
 		return err
 	}
-	// lib/pq always returns nil error for RowsAffected()
-	rows, _ := res.RowsAffected()
-	if rows == 0 {
+	return tx.Commit()
+}
+
+func (r *cartRepository) RemoveItem(ctx context.Context, userID string, productID string) error {
+	// Begin a transaction
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Fetch the current quantity in the cart
+	var existingQuantity int
+	err = tx.QueryRowContext(ctx, `
+		DELETE FROM cart_items
+		WHERE user_id = $1 AND product_id = $2
+		RETURNING quantity`,
+		userID, productID).Scan(&existingQuantity)
+	if err == sql.ErrNoRows {
 		return types.ErrNotFound
 	}
-	return nil
+	if err != nil {
+		return err
+	}
+
+	// Restock inventory
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE products
+		SET inventory = inventory + $1
+		WHERE id = $2`,
+		existingQuantity, productID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (r *cartRepository) Clear(ctx context.Context, userID string) error {
-	deleteQuery := `
-		DELETE FROM cart_items
-		WHERE user_id = $1`
-	_, err := r.db.ExecContext(ctx, deleteQuery, userID)
-	return err
+	query := `
+		WITH deleted_items AS (
+			DELETE FROM cart_items
+			WHERE user_id = $1
+			RETURNING product_id, quantity
+		)
+		UPDATE products
+		SET inventory = inventory + di.quantity
+		FROM deleted_items di
+		WHERE products.id = di.product_id
+		`
+	_, err := r.db.ExecContext(ctx, query, userID)
+	if err != nil {
+		return err
+	}
+	return nil
 }

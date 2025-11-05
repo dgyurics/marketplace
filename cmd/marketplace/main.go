@@ -114,7 +114,6 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	passwordRepository := repositories.NewPasswordRepository(db)
 	rateLimitRepository := repositories.NewRateLimitRepository(db)
 	registerRepository := repositories.NewRegisterRepository(db)
-	scheduleRepository := repositories.NewScheduleRepository(db)
 	refreshTokenRepository := repositories.NewRefreshRepository(db)
 	taxRepository := repositories.NewTaxRepository(db)
 	imageRepository := repositories.NewImageRepository(db)
@@ -128,6 +127,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		slog.Error("Failed to initialize template service", "error", err, "templatesDir", config.TemplatesDir)
 		os.Exit(1)
 	}
+	scheduleService := services.NewScheduleService(db)
 	emailService := services.NewEmailService(config.Email)
 	addressService := services.NewAddressService(addressRepository, config.Locale)
 	userService := services.NewUserService(userRepository)
@@ -142,7 +142,6 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	registerService := services.NewRegisterService(registerRepository, emailService, templateService, config.BaseURL)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	jwtService := services.NewJWTService(config.JWT)
-	scheduleService := services.NewScheduleService(orderService, rateLimitService, scheduleRepository)
 	taxService := services.NewTaxService(taxRepository, config.Payment, httpClient)
 
 	return servicesContainer{
