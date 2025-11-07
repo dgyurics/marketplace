@@ -214,7 +214,7 @@ export const removeItemFromCart = async (productId: string) => {
   return response.data
 }
 
-export const createOrder = async (shippingID: string): Promise<Order> => {
+export const createOrder = async (shippingID: string): Promise<StripePaymentIntent> => {
   const params = new URLSearchParams()
   params.append('shipping_id', shippingID)
 
@@ -268,18 +268,6 @@ export const getTaxEstimate = async (
   params.append('country', country)
 
   const response = await apiClient.get(`/tax/estimate?${params}`)
-  return response.data
-}
-
-export const confirmOrder = async (orderId: string): Promise<StripePaymentIntent> => {
-  const response = await apiClient.post(`/orders/${orderId}/confirm`)
-  return response.data
-}
-
-export const updateOrder = async (orderId: string, addressId: string): Promise<Order> => {
-  const response = await apiClient.patch(`/orders/${orderId}`, {
-    address_id: addressId,
-  })
   return response.data
 }
 

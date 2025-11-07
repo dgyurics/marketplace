@@ -187,7 +187,6 @@ CREATE TABLE IF NOT EXISTS addresses (
 );
 
 CREATE TYPE order_status_enum AS ENUM (
-    'created',
     'pending',
     'paid',
     'refunded',

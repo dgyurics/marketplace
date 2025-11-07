@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/dgyurics/marketplace/types"
 	"github.com/stretchr/testify/mock"
@@ -147,24 +146,4 @@ func (m *mockOrderRepo) GetOrders(ctx context.Context, page, limit int) ([]types
 func (m *mockOrderRepo) CreateOrder(ctx context.Context, order *types.Order) error {
 	args := m.Called(ctx, order)
 	return args.Error(0)
-}
-
-func (m *mockOrderRepo) UpdateOrder(ctx context.Context, params types.OrderParams) (types.Order, error) {
-	args := m.Called(ctx, params)
-	if v := args.Get(0); v != nil {
-		return v.(types.Order), args.Error(1)
-	}
-	return types.Order{}, args.Error(1)
-}
-
-func (m *mockOrderRepo) GetPendingOrder(ctx context.Context, userID string) (types.Order, error) {
-	args := m.Called(ctx, userID)
-	if v := args.Get(0); v != nil {
-		return v.(types.Order), args.Error(1)
-	}
-	return types.Order{}, args.Error(1)
-}
-
-func (m *mockOrderRepo) CancelPendingOrders(ctx context.Context, interval time.Duration) error {
-	return nil
 }

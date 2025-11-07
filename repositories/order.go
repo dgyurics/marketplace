@@ -5,14 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"github.com/dgyurics/marketplace/types"
 )
 
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, order *types.Order) error
-	UpdateOrder(ctx context.Context, params types.OrderParams) (types.Order, error)
 	MarkOrderAsPaid(ctx context.Context, orderID string) error
 	/* GET order(s) */
 	GetOrderByIDAndUser(ctx context.Context, orderID, userID string) (types.Order, error)
@@ -30,78 +28,31 @@ func NewOrderRepository(db *sql.DB) OrderRepository {
 }
 
 func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) error {
-	query := `
-		INSERT INTO orders (id, user_id, address_id, status)
-		VALUES ($1, $2, $3, 'created')
-		RETURNING id, status, created_at
-	`
-	return r.db.QueryRowContext(ctx, query, order.ID, order.UserID, order.Address.ID).
-		Scan(&order.ID, &order.Status, &order.CreatedAt)
-}
-
-func (r *orderRepository) UpdateOrder(ctx context.Context, params types.OrderParams) (ord types.Order, err error) {
-	if params.ID == "" {
-		return ord, errors.New("order ID is required")
-	}
-	if params.UserID == "" {
-		return ord, errors.New("user ID is required")
-	}
-
-	query := `UPDATE orders SET updated_at = CURRENT_TIMESTAMP`
-	args := []interface{}{}
-
-	attrs := []slog.Attr{
-		slog.String("order_id", params.ID),
-	}
-
-	if params.Status != nil {
-		attrs = append(attrs, slog.String("status", string(*params.Status)))
-		query += fmt.Sprintf(", status = $%d", len(args)+1)
-		args = append(args, *params.Status)
-	}
-
-	if params.TaxAmount != nil {
-		attrs = append(attrs, slog.Int64("tax_amount", *params.TaxAmount))
-		query += fmt.Sprintf(", tax_amount = $%d", len(args)+1)
-		args = append(args, *params.TaxAmount)
-	}
-
-	if params.ShippingAmount != nil {
-		attrs = append(attrs, slog.Int64("shipping_amount", *params.ShippingAmount))
-		query += fmt.Sprintf(", shipping_amount = $%d", len(args)+1)
-		args = append(args, *params.ShippingAmount)
-	}
-
-	if params.TotalAmount != nil {
-		attrs = append(attrs, slog.Int64("total_amount", *params.TotalAmount))
-		query += fmt.Sprintf(", total_amount = $%d", len(args)+1)
-		args = append(args, *params.TotalAmount)
-	}
-
-	if len(args) == 0 {
-		return ord, fmt.Errorf("no fields to update")
-	}
-
-	query += fmt.Sprintf(" WHERE id = $%d", len(args)+1)
-	args = append(args, params.ID)
-
-	query += fmt.Sprintf(" AND user_id = $%d", len(args)+1)
-	args = append(args, params.UserID)
-
-	slog.LogAttrs(ctx, slog.LevelDebug, "Updating order", attrs...)
-
-	if _, err := r.db.ExecContext(ctx, query, args...); err != nil {
-		slog.Error("Failed to update order", "error", err, "order_id", params.ID, "user_id", params.UserID)
-		return ord, err
-	}
-
-	ord, err = r.GetOrderByIDAndUser(ctx, params.ID, params.UserID)
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		slog.Error("Failed to retrieve updated order", "error", err, "order_id", params.ID, "user_id", params.UserID)
-		return ord, err
+		return err
+	}
+	defer tx.Rollback()
+
+	// Insert order
+	query := `
+		INSERT INTO orders (id, user_id, address_id, amount, tax_amount, shipping_amount, total_amount, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`
+	if _, err := tx.ExecContext(ctx, query, order.ID, order.UserID, order.Address.ID, order.Amount,
+		order.TaxAmount, order.ShippingAmount, order.TotalAmount); err != nil {
+		return err
 	}
 
-	return ord, nil
+	// Insert order items
+	for _, item := range order.Items {
+		itemQuery := `
+			INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+			VALUES ($1, $2, $3, $4)`
+		if _, err := tx.ExecContext(ctx, itemQuery, order.ID, item.Product.ID, item.Quantity, item.UnitPrice); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 // GetOrders retrieves all orders in descending order

@@ -21,6 +21,10 @@ import (
 	util "github.com/dgyurics/marketplace/utilities"
 )
 
+const (
+	tolerance = time.Minute * 5 // Maximum allowed time difference between Stripe's timestamp and server time
+)
+
 type PaymentService interface {
 	EventHandler(ctx context.Context, event stripe.Event) error
 	SignatureVerifier(payload []byte, sigHeader string) error

@@ -45,7 +45,7 @@ func (h *CartRoutes) AddItem(w http.ResponseWriter, r *http.Request) {
 
 	// Error handling
 	if err == types.ErrConstraintViolation {
-		u.RespondWithError(w, r, http.StatusBadRequest, "product cart constraint reached")
+		u.RespondWithError(w, r, http.StatusConflict, "product cart constraint reached")
 		return
 	}
 	if err != nil {

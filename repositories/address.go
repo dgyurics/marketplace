@@ -8,7 +8,7 @@ import (
 )
 
 type AddressRepository interface {
-	GetAddress(ctx context.Context, addressID string) (types.Address, error)
+	GetAddress(ctx context.Context, userID, addressID string) (types.Address, error)
 	CreateAddress(ctx context.Context, address *types.Address) error
 	UpdateAddress(ctx context.Context, userID string, product types.Address) error
 	RemoveAddress(ctx context.Context, userID, addressID string) error
@@ -22,24 +22,21 @@ func NewAddressRepository(db *sql.DB) AddressRepository {
 	return &addressRepository{db: db}
 }
 
-func (r *addressRepository) GetAddress(ctx context.Context, addressID string) (types.Address, error) {
+func (r *addressRepository) GetAddress(ctx context.Context, userID, addressID string) (types.Address, error) {
 	var addr types.Address
 	query := `
 		SELECT id, user_id, addressee, line1, line2,
 			city, state, postal_code, country, email, created_at, updated_at
 		FROM addresses
-		WHERE id = $1
+		WHERE id = $1 AND user_id = $2
 	`
-	err := r.db.QueryRowContext(ctx, query, addressID).Scan(
+	err := r.db.QueryRowContext(ctx, query, addressID, userID).Scan(
 		&addr.ID, &addr.UserID, &addr.Addressee, &addr.Line1, &addr.Line2,
 		&addr.City, &addr.State, &addr.PostalCode, &addr.Country, &addr.Email, &addr.CreatedAt, &addr.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return addr, types.ErrNotFound
 	}
-	if err != nil {
-		return addr, err
-	}
-	return addr, nil
+	return addr, err
 }
 
 func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Address) error {

@@ -10,14 +10,8 @@ import (
 	"github.com/dgyurics/marketplace/utilities"
 )
 
-const (
-	tolerance = time.Minute * 5 // Maximum allowed time difference between Stripe's timestamp and server time
-)
-
 type OrderService interface {
-	CreateOrder(ctx context.Context, shippingID string) (types.Order, error)
-	UpdateOrder(ctx context.Context, order types.OrderParams) (types.Order, error)
-	/* GET order(s) */
+	CreateOrder(ctx context.Context, order *types.Order) error
 	GetOrderByIDAndUser(ctx context.Context, orderID string) (types.Order, error)
 	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
 	GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error)
@@ -48,34 +42,28 @@ func NewOrderService(
 	}
 }
 
-func (os *orderService) UpdateOrder(ctx context.Context, params types.OrderParams) (types.Order, error) {
-	params.UserID = getUserID(ctx)
-	return os.orderRepo.UpdateOrder(ctx, params)
-}
-
 func (os *orderService) GetOrders(ctx context.Context, page, limit int) ([]types.Order, error) {
 	return os.orderRepo.GetOrders(ctx, page, limit)
 }
 
-func (os *orderService) CreateOrder(ctx context.Context, shippingID string) (types.Order, error) {
-	var order types.Order
+func (os *orderService) CreateOrder(ctx context.Context, order *types.Order) (err error) {
 	order.UserID = getUserID(ctx)
-	order.Status = types.OrderPending
-	order.Address = types.Address{ID: shippingID}
-
-	id, err := utilities.GenerateIDString()
+	order.ID, err = utilities.GenerateIDString()
 	if err != nil {
-		return order, err
+		return err
 	}
-	order.ID = id
 
-	if err := os.orderRepo.CreateOrder(ctx, &order); err != nil {
+	if order.TotalAmount == 0 {
+		return types.ErrConstraintViolation
+	}
+
+	if err = os.orderRepo.CreateOrder(ctx, order); err != nil {
 		slog.Debug("Error creating order", "user_id", order.UserID, "error", err)
-		return order, err
+		return err
 	}
 
-	slog.Info("Order created", "order_id", order.ID, "user_id", order.UserID, "amount", order.Amount)
-	return order, nil
+	slog.Info("Order created", "order_id", order.ID, "user_id", order.UserID, "total_amount", order.TotalAmount)
+	return nil
 }
 
 func (os *orderService) GetOrderByID(ctx context.Context, orderID string) (types.Order, error) {

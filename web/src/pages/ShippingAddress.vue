@@ -12,26 +12,34 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ShippingAddressForm } from '@/components/forms'
+import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
 import type { Address } from '@/types'
 
 const checkoutStore = useCheckoutStore()
+const cartStore = useCartStore()
 const router = useRouter()
+
+onMounted(async () => {
+  // Ensure cart is loaded for checkout
+  await cartStore.fetchCart()
+
+  // Redirect to cart if no items
+  if (cartStore.items.length === 0) {
+    router.push('/cart')
+  }
+})
 
 async function handleShippingSubmit(address: Address) {
   try {
-    // upsert shipping address and get saved result
-    const savedAddress = await checkoutStore.saveShippingAddress(address)
+    // Save the shipping address
+    await checkoutStore.saveShippingAddress(address)
 
-    // init order if not exists
-    if (!checkoutStore.order.id) {
-      await checkoutStore.initializeOrder(savedAddress.id!)
-    }
-
-    // complete order by inputting payment information
+    // Navigate to payment
     router.push('/checkout/payment')
   } catch {
     router.push('/error')

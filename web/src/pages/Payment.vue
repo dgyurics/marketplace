@@ -1,7 +1,7 @@
 <template>
   <div v-if="!isInitializing" class="container">
     <h2>Checkout</h2>
-    <OrderSummary :order="checkoutStore.order" />
+    <OrderSummary :tax-amount="taxAmount" />
     <h3>payment details</h3>
     <form @submit.prevent="submitPayment">
       <div class="form-group-flex">
@@ -67,14 +67,17 @@ import { useRouter } from 'vue-router'
 import { BillingAddressForm } from '@/components/forms'
 import OrderSummary from '@/components/OrderSummary.vue'
 import { getStripe, confirmCardPayment } from '@/services/stripe'
+import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
 import { getCountryForLocale, getAppLocale } from '@/utilities'
 
 const checkoutStore = useCheckoutStore()
+const cartStore = useCartStore()
 const router = useRouter()
 const isSubmitting = ref(false)
 const isInitializing = ref(true)
 const cardholderName = ref('')
+const taxAmount = ref(0)
 
 const country = getCountryForLocale(getAppLocale())
 
@@ -84,9 +87,16 @@ let cardElement: StripeCardNumberElement,
 
 onMounted(async () => {
   try {
-    await checkoutStore.estimateTax()
+    // Fetch cart items
+    await cartStore.fetchCart()
+
+    // Estimate tax if we have a shipping address
+    if (checkoutStore.shippingAddress.state && checkoutStore.shippingAddress.country) {
+      const { tax_amount } = await checkoutStore.estimateTax()
+      taxAmount.value = tax_amount
+    }
   } catch {
-    // Handle estimation error silently
+    // Handle errors silently
   }
 
   isInitializing.value = false
@@ -167,7 +177,6 @@ const submitPayment = async () => {
     }
 
     if (confirmedIntent.status === 'succeeded') {
-      checkoutStore.confirmOrder()
       router.push('/checkout/confirmation')
     } else {
       alert('Payment processing or additional verification required')

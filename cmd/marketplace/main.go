@@ -80,7 +80,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewCategoryRoutes(services.Category, baseRouter),
 		routes.NewHealthRoutes(baseRouter),
 		routes.NewImageRoutes(services.Image, baseRouter),
-		routes.NewOrderRoutes(services.Order, services.Tax, services.Payment, services.Cart, baseRouter),
+		routes.NewOrderRoutes(services.Order, services.Tax, services.Payment, services.Cart, services.Address, baseRouter),
 		routes.NewPasswordRoutes(services.Password, services.User, services.Email, services.Template, config.BaseURL, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, baseRouter),
 		routes.NewProductRoutes(services.Product, baseRouter),

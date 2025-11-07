@@ -119,9 +119,7 @@ const addToCart = async () => {
   try {
     // If the user is not authenticated, create a guest user
     if (!isAuthenticated.value) {
-      console.debug('User is not authenticated, creating guest user...')
       const authTokens: AuthTokens = await apiCreateGuestUser()
-      console.debug('Guest user created, setting tokens:', authTokens)
       setTokens(authTokens)
     }
 
@@ -130,8 +128,11 @@ const addToCart = async () => {
     setTimeout(() => {
       addedToCart.value = false
     }, 1000)
-  } catch (error) {
-    console.error('Failed to add item to cart:', error)
+  } catch (error: any) {
+    const status = error.response?.status
+    if (status === 409) {
+      product.inventory = 0 // Mark as out of stock
+    }
   }
 }
 </script>
@@ -271,6 +272,7 @@ const addToCart = async () => {
   animation: scaleIn 0.4s ease-in-out;
 }
 
+.error-message,
 .limit-reached-warning,
 .low-stock-warning {
   text-align: center;
