@@ -33,7 +33,6 @@
           id="email"
           v-model="checkoutStore.shippingAddress.email"
           type="email"
-          required
           autocomplete="email"
         />
       </div>
