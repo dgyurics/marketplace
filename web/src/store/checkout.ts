@@ -19,6 +19,17 @@ export const useCheckoutStore = defineStore('checkout', {
   getters: {
     selectedBillingAddress: (state) =>
       state.useShippingAddress ? state.shippingAddress : state.billingAddress,
+
+    isShippingAddressComplete: (state) => {
+      const addr = state.shippingAddress
+      return Boolean(
+        addr?.line1?.trim() &&
+          addr?.city?.trim() &&
+          addr?.state?.trim() &&
+          addr?.postal_code?.trim() &&
+          addr?.country?.trim()
+      )
+    },
   },
 
   actions: {

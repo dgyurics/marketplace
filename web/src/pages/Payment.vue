@@ -86,14 +86,18 @@ let cardElement: StripeCardNumberElement,
 
 onMounted(async () => {
   try {
+    // Check if shipping address is complete before proceeding
+    if (!checkoutStore.isShippingAddressComplete) {
+      router.push('/checkout/shipping')
+      return
+    }
+
     // Fetch cart items
     await cartStore.fetchCart()
 
-    // Estimate tax if we have a shipping address
-    if (checkoutStore.shippingAddress.state && checkoutStore.shippingAddress.country) {
-      const { tax_amount } = await checkoutStore.estimateTax()
-      taxAmount.value = tax_amount
-    }
+    // Estimate tax
+    const { tax_amount } = await checkoutStore.estimateTax()
+    taxAmount.value = tax_amount
   } catch {
     // Handle errors silently
   }
@@ -180,8 +184,9 @@ const submitPayment = async () => {
     } else {
       alert('Payment processing or additional verification required')
     }
-  } catch {
+  } catch (error) {
     alert('Payment submission failed. Try again')
+    console.error('Payment submission error:', error)
   } finally {
     isSubmitting.value = false
   }
