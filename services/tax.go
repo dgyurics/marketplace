@@ -18,8 +18,8 @@ import (
 )
 
 type TaxService interface {
-	CalculateTax(ctx context.Context, refID string, shippingAddress types.Address, items []types.OrderItem) (int64, error)
-	EstimateTax(ctx context.Context, shippingAddress types.Address, items []types.OrderItem) (int64, error)
+	CalculateTax(ctx context.Context, refID string, shippingAddress types.Address, items []types.CartItem) (int64, error)
+	EstimateTax(ctx context.Context, shippingAddress types.Address, items []types.CartItem) (int64, error)
 }
 
 type taxService struct {
@@ -40,9 +40,13 @@ func NewTaxService(
 	}
 }
 
-func (s *taxService) CalculateTax(ctx context.Context, refID string, address types.Address, items []types.OrderItem) (int64, error) {
+func (s *taxService) CalculateTax(ctx context.Context, refID string, address types.Address, items []types.CartItem) (int64, error) {
 	form := url.Values{}
 	form.Set("currency", s.config.Locale.Currency)
+
+	if refID == "" {
+		refID = getUserID(ctx)
+	}
 
 	// Customer Address
 	form.Set("customer_details[address_source]", "shipping")
@@ -102,7 +106,7 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 }
 
 // EstimateTax estimates the tax using a combination of country (required), state (optional), and tax code (optional).
-func (s *taxService) EstimateTax(ctx context.Context, shippingAddress types.Address, items []types.OrderItem) (int64, error) {
+func (s *taxService) EstimateTax(ctx context.Context, shippingAddress types.Address, items []types.CartItem) (int64, error) {
 	var totalTax int64
 	for _, item := range items {
 		rate, err := s.repo.GetTaxRates(ctx, shippingAddress, item.Product.TaxCode)

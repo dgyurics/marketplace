@@ -16,6 +16,7 @@ import type {
   ProductFilters,
   UserRecord,
   UpdateCategoryRequest,
+  UpdateAddress,
 } from '@/types'
 
 const apiClient = axios.create({
@@ -119,13 +120,13 @@ export const getNewAccessToken = async (refreshToken: string): Promise<AuthToken
   return response.data
 }
 
-export const getUserAddresses = async (): Promise<Address[]> => {
-  const response = await apiClient.get('/addresses')
+export const createAddress = async (address: Address): Promise<Address> => {
+  const response = await apiClient.post('/addresses', address)
   return response.data
 }
 
-export const createAddress = async (address: Address): Promise<Address> => {
-  const response = await apiClient.post('/addresses', address)
+export const updateAddress = async (address: UpdateAddress): Promise<Address> => {
+  const response = await apiClient.put('/addresses', address)
   return response.data
 }
 
@@ -208,18 +209,16 @@ export const addItemToCart = async (productId: string, quantity: number) => {
   return response.data
 }
 
-export const updateCartItem = async (productId: string, quantity: number) => {
-  const response = await apiClient.patch('/carts/items', { product_id: productId, quantity })
-  return response.data
-}
-
 export const removeItemFromCart = async (productId: string) => {
   const response = await apiClient.delete(`/carts/items/${productId}`)
   return response.data
 }
 
-export const createOrder = async (): Promise<Order> => {
-  const response = await apiClient.post('/orders', {})
+export const createOrder = async (shippingID: string): Promise<StripePaymentIntent> => {
+  const params = new URLSearchParams()
+  params.append('shipping_id', shippingID)
+
+  const response = await apiClient.post(`/orders?${params}`)
   return response.data
 }
 
@@ -260,25 +259,15 @@ export const getOrderAdmin = async (orderId: string): Promise<Order> => {
   return response.data
 }
 
-export const getTaxEstimate = async (orderId: string): Promise<{ tax_amount: number }> => {
-  const response = await apiClient.get(`/orders/${orderId}/tax-estimate`)
-  return response.data
-}
+export const getTaxEstimate = async (
+  state: string,
+  country: string
+): Promise<{ tax_amount: number }> => {
+  const params = new URLSearchParams()
+  params.append('state', state)
+  params.append('country', country)
 
-export const confirmOrder = async (orderId: string): Promise<StripePaymentIntent> => {
-  const response = await apiClient.post(`/orders/${orderId}/confirm`)
-  return response.data
-}
-
-export const updateOrder = async (
-  orderId: string,
-  addressId: string,
-  email: string
-): Promise<Order> => {
-  const response = await apiClient.patch(`/orders/${orderId}`, {
-    address_id: addressId,
-    email,
-  })
+  const response = await apiClient.get(`/tax/estimate?${params}`)
   return response.data
 }
 

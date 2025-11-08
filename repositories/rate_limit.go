@@ -10,7 +10,6 @@ import (
 type RateLimitRepository interface {
 	GetHitCount(ctx context.Context, rl *types.RateLimit) error
 	RecordHit(ctx context.Context, rl *types.RateLimit) error
-	Cleanup(ctx context.Context) error
 }
 
 type rateLimitRepository struct {
@@ -49,14 +48,7 @@ func (r *rateLimitRepository) GetHitCount(ctx context.Context, rl *types.RateLim
 	return err
 }
 
-func (r *rateLimitRepository) Cleanup(ctx context.Context) error {
-	query := `
-		DELETE FROM rate_limits WHERE expires_at < NOW()
-	`
-	_, err := r.db.ExecContext(ctx, query)
-	return err
-}
-
+// Use this alongside RecordHit
 // TODO use this to implement an upper bound on rate_limits table
 // Without bounds, adversarial input can cause unbounded memory allocation
 // getTableSize returns the size of the postgresql table in megabytes

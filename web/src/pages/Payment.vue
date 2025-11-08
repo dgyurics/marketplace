@@ -1,17 +1,12 @@
 <template>
-  <div if="!isInitializing" class="container">
+  <div v-if="!isInitializing" class="container">
     <h2>Checkout</h2>
-    <OrderSummary :order="checkoutStore.order" />
+    <OrderSummary :tax-amount="taxAmount" />
     <h3>payment details</h3>
     <form @submit.prevent="submitPayment">
       <div class="form-group-flex">
         <label for="cardholder-name">Name on Card</label>
-        <input
-          id="cardholder-name"
-          v-model="checkoutStore.paymentInfo.cardholderName"
-          type="text"
-          required
-        />
+        <input id="cardholder-name" v-model="cardholderName" type="text" required />
       </div>
 
       <div class="form-group-flex">
@@ -36,7 +31,7 @@
         <label for="email">Email</label>
         <input
           id="email"
-          v-model="checkoutStore.email"
+          v-model="checkoutStore.shippingAddress.email"
           type="email"
           required
           autocomplete="email"
@@ -66,19 +61,23 @@ import type {
   StripeCardExpiryElement,
   StripeCardNumberElement,
 } from '@stripe/stripe-js'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { BillingAddressForm } from '@/components/forms'
 import OrderSummary from '@/components/OrderSummary.vue'
 import { getStripe, confirmCardPayment } from '@/services/stripe'
+import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
 import { getCountryForLocale, getAppLocale } from '@/utilities'
 
 const checkoutStore = useCheckoutStore()
+const cartStore = useCartStore()
 const router = useRouter()
 const isSubmitting = ref(false)
 const isInitializing = ref(true)
+const cardholderName = ref('')
+const taxAmount = ref(0)
 
 const country = getCountryForLocale(getAppLocale())
 
@@ -87,13 +86,24 @@ let cardElement: StripeCardNumberElement,
   cvcElement: StripeCardCvcElement
 
 onMounted(async () => {
-  if (!checkoutStore.canProceedToPayment) {
-    router.push('/checkout/shipping')
-    return
+  try {
+    // Fetch cart items
+    await cartStore.fetchCart()
+
+    // Estimate tax if we have a shipping address
+    if (checkoutStore.shippingAddress.state && checkoutStore.shippingAddress.country) {
+      const { tax_amount } = await checkoutStore.estimateTax()
+      taxAmount.value = tax_amount
+    }
+  } catch {
+    // Handle errors silently
   }
-  await initializeStripe()
-  await checkoutStore.estimateTax()
+
   isInitializing.value = false
+
+  // Wait for next tick to ensure DOM elements are rendered
+  await nextTick()
+  await initializeStripe()
 })
 
 const elementStyles = {
@@ -119,7 +129,6 @@ const elementStyles = {
 async function initializeStripe() {
   const stripe = await getStripe()
   if (!stripe) {
-    console.error('Stripe initialization failed')
     return
   }
 
@@ -139,8 +148,7 @@ const submitPayment = async () => {
   const selectedAddress = checkoutStore.selectedBillingAddress
 
   const billingDetails = {
-    name: checkoutStore.paymentInfo.cardholderName,
-    email: checkoutStore.email,
+    name: cardholderName.value,
     address: {
       line1: selectedAddress.line1,
       line2: selectedAddress.line2 ?? null,
@@ -164,19 +172,16 @@ const submitPayment = async () => {
     )
 
     if (error) {
-      console.error('Payment confirmation failed:', error)
       alert(`Payment failed: ${error.message}`)
       return
     }
 
     if (confirmedIntent.status === 'succeeded') {
-      checkoutStore.confirmOrder()
       router.push('/checkout/confirmation')
     } else {
       alert('Payment processing or additional verification required')
     }
-  } catch (error) {
-    console.error('Payment submission failed:', error)
+  } catch {
     alert('Payment submission failed. Try again')
   } finally {
     isSubmitting.value = false

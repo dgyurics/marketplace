@@ -1,8 +1,14 @@
 <template>
-  <div v-if="order" class="order-summary">
+  <div class="order-summary">
     <h3>Summary</h3>
-    <div v-for="item in order.items" :key="item.product.id" class="order-item">
-      <img :src="item.thumbnail" />
+    <div v-for="item in cartItems" :key="item.product.id" class="order-item">
+      <img
+        :src="
+          item.product.images.find((img) => img.type === 'thumbnail')?.url ||
+          item.product.images[0]?.url
+        "
+        :alt="item.product.name"
+      />
       <div class="details">
         <h4>{{ item.product.name }}</h4>
         <p>Quantity: {{ item.quantity }}</p>
@@ -11,24 +17,40 @@
     </div>
     <div class="totals">
       <p>
-        <span>Subtotal</span><span>{{ formatPrice(order.amount) }}</span>
+        <span>Subtotal</span><span>{{ formatPrice(subtotal) }}</span>
       </p>
       <p>
         <span>Tax <span class="italic">(estimate)</span></span
-        ><span>{{ formatPrice(order.tax_amount) }}</span>
+        ><span>{{ formatPrice(taxAmount) }}</span>
       </p>
       <p>
-        <span>Total</span><span>{{ formatPrice(order.total_amount) }}</span>
+        <span>Total</span><span>{{ formatPrice(total) }}</span>
       </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Order } from '@/types'
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
+
+import { useCartStore } from '@/store/cart'
 import { formatPrice } from '@/utilities'
 
-defineProps<{ order: Order | null }>()
+const props = defineProps<{
+  taxAmount?: number
+}>()
+
+const cartStore = useCartStore()
+const { items: cartItems } = storeToRefs(cartStore)
+
+const subtotal = computed(() =>
+  cartItems.value.reduce((total, item) => total + item.unit_price * item.quantity, 0)
+)
+
+const taxAmount = computed(() => props.taxAmount || 0)
+
+const total = computed(() => subtotal.value + taxAmount.value)
 </script>
 
 <style scoped>

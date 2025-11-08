@@ -10,7 +10,8 @@ import (
 
 type AddressService interface {
 	CreateAddress(ctx context.Context, address *types.Address) error
-	GetAddresses(ctx context.Context) ([]types.Address, error)
+	GetAddress(ctx context.Context, addressID string) (types.Address, error)
+	UpdateAddress(ctx context.Context, address types.Address) error
 	RemoveAddress(ctx context.Context, addressID string) error
 }
 
@@ -40,9 +41,14 @@ func (s *addressService) CreateAddress(ctx context.Context, address *types.Addre
 	return s.repo.CreateAddress(ctx, address)
 }
 
-func (s *addressService) GetAddresses(ctx context.Context) ([]types.Address, error) {
+func (s *addressService) GetAddress(ctx context.Context, addressID string) (types.Address, error) {
 	var userID = getUserID(ctx)
-	return s.repo.GetAddresses(ctx, userID)
+	return s.repo.GetAddress(ctx, userID, addressID)
+}
+
+func (s *addressService) UpdateAddress(ctx context.Context, address types.Address) error {
+	var userID = getUserID(ctx)
+	return s.repo.UpdateAddress(ctx, userID, address)
 }
 
 func (s *addressService) RemoveAddress(ctx context.Context, addressID string) error {

@@ -24,7 +24,6 @@ export async function confirmCardPayment(
   cardElement: StripeCardElement | StripeCardNumberElement | { token: string },
   billingDetails: {
     name: string
-    email: string
     address: Address
   }
 ): Promise<PaymentIntentResult> {

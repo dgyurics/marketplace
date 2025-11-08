@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -18,6 +17,7 @@ type OrderRoutes struct {
 	taxService     services.TaxService
 	paymentService services.PaymentService
 	cartService    services.CartService
+	addressService services.AddressService
 }
 
 func NewOrderRoutes(
@@ -25,6 +25,7 @@ func NewOrderRoutes(
 	taxService services.TaxService,
 	paymentService services.PaymentService,
 	cartService services.CartService,
+	addressService services.AddressService,
 	router router) *OrderRoutes {
 	return &OrderRoutes{
 		router:         router,
@@ -32,34 +33,8 @@ func NewOrderRoutes(
 		taxService:     taxService,
 		paymentService: paymentService,
 		cartService:    cartService,
+		addressService: addressService,
 	}
-}
-
-func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	ord, err := h.orderService.GetPendingOrderForUser(r.Context())
-	if err == nil {
-		// Pending order exists, return it
-		u.RespondWithJSON(w, http.StatusOK, ord)
-		return
-	}
-
-	if err != types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// No pending order, create a new one
-	ord, err = h.orderService.CreateOrder(r.Context())
-	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
-		return
-	}
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	u.RespondWithJSON(w, http.StatusOK, ord)
 }
 
 func (h *OrderRoutes) GetOrderOwner(w http.ResponseWriter, r *http.Request) {
@@ -112,11 +87,16 @@ func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, orders)
 }
 
-func (h *OrderRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
-	orderID := mux.Vars(r)["id"]
-	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), orderID)
+// CreateOrder handles order creation
+// It fetches the shipping address and cart items, calculates tax,
+// creates the order, generates a payment intent, and clears the cart.
+// The final step is handled by the /payment/events webhook, which marks the order as paid
+// upon successful payment. After this, the order is ready for fulfillment.
+func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	// Fetch shipping address
+	addr, err := h.addressService.GetAddress(r.Context(), r.URL.Query().Get("shipping_id"))
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
+		u.RespondWithError(w, r, http.StatusNotFound, "Address not found")
 		return
 	}
 	if err != nil {
@@ -124,14 +104,33 @@ func (h *OrderRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if order.Address == nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "order address is required for tax estimate")
+	// Fetch user cart
+	cart, err := h.cartService.GetItems(r.Context())
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if len(cart) == 0 {
+		u.RespondWithError(w, r, http.StatusBadRequest, "cart is empty")
 		return
 	}
 
-	taxEstimate, err := h.taxService.EstimateTax(r.Context(), *order.Address, order.Items)
-	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "tax data not found")
+	// Calculate tax
+	tax, err := h.taxService.CalculateTax(r.Context(), "", addr, cart)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Create order
+	order := &types.Order{
+		Address:   addr,
+		TaxAmount: tax,
+	}
+	calculateOrderFromCart(order, cart)
+	err = h.orderService.CreateOrder(r.Context(), order)
+	if err == types.ErrConstraintViolation {
+		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid order data")
 		return
 	}
 	if err != nil {
@@ -139,80 +138,41 @@ func (h *OrderRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusOK, types.TaxEstimateResponse{TaxAmount: taxEstimate})
-}
-
-func (h *OrderRoutes) Update(w http.ResponseWriter, r *http.Request) {
-	orderID := mux.Vars(r)["id"]
-	params := types.OrderParams{
-		ID: orderID,
-	}
-	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
-		return
-	}
-	ord, err := h.orderService.UpdateOrder(r.Context(), params)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-	u.RespondWithJSON(w, http.StatusOK, ord)
-}
-
-// Confirm finalizes an order by calculating actual tax and generating a payment intent.
-func (h *OrderRoutes) Confirm(w http.ResponseWriter, r *http.Request) {
-	orderID := mux.Vars(r)["id"]
-	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), orderID)
-	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
-		return
-	}
+	// Create payment intent
+	pi, err := h.paymentService.CreatePaymentIntent(r.Context(), order.ID, order.TotalAmount)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// FIXME look into removing this and using automatic tax calculation for payment intents
-	tax, err := h.taxService.CalculateTax(r.Context(), order.ID, *order.Address, order.Items)
-	if err != nil {
+	// Clear user cart
+	if err := h.cartService.Clear(r.Context()); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	pi, err := h.paymentService.CreatePaymentIntent(r.Context(), order.ID, order.TotalAmount+tax)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	totalAmount := order.TotalAmount + tax
-	params := types.OrderParams{
-		ID:          orderID,
-		TaxAmount:   &tax,
-		TotalAmount: &totalAmount,
-	}
-	_, err = h.orderService.UpdateOrder(r.Context(), params)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Clear user cart after order confirmation
-	if err := h.cartService.ClearCart(r.Context()); err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
+	// Respond with client secret for payment processing
 	u.RespondWithJSON(w, http.StatusOK, stripe.PaymentIntentResponse{ClientSecret: pi.ClientSecret})
+}
+
+func calculateOrderFromCart(order *types.Order, cart []types.CartItem) {
+	order.Items = make([]types.OrderItem, 0, len(cart))
+	for _, ci := range cart {
+		oi := types.OrderItem{
+			Product:   ci.Product,
+			Quantity:  ci.Quantity,
+			UnitPrice: ci.UnitPrice,
+		}
+		order.Items = append(order.Items, oi)
+		order.Amount = order.Amount + ci.UnitPrice*int64(ci.Quantity)
+	}
+	order.TotalAmount = order.Amount + order.TaxAmount + order.ShippingAmount
 }
 
 func (h *OrderRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/orders", h.secure(h.limit(h.CreateOrder, 5, time.Hour))).Methods(http.MethodPost)
-	h.muxRouter.Handle("/orders/{id}/confirm", h.secure(h.limit(h.Confirm, 1, time.Minute*15))).Methods(http.MethodPost)
-	h.muxRouter.Handle("/orders/{id}", h.secure(h.Update)).Methods(http.MethodPatch)
 	h.muxRouter.HandleFunc("/orders/{id}/public", h.GetOrderPublic).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/owner", h.secure(h.GetOrderOwner)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/admin", h.secureAdmin(h.GetOrderAdmin)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secureAdmin(h.GetOrders)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/orders/{id}/tax-estimate", h.secure(h.EstimateTax)).Methods(http.MethodGet)
 }

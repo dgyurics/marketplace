@@ -47,6 +47,7 @@ type Address struct {
 	City       string    `json:"city"`        // city, district, suburb, town, village
 	State      string    `json:"state"`       // state, county, province, region
 	PostalCode string    `json:"postal_code"` // zip code, postal code
-	IsDeleted  bool      `json:"-"`           // when existing order references address, we have to soft delete
+	Email      string    `json:"email"`
 	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }

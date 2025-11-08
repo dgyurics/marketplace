@@ -15,7 +15,7 @@
       <div class="order-info">
         <div class="info-row">
           <label>Email:</label>
-          <span>{{ order.email }}</span>
+          <span>{{ order.address.email }}</span>
         </div>
         <div class="info-row">
           <label>Created:</label>

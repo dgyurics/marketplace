@@ -62,8 +62,6 @@ CREATE TABLE IF NOT EXISTS images (
 );
 CREATE INDEX idx_images_source ON images(source);
 
-CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest');
-
 CREATE TABLE IF NOT EXISTS pending_users (
     id BIGINT PRIMARY KEY,
     email VARCHAR(255) NOT NULL,
@@ -77,11 +75,13 @@ CREATE TABLE IF NOT EXISTS pending_users (
 CREATE INDEX idx_pending_users_email
 ON pending_users(email);
 
+CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest');
+
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY,
     email VARCHAR(255) UNIQUE,
     password_hash TEXT,
-    role user_role_enum DEFAULT 'guest' NOT NULL,
+    role user_role_enum NOT NULL,
     requires_setup BOOLEAN,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
@@ -163,6 +163,8 @@ CREATE TABLE IF NOT EXISTS cart_items (
     product_id BIGINT,
     quantity INT NOT NULL,
     unit_price BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    
     PRIMARY KEY (user_id, product_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
@@ -177,9 +179,10 @@ CREATE TABLE IF NOT EXISTS addresses (
     city VARCHAR(255) NOT NULL, -- city, district, suburb, town, village
     state VARCHAR(50) NOT NULL, -- state, county, province, region
     postal_code VARCHAR(20) NOT NULL, -- zip code, postal code
-    is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- when existing order references address, we have to soft delete
     country CHAR(2) NOT NULL, -- ISO 3166-1 alpha-2 country code
+    email VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 );
 
@@ -195,28 +198,25 @@ CREATE TYPE order_status_enum AS ENUM (
 CREATE TABLE IF NOT EXISTS orders (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    email VARCHAR(255),
-    address_id BIGINT,
+    address_id BIGINT NOT NULL,
     amount BIGINT NOT NULL DEFAULT 0,
     tax_amount BIGINT NOT NULL DEFAULT 0,
     shipping_amount BIGINT NOT NULL DEFAULT 0,
     total_amount BIGINT NOT NULL DEFAULT 0,
-    status order_status_enum NOT NULL DEFAULT 'pending',
+    status order_status_enum NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
     FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE RESTRICT
 );
 
--- when checking out, create an order from the user's cart
--- and move the cart items to order_items
 CREATE TABLE IF NOT EXISTS order_items (
     order_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
     quantity INT NOT NULL,
     unit_price BIGINT NOT NULL,
     PRIMARY KEY (order_id, product_id),
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE RESTRICT,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
 );
 CREATE INDEX idx_order_items_product_id_quantity
