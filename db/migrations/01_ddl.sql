@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS addresses (
     line1 VARCHAR(255) NOT NULL,
     line2 VARCHAR(255),
     city VARCHAR(255) NOT NULL, -- city, district, suburb, town, village
-    state VARCHAR(50) NOT NULL, -- state, county, province, region
+    state VARCHAR(50), -- state, county, province, region
     postal_code VARCHAR(20) NOT NULL, -- zip code, postal code
     country CHAR(2) NOT NULL, -- ISO 3166-1 alpha-2 country code
     email VARCHAR(255) NOT NULL,

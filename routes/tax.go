@@ -25,11 +25,16 @@ func NewTaxRoutes(
 	}
 }
 
-// EstimateTax estimates tax for the current user's state, country, and cart items
+// EstimateTax estimates tax for the current user's cart using country and optional state
 func (h *TaxRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
+	country := r.URL.Query().Get("country")
 	addr := types.Address{
-		Country: r.URL.Query().Get("country"),
-		State:   r.URL.Query().Get("state"),
+		Country: country,
+	}
+
+	state := r.URL.Query().Get("state")
+	if state != "" {
+		addr.State = &state
 	}
 
 	items, err := h.cartService.GetItems(r.Context())

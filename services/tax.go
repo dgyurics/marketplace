@@ -56,7 +56,9 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 	if line2 := address.Line2; line2 != nil && *line2 != "" {
 		form.Set("customer_details[address][line2]", *line2)
 	}
-	form.Set("customer_details[address][state]", address.State)
+	if state := address.State; state != nil && *state != "" {
+		form.Set("customer_details[address][state]", *state)
+	}
 	form.Set("customer_details[address][postal_code]", address.PostalCode)
 
 	if len(items) == 0 {

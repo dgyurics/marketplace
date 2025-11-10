@@ -29,7 +29,7 @@ func TestCreateAddress(t *testing.T) {
 		Line1:      "123 Test St",
 		Line2:      &addressLine2,
 		City:       "Testville",
-		State:      "TS",
+		State:      utilities.String("TS"),
 		PostalCode: "12345",
 	}
 
@@ -68,7 +68,7 @@ func TestCreateAddressWhenDuplicateExists(t *testing.T) {
 		Line1:      "123 Test St",
 		Line2:      &addressLine2,
 		City:       "Testville",
-		State:      "TS",
+		State:      utilities.String("TS"),
 		PostalCode: "12345",
 		Country:    "US",
 	}
@@ -87,7 +87,7 @@ func TestCreateAddressWhenDuplicateExists(t *testing.T) {
 		Line1:      "123 Test St",
 		Line2:      &addressLine2,
 		City:       "Testville",
-		State:      "TS",
+		State:      utilities.String("TS"),
 		PostalCode: "12345",
 		Country:    "US",
 	}

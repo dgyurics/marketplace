@@ -33,9 +33,9 @@ func (r *taxRepository) GetTaxRates(ctx context.Context, address types.Address, 
 	args := []interface{}{}
 	args = append(args, strings.ToUpper(address.Country))
 
-	if address.State != "" {
+	if address.State != nil {
 		query += fmt.Sprintf(" AND state = $%d", len(args)+1)
-		args = append(args, strings.ToUpper(address.State))
+		args = append(args, strings.ToUpper(*address.State))
 	}
 
 	if taxCode == nil {

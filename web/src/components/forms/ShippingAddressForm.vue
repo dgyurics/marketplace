@@ -2,7 +2,7 @@
   <form @submit.prevent="handleSubmit">
     <div class="form-group-flex">
       <label for="fullName">Full Name</label>
-      <input id="fullName" v-model="formData.addressee" type="text" required />
+      <input id="fullName" v-model="formData.addressee" type="text" />
     </div>
 
     <div class="form-group-flex">
@@ -53,11 +53,8 @@ const emit = defineEmits<{
 }>()
 
 const formData = reactive<Address>({
-  addressee: '',
   line1: '',
-  line2: '',
   city: '',
-  state: '',
   postal_code: '',
   country: getCountryForLocale(getAppLocale()),
   email: '',

@@ -277,3 +277,50 @@ var PostalCodePatterns = map[string]*regexp.Regexp{
 	"VN": regexp.MustCompile(`^\d{6}$`),                               // Vietnam 700000
 	"ZA": regexp.MustCompile(`^\d{4}$`),                               // South Africa 2000
 }
+
+func ValidatePostalCode(country, postalCode string) bool {
+	regex, ok := PostalCodePatterns[country]
+	if !ok {
+		return postalCode != ""
+	}
+	return regex.MatchString(postalCode)
+}
+
+func ValidateState(country, state string) bool {
+	states, ok := StateCodes[country]
+	if !ok {
+		return true
+	}
+	return states[state]
+}
+
+var StateCodes = map[string]map[string]bool{
+	"US": {
+		"AL": true, "AK": true, "AZ": true, "AR": true, "CA": true, "CO": true,
+		"CT": true, "DE": true, "FL": true, "GA": true, "HI": true, "ID": true,
+		"IL": true, "IN": true, "IA": true, "KS": true, "KY": true, "LA": true,
+		"ME": true, "MD": true, "MA": true, "MI": true, "MN": true, "MS": true,
+		"MO": true, "MT": true, "NE": true, "NV": true, "NH": true, "NJ": true,
+		"NM": true, "NY": true, "NC": true, "ND": true, "OH": true, "OK": true,
+		"OR": true, "PA": true, "RI": true, "SC": true, "SD": true, "TN": true,
+		"TX": true, "UT": true, "VT": true, "VA": true, "WA": true, "WV": true,
+		"WI": true, "WY": true, "DC": true, "AS": true, "GU": true, "MP": true,
+		"PR": true, "VI": true, "AA": true, "AE": true, "AP": true,
+	},
+
+	"CA": {
+		"AB": true,
+		"BC": true,
+		"MB": true,
+		"NB": true,
+		"NL": true,
+		"NS": true,
+		"NT": true,
+		"NU": true,
+		"ON": true,
+		"PE": true,
+		"QC": true,
+		"SK": true,
+		"YT": true,
+	},
+}

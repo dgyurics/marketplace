@@ -44,9 +44,9 @@ type Address struct {
 	Addressee  *string   `json:"addressee,omitempty"`
 	Line1      string    `json:"line1"`
 	Line2      *string   `json:"line2,omitempty"`
-	City       string    `json:"city"`        // city, district, suburb, town, village
-	State      string    `json:"state"`       // state, county, province, region
-	PostalCode string    `json:"postal_code"` // zip code, postal code
+	City       string    `json:"city"`            // city, district, suburb, town, village
+	State      *string   `json:"state,omitempty"` // state, county, province, region
+	PostalCode string    `json:"postal_code"`     // zip code, postal code
 	Email      string    `json:"email"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`

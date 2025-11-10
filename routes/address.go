@@ -2,7 +2,9 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dgyurics/marketplace/services"
@@ -35,13 +37,8 @@ func (h *AddressRoutes) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if address.Line1 == "" || address.City == "" || address.State == "" || address.PostalCode == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "missing required fields for address")
-		return
-	}
-
-	if !u.PostalCodePatterns[h.config.Country].MatchString(address.PostalCode) {
-		u.RespondWithError(w, r, http.StatusBadRequest, "invalid postal code format")
+	if err := h.validateAddress(address); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -59,6 +56,7 @@ func (h *AddressRoutes) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
 		return
 	}
+
 	err := h.addressService.UpdateAddress(r.Context(), address)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, "Address not found")
@@ -79,6 +77,30 @@ func (h *AddressRoutes) RemoveAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u.RespondSuccess(w)
+}
+
+func (h *AddressRoutes) validateAddress(address types.Address) error {
+	if !strings.EqualFold(address.Country, h.config.Country) {
+		return errors.New("invalid country code")
+	}
+
+	if u.ValidateState(address.Country, u.StringValue(address.State, "")) {
+		return errors.New("invalid state")
+	}
+
+	if !u.ValidatePostalCode(address.Country, address.PostalCode) {
+		return errors.New("invalid postal code format")
+	}
+
+	if address.Line1 == "" {
+		return errors.New("missing address line1")
+	}
+
+	if address.City == "" {
+		return errors.New("missing address city")
+	}
+
+	return nil
 }
 
 func (h *AddressRoutes) RegisterRoutes() {

@@ -7,12 +7,13 @@
         :model-value="checkoutStore.shippingAddress"
         @submit="handleShippingSubmit"
       />
+      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ShippingAddressForm } from '@/components/forms'
@@ -23,6 +24,8 @@ import type { Address } from '@/types'
 const checkoutStore = useCheckoutStore()
 const cartStore = useCartStore()
 const router = useRouter()
+
+const errorMessage = ref<string | null>(null)
 
 onMounted(async () => {
   // Ensure cart is loaded for checkout
@@ -41,8 +44,13 @@ async function handleShippingSubmit(address: Address) {
 
     // Navigate to payment
     router.push('/checkout/payment')
-  } catch {
-    router.push('/error')
+  } catch (error: any) {
+    const status = error.response?.status
+    if (status === 400) {
+      errorMessage.value = 'Invalid shipping address'
+      return
+    }
+    errorMessage.value = 'Something went wrong'
   }
 }
 </script>

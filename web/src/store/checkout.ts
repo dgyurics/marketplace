@@ -20,16 +20,7 @@ export const useCheckoutStore = defineStore('checkout', {
     selectedBillingAddress: (state) =>
       state.useShippingAddress ? state.shippingAddress : state.billingAddress,
 
-    isShippingAddressComplete: (state) => {
-      const addr = state.shippingAddress
-      return Boolean(
-        addr?.line1?.trim() &&
-          addr?.city?.trim() &&
-          addr?.state?.trim() &&
-          addr?.postal_code?.trim() &&
-          addr?.country?.trim()
-      )
-    },
+    isShippingAddressComplete: (state) => Boolean(state.shippingAddress.id),
   },
 
   actions: {
@@ -44,7 +35,7 @@ export const useCheckoutStore = defineStore('checkout', {
     },
 
     async estimateTax(): Promise<{ tax_amount: number }> {
-      return apiGetTaxEstimate(this.shippingAddress.state, this.shippingAddress.country)
+      return apiGetTaxEstimate(this.shippingAddress.country, this.shippingAddress.state)
     },
 
     async preparePayment(): Promise<string> {

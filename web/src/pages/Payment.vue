@@ -156,7 +156,7 @@ const submitPayment = async () => {
       line1: selectedAddress.line1,
       line2: selectedAddress.line2 ?? null,
       city: selectedAddress.city,
-      state: selectedAddress.state,
+      state: selectedAddress.state ?? null,
       postal_code: selectedAddress.postal_code,
       country,
     },

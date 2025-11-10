@@ -260,12 +260,15 @@ export const getOrderAdmin = async (orderId: string): Promise<Order> => {
 }
 
 export const getTaxEstimate = async (
-  state: string,
-  country: string
+  country: string,
+  state?: string
 ): Promise<{ tax_amount: number }> => {
   const params = new URLSearchParams()
-  params.append('state', state)
   params.append('country', country)
+
+  if (state) {
+    params.append('state', state)
+  }
 
   const response = await apiClient.get(`/tax/estimate?${params}`)
   return response.data
