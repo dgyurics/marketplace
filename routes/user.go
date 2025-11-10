@@ -61,12 +61,12 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if credentials.Email == "" || !isValidEmail(credentials.Email) {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Email required")
+		u.RespondWithError(w, r, http.StatusBadRequest, "email required")
 		return
 	}
 
 	if credentials.Password == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Password required")
+		u.RespondWithError(w, r, http.StatusBadRequest, "password required")
 		return
 	}
 
@@ -74,7 +74,7 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 	usr, err := h.userService.Login(r.Context(), &credentials)
 	if err == types.ErrNotFound {
 		h.recordHit(r, time.Hour*6) // record failed login attempt for rate limiting
-		u.RespondWithError(w, r, http.StatusUnauthorized, "Invalid credentials")
+		u.RespondWithError(w, r, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 	if err != nil {
@@ -120,7 +120,7 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if requestBody.RefreshToken == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Refresh token required")
+		u.RespondWithError(w, r, http.StatusBadRequest, "refresh token required")
 		return
 	}
 
@@ -129,7 +129,7 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	// does not distinguish between bad input and system errors
 	usr, err := h.refreshService.VerifyToken(r.Context(), requestBody.RefreshToken)
 	if err != nil {
-		u.RespondWithError(w, r, http.StatusUnauthorized, "Invalid or expired refresh token")
+		u.RespondWithError(w, r, http.StatusUnauthorized, "invalid or expired refresh token")
 		return
 	}
 
@@ -207,19 +207,19 @@ func (h *UserRoutes) UpdatedCredentials(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if credentials.Email == "" || !isValidEmail(credentials.Email) {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
+	if !isValidEmail(credentials.Email) {
+		u.RespondWithError(w, r, http.StatusBadRequest, "email is required")
 		return
 	}
 	if credentials.Password == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Password is required")
+		u.RespondWithError(w, r, http.StatusBadRequest, "password is required")
 		return
 	}
 
 	// Update user email and password
 	usr, err := h.userService.SetCredentials(r.Context(), credentials)
 	if err == types.ErrUniqueConstraintViolation {
-		u.RespondWithError(w, r, http.StatusConflict, "User with this email already exists")
+		u.RespondWithError(w, r, http.StatusConflict, err.Error())
 		return
 	}
 	if err == types.ErrNotFound {
@@ -247,8 +247,7 @@ func (h *UserRoutes) UpdatedCredentials(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Store refresh token
-	err = h.refreshService.StoreToken(r.Context(), usr.ID, token)
-	if err != nil {
+	if err := h.refreshService.StoreToken(r.Context(), usr.ID, token); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}

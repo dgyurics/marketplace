@@ -63,12 +63,12 @@ func (h *CategoryRoutes) GetCategory(w http.ResponseWriter, r *http.Request) {
 func (h *CategoryRoutes) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 	var category types.Category
 	if err := json.NewDecoder(r.Body).Decode(&category); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
 	}
 	err := h.categoryService.UpdateCategory(r.Context(), category)
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "Category not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {
@@ -82,7 +82,7 @@ func (h *CategoryRoutes) DeleteCategory(w http.ResponseWriter, r *http.Request) 
 	vars := mux.Vars(r)
 	err := h.categoryService.RemoveCategory(r.Context(), vars["id"])
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "Category not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {

@@ -45,7 +45,7 @@ func (h *TaxRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
 
 	taxEstimate, err := h.taxService.EstimateTax(r.Context(), addr, items)
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "tax data not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {

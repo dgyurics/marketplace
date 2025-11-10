@@ -35,7 +35,7 @@ func (h *CartRoutes) AddItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if item.Quantity <= 0 {
-		u.RespondWithError(w, r, http.StatusBadRequest, "quantity must be greater than 0")
+		u.RespondWithError(w, r, http.StatusBadRequest, "item quantity must be greater than 0")
 		return
 	}
 
@@ -45,7 +45,7 @@ func (h *CartRoutes) AddItem(w http.ResponseWriter, r *http.Request) {
 
 	// Error handling
 	if err == types.ErrConstraintViolation {
-		u.RespondWithError(w, r, http.StatusConflict, "product cart constraint reached")
+		u.RespondWithError(w, r, http.StatusConflict, err.Error())
 		return
 	}
 	if err != nil {

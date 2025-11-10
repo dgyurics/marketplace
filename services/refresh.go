@@ -61,6 +61,7 @@ func (s *refreshService) StoreToken(ctx context.Context, userID, token string) e
 }
 
 // ValidateToken verifies the refresh token and returns the associated user if valid.
+// FIXME rename GetUser
 func (s *refreshService) VerifyToken(ctx context.Context, token string) (*types.User, error) {
 	now := time.Now()
 	tokenHash := hashString(token, s.config.HMACSecret)

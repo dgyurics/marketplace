@@ -25,6 +25,12 @@ export const useCheckoutStore = defineStore('checkout', {
 
   actions: {
     async saveShippingAddress(addressData: Address): Promise<Address> {
+      // Normalize country and state to uppercase
+      addressData.country = addressData.country.toUpperCase()
+      if (addressData.state) {
+        addressData.state = addressData.state.toUpperCase()
+      }
+
       // Check if we're updating an existing address or creating a new one
       const savedAddress = this.shippingAddress.id
         ? await apiUpdateAddress({ id: this.shippingAddress.id, ...addressData })

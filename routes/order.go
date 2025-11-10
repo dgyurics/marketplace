@@ -40,7 +40,7 @@ func NewOrderRoutes(
 func (h *OrderRoutes) GetOrderOwner(w http.ResponseWriter, r *http.Request) {
 	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), mux.Vars(r)["id"])
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {
@@ -53,7 +53,7 @@ func (h *OrderRoutes) GetOrderOwner(w http.ResponseWriter, r *http.Request) {
 func (h *OrderRoutes) GetOrderPublic(w http.ResponseWriter, r *http.Request) {
 	order, err := h.orderService.GetOrderByIDPublic(r.Context(), mux.Vars(r)["id"])
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {
@@ -66,7 +66,7 @@ func (h *OrderRoutes) GetOrderPublic(w http.ResponseWriter, r *http.Request) {
 func (h *OrderRoutes) GetOrderAdmin(w http.ResponseWriter, r *http.Request) {
 	order, err := h.orderService.GetOrderByID(r.Context(), mux.Vars(r)["id"])
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "order not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {
@@ -96,7 +96,7 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	// Fetch shipping address
 	addr, err := h.addressService.GetAddress(r.Context(), r.URL.Query().Get("shipping_id"))
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "Address not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {
@@ -130,7 +130,7 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	calculateOrderFromCart(order, cart)
 	err = h.orderService.CreateOrder(r.Context(), order)
 	if err == types.ErrConstraintViolation {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid order data")
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 	if err != nil {

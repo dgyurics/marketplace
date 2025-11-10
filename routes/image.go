@@ -53,7 +53,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify product exists
-	// FIXME: validate input is numeric
+	// FIXME: move this to product service
 	exists, err := h.imageService.ProductExists(r.Context(), productID)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
@@ -170,7 +170,7 @@ func altTextFromForm(r *http.Request) *string {
 func (h *ImageRoutes) RemoveImage(w http.ResponseWriter, r *http.Request) {
 	err := h.imageService.RemoveImage(r.Context(), mux.Vars(r)["image"])
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "Image not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {
@@ -185,7 +185,7 @@ func (h *ImageRoutes) RemoveImage(w http.ResponseWriter, r *http.Request) {
 func (h *ImageRoutes) PromoteImage(w http.ResponseWriter, r *http.Request) {
 	err := h.imageService.PromoteImage(r.Context(), mux.Vars(r)["image"])
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "Image not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {

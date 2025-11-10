@@ -64,12 +64,12 @@ func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 func (h *ProductRoutes) GetProduct(w http.ResponseWriter, r *http.Request) {
 	productId, ok := mux.Vars(r)["id"]
 	if !ok {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid ID")
+		u.RespondWithError(w, r, http.StatusBadRequest, "invalid product ID")
 		return
 	}
 	product, err := h.productService.GetProductByID(r.Context(), productId)
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "Product not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {
@@ -83,12 +83,12 @@ func (h *ProductRoutes) GetProduct(w http.ResponseWriter, r *http.Request) {
 func (h *ProductRoutes) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	var product types.Product
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 	err := h.productService.UpdateProduct(r.Context(), product)
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "Product not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {
@@ -102,7 +102,7 @@ func (h *ProductRoutes) RemoveProduct(w http.ResponseWriter, r *http.Request) {
 	productID := mux.Vars(r)["id"]
 	err := h.productService.RemoveProduct(r.Context(), productID)
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "Product not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {

@@ -53,13 +53,13 @@ func (h *AddressRoutes) CreateAddress(w http.ResponseWriter, r *http.Request) {
 func (h *AddressRoutes) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	var address types.Address
 	if err := json.NewDecoder(r.Body).Decode(&address); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
 	}
 
 	err := h.addressService.UpdateAddress(r.Context(), address)
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "Address not found")
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {
@@ -84,7 +84,7 @@ func (h *AddressRoutes) validateAddress(address types.Address) error {
 		return errors.New("invalid country code")
 	}
 
-	if u.ValidateState(address.Country, u.StringValue(address.State, "")) {
+	if !u.ValidateState(address.Country, u.StringValue(address.State, "")) {
 		return errors.New("invalid state")
 	}
 

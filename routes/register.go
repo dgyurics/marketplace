@@ -41,14 +41,14 @@ func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if reqBody.Email == "" || !isValidEmail(reqBody.Email) {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
+		u.RespondWithError(w, r, http.StatusBadRequest, "email is required")
 		return
 	}
 
 	// create entry in pending_users table
 	regCode, err := h.regService.Register(r.Context(), strings.ToLower(reqBody.Email))
 	if err == types.ErrUniqueConstraintViolation {
-		u.RespondWithError(w, r, http.StatusConflict, "User with this email already exists")
+		u.RespondWithError(w, r, http.StatusConflict, "user with this email already exists")
 		return
 	}
 	if err != nil {
@@ -73,22 +73,22 @@ func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request)
 
 	// Basic validation
 	if reqBody.Email == "" || !isValidEmail(reqBody.Email) {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
+		u.RespondWithError(w, r, http.StatusBadRequest, "email is required")
 		return
 	}
 	if reqBody.RegistrationCode == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Registration code is required")
+		u.RespondWithError(w, r, http.StatusBadRequest, "registration code required")
 		return
 	}
 	if reqBody.Password == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Password is required")
+		u.RespondWithError(w, r, http.StatusBadRequest, "password required")
 		return
 	}
 
 	// Confirm email and code has matching entry in pending_users table
 	err := h.regService.RegisterConfirm(r.Context(), reqBody.Email, reqBody.RegistrationCode)
 	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid email or registration code")
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 	if err != nil {
@@ -103,7 +103,7 @@ func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request)
 	}
 	err = h.userService.CreateUser(r.Context(), &usr)
 	if err == types.ErrUniqueConstraintViolation {
-		u.RespondWithError(w, r, http.StatusConflict, "User with this email already exists")
+		u.RespondWithError(w, r, http.StatusConflict, err.Error())
 		return
 	}
 	if err != nil {

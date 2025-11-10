@@ -47,7 +47,7 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if credentials.Email == "" || !isValidEmail(credentials.Email) {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
+		u.RespondWithError(w, r, http.StatusBadRequest, "email required")
 		return
 	}
 
@@ -102,7 +102,6 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	u.RespondSuccess(w)
 }
 
-// TODO return unique status code when code has expired (allows frontend to show specific message)
 // TODO redesign to work with just the code (no email) - code should be unique enough
 func (h *PasswordRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *http.Request) {
 	var credentials types.Credential
@@ -112,28 +111,28 @@ func (h *PasswordRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *http.Req
 	}
 
 	if credentials.Email == "" || !isValidEmail(credentials.Email) {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
+		u.RespondWithError(w, r, http.StatusBadRequest, "email required")
 		return
 	}
 
 	if credentials.Password == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Password is required")
+		u.RespondWithError(w, r, http.StatusBadRequest, "password required")
 		return
 	}
 
 	if credentials.ResetCode == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Reset code is required")
+		u.RespondWithError(w, r, http.StatusBadRequest, "reset code required")
 		return
 	}
 
-	// Validate email and code match, exists, and is not expired
-	valid, err := h.servicePassword.ValidateResetCode(r.Context(), credentials.ResetCode, credentials.Email)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+	// Validate the reset code
+	err := h.servicePassword.ValidateResetCode(r.Context(), credentials.ResetCode, credentials.Email)
+	if err == types.ErrConstraintViolation {
+		u.RespondWithError(w, r, http.StatusBadRequest, "invalid or expired reset code")
 		return
 	}
-	if !valid {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Invalid reset code")
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 

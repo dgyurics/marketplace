@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"log/slog"
 	"math/big"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 type PasswordService interface {
 	GenerateResetCode(ctx context.Context) (string, error)
 	StoreResetCode(ctx context.Context, code string, email string) error
-	ValidateResetCode(ctx context.Context, code, email string) (valid bool, err error)
+	ValidateResetCode(ctx context.Context, code, email string) error
 	ResetPassword(ctx context.Context, code, email, password string) error
 }
 
@@ -61,25 +62,31 @@ func (s *passwordService) StoreResetCode(ctx context.Context, code string, userI
 	})
 }
 
-// ValidateResetCode returns true if the code is valid
-func (s *passwordService) ValidateResetCode(ctx context.Context, code, email string) (valid bool, err error) {
+func (s *passwordService) ValidateResetCode(ctx context.Context, code, email string) error {
 	resetCode, err := s.repo.GetResetCode(ctx, email)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// Check if the code has been used
 	if resetCode.Used {
-		return false, nil
+		slog.Warn("Attempt to use already used password reset code", "email", email)
+		return types.ErrConstraintViolation
 	}
 
 	// Check if the code has expired
 	if time.Now().UTC().After(resetCode.ExpiresAt) {
-		return false, nil
+		slog.Warn("Attempt to use expired password reset code", "email", email)
+		return types.ErrConstraintViolation
 	}
 
-	// Return true if the code matches the stored hash
-	return hashString(code, s.hmacKey) == resetCode.CodeHash, nil
+	// Check if the code matches
+	if hashString(code, s.hmacKey) == resetCode.CodeHash {
+		return nil
+	}
+
+	slog.Warn("Invalid password reset code attempt", "email", email)
+	return types.ErrConstraintViolation
 }
 
 func (s *passwordService) ResetPassword(ctx context.Context, code, email, password string) error {
