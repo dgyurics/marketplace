@@ -57,7 +57,17 @@ func (h *AddressRoutes) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.addressService.UpdateAddress(r.Context(), address)
+	if address.ID == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "missing address ID")
+		return
+	}
+
+	if err := h.validateAddress(address); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err := h.addressService.UpdateAddress(r.Context(), &address)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -66,7 +76,8 @@ func (h *AddressRoutes) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	u.RespondSuccess(w)
+
+	u.RespondWithJSON(w, http.StatusOK, address)
 }
 
 func (h *AddressRoutes) RemoveAddress(w http.ResponseWriter, r *http.Request) {

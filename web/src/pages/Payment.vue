@@ -148,6 +148,8 @@ async function initializeStripe() {
 }
 
 const submitPayment = async () => {
+  // FIXME how to check if stripe fields have been filled correctly
+  // then validate before submitting
   const selectedAddress = checkoutStore.selectedBillingAddress
 
   const billingDetails = {

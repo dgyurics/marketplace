@@ -10,8 +10,8 @@ import (
 
 type AddressService interface {
 	CreateAddress(ctx context.Context, address *types.Address) error
+	UpdateAddress(ctx context.Context, address *types.Address) error
 	GetAddress(ctx context.Context, addressID string) (types.Address, error)
-	UpdateAddress(ctx context.Context, address types.Address) error
 	RemoveAddress(ctx context.Context, addressID string) error
 }
 
@@ -31,8 +31,6 @@ func (s *addressService) CreateAddress(ctx context.Context, address *types.Addre
 	var userID = getUserID(ctx)
 	address.UserID = userID
 	address.Country = s.config.Country
-
-	// if a duplicate address is found, addressID will not be used
 	addressID, err := utilities.GenerateIDString()
 	if err != nil {
 		return err
@@ -46,9 +44,9 @@ func (s *addressService) GetAddress(ctx context.Context, addressID string) (type
 	return s.repo.GetAddress(ctx, userID, addressID)
 }
 
-func (s *addressService) UpdateAddress(ctx context.Context, address types.Address) error {
-	var userID = getUserID(ctx)
-	return s.repo.UpdateAddress(ctx, userID, address)
+func (s *addressService) UpdateAddress(ctx context.Context, address *types.Address) error {
+	address.UserID = getUserID(ctx)
+	return s.repo.UpdateAddress(ctx, address)
 }
 
 func (s *addressService) RemoveAddress(ctx context.Context, addressID string) error {

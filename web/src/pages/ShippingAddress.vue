@@ -59,7 +59,7 @@ async function handleShippingSubmit(address: Address) {
 h2,
 h3 {
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
   text-transform: capitalize;
 }
 </style>
