@@ -104,7 +104,7 @@ func (m *mockOrderRepo) GetOrderByIDAndUser(ctx context.Context, orderID, userID
 	return types.Order{}, args.Error(1)
 }
 
-func (m *mockOrderRepo) MarkOrderAsPaid(ctx context.Context, orderID string) error {
+func (m *mockOrderRepo) ConfirmOrderPayment(ctx context.Context, orderID string) error {
 	args := m.Called(ctx, orderID)
 	return args.Error(0)
 }

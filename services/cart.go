@@ -11,7 +11,6 @@ type CartService interface {
 	AddItem(ctx context.Context, item *types.CartItem) error
 	GetItems(ctx context.Context) ([]types.CartItem, error)
 	RemoveItem(ctx context.Context, productID string) error
-	Clear(ctx context.Context) error
 }
 
 type cartService struct {
@@ -32,8 +31,4 @@ func (s *cartService) GetItems(ctx context.Context) ([]types.CartItem, error) {
 
 func (s *cartService) RemoveItem(ctx context.Context, productID string) error {
 	return s.cartRepo.RemoveItem(ctx, getUserID(ctx), productID)
-}
-
-func (s *cartService) Clear(ctx context.Context) error {
-	return s.cartRepo.Clear(ctx, getUserID(ctx))
 }

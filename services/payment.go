@@ -272,14 +272,14 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 	}
 
 	// mark order as paid
-	err = s.repo.MarkOrderAsPaid(ctx, order.ID)
+	err = s.repo.ConfirmOrderPayment(ctx, order.ID)
 	if err != nil {
 		return fmt.Errorf("failed to mark order as paid: order_id=%s, error=%w", order.ID, err)
 	}
 
 	slog.Info("Order marked as paid", "order_id", order.ID, "payment_intent_id", pi.ID)
 
-	// Send payment success email
+	// Send payment success email to customer
 	go func(recEmail, orderID string) {
 		detailsLink := fmt.Sprintf("%s/orders/%s", s.config.BaseURL, orderID)
 		data := map[string]string{

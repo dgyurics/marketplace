@@ -160,53 +160,6 @@ func TestRemoveItem(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on deleting user")
 }
 
-func TestClear(t *testing.T) {
-	repo := NewCartRepository(dbPool)
-	userRepo := NewUserRepository(dbPool)
-	ctx := context.Background()
-
-	// Create a unique test user
-	user := createUniqueTestUser(t, userRepo)
-
-	// Step 1: Create a new cart for the test user
-	_, err := repo.GetItems(ctx, user.ID)
-	assert.NoError(t, err, "Expected no error on cart creation")
-
-	// Step 2: Create product
-	product := types.Product{ID: utilities.MustGenerateIDString()}
-
-	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO products (id, name, price, summary, inventory)
-		VALUES ($1, 'Test Product', 1000, 'Test product summary', 10)`,
-		product.ID)
-	assert.NoError(t, err, "Expected no error on inserting test product")
-
-	// Step 3: Add an item to the cart
-	item := &types.CartItem{
-		Product:   product,
-		Quantity:  1,
-		UnitPrice: 100000,
-	}
-	err = repo.AddItem(ctx, user.ID, item)
-	assert.NoError(t, err, "Expected no error on adding item to cart")
-
-	// Step 4: Clear the cart
-	err = repo.Clear(ctx, user.ID)
-	assert.NoError(t, err, "Expected no error on clearing cart")
-
-	// Step 5: Validate that the cart is empty
-	updatedCart, err := repo.GetItems(ctx, user.ID)
-	assert.NoError(t, err, "Expected no error on fetching cart")
-	assert.Equal(t, 0, len(updatedCart), "Expected no items in the cart")
-
-	// Clean up the product, and user
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
-	assert.NoError(t, err, "Expected no error on deleting product")
-
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
-	assert.NoError(t, err, "Expected no error on deleting user")
-}
-
 func TestGetCartWithImages(t *testing.T) {
 	repo := NewCartRepository(dbPool)
 	userRepo := NewUserRepository(dbPool)

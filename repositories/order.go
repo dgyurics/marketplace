@@ -10,8 +10,9 @@ import (
 )
 
 type OrderRepository interface {
+	/* Modify order(s) */
 	CreateOrder(ctx context.Context, order *types.Order) error
-	MarkOrderAsPaid(ctx context.Context, orderID string) error
+	ConfirmOrderPayment(ctx context.Context, orderID string) error
 	/* GET order(s) */
 	GetOrderByIDAndUser(ctx context.Context, orderID, userID string) (types.Order, error)
 	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
@@ -339,14 +340,30 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 	return order, nil
 }
 
-func (r *orderRepository) MarkOrderAsPaid(ctx context.Context, orderID string) error {
-	query := `
-		UPDATE orders
-		SET
-			status = 'paid',
-			updated_at = NOW()
-		WHERE id = $1
-	`
-	_, err := r.db.ExecContext(ctx, query, orderID)
-	return err
+func (r *orderRepository) ConfirmOrderPayment(ctx context.Context, orderID string) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Update order status and get user_id
+	var userID string
+	updateQuery := `
+        UPDATE orders
+        SET status = 'paid', updated_at = NOW()
+        WHERE id = $1
+        RETURNING user_id`
+
+	if err := tx.QueryRowContext(ctx, updateQuery, orderID).Scan(&userID); err != nil {
+		return err
+	}
+
+	// Clear cart for that user
+	deleteQuery := `DELETE FROM cart_items WHERE user_id = $1`
+	if _, err := tx.ExecContext(ctx, deleteQuery, userID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
