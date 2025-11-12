@@ -95,12 +95,12 @@ func (h *AddressRoutes) validateAddress(address types.Address) error {
 		return errors.New("invalid country code")
 	}
 
-	if !u.ValidateState(address.Country, u.StringValue(address.State, "")) {
-		return errors.New("invalid state")
+	if err := u.ValidateState(address.Country, u.StringValue(address.State, "")); err != nil {
+		return err
 	}
 
-	if !u.ValidatePostalCode(address.Country, address.PostalCode) {
-		return errors.New("invalid postal code format")
+	if err := u.ValidatePostalCode(address.Country, address.PostalCode); err != nil {
+		return err
 	}
 
 	if address.Line1 == "" {
