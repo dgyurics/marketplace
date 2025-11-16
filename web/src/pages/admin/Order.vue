@@ -12,7 +12,7 @@ import DataTable from '@/components/DataTable.vue'
 import { getOrders } from '@/services/api'
 import type { Order } from '@/types'
 import { formatPrice } from '@/utilities/currency'
-import { formatDate } from '@/utilities/dateFormat'
+import { formatShortDate } from '@/utilities/dateFormat'
 
 const router = useRouter()
 const orders = ref<Order[]>([])
@@ -42,8 +42,8 @@ const formattedOrders = computed(() =>
     tax: formatPrice(order.tax_amount),
     shipping: formatPrice(order.shipping_amount),
     total: formatPrice(order.total_amount),
-    updated: formatDate(new Date(order.updated_at)),
-    created: formatDate(new Date(order.created_at)),
+    updated: formatShortDate(new Date(order.updated_at)),
+    created: formatShortDate(new Date(order.created_at)),
     _originalOrder: order, // Keep reference to original order
   }))
 )

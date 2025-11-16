@@ -16,21 +16,19 @@ type AddressService interface {
 }
 
 type addressService struct {
-	repo   repositories.AddressRepository
-	config types.LocaleConfig
+	repo repositories.AddressRepository
 }
 
-func NewAddressService(repo repositories.AddressRepository, config types.LocaleConfig) AddressService {
+func NewAddressService(repo repositories.AddressRepository) AddressService {
 	return &addressService{
-		config: config,
-		repo:   repo,
+		repo: repo,
 	}
 }
 
 func (s *addressService) CreateAddress(ctx context.Context, address *types.Address) error {
 	var userID = getUserID(ctx)
 	address.UserID = userID
-	address.Country = s.config.Country
+	address.Country = utilities.Locale.CountryCode
 	addressID, err := utilities.GenerateIDString()
 	if err != nil {
 		return err

@@ -68,7 +68,7 @@ import OrderSummary from '@/components/OrderSummary.vue'
 import { getStripe, confirmCardPayment } from '@/services/stripe'
 import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
-import { getCountryForLocale, getAppLocale } from '@/utilities'
+import { getLocale } from '@/utilities'
 
 const checkoutStore = useCheckoutStore()
 const cartStore = useCartStore()
@@ -78,7 +78,7 @@ const isInitializing = ref(true)
 const cardholderName = ref('')
 const taxAmount = ref(0)
 
-const country = getCountryForLocale(getAppLocale())
+const country = getLocale().country_code
 
 let cardElement: StripeCardNumberElement,
   expiryElement: StripeCardExpiryElement,

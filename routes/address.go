@@ -9,6 +9,7 @@ import (
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
@@ -16,17 +17,14 @@ import (
 type AddressRoutes struct {
 	router
 	addressService services.AddressService
-	config         types.LocaleConfig
 }
 
 func NewAddressRoutes(
 	addressService services.AddressService,
-	config types.LocaleConfig,
 	router router) *AddressRoutes {
 	return &AddressRoutes{
 		router:         router,
 		addressService: addressService,
-		config:         config,
 	}
 }
 
@@ -91,7 +89,7 @@ func (h *AddressRoutes) RemoveAddress(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AddressRoutes) validateAddress(address types.Address) error {
-	if !strings.EqualFold(address.Country, h.config.Country) {
+	if !strings.EqualFold(address.Country, utilities.Locale.CountryCode) {
 		return errors.New("invalid country code")
 	}
 

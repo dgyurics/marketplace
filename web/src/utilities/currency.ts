@@ -1,19 +1,21 @@
-import { getAppLocale, getCurrencyForLocale, getMinorUnitsForLocale } from './locale'
+import { getLocale } from './locale'
 
 /**
- * Application currency configuration
+ * Get currency configuration (lazy-loaded)
  */
-const CURRENCY_CONFIG: {
-  readonly code: string
-  readonly minorUnits: number
-} = {
-  code: getCurrencyForLocale(getAppLocale()), // USD for en-US
-  minorUnits: getMinorUnitsForLocale(getAppLocale()), // 2 for USD
+function getCurrencyConfig() {
+  const locale = getLocale()
+  return {
+    code: locale.currency,
+    minorUnits: locale.minor_units,
+  }
 }
 
 const DEFAULT_CURRENCY_OPTIONS: Intl.NumberFormatOptions = {
   style: 'currency',
-  currency: CURRENCY_CONFIG.code,
+  get currency() {
+    return getCurrencyConfig().code
+  },
 } as const
 
 /**
@@ -21,7 +23,7 @@ const DEFAULT_CURRENCY_OPTIONS: Intl.NumberFormatOptions = {
  * @returns The currency code (e.g., 'USD')
  */
 export function getCurrencyCode(): string {
-  return CURRENCY_CONFIG.code // USD for en-US
+  return getCurrencyConfig().code
 }
 
 /**
@@ -60,8 +62,8 @@ export function formatCurrency(
   locale?: string
 ): string {
   // 300 cents -> 3.00 dollars
-  const majorAmount = amount / Math.pow(10, CURRENCY_CONFIG.minorUnits)
-  const targetLocale = locale ?? getAppLocale()
+  const majorAmount = amount / Math.pow(10, getCurrencyConfig().minorUnits)
+  const targetLocale = locale ?? getLocale().language
 
   const formatOptions = {
     ...DEFAULT_CURRENCY_OPTIONS,
@@ -96,7 +98,7 @@ export function formatAmount(amount: number): string {
  * @returns Amount in minor units (e.g., cents)
  */
 export function toMinorUnits(amount: number): number {
-  return Math.round(amount * Math.pow(10, CURRENCY_CONFIG.minorUnits))
+  return Math.round(amount * Math.pow(10, getCurrencyConfig().minorUnits))
 }
 
 /**
@@ -105,5 +107,5 @@ export function toMinorUnits(amount: number): number {
  * @returns Amount in major units (e.g., dollars)
  */
 export function toMajorUnits(amount: number): number {
-  return amount / Math.pow(10, CURRENCY_CONFIG.minorUnits)
+  return amount / Math.pow(10, getCurrencyConfig().minorUnits)
 }

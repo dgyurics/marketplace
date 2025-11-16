@@ -18,6 +18,7 @@ import (
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/types/stripe"
+	"github.com/dgyurics/marketplace/utilities"
 	util "github.com/dgyurics/marketplace/utilities"
 )
 
@@ -169,9 +170,13 @@ func (s *paymentService) SignatureVerifier(payload []byte, sigHeader string) err
 func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, amount int64) (pi stripe.PaymentIntent, err error) {
 	// Build request
 	reqURL := fmt.Sprintf("%s/payment_intents", s.config.Stripe.BaseURL)
+	data, ok := utilities.LocaleData[utilities.Locale.CountryCode]
+	if !ok {
+		return pi, fmt.Errorf("unsupported country code: %s", utilities.Locale.CountryCode)
+	}
 	payload := url.Values{
 		"amount":                 {fmt.Sprintf("%d", amount)},
-		"currency":               {s.config.Locale.Currency},
+		"currency":               {data.Currency},
 		"payment_method_types[]": {"card"},
 		"metadata[order_id]":     {refID},
 		"metadata[environment]":  {string(s.config.Environment)},
@@ -235,8 +240,8 @@ func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, event s
 	if order.TotalAmount != pi.Amount {
 		return fmt.Errorf("amount mismatch: expected %d, got %d, order_id=%s", order.TotalAmount, pi.Amount, order.ID)
 	}
-	if !strings.EqualFold(s.config.Locale.Currency, pi.Currency) {
-		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", s.config.Locale.Currency, pi.Currency, order.ID)
+	if !strings.EqualFold(utilities.Locale.Currency, pi.Currency) {
+		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", utilities.Locale.Currency, pi.Currency, order.ID)
 	}
 	return nil
 }
@@ -267,8 +272,8 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 	if order.TotalAmount != pi.Amount {
 		return fmt.Errorf("amount mismatch: expected %d, got %d, order_id=%s", order.TotalAmount, pi.Amount, order.ID)
 	}
-	if !strings.EqualFold(s.config.Locale.Currency, pi.Currency) {
-		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", s.config.Locale.Currency, pi.Currency, order.ID)
+	if !strings.EqualFold(utilities.Locale.Currency, pi.Currency) {
+		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", utilities.Locale.Currency, pi.Currency, order.ID)
 	}
 
 	// mark order as paid

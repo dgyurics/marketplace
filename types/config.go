@@ -9,17 +9,18 @@ import (
 type Config struct {
 	Auth         AuthConfig
 	BaseURL      string
+	Country      string
 	Database     DBConfig
 	Email        EmailConfig
 	Environment  Environment
 	Image        ImageConfig
 	JWT          JWTConfig
-	Locale       LocaleConfig
 	Logger       LoggerConfig
 	MachineID    uint8
 	Payment      PaymentConfig
 	RateLimit    bool
 	Server       ServerConfig
+	Tax          TaxConfig
 	TemplatesDir string // path to directory containing email templates
 }
 
@@ -80,11 +81,9 @@ const (
 	TaxExclusive TaxBehavior = "exclusive"
 )
 
-type LocaleConfig struct {
-	Country         string // ISO 3166-1 alpha-2
-	Currency        string // ISO 4217 currency
-	FallbackTaxCode string // Default tax code when item/product level tax code not provided
-	TaxBehavior     TaxBehavior
+type TaxConfig struct {
+	Behavior     TaxBehavior
+	FallbackCode string // Default tax code when item/product level tax code not provided
 }
 
 type Environment string
@@ -111,7 +110,7 @@ type ImageConfig struct {
 
 type PaymentConfig struct {
 	Stripe      StripeConfig
-	Locale      LocaleConfig
+	Tax         TaxConfig
 	BaseURL     string
 	Environment Environment
 }

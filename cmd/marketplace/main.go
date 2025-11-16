@@ -40,6 +40,9 @@ func main() {
 	// Initialize logger
 	utilities.InitLogger(config.Logger)
 
+	// Initialize Locale
+	utilities.InitLocale(config.Country)
+
 	// Initialize unique ID generator
 	utilities.InitIDGenerator(config.MachineID)
 
@@ -75,7 +78,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 
 	// create routes
 	routes.RegisterAllRoutes(
-		routes.NewAddressRoutes(services.Address, config.Locale, baseRouter),
+		routes.NewAddressRoutes(services.Address, baseRouter),
 		routes.NewCartRoutes(services.Cart, services.Order, baseRouter),
 		routes.NewCategoryRoutes(services.Category, baseRouter),
 		routes.NewHealthRoutes(baseRouter),
@@ -87,7 +90,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewRegisterRoutes(services.Register, services.User, services.JWT, services.Refresh, baseRouter),
 		routes.NewTaxRoutes(services.Cart, services.Tax, baseRouter),
 		routes.NewUserRoutes(services.User, services.JWT, services.Refresh, config.Auth, baseRouter),
-		routes.NewLocaleRoutes(config.Locale, baseRouter),
+		routes.NewLocaleRoutes(baseRouter),
 	)
 
 	// Create and return the server
@@ -130,7 +133,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	}
 	scheduleService := services.NewScheduleService(db)
 	emailService := services.NewEmailService(config.Email)
-	addressService := services.NewAddressService(addressRepository, config.Locale)
+	addressService := services.NewAddressService(addressRepository)
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)

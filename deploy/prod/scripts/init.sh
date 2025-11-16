@@ -298,18 +298,9 @@ setup_localization() {
   validate_input "$country" "COUNTRY"
   country=$(echo "$country" | tr '[:lower:]' '[:upper:]')
 
-  read -p "Enter your CURRENCY (ISO 4217 code, e.g., USD, CAD, GBP): " -r currency
-  validate_input "$currency" "CURRENCY"
-  currency=$(echo "$currency" | tr '[:lower:]' '[:upper:]')
-
-  read -p "Enter your LOCALE (Unicode locale identifier for browsers, e.g., en-US for US English): " -r locale
-  validate_input "$locale" "VITE_LOCALE"
-
   replace_placeholder "COUNTRY" "$country"
-  replace_placeholder "CURRENCY" "$currency"
-  replace_placeholder "LOCALE" "$locale"
 
-  log_success "Localization configured"
+  log_success "Country configured"
 }
 
 # SSL setup

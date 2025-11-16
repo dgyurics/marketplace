@@ -1,4 +1,4 @@
-import { getAppLocale } from './locale'
+import { getLocale } from './locale'
 
 const DEFAULT_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',
@@ -18,7 +18,7 @@ export function formatDate(
   locale?: string
 ): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date
-  const targetLocale = locale ?? getAppLocale()
+  const targetLocale = locale ?? getLocale().language
 
   return dateObj.toLocaleString(targetLocale, options)
 }

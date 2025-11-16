@@ -14,6 +14,7 @@ import (
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/types/stripe"
+	"github.com/dgyurics/marketplace/utilities"
 	util "github.com/dgyurics/marketplace/utilities"
 )
 
@@ -42,7 +43,7 @@ func NewTaxService(
 
 func (s *taxService) CalculateTax(ctx context.Context, refID string, address types.Address, items []types.CartItem) (int64, error) {
 	form := url.Values{}
-	form.Set("currency", s.config.Locale.Currency)
+	form.Set("currency", utilities.Locale.Currency)
 
 	if refID == "" {
 		refID = getUserID(ctx)
@@ -71,8 +72,8 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 		itmQty := int64(item.Quantity)
 		form.Set(fmt.Sprintf("line_items[%d][amount]", i), strconv.FormatInt(item.UnitPrice*itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][quantity]", i), strconv.FormatInt(itmQty, 10))
-		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), string(s.config.Locale.TaxBehavior))
-		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), util.StringValue(item.Product.TaxCode, s.config.Locale.FallbackTaxCode))
+		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), string(s.config.Tax.Behavior))
+		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), util.StringValue(item.Product.TaxCode, s.config.Tax.FallbackCode))
 		form.Set(fmt.Sprintf("line_items[%d][reference]", i), fmt.Sprintf("%s:%s", refID, item.Product.ID))
 	}
 

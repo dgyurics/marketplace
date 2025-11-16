@@ -5,6 +5,7 @@ import App from './App.vue'
 import { createAppRouter } from './router'
 
 import { useCartStore } from '@/store/cart'
+import { initializeLocale } from '@/utilities/locale'
 
 import './assets/style.css'
 
@@ -21,6 +22,9 @@ async function initApp() {
 
   const router = await createAppRouter()
   app.use(router)
+
+  // Initialize locale before creating the app
+  await initializeLocale()
 
   app.mount('#app')
 }

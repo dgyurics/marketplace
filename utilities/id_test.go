@@ -8,7 +8,7 @@ import (
 
 func resetIDGenerator() {
 	idGenerator = nil
-	initOnce = sync.Once{}
+	initIDGenerator = sync.Once{}
 }
 
 func TestGenerateID_Initialized(t *testing.T) {

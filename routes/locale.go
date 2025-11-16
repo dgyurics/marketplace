@@ -3,29 +3,21 @@ package routes
 import (
 	"net/http"
 
-	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/utilities"
 )
 
 type LocaleRoutes struct {
 	router
-	config types.LocaleConfig
 }
 
-func NewLocaleRoutes(config types.LocaleConfig, router router) *LocaleRoutes {
+func NewLocaleRoutes(router router) *LocaleRoutes {
 	return &LocaleRoutes{
-		config: config,
 		router: router,
 	}
 }
 
 func (h *LocaleRoutes) GetLocale(w http.ResponseWriter, r *http.Request) {
-	data, ok := utilities.LocaleData[h.config.Country]
-	if !ok {
-		utilities.RespondWithError(w, r, http.StatusNotFound, "locale not found")
-		return
-	}
-	utilities.RespondWithJSON(w, http.StatusOK, data)
+	utilities.RespondWithJSON(w, http.StatusOK, utilities.Locale)
 }
 
 func (h *LocaleRoutes) RegisterRoutes() {

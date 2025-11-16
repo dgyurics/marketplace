@@ -38,7 +38,7 @@ import { computed, reactive } from 'vue'
 
 import { InputText } from '@/components/forms'
 import type { Address } from '@/types'
-import { getCountryForLocale, getAppLocale } from '@/utilities'
+import { getLocale } from '@/utilities'
 
 const props = defineProps<{ modelValue?: Address }>()
 
@@ -66,7 +66,7 @@ const formData = reactive<Address>({
   city: '',
   postal_code: '',
   email: '',
-  country: getCountryForLocale(getAppLocale()),
+  country: getLocale().country_code,
   ...props.modelValue,
 })
 

@@ -15,25 +15,25 @@ import (
 // LoadConfig loads the configuration from environment variables
 func LoadConfig() types.Config {
 	// Load shared configs once
-	locale := loadLocaleConfig()
 	baseURL := loadBaseURL()
 	environment := loadEnvironment()
 
 	return types.Config{
-		Server:       loadServerConfig(),
+		BaseURL:      baseURL,
+		Country:      loadCountry(),
 		Environment:  environment,
+		Server:       loadServerConfig(),
 		Auth:         loadAuthConfig(),
 		Database:     loadDBConfig(),
 		Email:        loadEmailConfig(),
-		Locale:       locale,
 		Logger:       loadLoggerConfig(),
 		MachineID:    loadMachineID(),
-		Payment:      loadPaymentConfig(locale, baseURL, environment),
+		Payment:      loadPaymentConfig(baseURL, environment),
 		JWT:          loadJWTConfig(),
 		Image:        loadImageConfig(),
-		TemplatesDir: loadTemplatesDir(),
 		RateLimit:    loadRateLimit(),
-		BaseURL:      baseURL,
+		Tax:          loadTaxConfig(),
+		TemplatesDir: loadTemplatesDir(),
 	}
 }
 
@@ -68,6 +68,19 @@ func loadDBConfig() types.DBConfig {
 		ConnMaxLifetime: mustParseDuration("POSTGRES_CONNECTION_MAX_LIFETIME"),
 		ConnMaxIdleTime: mustParseDuration("POSTGRES_CONNECTION_MAX_IDLE_TIME"),
 	}
+}
+
+func loadTaxConfig() types.TaxConfig {
+	config := types.TaxConfig{
+		Behavior:     types.TaxExclusive,
+		FallbackCode: mustLookupEnv("TAX_FALLBACK_CODE"),
+	}
+
+	if mustLookupEnv("TAX_BEHAVIOR") == string(types.TaxInclusive) {
+		config.Behavior = types.TaxInclusive
+	}
+
+	return config
 }
 
 func loadJWTConfig() types.JWTConfig {
@@ -125,34 +138,10 @@ func loadImageConfig() types.ImageConfig {
 	}
 }
 
-func loadLocaleConfig() types.LocaleConfig {
-	config := types.LocaleConfig{
-		Currency:        mustLookupEnv("CURRENCY"),
-		Country:         mustLookupEnv("COUNTRY"),
-		TaxBehavior:     types.TaxExclusive,
-		FallbackTaxCode: mustLookupEnv("FALLBACK_TAX_CODE"),
-	}
-
-	if _, ok := SupportedCountries[config.Country]; !ok {
-		panic(fmt.Sprintf("Unsupported country code: %s", config.Country))
-	}
-
-	if _, ok := SupportedCurrencies[config.Currency]; !ok {
-		panic(fmt.Sprintf("Unsupported currency code: %s", config.Currency))
-	}
-
-	taxBehavior := mustLookupEnv("TAX_BEHAVIOR")
-	if taxBehavior == string(types.TaxInclusive) {
-		config.TaxBehavior = types.TaxInclusive
-	}
-
-	return config
-}
-
-func loadPaymentConfig(locale types.LocaleConfig, baseURL string, env types.Environment) types.PaymentConfig {
+func loadPaymentConfig(baseURL string, env types.Environment) types.PaymentConfig {
 	return types.PaymentConfig{
 		Stripe:      loadStripeConfig(),
-		Locale:      locale,
+		Tax:         loadTaxConfig(),
 		BaseURL:     baseURL,
 		Environment: env,
 	}
@@ -185,6 +174,14 @@ func loadTemplatesDir() string {
 
 func loadBaseURL() string {
 	return mustLookupEnv("BASE_URL")
+}
+
+func loadCountry() string {
+	country := mustLookupEnv("COUNTRY")
+	if _, ok := SupportedCountries[country]; !ok {
+		panic(fmt.Sprintf("Country %s is not supported", country))
+	}
+	return country
 }
 
 func loadRateLimit() bool {

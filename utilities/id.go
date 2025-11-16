@@ -23,12 +23,12 @@ type IDGenerator struct {
 }
 
 var (
-	idGenerator *IDGenerator
-	initOnce    sync.Once
+	idGenerator     *IDGenerator
+	initIDGenerator sync.Once
 )
 
 func InitIDGenerator(machineID uint8) {
-	initOnce.Do(func() {
+	initIDGenerator.Do(func() {
 		idGenerator = &IDGenerator{
 			machineID: machineID,
 		}

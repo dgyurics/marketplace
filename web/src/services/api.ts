@@ -17,6 +17,7 @@ import type {
   UserRecord,
   UpdateCategoryRequest,
   UpdateAddress,
+  Locale,
 } from '@/types'
 
 const apiClient = axios.create({
@@ -309,5 +310,10 @@ export const removeProduct = async (productId: string): Promise<void> => {
 
 export const updateProduct = async (product: UpdateProductRequest): Promise<Product> => {
   const response = await apiClient.put('/products', product)
+  return response.data
+}
+
+export const getLocale = async (): Promise<Locale> => {
+  const response = await apiClient.get('/locale')
   return response.data
 }

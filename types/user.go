@@ -40,7 +40,7 @@ func (u *User) IsGuest() bool {
 type Address struct {
 	ID         string    `json:"id"`
 	UserID     string    `json:"user_id"`
-	Country    string    `json:"country"`
+	Country    string    `json:"country"` // FIXME this is country code
 	Addressee  *string   `json:"addressee,omitempty"`
 	Line1      string    `json:"line1"`
 	Line2      *string   `json:"line2,omitempty"`
