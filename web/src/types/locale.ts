@@ -5,7 +5,7 @@ export type Locale = {
   postal_code_pattern: string
   state_label: string
   state_required: boolean
-  state_codes: { [key: string]: string }
+  state_codes?: { [key: string]: string }
   currency: string
   minor_units: number
   language: string

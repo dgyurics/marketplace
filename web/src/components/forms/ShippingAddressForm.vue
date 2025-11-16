@@ -16,11 +16,16 @@
       <div class="form-group-flex">
         <InputText v-model="formData.city" label="city" required />
       </div>
-      <div class="form-group-flex">
-        <InputText v-model="state" label="state" />
+      <div v-if="locale.state_required" class="form-group-flex">
+        <SelectInput
+          v-model="state"
+          :label="locale.state_label"
+          :options="states"
+          :required="locale.state_required"
+        />
       </div>
       <div class="form-group-flex">
-        <InputText v-model="formData.postal_code" label="zip code" required />
+        <InputText v-model="formData.postal_code" :label="locale.postal_code_label" required />
       </div>
     </div>
 
@@ -36,11 +41,19 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
 
-import { InputText } from '@/components/forms'
+import { InputText, SelectInput } from '@/components/forms'
 import type { Address } from '@/types'
 import { getLocale } from '@/utilities'
 
+const locale = getLocale()
 const props = defineProps<{ modelValue?: Address }>()
+
+const states = Object.entries(locale.state_codes || []).map(([k, v]) => {
+  return {
+    value: k,
+    label: v,
+  }
+})
 
 const addressee = computed({
   get: () => formData.addressee ?? '',
