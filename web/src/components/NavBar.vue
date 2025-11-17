@@ -4,14 +4,19 @@
       <!-- Left: Logo -->
       <div class="nav-left">
         <div class="logo">
-          <router-link to="/">marketplace</router-link>
+          <router-link to="/" :tabindex="100">marketplace</router-link>
         </div>
       </div>
 
       <!-- Center: Navigation Links -->
       <div class="nav-center">
         <div class="nav-links">
-          <router-link v-for="category in categories" :key="category.id" :to="`/${category.slug}`">
+          <router-link
+            v-for="(category, index) in categories"
+            :key="category.id"
+            :to="`/${category.slug}`"
+            :tabindex="101 + index"
+          >
             <span class="nav-text">{{ category.name }}</span>
           </router-link>
         </div>
@@ -20,10 +25,10 @@
       <!-- Right: Icons -->
       <div class="nav-right">
         <div class="nav-icons">
-          <router-link to="/cart">
+          <router-link to="/cart" :tabindex="110">
             <ShoppingBagIcon class="icon" />
           </router-link>
-          <router-link to="/auth">
+          <router-link to="/auth" :tabindex="111">
             <UserIcon class="icon" />
           </router-link>
         </div>

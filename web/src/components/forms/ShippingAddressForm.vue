@@ -1,20 +1,20 @@
 <template>
   <form @submit.prevent="handleSubmit">
     <div class="form-group-flex">
-      <InputText v-model="addressee" label="full name" />
+      <InputText v-model="addressee" label="full name" :tabindex="1" />
     </div>
 
     <div class="form-group-flex">
-      <InputText v-model="formData.line1" label="address" required />
+      <InputText v-model="formData.line1" label="address" required :tabindex="2" />
     </div>
 
     <div class="form-group-flex">
-      <InputText v-model="line2" label="Apt, Suite, Building" />
+      <InputText v-model="line2" label="Apt, Suite, Building" :tabindex="3" />
     </div>
 
     <div class="form-row">
       <div class="form-group-flex">
-        <InputText v-model="formData.city" label="city" required />
+        <InputText v-model="formData.city" label="city" required :tabindex="4" />
       </div>
       <div v-if="locale.state_required" class="form-group-flex">
         <SelectInput
@@ -22,6 +22,7 @@
           :label="locale.state_label"
           :options="states"
           :required="locale.state_required"
+          :tabindex="5"
         />
       </div>
       <div class="form-group-flex">
@@ -31,16 +32,17 @@
           :pattern="locale.postal_code_pattern"
           title="Invalid format"
           required
+          :tabindex="6"
         />
       </div>
     </div>
 
     <div class="form-group-flex">
-      <InputText v-model="formData.email" label="email" type="email" required />
+      <InputText v-model="formData.email" label="email" type="email" required :tabindex="7" />
       <small class="receipt-note">A receipt will be sent to this email.</small>
     </div>
 
-    <button type="submit" class="btn-full-width mt-15">Continue</button>
+    <button type="submit" class="btn-full-width mt-15" :tabindex="8">Continue</button>
   </form>
 </template>
 

@@ -30,7 +30,12 @@
     <div v-if="items.length > 0" class="cart-total">
       <strong>Subtotal:</strong> {{ formatPrice(subtotal) }}
     </div>
-    <button v-if="items.length > 0" class="btn-full-width mt-15" @click="goToCheckout">
+    <button
+      v-if="items.length > 0"
+      class="btn-full-width mt-15"
+      :tabindex="1"
+      @click="goToCheckout"
+    >
       Proceed to Checkout
     </button>
   </div>

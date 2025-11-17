@@ -4,7 +4,10 @@
       v-model="value"
       :type="type || 'text'"
       :required="required || false"
-      v-bind="pattern ? { pattern } : {}"
+      v-bind="{
+        ...(pattern ? { pattern } : {}),
+        ...(tabindex ? { tabindex } : {}),
+      }"
       class="input-field"
     />
     <span v-if="label" class="input-label" :class="{ 'input-label--optional': !required }">
@@ -22,6 +25,7 @@ const props = defineProps<{
   required?: boolean
   pattern?: string
   type?: string
+  tabindex?: number
 }>()
 
 const emit = defineEmits<{

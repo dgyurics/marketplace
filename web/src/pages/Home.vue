@@ -4,8 +4,10 @@
       <div class="hero-content unselectable">
         <h1 class="hero-title">essential living</h1>
         <div class="hero-buttons">
-          <button class="btn-sm" @click="$router.push('/new')">shop new</button>
-          <button class="btn-sm" @click="$router.push('/popular')">shop popular</button>
+          <button class="btn-sm" :tabindex="1" @click="$router.push('/new')">shop new</button>
+          <button class="btn-sm" :tabindex="2" @click="$router.push('/popular')">
+            shop popular
+          </button>
         </div>
       </div>
     </div>

@@ -1,6 +1,11 @@
 <template>
   <div class="input-container">
-    <select v-model="value" :required="required || false" class="input-field">
+    <select
+      v-model="value"
+      :required="required || false"
+      v-bind="tabindex ? { tabindex } : {}"
+      class="input-field"
+    >
       <option value="" v-bind="required ? { disabled: true } : {}">
         <!-- {{ `Select a ${label}` }} -->
       </option>
@@ -27,6 +32,7 @@ const props = defineProps<{
   label?: string
   required?: boolean
   options: Option[]
+  tabindex?: number
 }>()
 
 const emit = defineEmits<{

@@ -2,13 +2,13 @@
   <div class="auth-container">
     <template v-if="authStore.user?.role === 'user' || authStore.user?.role === 'admin'">
       <h2>You are logged in</h2>
-      <button class="logout-button" @click="handleLogout">Logout</button>
+      <button class="logout-button" :tabindex="1" @click="handleLogout">Logout</button>
       <div v-if="authStore.user?.role === 'admin'">
         <div class="button-group admin-buttons">
-          <button @click="goToCategories">Categories</button>
-          <button @click="goToProducts">Products</button>
-          <button @click="goToOrders">Orders</button>
-          <button @click="goToUsers">Users</button>
+          <button :tabindex="2" @click="goToCategories">Categories</button>
+          <button :tabindex="3" @click="goToProducts">Products</button>
+          <button :tabindex="4" @click="goToOrders">Orders</button>
+          <button :tabindex="5" @click="goToUsers">Users</button>
         </div>
       </div>
     </template>
@@ -18,19 +18,21 @@
       <form @submit.prevent>
         <div class="form-group">
           <label for="email">Email</label>
-          <input id="email" v-model="email" type="email" required />
+          <input id="email" v-model="email" type="email" required :tabindex="1" />
           <div class="underline"></div>
         </div>
 
         <div class="form-group">
           <label for="password">Password</label>
-          <input id="password" v-model="password" type="password" required />
+          <input id="password" v-model="password" type="password" required :tabindex="2" />
           <div class="underline"></div>
         </div>
 
         <div class="button-group">
-          <button type="button" @click="handleLogin">Login</button>
-          <button type="button" class="btn-outline" @click="handleRegister">Register</button>
+          <button type="button" :tabindex="3" @click="handleLogin">Login</button>
+          <button type="button" :tabindex="4" class="btn-outline" @click="handleRegister">
+            Register
+          </button>
         </div>
 
         <p v-if="errorMessage" class="error" v-html="errorMessage"></p>
