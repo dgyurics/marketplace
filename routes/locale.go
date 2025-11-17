@@ -17,6 +17,15 @@ func NewLocaleRoutes(router router) *LocaleRoutes {
 }
 
 func (h *LocaleRoutes) GetLocale(w http.ResponseWriter, r *http.Request) {
+	// handle caching
+	etag := `"locale-2025-v1"`
+	if r.Header.Get("If-None-Match") == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Cache-Control", "public, max-age=2592000") // 1 month
+
 	utilities.RespondWithJSON(w, http.StatusOK, utilities.Locale)
 }
 
