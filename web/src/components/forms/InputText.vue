@@ -1,6 +1,12 @@
 <template>
   <div class="input-container">
-    <input v-model="value" type="text" :required="required || false" class="input-field" />
+    <input
+      v-model="value"
+      :type="type || 'text'"
+      :required="required || false"
+      v-bind="pattern ? { pattern } : {}"
+      class="input-field"
+    />
     <span v-if="label" class="input-label" :class="{ 'input-label--optional': !required }">
       {{ label }}
     </span>
@@ -12,8 +18,10 @@ import { computed } from 'vue'
 
 const props = defineProps<{
   modelValue: string
-  label?: string
+  label: string
   required?: boolean
+  pattern?: string
+  type?: string
 }>()
 
 const emit = defineEmits<{

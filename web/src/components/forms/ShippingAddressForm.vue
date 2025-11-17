@@ -25,12 +25,18 @@
         />
       </div>
       <div class="form-group-flex">
-        <InputText v-model="formData.postal_code" :label="locale.postal_code_label" required />
+        <InputText
+          v-model="formData.postal_code"
+          :label="locale.postal_code_label"
+          :pattern="locale.postal_code_pattern"
+          title="Invalid format"
+          required
+        />
       </div>
     </div>
 
     <div class="form-group-flex">
-      <InputText v-model="formData.email" label="email" required />
+      <InputText v-model="formData.email" label="email" type="email" required />
       <small class="receipt-note">A receipt will be sent to this email.</small>
     </div>
 
@@ -42,10 +48,10 @@
 import { computed, reactive } from 'vue'
 
 import { InputText, SelectInput } from '@/components/forms'
-import type { Address } from '@/types'
+import type { Address, Locale } from '@/types'
 import { getLocale } from '@/utilities'
 
-const locale = getLocale()
+const locale: Locale = getLocale()
 const props = defineProps<{ modelValue?: Address }>()
 
 const states = Object.entries(locale.state_codes || []).map(([k, v]) => {
