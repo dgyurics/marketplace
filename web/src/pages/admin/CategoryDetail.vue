@@ -15,9 +15,16 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn-full-width mt-15">Save</button>
-          <button type="button" class="btn-full-width btn-outline" @click="goBack">Cancel</button>
-          <button type="button" class="btn-full-width btn-subtle" @click="handleDelete">
+          <button type="submit" :tabindex="0" class="btn-full-width mt-15">Save</button>
+          <button type="button" :tabindex="0" class="btn-full-width btn-outline" @click="goBack">
+            Cancel
+          </button>
+          <button
+            type="button"
+            :tabindex="0"
+            class="btn-full-width btn-subtle"
+            @click="handleDelete"
+          >
             Remove
           </button>
         </div>

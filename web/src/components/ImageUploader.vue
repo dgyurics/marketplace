@@ -18,13 +18,16 @@
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff"
             class="file-input"
+            :tabindex="0"
             @change="handleFileSelect"
           />
           <button
             type="button"
             class="upload-btn"
             :disabled="!selectedFile || uploading"
+            :tabindex="0"
             @click="handleUpload"
+            @keydown.enter="handleUpload"
           >
             {{ uploading ? 'Uploading...' : 'Upload Image' }}
           </button>
@@ -38,7 +41,7 @@
 
         <div class="checkbox-row">
           <label class="checkbox-label">
-            <input v-model="removeBackground" type="checkbox" />
+            <input v-model="removeBackground" type="checkbox" :tabindex="0" />
             Remove background automatically
           </label>
         </div>

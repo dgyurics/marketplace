@@ -21,6 +21,7 @@
         :key="category.id"
         :category="category"
         @click="goToDetail(category.id)"
+        @keydown.enter="goToDetail(category.id)"
       />
     </div>
   </div>

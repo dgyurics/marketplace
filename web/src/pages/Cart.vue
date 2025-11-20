@@ -20,7 +20,7 @@
           <span class="item-price">{{ formatPrice(item.unit_price) }}</span>
           <span class="item-quantity">Qty: {{ item.quantity }}</span>
         </div>
-        <button class="remove-button" @click="removeFromCart(item.product.id)">
+        <button class="remove-button" :tabindex="0" @click="removeFromCart(item.product.id)">
           <XMarkIcon class="remove-icon" />
         </button>
       </li>
@@ -33,7 +33,7 @@
     <button
       v-if="items.length > 0"
       class="btn-full-width mt-15"
-      :tabindex="1"
+      :tabindex="0"
       @click="goToCheckout"
     >
       Proceed to Checkout

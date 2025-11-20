@@ -8,6 +8,7 @@
           :placeholder="keyPlaceholder"
           class="pair-input"
           :class="{ error: errors[index] }"
+          :tabindex="0"
           @input="validateKey(index)"
         />
         <input
@@ -15,6 +16,7 @@
           type="text"
           :placeholder="valuePlaceholder"
           class="pair-input"
+          :tabindex="0"
           @input="emitValue"
         />
         <button
@@ -22,13 +24,16 @@
           class="remove-btn"
           :disabled="pairs.length === 1"
           :title="pairs.length === 1 ? 'Cannot remove the last pair' : 'Remove this pair'"
+          :tabindex="0"
           @click="removePair(index)"
         >
           ×
         </button>
         <div v-if="errors[index]" class="error-message">{{ errors[index] }}</div>
       </div>
-      <button type="button" class="add-btn" @click="addPair">+ Add {{ pairName || 'Pair' }}</button>
+      <button type="button" class="add-btn" :tabindex="0" @click="addPair">
+        + Add {{ pairName || 'Pair' }}
+      </button>
     </div>
   </div>
 </template>

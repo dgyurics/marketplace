@@ -1,5 +1,5 @@
 <template>
-  <div class="category-tile" @click="handleClick">
+  <div class="category-tile" :tabindex="0" @click="handleClick">
     <div class="category-info">
       <h3 class="category-title">{{ category.name }}</h3>
       <p v-if="category.description" class="category-description">{{ category.description }}</p>

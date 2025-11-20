@@ -1,5 +1,11 @@
 <template>
-  <div v-if="imgURL" class="product-tile" @click="goToProductPage">
+  <div
+    v-if="imgURL"
+    class="product-tile"
+    :tabindex="0"
+    @click="goToProductPage"
+    @keydown.enter="goToProductPage"
+  >
     <div class="image-container">
       <img :src="imgURL" :alt="product.name" class="product-image" />
     </div>

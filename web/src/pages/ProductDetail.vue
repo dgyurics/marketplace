@@ -31,7 +31,12 @@
           </div>
         </div>
         <div>
-          <button class="btn-lg" :disabled="isOutOfStock || hasReachedCartLimit" @click="addToCart">
+          <button
+            class="btn-lg"
+            :disabled="isOutOfStock || hasReachedCartLimit"
+            :tabindex="0"
+            @click="addToCart"
+          >
             <span v-if="!addedToCart && !isOutOfStock">Add to Cart</span>
             <span v-else-if="isOutOfStock">Out of Stock</span>
             <span v-else class="checkmark-animation">&#10003;</span>

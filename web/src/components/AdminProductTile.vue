@@ -1,5 +1,5 @@
 <template>
-  <div class="product-tile" @click="handleClick">
+  <div class="product-tile" :tabindex="0" @click="handleClick" @keydown.enter="handleClick">
     <div class="product-info">
       <h3 class="product-title">{{ product.name }}</h3>
       <p class="product-id">ID: {{ product.id }}</p>
