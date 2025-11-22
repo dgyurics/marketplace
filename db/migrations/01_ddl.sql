@@ -173,7 +173,7 @@ CREATE TABLE IF NOT EXISTS cart_items (
 CREATE TABLE IF NOT EXISTS addresses (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    addressee VARCHAR(255),
+    name VARCHAR(255),
     line1 VARCHAR(255) NOT NULL,
     line2 VARCHAR(255),
     city VARCHAR(255) NOT NULL, -- city, district, suburb, town, village

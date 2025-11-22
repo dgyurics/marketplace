@@ -21,11 +21,11 @@ func TestCreateAddress(t *testing.T) {
 	addressLine2 := "Apt 456"
 
 	// Create a test address
-	addressee := "John Doe"
+	name := "John Doe"
 	address := &types.Address{
 		ID:         utilities.MustGenerateIDString(),
 		UserID:     user.ID,
-		Addressee:  &addressee,
+		Name:       &name,
 		Line1:      "123 Test St",
 		Line2:      &addressLine2,
 		City:       "Testville",
@@ -39,7 +39,7 @@ func TestCreateAddress(t *testing.T) {
 
 	// Validate the address fields
 	assert.Equal(t, user.ID, address.UserID, "Expected user ID to match")
-	assert.Equal(t, addressee, *address.Addressee, "Expected addressee to match")
+	assert.Equal(t, name, *address.Name, "Expected name to match")
 
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM addresses WHERE id = $1", address.ID)
@@ -57,11 +57,11 @@ func TestGetAddress(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 
 	// Create a test address
-	addressee := "Jane Smith"
+	name := "Jane Smith"
 	address := &types.Address{
 		ID:         utilities.MustGenerateIDString(),
 		UserID:     user.ID,
-		Addressee:  &addressee,
+		Name:       &name,
 		Line1:      "456 Main St",
 		City:       "Hometown",
 		PostalCode: "67890",
@@ -74,7 +74,7 @@ func TestGetAddress(t *testing.T) {
 	retrieved, err := repo.GetAddress(ctx, user.ID, address.ID)
 	assert.NoError(t, err, "Expected no error while getting address")
 	assert.Equal(t, address.ID, retrieved.ID, "Expected address ID to match")
-	assert.Equal(t, addressee, *retrieved.Addressee, "Expected addressee to match")
+	assert.Equal(t, name, *retrieved.Name, "Expected name to match")
 
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM addresses WHERE id = $1", address.ID)
@@ -110,11 +110,11 @@ func TestUpdateAddress(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 
 	// Create a test address
-	addressee := "Bob Johnson"
+	name := "Bob Johnson"
 	address := &types.Address{
 		ID:         utilities.MustGenerateIDString(),
 		UserID:     user.ID,
-		Addressee:  &addressee,
+		Name:       &name,
 		Line1:      "789 Oak St",
 		City:       "Oldtown",
 		PostalCode: "11111",
@@ -124,8 +124,8 @@ func TestUpdateAddress(t *testing.T) {
 	assert.NoError(t, err, "Expected no error while creating an address")
 
 	// Update the address
-	newAddressee := "Robert Johnson"
-	address.Addressee = &newAddressee
+	newName := "Robert Johnson"
+	address.Name = &newName
 	address.City = "Newtown"
 	address.PostalCode = "22222"
 
@@ -135,7 +135,7 @@ func TestUpdateAddress(t *testing.T) {
 	// Verify the update
 	retrieved, err := repo.GetAddress(ctx, user.ID, address.ID)
 	assert.NoError(t, err, "Expected no error while getting updated address")
-	assert.Equal(t, newAddressee, *retrieved.Addressee, "Expected updated addressee")
+	assert.Equal(t, newName, *retrieved.Name, "Expected updated name")
 	assert.Equal(t, "Newtown", retrieved.City, "Expected updated city")
 
 	// Clean up
@@ -154,11 +154,11 @@ func TestUpdateAddressNotFound(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 
 	// Try to update non-existent address
-	addressee := "Nobody"
+	name := "Nobody"
 	fakeAddress := &types.Address{
 		ID:         utilities.MustGenerateIDString(),
 		UserID:     user.ID,
-		Addressee:  &addressee,
+		Name:       &name,
 		Line1:      "123 Fake St",
 		City:       "Nowhere",
 		PostalCode: "00000",
@@ -181,11 +181,11 @@ func TestRemoveAddress(t *testing.T) {
 	user := createUniqueTestUser(t, userRepo)
 
 	// Create a test address
-	addressee := "Alice Wilson"
+	name := "Alice Wilson"
 	address := &types.Address{
 		ID:         utilities.MustGenerateIDString(),
 		UserID:     user.ID,
-		Addressee:  &addressee,
+		Name:       &name,
 		Line1:      "321 Pine St",
 		City:       "Removetown",
 		PostalCode: "33333",

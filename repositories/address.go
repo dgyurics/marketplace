@@ -25,13 +25,13 @@ func NewAddressRepository(db *sql.DB) AddressRepository {
 func (r *addressRepository) GetAddress(ctx context.Context, userID, addressID string) (types.Address, error) {
 	var addr types.Address
 	query := `
-		SELECT id, user_id, addressee, line1, line2,
+		SELECT id, user_id, name, line1, line2,
 			city, state, postal_code, country, email, created_at, updated_at
 		FROM addresses
 		WHERE id = $1 AND user_id = $2
 	`
 	err := r.db.QueryRowContext(ctx, query, addressID, userID).Scan(
-		&addr.ID, &addr.UserID, &addr.Addressee, &addr.Line1, &addr.Line2,
+		&addr.ID, &addr.UserID, &addr.Name, &addr.Line1, &addr.Line2,
 		&addr.City, &addr.State, &addr.PostalCode, &addr.Country, &addr.Email, &addr.CreatedAt, &addr.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return addr, types.ErrNotFound
@@ -41,7 +41,7 @@ func (r *addressRepository) GetAddress(ctx context.Context, userID, addressID st
 
 func (r *addressRepository) UpdateAddress(ctx context.Context, address *types.Address) error {
 	query := `UPDATE addresses SET
-		addressee = $1,
+		name = $1,
 		line1 = $2,
 		line2 = $3,
 		city = $4,
@@ -54,7 +54,7 @@ func (r *addressRepository) UpdateAddress(ctx context.Context, address *types.Ad
 		RETURNING updated_at
 	`
 	err := r.db.QueryRowContext(ctx, query,
-		address.Addressee,
+		address.Name,
 		address.Line1,
 		address.Line2,
 		address.City,
@@ -76,7 +76,7 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 		INSERT INTO addresses (
 			id,
 			user_id,
-			addressee,
+			name,
 			line1,
 			line2,
 			city,
@@ -90,7 +90,7 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 	return r.db.QueryRowContext(ctx, query,
 		address.ID,
 		address.UserID,
-		address.Addressee,
+		address.Name,
 		address.Line1,
 		address.Line2,
 		address.City,

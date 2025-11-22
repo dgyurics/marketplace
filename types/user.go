@@ -41,7 +41,7 @@ type Address struct {
 	ID         string    `json:"id"`
 	UserID     string    `json:"user_id"`
 	Country    string    `json:"country"` // FIXME this is country code
-	Addressee  *string   `json:"addressee,omitempty"`
+	Name       *string   `json:"name,omitempty"`
 	Line1      string    `json:"line1"`
 	Line2      *string   `json:"line2,omitempty"`
 	City       string    `json:"city"`            // city, district, suburb, town, village
