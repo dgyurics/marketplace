@@ -6,14 +6,15 @@ import {
   createOrder as apiCreateOrder,
   getTaxEstimate as apiGetTaxEstimate,
 } from '@/services/api'
-import type { Address, BillingAddress } from '@/types'
+import type { Address } from '@/types'
 
 export const useCheckoutStore = defineStore('checkout', {
   state: () => ({
     shippingAddress: {} as Address,
-    billingAddress: {} as BillingAddress,
+    billingAddress: {} as Address,
     stripe_client_secret: '',
     useShippingAddress: true,
+    shippingError: null as string | null,
   }),
 
   getters: {
@@ -56,6 +57,13 @@ export const useCheckoutStore = defineStore('checkout', {
       this.stripe_client_secret = client_secret
 
       return client_secret
+    },
+
+    setShippingError(message: string) {
+      this.shippingError = message
+    },
+    clearShippingError() {
+      this.shippingError = null
     },
 
     resetCheckout() {

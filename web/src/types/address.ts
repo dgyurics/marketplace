@@ -1,6 +1,6 @@
 export type Address = {
   id?: string
-  addressee?: string
+  name?: string
   line1: string
   line2?: string
   city: string
@@ -11,5 +11,3 @@ export type Address = {
 }
 
 export type UpdateAddress = Required<Pick<Address, 'id'>> & Omit<Address, 'id'>
-
-export type BillingAddress = Omit<Address, 'email'>

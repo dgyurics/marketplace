@@ -2,52 +2,33 @@
   <div v-if="!isInitializing" class="container">
     <h2>Checkout</h2>
     <OrderSummary :tax-amount="taxAmount" />
-    <h3>payment details</h3>
+
+    <h3>Payment Details</h3>
     <form @submit.prevent="submitPayment">
-      <div class="form-group-flex">
-        <label for="cardholder-name">Name on Card</label>
-        <input id="cardholder-name" v-model="cardholderName" type="text" required />
-      </div>
+      <PaymentForm
+        ref="paymentFormRef"
+        :client-secret="clientSecret"
+        @ready="onPaymentReady"
+        @error="onPaymentError"
+      />
 
-      <div class="form-group-flex">
-        <label>Card Number</label>
-        <div id="card-number" class="stripe-input"></div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group-flex">
-          <label>Expiration Date</label>
-          <div id="card-expiry" class="stripe-input"></div>
-        </div>
-
-        <div class="form-group-flex">
-          <label>CVC</label>
-          <div id="card-cvc" class="stripe-input"></div>
-        </div>
-      </div>
-
-      <!-- Email Field Below Payment Information -->
-      <div v-show="false" class="form-group-flex">
-        <label for="email">Email</label>
-        <input
-          id="email"
-          v-model="checkoutStore.shippingAddress.email"
-          type="email"
-          autocomplete="email"
-        />
-      </div>
-
-      <div class="form-group-flex checkbox-group">
+      <div class="form-group checkbox-group">
         <label class="checkbox-label">
-          <input id="useBilling" v-model="checkoutStore.useShippingAddress" type="checkbox" />
-          Billing address same as shipping
+          <input v-model="checkoutStore.useShippingAddress" type="checkbox" :tabindex="0" />
+          Billing information same as shipping
         </label>
       </div>
-      <div v-if="!checkoutStore.useShippingAddress" class="billing-address-fields">
-        <h3>Billing Address</h3>
+
+      <div v-if="!checkoutStore.useShippingAddress" class="billing-section">
         <BillingAddressForm v-model="checkoutStore.billingAddress" />
       </div>
-      <button type="submit" class="btn-full-width mt-15" :disabled="isSubmitting">
+
+      <button
+        type="submit"
+        class="btn-full-width mt-15"
+        :disabled="isSubmitting || !isPaymentReady"
+        :tabindex="0"
+      >
         Place Order
       </button>
     </form>
@@ -55,17 +36,12 @@
 </template>
 
 <script setup lang="ts">
-import type {
-  StripeCardCvcElement,
-  StripeCardExpiryElement,
-  StripeCardNumberElement,
-} from '@stripe/stripe-js'
-import { onMounted, ref, nextTick } from 'vue'
+import type { BillingDetails } from '@stripe/stripe-js'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { BillingAddressForm } from '@/components/forms'
+import { BillingAddressForm, PaymentForm } from '@/components/forms'
 import OrderSummary from '@/components/OrderSummary.vue'
-import { getStripe, confirmCardPayment } from '@/services/stripe'
 import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
 import { getLocale } from '@/utilities'
@@ -73,122 +49,76 @@ import { getLocale } from '@/utilities'
 const checkoutStore = useCheckoutStore()
 const cartStore = useCartStore()
 const router = useRouter()
+
 const isSubmitting = ref(false)
 const isInitializing = ref(true)
-const cardholderName = ref('')
+const isPaymentReady = ref(false)
 const taxAmount = ref(0)
+const clientSecret = ref('')
+const paymentFormRef = ref()
 
 const country = getLocale().country_code
 
-let cardElement: StripeCardNumberElement,
-  expiryElement: StripeCardExpiryElement,
-  cvcElement: StripeCardCvcElement
-
 onMounted(async () => {
   try {
-    // Check if shipping address is complete before proceeding
+    // Check if shipping address is complete
     if (!checkoutStore.isShippingAddressComplete) {
       router.push('/checkout/shipping')
       return
     }
 
-    // Fetch cart items
+    // Fetch cart and estimate tax
     await cartStore.fetchCart()
-
-    // Estimate tax
     const { tax_amount } = await checkoutStore.estimateTax()
     taxAmount.value = tax_amount
-  } catch {
-    // Handle errors silently
+
+    // Get client secret for payment
+    clientSecret.value = await checkoutStore.preparePayment()
+  } catch (error: any) {
+    const status = error.response?.status
+    if (status === 400) {
+      checkoutStore.setShippingError('Invalid shipping address')
+      router.push('/checkout/shipping')
+    }
+  } finally {
+    isInitializing.value = false
   }
-
-  isInitializing.value = false
-
-  // Wait for next tick to ensure DOM elements are rendered
-  await nextTick()
-  await initializeStripe()
 })
 
-const elementStyles = {
-  style: {
-    base: {
-      color: '#333',
-      fontWeight: 'normal',
-      fontFamily: 'Open Sans, sans-serif',
-      fontSize: '16px' /* Match address input font-size */,
-      lineHeight: '1.5' /* Improve readability */,
-      padding: '10px' /* Match padding */,
-      '::placeholder': {
-        color: '#aaa',
-      },
-    },
-    invalid: {
-      color: '#c00',
-      iconColor: '#c00',
-    },
-  },
+function onPaymentReady() {
+  isPaymentReady.value = true
 }
 
-async function initializeStripe() {
-  const stripe = await getStripe()
-  if (!stripe) {
-    return
-  }
-
-  const elements = stripe.elements()
-
-  cardElement = elements.create('cardNumber', elementStyles)
-  cardElement.mount('#card-number')
-
-  expiryElement = elements.create('cardExpiry', elementStyles)
-  expiryElement.mount('#card-expiry')
-
-  cvcElement = elements.create('cardCvc', elementStyles)
-  cvcElement.mount('#card-cvc')
+function onPaymentError(error: string) {
+  alert(`Payment form error: ${error}`)
 }
 
-const submitPayment = async () => {
-  // FIXME how to check if stripe fields have been filled correctly
-  // then validate before submitting
-  const selectedAddress = checkoutStore.selectedBillingAddress
+async function submitPayment() {
+  if (!paymentFormRef.value || isSubmitting.value) return
 
-  const billingDetails = {
-    name: cardholderName.value,
-    address: {
-      line1: selectedAddress.line1,
-      line2: selectedAddress.line2 ?? null,
-      city: selectedAddress.city,
-      state: selectedAddress.state ?? null,
-      postal_code: selectedAddress.postal_code,
-      country,
-    },
-  }
+  isSubmitting.value = true
 
   try {
-    // Disable the submit button to prevent multiple submissions
-    isSubmitting.value = true
+    const selectedAddress = checkoutStore.selectedBillingAddress
 
-    const clientSecret = await checkoutStore.preparePayment()
-
-    const { error, paymentIntent: confirmedIntent } = await confirmCardPayment(
-      clientSecret,
-      cardElement,
-      billingDetails
-    )
-
-    if (error) {
-      alert(`Payment failed: ${error.message}`)
-      return
+    const billingDetails: BillingDetails = {
+      name: selectedAddress.name ?? '', // FIXME if empty/invalid throw error
+      email: selectedAddress.email,
+      address: {
+        line1: selectedAddress.line1,
+        line2: selectedAddress.line2 ?? null,
+        city: selectedAddress.city,
+        state: selectedAddress.state ?? '', // FIXME if empty/invalid throw error
+        postal_code: selectedAddress.postal_code,
+        country,
+      },
     }
 
-    if (confirmedIntent.status === 'succeeded') {
-      router.push('/checkout/confirmation')
-    } else {
-      alert('Payment processing or additional verification required')
-    }
+    await paymentFormRef.value.confirmPayment(billingDetails)
+    router.push('/checkout/confirmation')
   } catch (error) {
-    alert('Payment submission failed. Try again')
-    console.error('Payment submission error:', error)
+    const message = error instanceof Error ? error.message : 'Please try again'
+    alert(`Payment failed: ${message}`)
   } finally {
     isSubmitting.value = false
   }
@@ -196,86 +126,45 @@ const submitPayment = async () => {
 </script>
 
 <style scoped>
-.stripe-input {
-  width: 100%; /* Match address input width */
-  padding: 10px; /* Consistent padding */
-  border: 1px solid #ccc; /* Consistent border */
-  border-radius: 4px; /* Consistent border-radius */
-  font-size: 16px; /* Match address input font-size */
-  background: white;
-  box-sizing: border-box; /* Ensure padding doesn't affect width */
-  height: 44px;
-  line-height: 1.5;
+h2,
+h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  text-transform: capitalize;
 }
 
-/* Existing styles for inputs to ensure consistency */
-input[type='text'],
-input[type='email'],
-input[type='password'],
-input[type='tel'],
-input[type='number'],
-input[type='search'] {
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+input[type='text'] {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
   box-sizing: border-box;
 }
 
-h2,
-h3 {
-  text-align: center;
-  margin-bottom: 10px;
-  text-transform: capitalize;
-}
-
-.section-subtitle {
-  text-align: center;
-  font-size: 16px;
-  color: #555;
-  margin-bottom: 20px;
-  text-transform: capitalize;
-}
-
-label {
-  font-weight: 500;
-  margin-bottom: 5px;
-}
-
-.form-row {
-  display: flex;
-  gap: 10px;
-}
-
-.form-row .form-group-flex {
-  flex: 1;
-}
-
-.receipt-note {
-  font-size: 10px;
-  color: #666;
-  margin-top: 2px;
-}
-
-.confirmation-note {
-  text-align: center;
-}
-
 .checkbox-group {
-  margin-bottom: 15px;
+  margin: 30px 0;
 }
 
 .checkbox-label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  font-weight: 500;
-  gap: 6px;
-  font-size: 13px;
+  gap: 8px;
+  font-size: 14px;
   font-style: italic;
 }
 
-.checkbox-label input[type='checkbox'] {
-  margin: 0;
+.billing-section {
+  margin-top: 20px;
 }
 </style>

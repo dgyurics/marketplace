@@ -6,6 +6,7 @@
       <ShippingAddressForm
         :model-value="checkoutStore.shippingAddress"
         @submit="handleShippingSubmit"
+        @update:model-value="handleAddressUpdate"
       />
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     </div>
@@ -27,6 +28,15 @@ const router = useRouter()
 
 const errorMessage = ref<string | null>(null)
 
+function clearErrorMessage() {
+  errorMessage.value = null
+}
+
+function handleAddressUpdate(address: Address) {
+  checkoutStore.shippingAddress = address
+  clearErrorMessage()
+}
+
 onMounted(async () => {
   // Ensure cart is loaded for checkout
   await cartStore.fetchCart()
@@ -34,6 +44,11 @@ onMounted(async () => {
   // Redirect to cart if no items
   if (cartStore.items.length === 0) {
     router.push('/cart')
+  }
+
+  if (checkoutStore.shippingError) {
+    errorMessage.value = checkoutStore.shippingError
+    checkoutStore.clearShippingError()
   }
 })
 
@@ -44,8 +59,8 @@ async function handleShippingSubmit(address: Address) {
 
     // Navigate to payment
     router.push('/checkout/payment')
-  } catch (error: any) {
-    const status = error.response?.status
+  } catch (error: unknown) {
+    const status = (error as { response?: { status?: number } })?.response?.status
     if (status === 400) {
       errorMessage.value = 'Invalid shipping address'
       return

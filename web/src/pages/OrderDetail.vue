@@ -30,7 +30,7 @@
       <div v-if="order.address" class="address-section">
         <h3>Shipping Address</h3>
         <div class="address">
-          <div v-if="order.address.addressee">{{ order.address.addressee }}</div>
+          <div v-if="order.address.name">{{ order.address.name }}</div>
           <div>{{ order.address.line1 }}</div>
           <div v-if="order.address.line2">{{ order.address.line2 }}</div>
           <div>
