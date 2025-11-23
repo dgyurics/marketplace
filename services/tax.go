@@ -95,7 +95,8 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return 0, fmt.Errorf("stripe tax calculation failed (status %d): %s", resp.StatusCode, string(body))
+		slog.ErrorContext(ctx, "stripe tax calculation failed", "status_code", resp.StatusCode, "body", string(body))
+		return 0, types.ErrInvalidInput
 	}
 
 	var tax stripe.TaxCalculationResponse

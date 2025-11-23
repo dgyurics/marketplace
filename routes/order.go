@@ -117,6 +117,10 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Calculate tax
 	tax, err := h.taxService.CalculateTax(r.Context(), "", addr, cart)
+	if err == types.ErrInvalidInput {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
