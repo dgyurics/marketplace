@@ -29,7 +29,7 @@ const (
 type PaymentService interface {
 	EventHandler(ctx context.Context, event stripe.Event) error
 	SignatureVerifier(payload []byte, sigHeader string) error
-	CreatePaymentIntent(ctx context.Context, refID string, amount int64) (stripe.PaymentIntent, error)
+	CreatePaymentIntent(ctx context.Context, refID string, amount int64, email string) (stripe.PaymentIntent, error)
 }
 
 type paymentService struct {
@@ -167,7 +167,7 @@ func (s *paymentService) SignatureVerifier(payload []byte, sigHeader string) err
 // CreatePaymentIntent creates a new Stripe Payment Intent.
 // [refID] is a unique reference ID for idempotency. Currently this is the order ID
 // [amount] is the amount in the smallest currency unit (e.g., cents for USD).
-func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, amount int64) (pi stripe.PaymentIntent, err error) {
+func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, amount int64, email string) (pi stripe.PaymentIntent, err error) {
 	// Build request
 	reqURL := fmt.Sprintf("%s/payment_intents", s.config.Stripe.BaseURL)
 	data, ok := utilities.LocaleData[utilities.Locale.CountryCode]
@@ -175,12 +175,13 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 		return pi, fmt.Errorf("unsupported country code: %s", utilities.Locale.CountryCode)
 	}
 	payload := url.Values{
-		"amount":                 {fmt.Sprintf("%d", amount)},
-		"currency":               {data.Currency},
-		"payment_method_types[]": {"card"},
-		"metadata[order_id]":     {refID},
-		"metadata[environment]":  {string(s.config.Environment)},
-		// TODO send receipt to customer "receipt_email": {order.Address.Email}
+		"amount":                {fmt.Sprintf("%d", amount)},
+		"currency":              {data.Currency},
+		"receipt_email":         {email},
+		"metadata[order_id]":    {refID},
+		"metadata[environment]": {string(s.config.Environment)},
+		// "payment_method_types[]": {"card"},
+		// TODO send receipt to customer "receipt_email": {order.Address.Email} // TODO send receipt
 	}
 	reqBody := strings.NewReader(payload.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, reqBody)

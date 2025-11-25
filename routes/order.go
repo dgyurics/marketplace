@@ -143,7 +143,7 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create payment intent
-	pi, err := h.paymentService.CreatePaymentIntent(r.Context(), order.ID, order.TotalAmount)
+	pi, err := h.paymentService.CreatePaymentIntent(r.Context(), order.ID, order.TotalAmount, order.Address.Email)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
