@@ -11,16 +11,11 @@ import type { Address } from '@/types'
 export const useCheckoutStore = defineStore('checkout', {
   state: () => ({
     shippingAddress: {} as Address,
-    billingAddress: {} as Address,
     stripe_client_secret: '',
-    useShippingAddress: true,
     shippingError: null as string | null,
   }),
 
   getters: {
-    selectedBillingAddress: (state) =>
-      state.useShippingAddress ? state.shippingAddress : state.billingAddress,
-
     isShippingAddressComplete: (state) => Boolean(state.shippingAddress.id),
   },
 
@@ -67,9 +62,7 @@ export const useCheckoutStore = defineStore('checkout', {
     },
 
     resetCheckout() {
-      this.useShippingAddress = true
       this.shippingAddress = {} as Address
-      this.billingAddress = {} as Address
       this.stripe_client_secret = ''
     },
   },

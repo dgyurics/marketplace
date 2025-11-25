@@ -3,11 +3,13 @@
     <h2>Checkout</h2>
     <div>
       <h3>shipping address</h3>
-      <ShippingAddressForm
-        :model-value="checkoutStore.shippingAddress"
-        @submit="handleShippingSubmit"
-        @update:model-value="handleAddressUpdate"
-      />
+      <form @submit.prevent="handleShippingSubmit">
+        <AddressForm
+          :model-value="checkoutStore.shippingAddress"
+          @update:model-value="handleAddressUpdate"
+        />
+        <button type="submit" class="btn-full-width mt-15" :tabindex="0">Continue</button>
+      </form>
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     </div>
   </div>
@@ -17,7 +19,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ShippingAddressForm } from '@/components/forms'
+import { Address as AddressForm } from '@/components/forms'
 import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
 import type { Address } from '@/types'
@@ -52,10 +54,10 @@ onMounted(async () => {
   }
 })
 
-async function handleShippingSubmit(address: Address) {
+async function handleShippingSubmit() {
   try {
     // Save the shipping address
-    await checkoutStore.saveShippingAddress(address)
+    await checkoutStore.saveShippingAddress(checkoutStore.shippingAddress)
 
     // Navigate to payment
     router.push('/checkout/payment')
@@ -65,6 +67,7 @@ async function handleShippingSubmit(address: Address) {
       errorMessage.value = 'Invalid shipping address'
       return
     }
+    console.error('Error saving shipping address:', error)
     errorMessage.value = 'Something went wrong'
   }
 }

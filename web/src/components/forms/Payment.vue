@@ -7,13 +7,15 @@
 </template>
 
 <script setup lang="ts">
-import type { StripePaymentElement, StripeElements, BillingDetails } from '@stripe/stripe-js'
+import type { StripePaymentElement, StripeElements } from '@stripe/stripe-js'
 import { onMounted, ref, onBeforeUnmount } from 'vue'
 
 import { getStripe } from '@/services/stripe'
+import type { Address } from '@/types'
 
 const props = defineProps<{
   clientSecret: string
+  address: Address
 }>()
 
 const emit = defineEmits<{
@@ -34,17 +36,33 @@ onMounted(async () => {
       clientSecret: props.clientSecret,
       appearance: {
         theme: 'stripe',
+        variables: {
+          fontFamily: "'Open Sans', sans-serif",
+          fontSizeBase: '16px',
+          borderRadius: '1px',
+        },
       },
     })
 
+    // @ts-ignore - Payment element type not properly defined in current Stripe types
     paymentElement = elements.create('payment', {
-      fields: {
+      paymentMethodOrder: ['card'], // Card appears first in the list
+      defaultValues: {
         billingDetails: {
-          name: 'never',
-          email: 'never',
-          phone: 'auto',
-          address: 'never',
+          name: props.address.name,
+          email: props.address.email,
+          address: {
+            line1: props.address.line1,
+            line2: props.address.line2,
+            city: props.address.city,
+            state: props.address.state,
+            postal_code: props.address.postal_code,
+            country: props.address.country,
+          },
         },
+      },
+      fields: {
+        billingDetails: 'auto',
       },
     })
     paymentElement.mount('#payment-element')
@@ -63,7 +81,7 @@ onBeforeUnmount(() => {
   }
 })
 
-async function confirmPayment(billingDetails: BillingDetails) {
+async function confirmPayment() {
   if (!elements) {
     throw new Error('Payment form not initialized')
   }
@@ -75,11 +93,6 @@ async function confirmPayment(billingDetails: BillingDetails) {
 
   const { error } = await stripe.confirmPayment({
     elements,
-    confirmParams: {
-      payment_method_data: {
-        billing_details: billingDetails,
-      },
-    },
     redirect: 'if_required',
   })
 

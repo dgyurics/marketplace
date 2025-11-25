@@ -7,25 +7,15 @@
     <form @submit.prevent="submitPayment">
       <PaymentForm
         ref="paymentFormRef"
+        :address="checkoutStore.shippingAddress"
         :client-secret="clientSecret"
         @ready="onPaymentReady"
         @error="onPaymentError"
       />
 
-      <div class="form-group checkbox-group">
-        <label class="checkbox-label">
-          <input v-model="checkoutStore.useShippingAddress" type="checkbox" :tabindex="0" />
-          Billing information same as shipping
-        </label>
-      </div>
-
-      <div v-if="!checkoutStore.useShippingAddress" class="billing-section">
-        <BillingAddressForm v-model="checkoutStore.billingAddress" />
-      </div>
-
       <button
         type="submit"
-        class="btn-full-width mt-15"
+        class="btn-full-width mt-30"
         :disabled="isSubmitting || !isPaymentReady"
         :tabindex="0"
       >
@@ -36,15 +26,13 @@
 </template>
 
 <script setup lang="ts">
-import type { BillingDetails } from '@stripe/stripe-js'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { BillingAddressForm, PaymentForm } from '@/components/forms'
+import { Payment as PaymentForm } from '@/components/forms'
 import OrderSummary from '@/components/OrderSummary.vue'
 import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
-import { getLocale } from '@/utilities'
 
 const checkoutStore = useCheckoutStore()
 const cartStore = useCartStore()
@@ -56,8 +44,6 @@ const isPaymentReady = ref(false)
 const taxAmount = ref(0)
 const clientSecret = ref('')
 const paymentFormRef = ref()
-
-const country = getLocale().country_code
 
 onMounted(async () => {
   try {
@@ -99,22 +85,7 @@ async function submitPayment() {
   isSubmitting.value = true
 
   try {
-    const selectedAddress = checkoutStore.selectedBillingAddress
-
-    const billingDetails: BillingDetails = {
-      name: selectedAddress.name ?? '', // FIXME if empty/invalid throw error
-      email: selectedAddress.email,
-      address: {
-        line1: selectedAddress.line1,
-        line2: selectedAddress.line2 ?? null,
-        city: selectedAddress.city,
-        state: selectedAddress.state ?? '', // FIXME if empty/invalid throw error
-        postal_code: selectedAddress.postal_code,
-        country,
-      },
-    }
-
-    await paymentFormRef.value.confirmPayment(billingDetails)
+    await paymentFormRef.value.confirmPayment()
     router.push('/checkout/confirmation')
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Please try again'
@@ -137,34 +108,12 @@ h3 {
   margin-bottom: 20px;
 }
 
-label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 5px;
-}
-
-input[type='text'] {
+/* input[type='text'] {
   width: 100%;
   padding: 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
   box-sizing: border-box;
-}
-
-.checkbox-group {
-  margin: 30px 0;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-style: italic;
-}
-
-.billing-section {
-  margin-top: 20px;
-}
+} */
 </style>

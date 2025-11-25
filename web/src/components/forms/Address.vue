@@ -1,36 +1,34 @@
 <template>
-  <form @submit.prevent="handleSubmit">
+  <div>
     <div class="form-group-flex">
       <InputText
         label="full name"
-        :model-value="formData.name ?? ''"
+        required
+        :model-value="modelValue.name ?? ''"
         @update:model-value="(val) => updateField('name', val)"
       />
     </div>
-
     <div class="form-group-flex">
       <InputText
         label="address"
         required
-        :model-value="formData.line1"
+        :model-value="modelValue.line1 ?? ''"
         @update:model-value="(val) => updateField('line1', val)"
       />
     </div>
-
     <div class="form-group-flex">
       <InputText
         label="Apt, Suite, Building"
-        :model-value="formData.line2 ?? ''"
+        :model-value="modelValue.line2 ?? ''"
         @update:model-value="(val) => updateField('line2', val)"
       />
     </div>
-
     <div class="form-row">
       <div class="form-group-flex">
         <InputText
           label="city"
           required
-          :model-value="formData.city"
+          :model-value="modelValue.city ?? ''"
           @update:model-value="(val) => updateField('city', val)"
         />
       </div>
@@ -39,7 +37,7 @@
           :label="locale.state_label"
           :options="states"
           :required="locale.state_required"
-          :model-value="formData.state ?? ''"
+          :model-value="modelValue.state ?? ''"
           @update:model-value="(val) => updateField('state', val)"
         />
       </div>
@@ -49,73 +47,45 @@
           :pattern="locale.postal_code_pattern"
           title="Invalid format"
           required
-          :model-value="formData.postal_code"
+          :model-value="modelValue.postal_code ?? ''"
           @update:model-value="(val) => updateField('postal_code', val)"
         />
       </div>
     </div>
-
     <div class="form-group-flex">
       <InputText
         label="email"
         type="email"
         required
-        :model-value="formData.email"
+        :model-value="modelValue.email ?? ''"
         @update:model-value="(val) => updateField('email', val)"
       />
       <small class="receipt-note">A receipt will be sent to this email.</small>
     </div>
-
-    <button type="submit" class="btn-full-width mt-15" :tabindex="0">Continue</button>
-  </form>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { onMounted } from 'vue'
 
 import { InputText, SelectInput } from '@/components/forms'
 import type { Address, Locale } from '@/types'
 import { getLocale } from '@/utilities'
 
 const locale: Locale = getLocale()
-const props = defineProps<{ modelValue?: Address }>()
+const states = Object.entries(locale.state_codes || []).map(([k, v]) => ({ value: k, label: v }))
 
-const states = Object.entries(locale.state_codes || []).map(([k, v]) => {
-  return {
-    value: k,
-    label: v,
-  }
-})
-
-const emit = defineEmits<{
-  submit: [address: Address]
-  'update:modelValue': [address: Address]
-}>()
+const props = defineProps<{ modelValue: Address }>()
+const emit = defineEmits<{ 'update:modelValue': [value: Address] }>()
 
 function updateField<K extends keyof Address>(field: K, value: Address[K]) {
-  emit('update:modelValue', {
-    line1: '',
-    city: '',
-    postal_code: '',
-    email: '',
-    country: getLocale().country_code,
-    ...props.modelValue,
-    [field]: value,
-  })
+  emit('update:modelValue', { ...props.modelValue, [field]: value })
 }
 
-const formData = computed(() => ({
-  line1: '',
-  city: '',
-  postal_code: '',
-  email: '',
-  country: getLocale().country_code,
-  ...props.modelValue,
-}))
-
-function handleSubmit() {
-  emit('submit', formData.value)
-}
+onMounted(() => {
+  // Set default country
+  updateField('country', locale.country_code)
+})
 </script>
 
 <style scoped>
