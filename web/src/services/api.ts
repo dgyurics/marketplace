@@ -7,7 +7,7 @@ import type {
   Address,
   Order,
   Category,
-  StripePaymentIntent,
+  CreateOrderResponse,
   AuthTokens,
   ImageType,
   Product,
@@ -215,7 +215,7 @@ export const removeItemFromCart = async (productId: string) => {
   return response.data
 }
 
-export const createOrder = async (shippingID: string): Promise<StripePaymentIntent> => {
+export const createOrder = async (shippingID: string): Promise<CreateOrderResponse> => {
   const params = new URLSearchParams()
   params.append('shipping_id', shippingID)
 

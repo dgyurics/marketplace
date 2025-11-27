@@ -10,13 +10,13 @@
         />
         <button type="submit" class="btn-full-width mt-15" :tabindex="0">Continue</button>
       </form>
-      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+      <p v-if="checkoutStore.shippingError" class="error">{{ checkoutStore.shippingError }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { Address as AddressForm } from '@/components/forms'
@@ -28,15 +28,8 @@ const checkoutStore = useCheckoutStore()
 const cartStore = useCartStore()
 const router = useRouter()
 
-const errorMessage = ref<string | null>(null)
-
-function clearErrorMessage() {
-  errorMessage.value = null
-}
-
 function handleAddressUpdate(address: Address) {
   checkoutStore.shippingAddress = address
-  clearErrorMessage()
 }
 
 onMounted(async () => {
@@ -47,11 +40,6 @@ onMounted(async () => {
   if (cartStore.items.length === 0) {
     router.push('/cart')
   }
-
-  if (checkoutStore.shippingError) {
-    errorMessage.value = checkoutStore.shippingError
-    checkoutStore.clearShippingError()
-  }
 })
 
 async function handleShippingSubmit() {
@@ -59,16 +47,15 @@ async function handleShippingSubmit() {
     // Save the shipping address
     await checkoutStore.saveShippingAddress(checkoutStore.shippingAddress)
 
+    // Clear any previous errors
+    checkoutStore.shippingError = null
+
     // Navigate to payment
     router.push('/checkout/payment')
   } catch (error: unknown) {
     const status = (error as { response?: { status?: number } })?.response?.status
-    if (status === 400) {
-      errorMessage.value = 'Invalid shipping address'
-      return
-    }
-    console.error('Error saving shipping address:', error)
-    errorMessage.value = 'Something went wrong'
+    checkoutStore.shippingError =
+      status === 400 ? 'Invalid shipping address' : 'Something went wrong'
   }
 }
 </script>

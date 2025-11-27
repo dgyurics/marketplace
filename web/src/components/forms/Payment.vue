@@ -81,9 +81,13 @@ onBeforeUnmount(() => {
   }
 })
 
-async function confirmPayment() {
+async function confirmPayment(refId: string) {
   if (!elements) {
     throw new Error('Payment form not initialized')
+  }
+
+  if (!refId) {
+    throw new Error('Reference ID is missing')
   }
 
   const stripe = await getStripe()
@@ -93,6 +97,9 @@ async function confirmPayment() {
 
   const { error } = await stripe.confirmPayment({
     elements,
+    confirmParams: {
+      return_url: `${window.location.origin}/checkout/confirmation?order_id=${refId}`,
+    },
     redirect: 'if_required',
   })
 

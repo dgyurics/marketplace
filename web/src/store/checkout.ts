@@ -6,13 +6,15 @@ import {
   createOrder as apiCreateOrder,
   getTaxEstimate as apiGetTaxEstimate,
 } from '@/services/api'
-import type { Address } from '@/types'
+import type { Address, CreateOrderResponse } from '@/types'
 
 export const useCheckoutStore = defineStore('checkout', {
   state: () => ({
     shippingAddress: {} as Address,
     stripe_client_secret: '',
+    order_id: '',
     shippingError: null as string | null,
+    paymentError: null as string | null,
   }),
 
   getters: {
@@ -40,30 +42,27 @@ export const useCheckoutStore = defineStore('checkout', {
       return apiGetTaxEstimate(this.shippingAddress.country, this.shippingAddress.state)
     },
 
-    async preparePayment(): Promise<string> {
+    async preparePayment(): Promise<CreateOrderResponse> {
       if (this.stripe_client_secret) {
-        return this.stripe_client_secret
+        return { client_secret: this.stripe_client_secret, order_id: this.order_id }
       }
       if (!this.shippingAddress.id) {
         throw new Error('Shipping address not found')
       }
 
-      const { client_secret } = await apiCreateOrder(this.shippingAddress.id)
-      this.stripe_client_secret = client_secret
+      const resBody: CreateOrderResponse = await apiCreateOrder(this.shippingAddress.id)
+      this.stripe_client_secret = resBody.client_secret
+      this.order_id = resBody.order_id
 
-      return client_secret
-    },
-
-    setShippingError(message: string) {
-      this.shippingError = message
-    },
-    clearShippingError() {
-      this.shippingError = null
+      return resBody
     },
 
     resetCheckout() {
       this.shippingAddress = {} as Address
       this.stripe_client_secret = ''
+      this.order_id = ''
+      this.shippingError = null
+      this.paymentError = null
     },
   },
 })

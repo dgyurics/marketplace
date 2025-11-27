@@ -1,8 +1,9 @@
 import type { Address } from './address'
 import type { Product } from './product'
 
-export interface StripePaymentIntent {
+export interface CreateOrderResponse {
   client_secret: string
+  order_id: string
 }
 
 export interface OrderItem {

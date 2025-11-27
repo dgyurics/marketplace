@@ -149,8 +149,8 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Respond with client secret for payment processing
-	u.RespondWithJSON(w, http.StatusOK, stripe.PaymentIntentResponse{ClientSecret: pi.ClientSecret})
+	// Respond with client secret and order ID for payment processing
+	u.RespondWithJSON(w, http.StatusOK, stripe.CreateOrderResponse{ClientSecret: pi.ClientSecret, OrderID: order.ID})
 }
 
 func calculateOrderFromCart(order *types.Order, cart []types.CartItem) {

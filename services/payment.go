@@ -174,14 +174,14 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 	if !ok {
 		return pi, fmt.Errorf("unsupported country code: %s", utilities.Locale.CountryCode)
 	}
+	// https://selfco.io/checkout/confirmation
 	payload := url.Values{
 		"amount":                {fmt.Sprintf("%d", amount)},
 		"currency":              {data.Currency},
 		"receipt_email":         {email},
 		"metadata[order_id]":    {refID},
 		"metadata[environment]": {string(s.config.Environment)},
-		// "payment_method_types[]": {"card"},
-		// TODO send receipt to customer "receipt_email": {order.Address.Email} // TODO send receipt
+		// "payment_method_types[]": {"card"}, // omit to have automatic payment options displayed to user
 	}
 	reqBody := strings.NewReader(payload.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, reqBody)

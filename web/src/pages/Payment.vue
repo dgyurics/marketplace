@@ -22,6 +22,7 @@
         Place Order
       </button>
     </form>
+    <p v-if="checkoutStore.paymentError" class="error">{{ checkoutStore.paymentError }}</p>
   </div>
 </template>
 
@@ -43,6 +44,7 @@ const isInitializing = ref(true)
 const isPaymentReady = ref(false)
 const taxAmount = ref(0)
 const clientSecret = ref('')
+const orderId = ref('')
 const paymentFormRef = ref()
 
 onMounted(async () => {
@@ -59,11 +61,13 @@ onMounted(async () => {
     taxAmount.value = tax_amount
 
     // Get client secret for payment
-    clientSecret.value = await checkoutStore.preparePayment()
+    const res = await checkoutStore.preparePayment()
+    clientSecret.value = res.client_secret
+    orderId.value = res.order_id
   } catch (error: any) {
     const status = error.response?.status
     if (status === 400) {
-      checkoutStore.setShippingError('Invalid shipping address')
+      checkoutStore.shippingError = 'Invalid shipping address'
       router.push('/checkout/shipping')
     }
   } finally {
@@ -76,16 +80,19 @@ function onPaymentReady() {
 }
 
 function onPaymentError(error: string) {
-  alert(`Payment form error: ${error}`)
+  checkoutStore.paymentError = error
+  // alert(`Payment form error: ${error}`)
+  console.error('Payment form error:', error)
 }
 
 async function submitPayment() {
-  if (!paymentFormRef.value || isSubmitting.value) return
+  if (!paymentFormRef.value || isSubmitting.value || !orderId.value) return
 
   isSubmitting.value = true
+  checkoutStore.paymentError = null
 
   try {
-    await paymentFormRef.value.confirmPayment()
+    await paymentFormRef.value.confirmPayment(orderId.value)
     router.push('/checkout/confirmation')
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Please try again'
@@ -107,13 +114,4 @@ h3 {
 .form-group {
   margin-bottom: 20px;
 }
-
-/* input[type='text'] {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
-  box-sizing: border-box;
-} */
 </style>

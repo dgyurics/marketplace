@@ -21,7 +21,8 @@ type PaymentIntent struct {
 	Error        string            `json:"error,omitempty"`
 }
 
-type PaymentIntentResponse struct {
+type CreateOrderResponse struct {
+	OrderID      string `json:"order_id"`
 	ClientSecret string `json:"client_secret"`
 }
 

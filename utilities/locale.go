@@ -28,6 +28,8 @@ type locale struct {
 	Currency          string            `json:"currency"`            // e.g., "USD", "CAD", "EUR"
 	MinorUnits        int               `json:"minor_units"`         // e.g., 2 for USD, 0 for JPY
 	Language          string            `json:"language"`            // e.g., "en-US", "fr-CA", "de-DE"
+	// TODO line2_label
+	// TODO InclusiveTax bool
 }
 
 var LocaleData = map[string]*locale{
