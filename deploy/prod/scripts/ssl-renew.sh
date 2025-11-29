@@ -1,23 +1,14 @@
 #!/bin/bash
 
-# =============================================================================
-# SSL Automatic Renewal Script
-# =============================================================================
-
-set -euo pipefail
-
-# Change to project directory
+# SSL renewal script
 cd "$(dirname "$0")/../../.."
 
-echo "$(date): Starting SSL renewal check"
+# Stop nginx
+docker compose -f deploy/prod/docker-compose.yaml stop nginx
 
-# Try to renew certificates (only renews if within 30 days of expiry)
-docker run --rm -v "marketplace_ssl-certs:/etc/letsencrypt" \
-    certbot/certbot:v2.11.0 renew --quiet
+# Renew SSL certificate
+docker run --rm -v "marketplace_ssl-certs:/etc/letsencrypt" -p 80:80 -p 443:443 \
+    certbot/certbot:v2.11.0 renew --force-renewal --standalone
 
-# Reload nginx if containers are running
-if docker-compose ps nginx | grep -q "Up"; then
-  docker-compose exec nginx nginx -s reload 2>/dev/null || true
-fi
-
-echo "$(date): SSL renewal check completed"
+# Start nginx
+docker compose -f deploy/prod/docker-compose.yaml start nginx
