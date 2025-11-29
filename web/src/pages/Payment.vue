@@ -49,31 +49,37 @@ const paymentFormRef = ref()
 
 onMounted(async () => {
   try {
-    // Check if shipping address is complete
-    if (!checkoutStore.isShippingAddressComplete) {
-      router.push('/checkout/shipping')
-      return
-    }
-
-    // Fetch cart and estimate tax
-    await cartStore.fetchCart()
-    const { tax_amount } = await checkoutStore.estimateTax()
-    taxAmount.value = tax_amount
-
-    // Get client secret for payment
-    const res = await checkoutStore.preparePayment()
-    clientSecret.value = res.client_secret
-    orderId.value = res.order_id
+    await initializePayment()
   } catch (error: any) {
-    const status = error.response?.status
-    if (status === 400) {
-      checkoutStore.shippingError = 'Invalid shipping address'
-      router.push('/checkout/shipping')
-    }
+    handleInitError(error)
   } finally {
     isInitializing.value = false
   }
 })
+
+async function initializePayment() {
+  if (!checkoutStore.isShippingAddressComplete) {
+    router.push('/checkout/shipping')
+    return
+  }
+
+  // populate cart and get tax estimate
+  await cartStore.fetchCart()
+  const { tax_amount } = await checkoutStore.estimateTax()
+  taxAmount.value = tax_amount
+
+  // get client secret for payment
+  const res = await checkoutStore.preparePayment()
+  clientSecret.value = res.client_secret
+  orderId.value = res.order_id
+}
+
+function handleInitError(error: any) {
+  if (error.response?.status === 400) {
+    checkoutStore.shippingError = 'Invalid shipping address'
+    router.push('/checkout/shipping')
+  }
+}
 
 function onPaymentReady() {
   isPaymentReady.value = true

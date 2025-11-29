@@ -24,11 +24,14 @@ const route = useRoute()
 const checkoutStore = useCheckoutStore()
 const email = ref('')
 
+// Sample redirect URL
 // https://selfco.io/checkout/payment/checkout/confirmation?
 // order_id=115...&payment_intent=pi_3SXv...&payment_intent_client_secret=pi_3SX...&redirect_status=succeeded
 
+// Sample redirect URL
 // https://selfco.io/checkout/confirmation?
 // order_id=115...&payment_intent=pi_3SXv...&payment_intent_client_secret=pi_3SX...&redirect_status=failed
+
 onMounted(async () => {
   if (checkoutStore.shippingAddress.email) {
     email.value = checkoutStore.shippingAddress.email
@@ -37,21 +40,18 @@ onMounted(async () => {
   }
 
   // Handle redirects from Stripe Payment
-  const redirect = route.query['redirect_status'] // 'succeeded' | 'failed' | undefined
+  const { redirect_status, order_id, payment_intent_client_secret } = route.query
+  if (!order_id) return
 
-  if (redirect === 'succeeded') {
-    const data = await getOrderOwner(route.query['order_id'] as string)
-    email.value = data.address.email
-    return
-  }
+  const order = await getOrderOwner(order_id as string)
+  email.value = order.address.email
 
-  if (redirect === 'failed') {
-    const orderID = route.query['order_id'] as string
-    const data = await getOrderOwner(orderID)
-    checkoutStore.shippingAddress = data.address
-    checkoutStore.order_id = orderID
+  if (redirect_status === 'failed') {
+    // Restore state for retry
+    checkoutStore.shippingAddress = order.address
+    checkoutStore.order_id = order.id
+    checkoutStore.stripe_client_secret = payment_intent_client_secret as string
     checkoutStore.paymentError = 'Payment failed. Try again or use a different payment method.'
-    checkoutStore.stripe_client_secret = route.query['payment_intent_client_secret'] as string
     router.push('/checkout/payment')
   }
 })
