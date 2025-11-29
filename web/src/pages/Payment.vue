@@ -81,7 +81,6 @@ function onPaymentReady() {
 
 function onPaymentError(error: string) {
   checkoutStore.paymentError = error
-  // alert(`Payment form error: ${error}`)
   console.error('Payment form error:', error)
 }
 
@@ -95,8 +94,11 @@ async function submitPayment() {
     await paymentFormRef.value.confirmPayment(orderId.value)
     router.push('/checkout/confirmation')
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Please try again'
-    alert(`Payment failed: ${message}`)
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Payment failed. Try again or use a different payment method.'
+    checkoutStore.paymentError = message
   } finally {
     isSubmitting.value = false
   }
