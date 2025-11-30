@@ -74,7 +74,7 @@ func (s *scheduleService) removeStaleOrders(ctx context.Context) {
 			WITH canceled_orders AS (
 				UPDATE orders 
 				SET status = 'canceled'
-				WHERE status IN ('pending', 'created') AND updated_at < NOW() - INTERVAL '24 hours'
+				WHERE status = 'pending' AND updated_at < NOW() - INTERVAL '24 hours'
 				RETURNING id
 			),
 			deleted_items AS (
