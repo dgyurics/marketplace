@@ -9,7 +9,7 @@ import (
 // RespondWithError logs the error and responds with a generic error message
 // Exposing the actual error to the client can be a security risk
 func RespondWithError(w http.ResponseWriter, r *http.Request, code int, message string) {
-	slog.Error("request_error",
+	slog.InfoContext(r.Context(), "request_error",
 		"status_code", code,
 		"message", message,
 		"method", r.Method,

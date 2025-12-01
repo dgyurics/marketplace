@@ -115,17 +115,17 @@ func (s *registerService) RegisterConfirm(ctx context.Context, email, code strin
 	}
 
 	if usr.Used {
-		slog.ErrorContext(ctx, "Registration code already used", "email", email)
+		slog.WarnContext(ctx, "Registration code already used", "email", email)
 		return types.ErrNotFound
 	}
 
 	if time.Now().After(usr.ExpiresAt) {
-		slog.ErrorContext(ctx, "Registration code expired", "email", email)
+		slog.WarnContext(ctx, "Registration code expired", "email", email)
 		return types.ErrNotFound
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(usr.CodeHash), []byte(code)); err != nil {
-		slog.ErrorContext(ctx, "Invalid registration code", "email", email)
+		slog.WarnContext(ctx, "Invalid registration code", "email", email)
 		return types.ErrNotFound
 	}
 

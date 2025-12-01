@@ -95,7 +95,7 @@ func (s *paymentService) EventHandler(ctx context.Context, event stripe.Event) e
 func (s *paymentService) SignatureVerifier(payload []byte, sigHeader string) error {
 	parts := strings.Split(sigHeader, ",")
 	if len(parts) < 2 {
-		slog.Error("Invalid signature header", "header", sigHeader)
+		slog.Warn("Invalid signature header", "header", sigHeader)
 		return errors.New("invalid signature header")
 	}
 
@@ -113,21 +113,21 @@ func (s *paymentService) SignatureVerifier(payload []byte, sigHeader string) err
 	}
 
 	if timestamp == "" {
-		slog.Error("Timestamp missing from signature header", "header", sigHeader)
+		slog.Warn("Timestamp missing from signature header", "header", sigHeader)
 		return errors.New("missing timestamp")
 	}
 
 	if len(signatures) == 0 {
-		slog.Error("Signature missing from signature header", "header", sigHeader)
+		slog.Warn("Signature missing from signature header", "header", sigHeader)
 		return errors.New("missing signature")
 	}
 
 	ts, err := unixTimestampToTime(timestamp)
 	if err != nil {
-		slog.Error("Error parsing timestamp", "timestamp", timestamp)
+		slog.Warn("Error parsing timestamp", "timestamp", timestamp)
 		return errors.New("invalid timestamp")
 	} else if time.Since(ts) > tolerance {
-		slog.Error("Timestamp is too old", "timestamp", timestamp)
+		slog.Warn("Timestamp is too old", "timestamp", timestamp)
 		return errors.New("timestamp is too old")
 	}
 
@@ -141,7 +141,7 @@ func (s *paymentService) SignatureVerifier(payload []byte, sigHeader string) err
 		}
 	}
 
-	slog.Error("Signature verification failed", "signatures", signatures)
+	slog.Warn("Signature verification failed", "signatures", signatures)
 	return errors.New("signature verification failed: no matching v1 signature found")
 }
 

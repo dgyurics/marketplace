@@ -63,7 +63,7 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 	form.Set("customer_details[address][postal_code]", address.PostalCode)
 
 	if len(items) == 0 {
-		slog.Error("CalculateTax called with no items", "refID", refID)
+		slog.WarnContext(ctx, "CalculateTax called with no items", "refID", refID)
 		return 0, fmt.Errorf("no items provided for tax calculation")
 	}
 
@@ -95,7 +95,7 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		slog.ErrorContext(ctx, "stripe tax calculation failed", "status_code", resp.StatusCode, "body", string(body))
+		slog.InfoContext(ctx, "stripe tax calculation failed", "status_code", resp.StatusCode, "body", string(body))
 		return 0, types.ErrInvalidInput
 	}
 
