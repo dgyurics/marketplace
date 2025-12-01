@@ -28,6 +28,7 @@ const (
 
 type PaymentService interface {
 	EventHandler(ctx context.Context, event stripe.Event) error
+	SupportedEvent(ctx context.Context, event stripe.Event) bool
 	SignatureVerifier(payload []byte, sigHeader string) error
 	CreatePaymentIntent(ctx context.Context, refID string, amount int64, email string) (stripe.PaymentIntent, error)
 }
@@ -58,41 +59,24 @@ func NewPaymentService(
 	}
 }
 
-func (s *paymentService) shouldSkipEvent(event stripe.Event) bool {
-	if event.Data == nil || event.Data.Object.Metadata == nil {
-		return false
+func (s *paymentService) EventHandler(ctx context.Context, event stripe.Event) error {
+	pi, err := event.GetPaymentIntent()
+	if err != nil {
+		return fmt.Errorf("failed to extract payment intent: %w", err)
 	}
 
-	eventEnv := event.Data.Object.Metadata["environment"]
-	currentEnv := string(s.config.Environment)
-
-	if eventEnv != "" && eventEnv != currentEnv {
-		slog.Debug("Skipping event from different environment",
-			"eventEnv", eventEnv, "currentEnv", currentEnv, "eventID", event.ID)
-		return true
-	}
-	return false
-}
-
-func (s *paymentService) EventHandler(ctx context.Context, event stripe.Event) (err error) {
-	if s.shouldSkipEvent(event) {
-		return nil
-	}
-	switch stripe.EventType(event.Type) {
+	switch event.Type {
 	case stripe.EventTypePaymentIntentCreated:
-		err = s.handlePaymentIntentCreated(ctx, event)
+		err = s.handlePaymentIntentCreated(ctx, pi)
 	case stripe.EventTypePaymentIntentSucceeded:
-		err = s.handlePaymentIntentSucceeded(ctx, event)
+		err = s.handlePaymentIntentSucceeded(ctx, pi)
 	case stripe.EventTypePaymentIntentCanceled:
-		err = s.handlePaymentIntentCancelled(ctx, event)
+		err = s.handlePaymentIntentCancelled(ctx, pi)
 	case stripe.EventTypePaymentIntentPaymentFailed:
-		err = s.handlePaymentIntentFailed(ctx, event)
+		err = s.handlePaymentIntentFailed(ctx, pi)
 	default:
-		// Unhandled events - consider implementing for advanced features:
-		// - charge.updated: payment retries, fees, risk scores
-		// - charge.dispute.*: chargeback/dispute handling
-		// - charge.refunded: refund confirmations and partial refunds
-		slog.Debug("Unhandled Stripe event type", "type", event.Type)
+		slog.DebugContext(ctx, "Unhandled Stripe event type", "type", event.Type)
+		return nil
 	}
 
 	if err != nil {
@@ -100,7 +84,6 @@ func (s *paymentService) EventHandler(ctx context.Context, event stripe.Event) (
 		return err
 	}
 
-	// Successfully processed
 	slog.Debug("Successfully processed Stripe event", "type", event.Type, "id", event.ID)
 	return nil
 }
@@ -218,14 +201,11 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 }
 
 // handlePaymentIntentCreated processes the PaymentIntentCreated event.
-// It verifies the payment intent against the order details.
+// It verifies the payment intent against the order details stored in database.
 // If the order is pending and the amounts match, it returns nil.
 // If the order is not pending or the amounts do not match, it returns an error.
 // This function is called when a PaymentIntentCreated event is received.
-func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, event stripe.Event) error {
-	pi := event.Data.Object
-
-	// Get order ID from metadata instead of querying by payment intent ID
+func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, pi *stripe.PaymentIntent) error {
 	orderID := pi.Metadata["order_id"]
 	if orderID == "" {
 		return fmt.Errorf("order_id not found in payment intent metadata")
@@ -252,10 +232,7 @@ func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, event s
 // If the order is pending and the amounts match, it marks the order as paid.
 // If the order is not pending or the amounts do not match, it returns an error.
 // This function is called when a PaymentIntentSucceeded event is received.
-func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event stripe.Event) error {
-	pi := event.Data.Object
-
-	// Get order ID from metadata instead of querying by payment intent ID
+func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *stripe.PaymentIntent) error {
 	orderID := pi.Metadata["order_id"]
 	if orderID == "" {
 		return fmt.Errorf("order_id not found in payment intent metadata")
@@ -346,22 +323,36 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, event
 	return nil
 }
 
-func (s *paymentService) handlePaymentIntentCancelled(_ context.Context, event stripe.Event) error {
-	orderID := event.Data.Object.Metadata["order_id"]
+func (s *paymentService) handlePaymentIntentCancelled(_ context.Context, pi *stripe.PaymentIntent) error {
+	orderID := pi.Metadata["order_id"]
 	if orderID == "" {
 		return fmt.Errorf("order_id not found in payment intent metadata")
 	}
-	slog.Debug("Payment intent canceled", "id", event.Data.Object.ID, "order_id", orderID)
+	slog.Debug("Payment intent canceled", "id", pi.ID, "order_id", orderID)
 	return nil
 }
 
-func (s *paymentService) handlePaymentIntentFailed(_ context.Context, event stripe.Event) error {
-	orderID := event.Data.Object.Metadata["order_id"]
+func (s *paymentService) handlePaymentIntentFailed(_ context.Context, pi *stripe.PaymentIntent) error {
+	orderID := pi.Metadata["order_id"]
 	if orderID == "" {
 		return fmt.Errorf("order_id not found in payment intent metadata")
 	}
-	slog.Debug("Payment intent payment failed", "id", event.Data.Object.ID, "order_id", orderID)
+	slog.Debug("Payment intent payment failed", "id", pi.ID, "order_id", orderID)
 	return nil
+}
+
+func (s *paymentService) SupportedEvent(ctx context.Context, event stripe.Event) bool {
+	if !event.IsSupported() {
+		slog.DebugContext(ctx, "Skipping unsupported event", "type", event.Type)
+		return false
+	}
+
+	metadata := event.GetMetadata()
+	if env, exists := metadata["environment"]; exists {
+		return strings.EqualFold(env, string(s.config.Environment))
+	}
+
+	return true // Process events without environment metadata
 }
 
 // ComputeSignature computes an API request signature using Stripe's v1 signing method.

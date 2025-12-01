@@ -2,9 +2,7 @@ package routes
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
-	"log/slog"
 	"net/http"
 
 	"github.com/dgyurics/marketplace/services"
@@ -40,13 +38,13 @@ func (h *PaymentRoutes) EventHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.paymentService.SignatureVerifier(body, r.Header.Get("Stripe-Signature")); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error verifying signature")
+	if !h.paymentService.SupportedEvent(r.Context(), event) {
+		u.RespondSuccess(w)
 		return
 	}
 
-	if err := verifyEventData(event); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+	if err := h.paymentService.SignatureVerifier(body, r.Header.Get("Stripe-Signature")); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "error verifying signature")
 		return
 	}
 
@@ -61,23 +59,6 @@ func (h *PaymentRoutes) EventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u.RespondSuccess(w)
-}
-
-// verifyEventData verifies all the expected fields are present in the event data.
-func verifyEventData(event stripe.Event) error {
-	if event.Type == "" {
-		slog.Error("event.type missing")
-		return errors.New("event.type is required")
-	}
-	if event.Data == nil {
-		slog.Error("event.data missing")
-		return errors.New("event.data is required")
-	}
-	if event.Data.Object.ID == "" {
-		slog.Error("event.data.object.id missing")
-		return errors.New("event.data.object.id is required")
-	}
-	return nil
 }
 
 func (h *PaymentRoutes) RegisterRoutes() {
