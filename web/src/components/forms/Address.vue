@@ -18,7 +18,7 @@
     </div>
     <div class="form-group-flex">
       <InputText
-        label="Apt, Suite, Building"
+        :label="locale.line2_label"
         :model-value="modelValue.line2 ?? ''"
         @update:model-value="(val) => updateField('line2', val)"
       />

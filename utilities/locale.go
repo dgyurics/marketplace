@@ -28,7 +28,7 @@ type locale struct {
 	Currency          string            `json:"currency"`            // e.g., "USD", "CAD", "EUR"
 	MinorUnits        int               `json:"minor_units"`         // e.g., 2 for USD, 0 for JPY
 	Language          string            `json:"language"`            // e.g., "en-US", "fr-CA", "de-DE"
-	// TODO line2_label
+	Line2Label        string            `json:"line2_label"`         // e.g., "Apt, suite, etc.", "Flat, unit, etc."
 	// TODO InclusiveTax bool
 }
 
@@ -41,6 +41,7 @@ var LocaleData = map[string]*locale{
 		StateLabel:        "State",
 		StateRequired:     true,
 		StateCodes:        StateNames["US"],
+		Line2Label:        "Apt, suite, etc.",
 		Currency:          "USD",
 		MinorUnits:        2,
 		Language:          "en-US", // another option is "es-US"
@@ -53,6 +54,7 @@ var LocaleData = map[string]*locale{
 		StateLabel:        "Province",
 		StateRequired:     true,
 		StateCodes:        StateNames["CA"],
+		Line2Label:        "Apt, suite, etc.",
 		Currency:          "CAD",
 		MinorUnits:        2,
 		Language:          "en-CA", // another option is "fr-CA"
@@ -65,6 +67,7 @@ var LocaleData = map[string]*locale{
 		StateLabel:        "County",
 		StateRequired:     false,
 		StateCodes:        nil,
+		Line2Label:        "Flat, unit, etc.",
 		Currency:          "GBP",
 		MinorUnits:        2,
 		Language:          "en-GB", // another option is "cy-GB"
@@ -77,6 +80,7 @@ var LocaleData = map[string]*locale{
 		StateLabel:        "State",
 		StateRequired:     false,
 		StateCodes:        nil,
+		Line2Label:        "Address line 2",
 		Currency:          "EUR",
 		MinorUnits:        2,
 		Language:          "de-DE", // another option is "en-DE"
@@ -89,6 +93,7 @@ var LocaleData = map[string]*locale{
 		StateLabel:        "Prefecture",
 		StateRequired:     true,
 		StateCodes:        StateNames["JP"],
+		Line2Label:        "Building/Room",
 		Currency:          "JPY",
 		MinorUnits:        0,
 		Language:          "ja-JP", // another option is "en-JP"
@@ -98,29 +103,30 @@ var LocaleData = map[string]*locale{
 
 // Supported ISO 3166-1 alpha-2 countries
 // Uncomment once entry added to localeData map
-// FIXME probably better to do this using custom types
 var SupportedCountries = map[string]bool{
+	"CA": true,
+	"DE": true,
+	"GB": true,
+	"JP": true,
+	"US": true,
 	// "AE": true,
 	// "AR": true,
 	// "AT": true,
 	// "AU": true,
 	// "BE": true,
 	// "BR": true,
-	"CA": true,
 	// "CH": true,
 	// "CI": true,
 	// "CL": true,
 	// "CO": true,
 	// "CY": true,
 	// "CZ": true,
-	"DE": true,
 	// "DK": true,
 	// "EE": true,
 	// "EG": true,
 	// "ES": true,
 	// "FI": true,
 	// "FR": true,
-	"GB": true,
 	// "GH": true,
 	// "GI": true,
 	// "GR": true,
@@ -133,7 +139,6 @@ var SupportedCountries = map[string]bool{
 	// "IN": true,
 	// "IS": true,
 	// "IT": true,
-	"JP": true,
 	// "KE": true,
 	// "KR": true,
 	// "LI": true,
@@ -162,7 +167,6 @@ var SupportedCountries = map[string]bool{
 	// "SK": true,
 	// "TH": true,
 	// "TW": true,
-	"US": true,
 	// "UY": true,
 	// "VN": true,
 	// "ZA": true,
