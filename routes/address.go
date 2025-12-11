@@ -40,6 +40,16 @@ func (h *AddressRoutes) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err := h.addressService.ValidateShipping(r.Context(), &address)
+	if err == types.ErrConstraintViolation {
+		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "cannot ship to the provided address")
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	if err := h.addressService.CreateAddress(r.Context(), &address); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -65,7 +75,17 @@ func (h *AddressRoutes) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.addressService.UpdateAddress(r.Context(), &address)
+	err := h.addressService.ValidateShipping(r.Context(), &address)
+	if err == types.ErrConstraintViolation {
+		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "cannot ship to the provided address")
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	err = h.addressService.UpdateAddress(r.Context(), &address)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
