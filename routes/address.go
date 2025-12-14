@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/dgyurics/marketplace/services"
@@ -114,7 +113,8 @@ func (h *AddressRoutes) RemoveAddress(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AddressRoutes) validateAddress(address types.Address) error {
-	if !strings.EqualFold(address.Country, utilities.Locale.CountryCode) {
+	// case-sensitive
+	if address.Country != utilities.Locale.CountryCode {
 		return errors.New("invalid country code")
 	}
 
