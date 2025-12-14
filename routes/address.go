@@ -37,7 +37,7 @@ func (h *AddressRoutes) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.validateAddress(address); err != nil {
+	if err := validateAddress(address); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -73,7 +73,7 @@ func (h *AddressRoutes) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.validateAddress(address); err != nil {
+	if err := validateAddress(address); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -112,7 +112,7 @@ func (h *AddressRoutes) RemoveAddress(w http.ResponseWriter, r *http.Request) {
 	u.RespondSuccess(w)
 }
 
-func (h *AddressRoutes) validateAddress(address types.Address) error {
+func validateAddress(address types.Address) error {
 	// case-sensitive
 	if address.Country != utilities.Locale.CountryCode {
 		return errors.New("invalid country code")
