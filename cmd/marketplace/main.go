@@ -78,7 +78,8 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 
 	// create routes
 	routes.RegisterAllRoutes(
-		routes.NewAddressRoutes(services.Address, baseRouter),
+		routes.NewAddressRoutes(services.Address, services.Shipping, baseRouter),
+		routes.NewShippingZoneRoutes(services.Shipping, baseRouter),
 		routes.NewCartRoutes(services.Cart, services.Order, baseRouter),
 		routes.NewCategoryRoutes(services.Category, baseRouter),
 		routes.NewHealthRoutes(baseRouter),
@@ -121,6 +122,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	refreshTokenRepository := repositories.NewRefreshRepository(db)
 	taxRepository := repositories.NewTaxRepository(db)
 	imageRepository := repositories.NewImageRepository(db)
+	shippingZoneRepository := repositories.NewShippingZoneRepository(db)
 
 	// create http client required by certain services
 	httpClient := utilities.NewDefaultHTTPClient(10 * time.Second) // TODO make this configurable
@@ -134,6 +136,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	scheduleService := services.NewScheduleService(db)
 	emailService := services.NewEmailService(config.Email)
 	addressService := services.NewAddressService(addressRepository)
+	shippingZoneService := services.NewShippingZoneService(shippingZoneRepository)
 	userService := services.NewUserService(userRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
@@ -163,6 +166,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		Payment:   paymentService,
 		Email:     emailService,
 		JWT:       jwtService,
+		Shipping:  shippingZoneService,
 		Schedule:  scheduleService,
 		Tax:       taxService,
 		Template:  templateService,
@@ -185,6 +189,7 @@ type servicesContainer struct {
 	RateLimit services.RateLimitService
 	Register  services.RegisterService
 	Refresh   services.RefreshService
+	Shipping  services.ShippingZoneService
 	Schedule  services.ScheduleService
 	Tax       services.TaxService
 	Template  services.TemplateService

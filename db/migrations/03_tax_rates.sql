@@ -60,6 +60,7 @@ VALUES
 ('US', 'PR', FALSE, 1050), -- Puerto Rico
 ('US', 'VI', FALSE, 600);  -- U.S. Virgin Islands
 
+-- Canada
 INSERT INTO tax_rates (country, state, inclusive, percentage)
 VALUES
 ('CA', 'AB', TRUE, 500),   -- Alberta
@@ -85,9 +86,9 @@ VALUES
 ('IS', TRUE, 2400), -- Iceland
 ('FI', TRUE, 2400); -- Finland
 
+-- Western Europe
 INSERT INTO tax_rates (country, inclusive, percentage)
 VALUES
--- Western Europe
 ('GB', TRUE, 2000),  -- United Kingdom
 ('CH', TRUE, 770),   -- Switzerland
 ('LI', TRUE, 770),   -- Liechtenstein

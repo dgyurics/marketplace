@@ -16,15 +16,18 @@ import (
 
 type AddressRoutes struct {
 	router
-	addressService services.AddressService
+	addressService      services.AddressService
+	shippingZoneService services.ShippingZoneService
 }
 
 func NewAddressRoutes(
 	addressService services.AddressService,
+	shippingZoneService services.ShippingZoneService,
 	router router) *AddressRoutes {
 	return &AddressRoutes{
-		router:         router,
-		addressService: addressService,
+		router:              router,
+		addressService:      addressService,
+		shippingZoneService: shippingZoneService,
 	}
 }
 
@@ -40,13 +43,14 @@ func (h *AddressRoutes) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.addressService.ValidateShipping(r.Context(), &address)
-	if err == types.ErrConstraintViolation {
-		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "cannot ship to the provided address")
-		return
-	}
+	// check if the address provided can be shipped to
+	isShippable, err := h.shippingZoneService.IsShippable(r.Context(), &address)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if !isShippable {
+		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "cannot ship to the provided address")
 		return
 	}
 
@@ -75,13 +79,14 @@ func (h *AddressRoutes) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.addressService.ValidateShipping(r.Context(), &address)
-	if err == types.ErrConstraintViolation {
-		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "cannot ship to the provided address")
-		return
-	}
+	// check if the address provided can be shipped to
+	isShippable, err := h.shippingZoneService.IsShippable(r.Context(), &address)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if !isShippable {
+		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "cannot ship to the provided address")
 		return
 	}
 

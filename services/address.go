@@ -8,12 +8,12 @@ import (
 	"github.com/dgyurics/marketplace/utilities"
 )
 
+// Handles customer address data
 type AddressService interface {
 	CreateAddress(ctx context.Context, address *types.Address) error
 	UpdateAddress(ctx context.Context, address *types.Address) error
 	GetAddress(ctx context.Context, addressID string) (types.Address, error)
 	RemoveAddress(ctx context.Context, addressID string) error
-	ValidateShipping(ctx context.Context, address *types.Address) error
 }
 
 type addressService struct {
@@ -51,11 +51,4 @@ func (s *addressService) UpdateAddress(ctx context.Context, address *types.Addre
 func (s *addressService) RemoveAddress(ctx context.Context, addressID string) error {
 	var userID = getUserID(ctx)
 	return s.repo.RemoveAddress(ctx, userID, addressID)
-}
-
-// ValidateShipping checks if the organization provides shipping to the provided address
-func (s *addressService) ValidateShipping(ctx context.Context, address *types.Address) error {
-	// TODO implement
-	// returns types.ErrConstraintViolation if address not supported
-	return nil
 }

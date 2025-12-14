@@ -52,10 +52,15 @@ async function handleShippingSubmit() {
 
     // Navigate to payment
     router.push('/checkout/payment')
-  } catch (error: unknown) {
-    const status = (error as { response?: { status?: number } })?.response?.status
-    checkoutStore.shippingError =
-      status === 400 ? 'Invalid shipping address' : 'Something went wrong'
+  } catch (error: any) {
+    const status = error.response?.status
+    if (status === 400) {
+      checkoutStore.shippingError = 'Invalid shipping address'
+    } else if (status === 422) {
+      checkoutStore.shippingError = 'Shipping not available to the provided address'
+    } else {
+      checkoutStore.shippingError = 'Something went wrong'
+    }
   }
 }
 </script>

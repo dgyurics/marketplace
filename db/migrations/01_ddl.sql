@@ -178,7 +178,7 @@ CREATE TABLE IF NOT EXISTS addresses (
     line2 VARCHAR(255),
     city VARCHAR(255) NOT NULL, -- city, district, suburb, town, village
     state VARCHAR(50), -- state, county, province, region
-    postal_code VARCHAR(20) NOT NULL, -- zip code, postal code
+    postal_code VARCHAR(20) NOT NULL,
     country CHAR(2) NOT NULL, -- ISO 3166-1 alpha-2 country code
     email VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -251,3 +251,23 @@ CREATE UNLOGGED TABLE IF NOT EXISTS rate_limits (
     expires_at TIMESTAMP,
     PRIMARY KEY (ip_address, path)
 );
+
+-- Defines shipping zones supported and excluded by the marketplace
+CREATE TABLE shipping_zones (
+    id BIGINT PRIMARY KEY,
+    country CHAR(2) NOT NULL,
+    state_code VARCHAR(10),
+    postal_code VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+CREATE INDEX idx_shipping_zones_country_state_postal
+ON shipping_zones(country, state_code, postal_code);
+
+CREATE TABLE shipping_exclusions (
+    id BIGINT PRIMARY KEY,
+    country CHAR(2) NOT NULL,
+    postal_code VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+CREATE INDEX idx_shipping_exclusions_country_postal
+ON shipping_exclusions(country, postal_code);

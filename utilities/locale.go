@@ -20,7 +20,7 @@ func InitLocale(countryCode string) {
 type locale struct {
 	CountryCode       string            `json:"country_code"`        // ISO 3166-1 alpha-2, e.g., "US", "CA", "DE"
 	Country           string            `json:"country"`             // e.g., "United States", "Canada", "Germany"
-	PostalCodeLabel   string            `json:"postal_code_label"`   // e.g., "ZIP Code", "Postal Code", "Postcode"
+	PostalCodeLabel   string            `json:"postal_code_label"`   // e.g., "Postal Code", "Postcode"
 	PostalCodePattern string            `json:"postal_code_pattern"` // regex pattern, e.g., "^\d{5}(-\d{4})?$"
 	StateLabel        string            `json:"state_label"`         // e.g., "State", "Province"
 	StateRequired     bool              `json:"state_required"`      // whether state is required addresses
@@ -36,7 +36,7 @@ var LocaleData = map[string]*locale{
 	"US": {
 		CountryCode:       "US",
 		Country:           "United States",
-		PostalCodeLabel:   "ZIP Code",
+		PostalCodeLabel:   "Postal Code",
 		PostalCodePattern: PostalCodePatterns["US"],
 		StateLabel:        "State",
 		StateRequired:     true,
