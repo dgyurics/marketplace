@@ -37,6 +37,7 @@ func (u *User) IsGuest() bool {
 	return u.Role == "guest"
 }
 
+// FIXME move to address.go
 type Address struct {
 	ID         string    `json:"id"`
 	UserID     string    `json:"user_id"`

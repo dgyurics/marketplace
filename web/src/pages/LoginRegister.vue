@@ -9,6 +9,7 @@
           <button :tabindex="0" @click="goToProducts">Products</button>
           <button :tabindex="0" @click="goToOrders">Orders</button>
           <button :tabindex="0" @click="goToUsers">Users</button>
+          <button :tabindex="0" @click="goToShippingZones">Shipping</button>
         </div>
       </div>
     </template>
@@ -150,6 +151,10 @@ const goToOrders = () => {
 
 const goToUsers = () => {
   router.push('/admin/users')
+}
+
+const goToShippingZones = () => {
+  router.push('/admin/shipping-zones')
 }
 
 const handleLogout = async () => {

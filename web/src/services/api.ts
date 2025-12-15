@@ -18,6 +18,8 @@ import type {
   UpdateCategoryRequest,
   UpdateAddress,
   Locale,
+  ShippingZone,
+  ExcludedShippingZone,
 } from '@/types'
 
 const apiClient = axios.create({
@@ -316,4 +318,36 @@ export const updateProduct = async (product: UpdateProductRequest): Promise<Prod
 export const getLocale = async (): Promise<Locale> => {
   const response = await apiClient.get('/locale')
   return response.data
+}
+
+// Shipping Zones API
+export const createShippingZone = async (shippingZone: ShippingZone): Promise<void> => {
+  const response = await apiClient.post('/shipping-zones', shippingZone)
+  return response.data
+}
+
+export const getShippingZones = async (): Promise<ShippingZone[]> => {
+  const response = await apiClient.get('/shipping-zones')
+  return response.data
+}
+
+export const removeShippingZone = async (zoneId: string): Promise<void> => {
+  await apiClient.delete(`/shipping-zones/${zoneId}`)
+}
+
+// Excluded Shipping Zones API
+export const createExcludedShippingZone = async (
+  excludedZone: ExcludedShippingZone
+): Promise<void> => {
+  const response = await apiClient.post('/shipping-zones/excluded', excludedZone)
+  return response.data
+}
+
+export const getExcludedShippingZones = async (): Promise<ExcludedShippingZone[]> => {
+  const response = await apiClient.get('/shipping-zones/excluded')
+  return response.data
+}
+
+export const removeExcludedShippingZone = async (zoneId: string): Promise<void> => {
+  await apiClient.delete(`/shipping-zones/excluded/${zoneId}`)
 }

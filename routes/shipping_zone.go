@@ -2,10 +2,12 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
@@ -30,7 +32,22 @@ func (h *ShippingZoneRoutes) CreateShippingZone(w http.ResponseWriter, r *http.R
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
 	}
-	if err := h.shippingZoneService.AddShippingZone(r.Context(), &zone); err != nil {
+
+	if err := validateShippingZone(zone); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err := h.shippingZoneService.AddShippingZone(r.Context(), &zone)
+	if err == types.ErrUniqueConstraintViolation {
+		u.RespondWithError(w, r, http.StatusConflict, err.Error())
+		return
+	}
+	if err == types.ErrConstraintViolation {
+		u.RespondWithError(w, r, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -64,7 +81,22 @@ func (h *ShippingZoneRoutes) CreateExcludedShippingZone(w http.ResponseWriter, r
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
 	}
-	if err := h.shippingZoneService.AddExcludedShippingZone(r.Context(), &zone); err != nil {
+
+	if err := validateExcludedShippingZone(zone); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err := h.shippingZoneService.AddExcludedShippingZone(r.Context(), &zone)
+	if err == types.ErrUniqueConstraintViolation {
+		u.RespondWithError(w, r, http.StatusConflict, err.Error())
+		return
+	}
+	if err == types.ErrConstraintViolation {
+		u.RespondWithError(w, r, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -90,6 +122,34 @@ func (h *ShippingZoneRoutes) RemoveExcludedShippingZone(w http.ResponseWriter, r
 	}
 
 	u.RespondSuccess(w)
+}
+
+func validateShippingZone(zone types.ShippingZone) error {
+	if zone.Country != utilities.Locale.CountryCode {
+		return errors.New("invalid country code")
+	}
+
+	if zone.State != nil && u.ValidateState(zone.Country, *zone.State) != nil {
+		return errors.New("invalid state")
+	}
+
+	if zone.PostalCode != nil && u.ValidatePostalCode(zone.Country, *zone.PostalCode) != nil {
+		return errors.New("invalid postal code")
+	}
+
+	return nil
+}
+
+func validateExcludedShippingZone(zone types.ExcludedShippingZone) error {
+	if zone.Country != utilities.Locale.CountryCode {
+		return errors.New("invalid country code")
+	}
+
+	if u.ValidatePostalCode(zone.Country, zone.PostalCode) != nil {
+		return errors.New("invalid postal code")
+	}
+
+	return nil
 }
 
 func (h *ShippingZoneRoutes) RegisterRoutes() {

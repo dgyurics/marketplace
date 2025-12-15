@@ -6,7 +6,7 @@ package types
 type ShippingZone struct {
 	ID         string  `json:"id"`
 	Country    string  `json:"country"`
-	StateCode  *string `json:"state_code"`
+	State      *string `json:"state"`
 	PostalCode *string `json:"postal_code"`
 }
 

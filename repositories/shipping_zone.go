@@ -51,20 +51,60 @@ func (r *shippingZone) IsShippable(ctx context.Context, address *types.Address) 
 			SELECT 1
 			FROM shipping_zones
 			WHERE country = $1
-				AND (state_code = $2 OR state_code IS NULL)
-				AND (postal_code = $3 OR postal_code IS NULL)
+				AND (state = $2 OR state = '')
+				AND (postal_code = $3 OR postal_code = '')
 		)
 	`, address.Country, address.State, address.PostalCode).Scan(&allowed)
 
 	return allowed, err
 }
 
+// AddShippingZone identifies a zone where shipping is allowed
 func (r *shippingZone) AddShippingZone(ctx context.Context, zone *types.ShippingZone) error {
-	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO shipping_zones (id, country, state_code, postal_code)
+	state := ""
+	if zone.State != nil {
+		state = *zone.State
+	}
+
+	postalCode := ""
+	if zone.PostalCode != nil {
+		postalCode = *zone.PostalCode
+	}
+
+	// Begin a transaction
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Throw error if postalCode already exists in exclusions
+	var exists bool
+	err = tx.QueryRowContext(ctx, `
+		SELECT EXISTS(
+			SELECT 1
+			FROM shipping_exclusions
+			WHERE country = $1 AND postal_code =$2
+		)`, zone.Country, postalCode).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return types.ErrConstraintViolation
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO shipping_zones (id, country, state, postal_code)
 		VALUES ($1, $2, $3, $4)
-	`, zone.ID, zone.Country, zone.StateCode, zone.PostalCode)
-	return err
+	`, zone.ID, zone.Country, state, postalCode)
+	if isUniqueViolation(err) {
+		return types.ErrUniqueConstraintViolation
+	}
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (r *shippingZone) RemoveShippingZone(ctx context.Context, zoneID string) error {
@@ -77,7 +117,7 @@ func (r *shippingZone) RemoveShippingZone(ctx context.Context, zoneID string) er
 
 func (r *shippingZone) GetShippingZones(ctx context.Context) ([]types.ShippingZone, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, country, state_code, postal_code
+		SELECT id, country, state, postal_code
 		FROM shipping_zones
 	`)
 	if err != nil {
@@ -85,10 +125,10 @@ func (r *shippingZone) GetShippingZones(ctx context.Context) ([]types.ShippingZo
 	}
 	defer rows.Close()
 
-	var zones []types.ShippingZone
+	zones := []types.ShippingZone{}
 	for rows.Next() {
 		var zone types.ShippingZone
-		if err := rows.Scan(&zone.ID, &zone.Country, &zone.StateCode, &zone.PostalCode); err != nil {
+		if err := rows.Scan(&zone.ID, &zone.Country, &zone.State, &zone.PostalCode); err != nil {
 			return nil, err
 		}
 		zones = append(zones, zone)
@@ -96,12 +136,42 @@ func (r *shippingZone) GetShippingZones(ctx context.Context) ([]types.ShippingZo
 	return zones, rows.Err()
 }
 
+// AddExcludedShippingZone identifies a zone where shipping is not supported
 func (r *shippingZone) AddExcludedShippingZone(ctx context.Context, zone *types.ExcludedShippingZone) error {
-	_, err := r.db.ExecContext(ctx, `
+	// Begin a transaction
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Throw error if postalCode already exists in shipping_zones
+	var exists bool
+	err = tx.QueryRowContext(ctx, `
+		SELECT EXISTS(
+			SELECT 1
+			FROM shipping_zones
+			WHERE country = $1 AND postal_code =$2
+		)`, zone.Country, zone.PostalCode).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return types.ErrConstraintViolation
+	}
+
+	_, err = tx.ExecContext(ctx, `
 		INSERT INTO shipping_exclusions (id, country, postal_code)
 		VALUES ($1, $2, $3)
-	`, zone.Country, zone.PostalCode)
-	return err
+	`, zone.ID, zone.Country, zone.PostalCode)
+	if isUniqueViolation(err) {
+		return types.ErrUniqueConstraintViolation
+	}
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (r *shippingZone) RemoveExcludedShippingZone(ctx context.Context, zoneID string) error {
@@ -122,7 +192,7 @@ func (r *shippingZone) GetExcludedShippingZones(ctx context.Context) ([]types.Ex
 	}
 	defer rows.Close()
 
-	var zones []types.ExcludedShippingZone
+	zones := []types.ExcludedShippingZone{}
 	for rows.Next() {
 		var zone types.ExcludedShippingZone
 		if err := rows.Scan(&zone.ID, &zone.Country, &zone.PostalCode); err != nil {

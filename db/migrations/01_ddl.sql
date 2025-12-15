@@ -252,22 +252,24 @@ CREATE UNLOGGED TABLE IF NOT EXISTS rate_limits (
     PRIMARY KEY (ip_address, path)
 );
 
--- Defines shipping zones supported and excluded by the marketplace
+-- Defines shipping zones supported by the marketplace
 CREATE TABLE shipping_zones (
     id BIGINT PRIMARY KEY,
     country CHAR(2) NOT NULL,
-    state_code VARCHAR(10),
-    postal_code VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    state VARCHAR(10) NOT NULL DEFAULT '',  -- empty string to allow UNIQUE constraint to work
+    postal_code VARCHAR(20) NOT NULL DEFAULT '', -- empty string to allow UNIQUE constraint to work
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE(country, state, postal_code)
 );
-CREATE INDEX idx_shipping_zones_country_state_postal
-ON shipping_zones(country, state_code, postal_code);
+CREATE UNIQUE INDEX shipping_zones_postal_code_unique
+ON shipping_zones (postal_code)
+WHERE postal_code != '';
 
+-- Defines shipping zones NOT supported by the marketplace
 CREATE TABLE shipping_exclusions (
     id BIGINT PRIMARY KEY,
     country CHAR(2) NOT NULL,
     postal_code VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE(country, postal_code)
 );
-CREATE INDEX idx_shipping_exclusions_country_postal
-ON shipping_exclusions(country, postal_code);

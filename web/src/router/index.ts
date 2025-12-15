@@ -8,6 +8,7 @@ import AdminOrders from '@/pages/admin/Order.vue'
 import AdminOrderDetail from '@/pages/admin/OrderDetail.vue'
 import AdminProducts from '@/pages/admin/Product.vue'
 import AdminProductEdit from '@/pages/admin/ProductDetail.vue'
+import AdminShippingZones from '@/pages/admin/ShippingZone.vue'
 import AdminUsers from '@/pages/admin/User.vue'
 import Cart from '@/pages/Cart.vue'
 import Error from '@/pages/Error.vue'
@@ -60,6 +61,7 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/admin/categories/:id', component: AdminCategoryDetail, beforeEnter: requireAdmin },
     { path: '/admin/orders', component: AdminOrders, beforeEnter: requireAdmin },
     { path: '/admin/orders/:id', component: AdminOrderDetail, beforeEnter: requireAdmin },
+    { path: '/admin/shipping-zones', component: AdminShippingZones, beforeEnter: requireAdmin },
     { path: '/admin/users', component: AdminUsers, beforeEnter: requireAdmin },
     { path: '/new', component: Product, props: { sortBy: 'newest' }, name: 'NewProducts' },
     {

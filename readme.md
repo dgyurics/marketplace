@@ -10,22 +10,23 @@ A self-hosted e-commerce framework designed for local businesses and community c
 |---------|-------------|-------|
 | Core backend (products, orders, users) | ✅ | Go + PostgreSQL |
 | Web interface | ✅ | Vue 3 |
-| Admin dashboard | ✅ | Product + Order management |
 | Deployment | ✅ | Docker Compose orchestration |
+| Admin dashboard | ✅ | Product + Order management |
+| Geographic shipping | ✅ | Configure coverage and exclusions |
 | Image processing | ✅ | imgproxy + rembg (AI) background removal |
 | Payment processing | ❌ | Stripe (3rd party) |
 | Email delivery | ❌ | External SMTP (3rd party) |
 
 ## Planned Enhancements
 
-* Geographic shipping controls
-* Customer support messaging system
+* Documentation for setup and configuration
+* Mobile device support
 * Offline payment for trusted users
 * Self-hosted email server via boky/postfix
 * Database backup and recovery scripts
-* Mobile device support
-* Product full-text search
+* Customer support messaging system
 * Chat integration for trusted users
+* Product full-text search
 * Product variants (size, color, material, etc.)
 * Geographic access control via Nginx and GeoIP2
 
