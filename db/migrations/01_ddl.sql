@@ -253,7 +253,7 @@ CREATE UNLOGGED TABLE IF NOT EXISTS rate_limits (
 );
 
 -- Defines shipping zones supported by the marketplace
-CREATE TABLE shipping_zones (
+CREATE TABLE IF NOT EXISTS shipping_zones (
     id BIGINT PRIMARY KEY,
     country CHAR(2) NOT NULL,
     state VARCHAR(10) NOT NULL DEFAULT '',  -- empty string to allow UNIQUE constraint to work
@@ -266,7 +266,7 @@ ON shipping_zones (postal_code)
 WHERE postal_code != '';
 
 -- Defines shipping zones NOT supported by the marketplace
-CREATE TABLE shipping_exclusions (
+CREATE TABLE IF NOT EXISTS shipping_exclusions (
     id BIGINT PRIMARY KEY,
     country CHAR(2) NOT NULL,
     postal_code VARCHAR(20) NOT NULL,
