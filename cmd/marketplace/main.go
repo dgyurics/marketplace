@@ -46,11 +46,17 @@ func main() {
 	// Initialize unique ID generator
 	utilities.InitIDGenerator(config.MachineID)
 
-	// Initialize database
-	db := db.Connect(config.Database)
+	// Initialize database connection
+	dbPool := db.Connect(config.Database)
+
+	// Run database migrations
+	if err := db.RunMigrations(dbPool); err != nil {
+		slog.Error("Failed to run migrations", "error", err)
+		os.Exit(1)
+	}
 
 	// Initialize services
-	services := initializeServices(db, config)
+	services := initializeServices(dbPool, config)
 
 	// Start schedule service
 	go services.Schedule.Start(ctx)
