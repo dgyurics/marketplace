@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/dgyurics/marketplace/types"
@@ -55,11 +56,27 @@ func RunMigrations(db *sql.DB) error {
 		return fmt.Errorf("failed to create migrations table: %w", err)
 	}
 
-	// TODO
-	// get applied migrations
-	// get list of migration files (returns in sorted ascending order)
-	// iterate migration files list,
+	// get migration filenames (ascending order)
+	filenames, err := getMigrationFiles()
+	if err != nil {
+		return fmt.Errorf("failed to retrieve migration files: %w", err)
+	}
+
+	// get applied migration filenames (in map form)
+	appliedMigrations, err := getAppliedMigrations(db)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve applied migrations: %w", err)
+	}
+
 	// if filename not exist in applied migrations, exec runMigration
+	for _, filename := range filenames {
+		if _, ok := appliedMigrations[filename]; !ok {
+			if err := runMigration(db, filename); err != nil {
+				return fmt.Errorf("failed to run migration file %s: %w", filename, err)
+			}
+			slog.Info("Applied migration", "filename", filename)
+		}
+	}
 
 	return nil
 }
@@ -74,21 +91,69 @@ func createMigrationsTable(db *sql.DB) error {
 	return err
 }
 
+// getAppliedMigrations returns a map of applied migrations
 func getAppliedMigrations(db *sql.DB) (map[string]bool, error) {
 	applied := make(map[string]bool)
+
+	rows, err := db.Query(`
+		SELECT filename
+		FROM schema_migrations
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var filename string
+		if err := rows.Scan(&filename); err != nil {
+			return nil, err
+		}
+		applied[filename] = true
+	}
+
 	return applied, nil
 }
 
+// runMigration retrieves the file filename and executes the SQL statements within it
+// within a transaction, recording the migration in the schema_migrations table upon success
 func runMigration(db *sql.DB, filename string) error {
-	// read the file
-	// split commands by semicolon
-	// run each command
-	return nil
+	content, err := os.ReadFile("db/migrations/" + filename)
+	if err != nil {
+		return err
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(string(content)); err != nil {
+		return err
+	}
+
+	// Record the migration
+	if _, err := tx.Exec("INSERT INTO schema_migrations (filename) VALUES ($1)", filename); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
+// getMigrationFiles returns an array of migration filenames in ascending order
 func getMigrationFiles() ([]string, error) {
-	var files []string
-	// retrieve filenames from db/migrations directory
-	// sort in ascending order
-	return files, nil
+	entries, err := os.ReadDir("db/migrations")
+	if err != nil {
+		return nil, err
+	}
+
+	filenames := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".sql") {
+			filenames = append(filenames, entry.Name())
+		}
+	}
+
+	return filenames, nil
 }
