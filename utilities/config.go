@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -92,10 +93,12 @@ func loadJWTConfig() types.JWTConfig {
 
 	// validate files aren't empty
 	if len(privateKey) == 0 {
-		panic(fmt.Sprintf("Private key file is empty: %s", privKeyPath))
+		slog.Error("Private key file empty", "file path", privKeyPath)
+		os.Exit(1)
 	}
 	if len(publicKey) == 0 {
-		panic(fmt.Sprintf("Public key file is empty: %s", pubKeyPath))
+		slog.Error("Public key file empty", "file path", privKeyPath)
+		os.Exit(1)
 	}
 
 	return types.JWTConfig{
@@ -107,24 +110,28 @@ func loadJWTConfig() types.JWTConfig {
 
 func loadMachineID() uint8 {
 	envVar := mustLookupEnv("MACHINE_ID")
-	val, err := strconv.ParseUint(envVar, 10, 8)
+	key, err := strconv.ParseUint(envVar, 10, 8)
+
 	if err != nil {
-		panic(fmt.Sprintf("Invalid integer for MACHINE_ID: %s", envVar))
+		slog.Error("Error parsing unsigned integer", "key", key, "error", err)
+		os.Exit(1)
 	}
-	return uint8(val)
+	return uint8(key)
 }
 
 func loadImageConfig() types.ImageConfig {
 	keyHex := mustLookupEnv("IMGPROXY_KEY")
 	key, err := hex.DecodeString(keyHex)
 	if err != nil {
-		panic("invalid IMGPROXY_KEY: " + err.Error())
+		slog.Error("Error decoding IMGPROXY_KEY", "error", err)
+		os.Exit(1)
 	}
 
 	saltHex := mustLookupEnv("IMGPROXY_SALT")
 	salt, err := hex.DecodeString(saltHex)
 	if err != nil {
-		panic("invalid IMGPROXY_SALT: " + err.Error())
+		slog.Error("Error decoding IMGPROXY_SALT", "error", err)
+		os.Exit(1)
 	}
 
 	urlImgproxy := fmt.Sprintf("%s/images", loadBaseURL())
@@ -179,7 +186,8 @@ func loadBaseURL() string {
 func loadCountry() string {
 	country := mustLookupEnv("COUNTRY")
 	if _, ok := SupportedCountries[country]; !ok {
-		panic(fmt.Sprintf("Country %s is not supported", country))
+		slog.Error("country not supported", "country", country)
+		os.Exit(1)
 	}
 	return country
 }
@@ -206,23 +214,24 @@ func loadEmailConfig() types.EmailConfig {
 	}
 }
 
-// mustReadFile reads the named file and returns the contents.
-// It panics if there is an error reading the file.
+// mustReadFile reads the named file and returns its contents.
 func mustReadFile(filename string) []byte {
 	bytes, err := os.ReadFile(filename)
 	if err != nil {
-		panic(fmt.Sprintf("Error reading key file: %s error: %v", filename, err))
+		slog.Error("Error reading file", "filename", filename, "error", err)
+		os.Exit(1)
 	}
 	return bytes
 }
 
 // mustLookupEnv retrieves the value of the environment variable named by the key.
-// It panics if the variable is not present.
 func mustLookupEnv(key string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
-	panic(fmt.Sprintf("Environment variable %s is required", key))
+	slog.Error("Environment variable required", "variable", key)
+	os.Exit(1)
+	return ""
 }
 
 // getEnvOrDefault retrieves the value of the environment variable named by the key.
@@ -235,21 +244,21 @@ func getEnvOrDefault(key, defaultValue string) string {
 }
 
 // mustParseDuration parses a duration string from the environment variable.
-// It panics if there is an error parsing the duration.
 func mustParseDuration(key string) time.Duration {
 	duration, err := time.ParseDuration(mustLookupEnv(key))
 	if err != nil {
-		panic(fmt.Sprintf("Error parsing duration for %s: %v", key, err))
+		slog.Error("Error parsing duration", "key", key, "error", err)
+		os.Exit(1)
 	}
 	return duration
 }
 
 // mustAtoI converts a string to an integer.
-// It panics if there is an error converting the string.
 func mustAtoI(key string) int {
 	value, err := strconv.Atoi(mustLookupEnv(key))
 	if err != nil {
-		panic(fmt.Sprintf("Error converting %s to int: %v", key, err))
+		slog.Error("Error converting string to int", "key", key, "error", err)
+		os.Exit(1)
 	}
 	return value
 }

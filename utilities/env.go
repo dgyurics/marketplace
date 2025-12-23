@@ -1,6 +1,7 @@
 package utilities
 
 import (
+	"log/slog"
 	"os"
 	"strings"
 
@@ -26,5 +27,6 @@ func LoadEnvironment() {
 		}
 	}
 
-	panic("Error loading environment variables: .env not found")
+	slog.Error("Error loading environment variables: .env not found")
+	os.Exit(1)
 }
