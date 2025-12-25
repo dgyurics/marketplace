@@ -27,7 +27,7 @@
         </div>
       </div>
 
-      <div v-if="order.address" class="address-section">
+      <div v-if="addressAvailable(order.address)" class="address-section">
         <h3>Shipping Address</h3>
         <div class="address">
           <div v-if="order.address.name">{{ order.address.name }}</div>
@@ -87,7 +87,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { getOrderOwner, getOrderPublic } from '@/services/api'
-import type { Order } from '@/types'
+import type { Address, Order } from '@/types'
 import { formatPrice, formatDate } from '@/utilities'
 
 const route = useRoute()
@@ -95,6 +95,8 @@ const router = useRouter()
 
 const order = ref<Order | null>(null)
 const loading = ref(true)
+
+const addressAvailable = (address: Address) => address.id !== ''
 
 const tryGetOrder = async (orderId: string): Promise<Order | null> => {
   // Try owner endpoint first
