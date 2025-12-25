@@ -196,7 +196,7 @@ func (h *ImageRoutes) PromoteImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ImageRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/images/products/{id}", h.secureAdmin(h.UploadImage)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/images/{image}", h.secureAdmin(h.RemoveImage)).Methods(http.MethodDelete)
-	h.muxRouter.Handle("/images/{image}", h.secureAdmin(h.PromoteImage)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/images/products/{id}", h.secure(types.RoleAdmin)(h.UploadImage)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/images/{image}", h.secure(types.RoleAdmin)(h.RemoveImage)).Methods(http.MethodDelete)
+	h.muxRouter.Handle("/images/{image}", h.secure(types.RoleAdmin)(h.PromoteImage)).Methods(http.MethodPost)
 }

@@ -95,7 +95,7 @@ func (h *CategoryRoutes) DeleteCategory(w http.ResponseWriter, r *http.Request) 
 func (h *CategoryRoutes) RegisterRoutes() {
 	h.muxRouter.HandleFunc("/categories", h.GetCategories).Methods(http.MethodGet)
 	h.muxRouter.HandleFunc("/categories/{id}", h.GetCategory).Methods(http.MethodGet)
-	h.muxRouter.Handle("/categories/{id}", h.secureAdmin(h.DeleteCategory)).Methods(http.MethodDelete)
-	h.muxRouter.Handle("/categories", h.secureAdmin(h.CreateCategory)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/categories", h.secureAdmin(h.UpdateCategory)).Methods(http.MethodPut)
+	h.muxRouter.Handle("/categories/{id}", h.secure(types.RoleAdmin)(h.DeleteCategory)).Methods(http.MethodDelete)
+	h.muxRouter.Handle("/categories", h.secure(types.RoleAdmin)(h.CreateCategory)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/categories", h.secure(types.RoleAdmin)(h.UpdateCategory)).Methods(http.MethodPut)
 }

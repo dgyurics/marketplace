@@ -29,19 +29,9 @@ func NewRouter(muxRouter *mux.Router, authMiddleware middleware.Authorizer, rate
 	}
 }
 
-// requireRole restricts endpoint access to users with the specified role or higher
-func (h *router) requireRole(role types.Role) func(next http.HandlerFunc) http.HandlerFunc {
+// secure restricts endpoint access to users with the specified role or higher
+func (h *router) secure(role types.Role) func(next http.HandlerFunc) http.HandlerFunc {
 	return h.authMiddleware.RequireRole(role)
-}
-
-// restrict endpoint to authenticated users
-func (h *router) secure(next http.HandlerFunc) http.HandlerFunc {
-	return h.authMiddleware.AuthenticateUser(next)
-}
-
-// restrict endpoint to admin users
-func (h *router) secureAdmin(next http.HandlerFunc) http.HandlerFunc {
-	return h.authMiddleware.AuthenticateAdmin(next)
 }
 
 // Most common case - tracks automatically and enforces limit

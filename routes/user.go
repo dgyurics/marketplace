@@ -273,7 +273,7 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/users/login", h.guardLimit(h.Login, 5)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/refresh-token", h.limit(h.RefreshToken, 5, time.Hour)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/guest", h.limit(h.CreateGuestUser, 3, time.Hour)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users/credentials", h.secureAdmin(h.UpdatedCredentials)).Methods(http.MethodPut)
-	h.muxRouter.Handle("/users/logout", h.secure(h.Logout)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users", h.secureAdmin(h.GetAllUsers)).Methods(http.MethodGet)
+	h.muxRouter.Handle("/users/credentials", h.secure(types.RoleAdmin)(h.UpdatedCredentials)).Methods(http.MethodPut)
+	h.muxRouter.Handle("/users/logout", h.secure(types.RoleGuest)(h.Logout)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/users", h.secure(types.RoleStaff)(h.GetAllUsers)).Methods(http.MethodGet)
 }

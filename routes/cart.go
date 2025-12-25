@@ -80,7 +80,7 @@ func (h *CartRoutes) GetItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CartRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/carts/items/{id}", h.secure(h.AddItem)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/carts/items/{id}", h.secure(h.RemoveItem)).Methods(http.MethodDelete)
-	h.muxRouter.Handle("/carts", h.secure(h.GetItems)).Methods(http.MethodGet)
+	h.muxRouter.Handle("/carts/items/{id}", h.secure(types.RoleGuest)(h.AddItem)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/carts/items/{id}", h.secure(types.RoleGuest)(h.RemoveItem)).Methods(http.MethodDelete)
+	h.muxRouter.Handle("/carts", h.secure(types.RoleGuest)(h.GetItems)).Methods(http.MethodGet)
 }

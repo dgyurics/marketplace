@@ -48,15 +48,3 @@ var hierarchy = map[Role]int{
 func (u *User) HasMinimumRole(role Role) bool {
 	return hierarchy[Role(u.Role)] >= hierarchy[role]
 }
-
-func (u *User) IsAdmin() bool {
-	return u.Role == "admin"
-}
-
-func (u *User) IsUser() bool {
-	return u.Role == "user"
-}
-
-func (u *User) IsGuest() bool {
-	return u.Role == "guest"
-}

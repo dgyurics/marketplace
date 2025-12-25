@@ -11,8 +11,6 @@ import (
 )
 
 type Authorizer interface {
-	AuthenticateUser(next http.HandlerFunc) http.HandlerFunc
-	AuthenticateAdmin(next http.HandlerFunc) http.HandlerFunc
 	RequireRole(role types.Role) func(next http.HandlerFunc) http.HandlerFunc
 }
 
@@ -43,41 +41,6 @@ func (a *authorizer) RequireRole(role types.Role) func(next http.HandlerFunc) ht
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-}
-
-// AuthenticateUser verifies the Authorization header.
-// If the token is valid, the user is stored in the request context.
-// If the token is invalid, or does not exist, a 401 Unauthorized response is returned.
-func (a *authorizer) AuthenticateUser(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := a.authenticateToken(r)
-		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		ctx := context.WithValue(r.Context(), services.UserKey, &user)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-// AuthenticateAdmin verifies the Authorization header.
-// If the token is valid and the user is an admin, the user is stored in the request context.
-// If the token is invalid, or does not exist, a 401 Unauthorized response is returned.
-// If the user is not an admin, a 403 Forbidden response is returned.
-func (a *authorizer) AuthenticateAdmin(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := a.authenticateToken(r)
-		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		if !user.IsAdmin() {
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-		ctx := context.WithValue(r.Context(), services.UserKey, &user)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
 }
 
 // authenticateToken checks the Authorization header for a token,

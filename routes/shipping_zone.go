@@ -153,11 +153,11 @@ func validateExcludedShippingZone(zone types.ExcludedShippingZone) error {
 }
 
 func (h *ShippingZoneRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/shipping-zones", h.secureAdmin(h.CreateShippingZone)).Methods("POST")
-	h.muxRouter.Handle("/shipping-zones", h.secureAdmin(h.ListShippingZones)).Methods("GET")
-	h.muxRouter.Handle("/shipping-zones/{id}", h.secureAdmin(h.RemoveShippingZone)).Methods("DELETE")
+	h.muxRouter.Handle("/shipping-zones", h.secure(types.RoleAdmin)(h.CreateShippingZone)).Methods("POST")
+	h.muxRouter.Handle("/shipping-zones", h.secure(types.RoleStaff)(h.ListShippingZones)).Methods("GET")
+	h.muxRouter.Handle("/shipping-zones/{id}", h.secure(types.RoleAdmin)(h.RemoveShippingZone)).Methods("DELETE")
 
-	h.muxRouter.Handle("/shipping-zones/excluded", h.secureAdmin(h.CreateExcludedShippingZone)).Methods("POST")
-	h.muxRouter.Handle("/shipping-zones/excluded", h.secureAdmin(h.ListExcludedShippingZones)).Methods("GET")
-	h.muxRouter.Handle("/shipping-zones/excluded/{id}", h.secureAdmin(h.RemoveExcludedShippingZone)).Methods("DELETE")
+	h.muxRouter.Handle("/shipping-zones/excluded", h.secure(types.RoleAdmin)(h.CreateExcludedShippingZone)).Methods("POST")
+	h.muxRouter.Handle("/shipping-zones/excluded", h.secure(types.RoleStaff)(h.ListExcludedShippingZones)).Methods("GET")
+	h.muxRouter.Handle("/shipping-zones/excluded/{id}", h.secure(types.RoleAdmin)(h.RemoveExcludedShippingZone)).Methods("DELETE")
 }

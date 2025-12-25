@@ -50,7 +50,7 @@ func TestAuthenticateUser_ValidToken(t *testing.T) {
 	})
 
 	// Call AuthenticateUser
-	handler := auth.AuthenticateUser(nextHandler)
+	handler := auth.RequireRole(types.RoleGuest)(nextHandler)
 	handler.ServeHTTP(rr, req)
 
 	// Verify the response status code
@@ -76,7 +76,7 @@ func TestAuthenticateUser_InvalidToken(t *testing.T) {
 	})
 
 	// Call AuthenticateUser
-	handler := auth.AuthenticateUser(nextHandler)
+	handler := auth.RequireRole(types.RoleUser)(nextHandler)
 	handler.ServeHTTP(rr, req)
 
 	// Verify response
@@ -102,12 +102,12 @@ func TestAuthenticateAdmin_ValidAdminToken(t *testing.T) {
 		assert.True(t, ok, "expected user in context")
 		assert.NotNil(t, user, "user should not be nil")
 		assert.Equal(t, "123", user.ID)
-		assert.True(t, user.IsAdmin(), "user should be admin")
+		assert.True(t, user.Role == types.RoleAdmin, "user should be admin")
 		w.WriteHeader(http.StatusOK)
 	})
 
 	// Call AuthenticateAdmin
-	handler := auth.AuthenticateAdmin(nextHandler)
+	handler := auth.RequireRole(types.RoleAdmin)(nextHandler)
 	handler.ServeHTTP(rr, req)
 
 	// Verify response
@@ -133,7 +133,7 @@ func TestAuthenticateAdmin_NonAdminToken(t *testing.T) {
 	})
 
 	// Call AuthenticateAdmin
-	handler := auth.AuthenticateAdmin(nextHandler)
+	handler := auth.RequireRole(types.RoleAdmin)(nextHandler)
 	handler.ServeHTTP(rr, req)
 
 	// Verify response
@@ -159,7 +159,7 @@ func TestAuthenticateAdmin_InvalidToken(t *testing.T) {
 	})
 
 	// Call AuthenticateAdmin
-	handler := auth.AuthenticateAdmin(nextHandler)
+	handler := auth.RequireRole(types.RoleAdmin)(nextHandler)
 	handler.ServeHTTP(rr, req)
 
 	// Verify response
@@ -190,7 +190,7 @@ func TestAuthenticateUser_GuestUser(t *testing.T) {
 	})
 
 	// Call AuthenticateUser
-	handler := auth.AuthenticateUser(nextHandler)
+	handler := auth.RequireRole(types.RoleGuest)(nextHandler)
 	handler.ServeHTTP(rr, req)
 
 	// Verify the response status code

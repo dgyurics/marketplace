@@ -138,7 +138,7 @@ func validateAddress(address types.Address) error {
 }
 
 func (h *AddressRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/addresses", h.secure(h.limit(h.CreateAddress, 3, time.Hour))).Methods(http.MethodPost)
-	h.muxRouter.Handle("/addresses", h.secure(h.limit(h.UpdateAddress, 10, time.Hour))).Methods(http.MethodPut)
-	h.muxRouter.Handle("/addresses/{id}", h.secure(h.RemoveAddress)).Methods(http.MethodDelete)
+	h.muxRouter.Handle("/addresses", h.secure(types.RoleGuest)(h.limit(h.CreateAddress, 3, time.Hour))).Methods(http.MethodPost)
+	h.muxRouter.Handle("/addresses", h.secure(types.RoleGuest)(h.limit(h.UpdateAddress, 10, time.Hour))).Methods(http.MethodPut)
+	h.muxRouter.Handle("/addresses/{id}", h.secure(types.RoleGuest)(h.limit(h.RemoveAddress, 3, time.Hour))).Methods(http.MethodDelete)
 }
