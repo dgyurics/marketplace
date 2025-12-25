@@ -23,6 +23,12 @@ func (d dummyAuth) AuthenticateAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return next
 }
 
+func (d dummyAuth) RequireRole(role types.Role) func(next http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return next
+	}
+}
+
 // Mocking the ProductService
 type MockProductService struct {
 	mock.Mock

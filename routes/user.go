@@ -266,7 +266,7 @@ func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusCreated, users)
+	u.RespondWithJSON(w, http.StatusOK, users)
 }
 
 func (h *UserRoutes) RegisterRoutes() {

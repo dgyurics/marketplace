@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/dgyurics/marketplace/middleware"
+	"github.com/dgyurics/marketplace/types"
 	"github.com/gorilla/mux"
 )
 
@@ -26,6 +27,11 @@ func NewRouter(muxRouter *mux.Router, authMiddleware middleware.Authorizer, rate
 		authMiddleware:      authMiddleware,
 		rateLimitMiddleware: rateLimitMiddleware,
 	}
+}
+
+// requireRole restricts endpoint access to users with the specified role or higher
+func (h *router) requireRole(role types.Role) func(next http.HandlerFunc) http.HandlerFunc {
+	return h.authMiddleware.RequireRole(role)
 }
 
 // restrict endpoint to authenticated users

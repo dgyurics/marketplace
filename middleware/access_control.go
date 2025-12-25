@@ -13,6 +13,7 @@ import (
 type Authorizer interface {
 	AuthenticateUser(next http.HandlerFunc) http.HandlerFunc
 	AuthenticateAdmin(next http.HandlerFunc) http.HandlerFunc
+	RequireRole(role types.Role) func(next http.HandlerFunc) http.HandlerFunc
 }
 
 type authorizer struct {
@@ -21,6 +22,27 @@ type authorizer struct {
 
 func NewAccessControl(jwtService services.JWTService) *authorizer {
 	return &authorizer{jwtService}
+}
+
+// RequireRole authenticates a user.
+// Upon successful authentication, checks if the user has a role equal to or higher than the specified.
+// The role hierarchy is defined in types.Role, where higher roles have more privileges.
+func (a *authorizer) RequireRole(role types.Role) func(next http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, err := a.authenticateToken(r)
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			if !user.HasMinimumRole(role) {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			ctx := context.WithValue(r.Context(), services.UserKey, &user)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 // AuthenticateUser verifies the Authorization header.
