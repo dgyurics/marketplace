@@ -137,8 +137,6 @@ func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request)
 		"token":         accessToken,
 		"refresh_token": token,
 	})
-
-	u.RespondSuccess(w)
 }
 
 func (h *RegisterRoutes) RegisterRoutes() {

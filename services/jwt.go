@@ -77,7 +77,7 @@ func (j *jwtService) ParseToken(token string) (*types.User, error) {
 		user.Email = email
 	}
 	if role, ok := claims["role"].(string); ok {
-		user.Role = role
+		user.Role = types.Role(role)
 	}
 
 	return &user, nil

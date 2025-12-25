@@ -185,7 +185,7 @@ func TestAuthenticateUser_GuestUser(t *testing.T) {
 		assert.True(t, ok, "expected user to be stored in context")
 		assert.NotNil(t, user, "user should not be nil")
 		assert.Equal(t, "789", user.ID, "expected user ID to be 789")
-		assert.Equal(t, "guest", user.Role, "expected role to be 'guest'")
+		assert.Equal(t, types.RoleGuest, user.Role, "expected role to be 'guest'")
 		w.WriteHeader(http.StatusOK)
 	})
 

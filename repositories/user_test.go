@@ -19,7 +19,7 @@ func TestCreateUser(t *testing.T) {
 	// Validate user creation
 	assert.NotEmpty(t, user.ID, "Expected user ID to be set")
 	assert.NotEmpty(t, user.Email, "Expected email to be set")
-	assert.Equal(t, "user", user.Role, "Expected role to be 'user'")
+	assert.Equal(t, types.RoleUser, user.Role, "Expected role to be 'user'")
 
 	// Clean up
 	_, err := dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
@@ -85,7 +85,7 @@ func TestCreateGuest(t *testing.T) {
 	err := repo.CreateGuest(ctx, guestUser)
 	assert.NoError(t, err, "Expected no error while creating a guest user")
 	assert.NotEmpty(t, guestUser.ID, "Expected guest user ID to be set")
-	assert.Equal(t, "guest", guestUser.Role, "Expected role to be 'guest'")
+	assert.Equal(t, types.RoleGuest, guestUser.Role, "Expected role to be 'guest'")
 
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", guestUser.ID)

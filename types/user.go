@@ -19,7 +19,7 @@ type User struct {
 	Email         string    `json:"email"`
 	Password      string    `json:"-"`
 	PasswordHash  string    `json:"-"`
-	Role          string    `json:"role"` // TODO change to type Role
+	Role          Role      `json:"role"`
 	RequiresSetup bool      `json:"requires_setup"`
 	UpdatedAt     time.Time `json:"updated_at"`
 	CreatedAt     time.Time `json:"created_at"`
