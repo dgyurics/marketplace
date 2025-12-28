@@ -13,7 +13,9 @@
             />
             <InputText v-model="newShippingZone.postal_code" label="postal code" />
           </div>
-          <button type="submit" class="btn-full-width mt-15" :tabindex="0">Add Zone</button>
+          <button v-auth="'admin'" type="submit" class="btn-full-width mt-15" :tabindex="0">
+            Add Zone
+          </button>
         </form>
         <p v-if="shippingZoneError" class="error">{{ shippingZoneError }}</p>
       </div>
@@ -32,7 +34,9 @@
           <div class="form-row">
             <InputText v-model="newExcludedZone.postal_code" label="postal code" required />
           </div>
-          <button type="submit" class="btn-full-width mt-15" :tabindex="0">Add Exclusion</button>
+          <button v-auth="'admin'" type="submit" class="btn-full-width mt-15" :tabindex="0">
+            Add Exclusion
+          </button>
         </form>
         <p v-if="excludedZoneError" class="error">{{ excludedZoneError }}</p>
       </div>

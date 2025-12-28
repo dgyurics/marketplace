@@ -4,6 +4,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import { createAppRouter } from './router'
 
+import authDirective from '@/directives/auth'
 import { useCartStore } from '@/store/cart'
 import { initializeLocale } from '@/utilities/locale'
 
@@ -14,6 +15,9 @@ async function initApp() {
   const pinia = createPinia()
 
   app.use(pinia)
+
+  // Register auth directive
+  app.use(authDirective)
 
   // Initialize cart store
   // Pre-flight http interceptor, apiClient.interceptors, will initialize auth store as well

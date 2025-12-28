@@ -43,11 +43,14 @@
         />
 
         <div class="form-actions">
-          <button type="submit" class="btn-full-width mt-15" :tabindex="0">Save</button>
+          <button v-auth="'admin'" type="submit" class="btn-full-width mt-15" :tabindex="0">
+            Save
+          </button>
           <button type="button" class="btn-full-width btn-outline" :tabindex="0" @click="goBack">
             Cancel
           </button>
           <button
+            v-auth="'admin'"
             type="button"
             class="btn-full-width btn-subtle"
             :tabindex="0"
@@ -86,7 +89,7 @@ const categoryOptions = computed(() =>
 )
 
 const displayPrice = computed({
-  get: () => toMajorUnits(editProduct.value.price),
+  get: () => String(toMajorUnits(editProduct.value.price)),
   set: (value) => (editProduct.value.price = toMinorUnits(value)),
 })
 
@@ -118,8 +121,8 @@ const fetchProduct = async () => {
       tax_code: data.tax_code ?? '',
       details: data.details,
       category: data.category?.slug ?? '',
-      inventory: data.inventory,
-      cart_limit: data.cart_limit,
+      inventory: String(data.inventory),
+      cart_limit: data.cart_limit ? String(data.cart_limit) : '',
     }
   } catch {
     // Handle error silently

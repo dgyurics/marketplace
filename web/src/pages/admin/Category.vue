@@ -12,7 +12,7 @@
           />
           <InputText v-model="newCategory.description" label="description" />
         </div>
-        <button type="submit" class="btn-full-width mt-15">Create Category</button>
+        <button v-auth="'admin'" type="submit" class="btn-full-width mt-15">Create Category</button>
       </form>
     </div>
     <div class="category-grid">

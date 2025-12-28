@@ -15,11 +15,14 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" :tabindex="0" class="btn-full-width mt-15">Save</button>
+          <button v-auth="'admin'" type="submit" :tabindex="0" class="btn-full-width mt-15">
+            Save
+          </button>
           <button type="button" :tabindex="0" class="btn-full-width btn-outline" @click="goBack">
             Cancel
           </button>
           <button
+            v-auth="'admin'"
             type="button"
             :tabindex="0"
             class="btn-full-width btn-subtle"

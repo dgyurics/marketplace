@@ -25,7 +25,9 @@
           pair-name="Detail"
         />
 
-        <button type="submit" class="btn-full-width mt-15" :tabindex="0">Add Product</button>
+        <button v-auth="'admin'" type="submit" class="btn-full-width mt-15" :tabindex="0">
+          Add Product
+        </button>
       </form>
     </div>
     <div class="product-grid">
