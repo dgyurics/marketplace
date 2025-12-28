@@ -1,9 +1,9 @@
 <template>
   <div class="auth-container">
-    <template v-if="authStore.user?.role === 'user' || authStore.user?.role === 'admin'">
+    <template v-if="authStore.hasMinimumRole('user')">
       <h2>You are logged in</h2>
       <button class="logout-button" :tabindex="0" @click="handleLogout">Logout</button>
-      <div v-if="authStore.user?.role === 'admin'">
+      <div v-if="authStore.hasMinimumRole('staff')">
         <div class="button-group admin-buttons">
           <button :tabindex="0" @click="goToCategories">Categories</button>
           <button :tabindex="0" @click="goToProducts">Products</button>

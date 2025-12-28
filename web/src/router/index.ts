@@ -102,7 +102,7 @@ function requireAdmin(
   _from: RouteLocationNormalized,
   next: NavigationGuardNext
 ) {
-  useAuthStore().isAdmin ? next() : next('/')
+  useAuthStore().hasMinimumRole('staff') ? next() : next('/')
 }
 
 // Export function to create router (to be called after Pinia is initialized)

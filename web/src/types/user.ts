@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'user' | 'guest'
+export type Role = 'admin' | 'user' | 'guest' | 'staff' | 'member'
 
 export interface JwtUser {
   user_id: string

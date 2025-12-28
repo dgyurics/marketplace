@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-import type { AuthTokens, JwtUser } from '@/types'
+import type { AuthTokens, JwtUser, Role } from '@/types'
 import {
   decodeJWT,
   isTokenExpired as checkTokenExpired,
@@ -8,6 +8,14 @@ import {
   removeRefreshToken,
   getRefreshToken,
 } from '@/utilities/auth'
+
+const hierarchy: Record<Role, number> = {
+  guest: 0,
+  user: 1,
+  member: 2,
+  staff: 3,
+  admin: 4,
+}
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -26,7 +34,6 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isAuthenticated: (state) => Boolean(state.user.user_id),
-    isAdmin: (state) => state.user.role === 'admin',
   },
 
   actions: {
@@ -58,6 +65,10 @@ export const useAuthStore = defineStore('auth', {
         iat: 0,
       }
       removeRefreshToken()
+    },
+
+    hasMinimumRole(requiredRole: Role): boolean {
+      return hierarchy[this.user.role] >= hierarchy[requiredRole]
     },
   },
 })
