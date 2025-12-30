@@ -18,23 +18,26 @@ type EventData struct {
 	PreviousAttributes json.RawMessage `json:"previous_attributes"`
 }
 
-func (e *Event) GetPaymentIntent() (*PaymentIntent, error) {
+// UnmarshalEventObject unmarshals the event object into the specified type [T].
+func UnmarshalEventObject[T any](e *Event) (*T, error) {
 	if e.Data == nil {
 		return nil, errors.New("Event data missing")
 	}
-	var pi PaymentIntent
-	if err := json.Unmarshal(e.Data.Object, &pi); err != nil {
+	var obj T
+	if err := json.Unmarshal(e.Data.Object, &obj); err != nil {
 		return nil, err
 	}
-	return &pi, nil
+	return &obj, nil
 }
 
+// IsSupported checks if the event type is supported by the system.
 func (e *Event) IsSupported() bool {
 	switch e.Type {
 	case EventTypePaymentIntentCreated,
 		EventTypePaymentIntentSucceeded,
 		EventTypePaymentIntentCanceled,
-		EventTypePaymentIntentPaymentFailed:
+		EventTypePaymentIntentPaymentFailed,
+		EventTypeChargeRefunded:
 		return true
 	default:
 		return false
@@ -61,14 +64,6 @@ func (e *Event) GetMetadata() map[string]string {
 	return obj.Metadata
 }
 
-func (e *EventData) GetCharge() (*Charge, error) {
-	var charge Charge
-	if err := json.Unmarshal(e.Object, &charge); err != nil {
-		return nil, err
-	}
-	return &charge, nil
-}
-
 type PaymentIntent struct {
 	ID           string            `json:"id"`
 	Status       string            `json:"status"` // requires_payment_method, requires_confirmation, requires_action, processing, canceled, succeeded
@@ -79,12 +74,14 @@ type PaymentIntent struct {
 }
 
 type Charge struct {
-	ID            string            `json:"id"`
-	Amount        int64             `json:"amount"`
-	Currency      string            `json:"currency"`
-	Status        string            `json:"status"` // succeeded, pending, failed
-	PaymentIntent string            `json:"payment_intent"`
-	Metadata      map[string]string `json:"metadata"` // environment, order_id, etc
+	ID             string            `json:"id"`
+	Amount         int64             `json:"amount"`
+	AmountRefunded int64             `json:"amount_refunded"`
+	Currency       string            `json:"currency"`
+	Status         string            `json:"status"` // succeeded, pending, failed
+	PaymentIntent  string            `json:"payment_intent"`
+	Refunded       bool              `json:"refunded"`
+	Metadata       map[string]string `json:"metadata"` // environment, order_id, etc
 }
 
 type CreateOrderResponse struct {
@@ -150,6 +147,7 @@ const (
 	EventTypePaymentIntentCreated       EventType = "payment_intent.created"
 	EventTypePaymentIntentPaymentFailed EventType = "payment_intent.payment_failed"
 	EventTypePaymentIntentSucceeded     EventType = "payment_intent.succeeded"
+	EventTypeChargeRefunded             EventType = "charge.refunded"
 	// EventTypePaymentIntentPartiallyFunded         EventType = "payment_intent.partially_funded"
 	// EventTypePaymentIntentProcessing              EventType = "payment_intent.processing"
 	// EventTypePaymentIntentRequiresAction          EventType = "payment_intent.requires_action"
@@ -160,9 +158,9 @@ const (
 	// EventTypePaymentMethodAutomaticallyUpdated      EventType = "payment_method.automatically_updated"
 	// EventTypePaymentMethodDetached                  EventType = "payment_method.detached"
 	// EventTypePaymentMethodUpdated                   EventType = "payment_method.updated"
-	// EventTypeRefundCreated                          EventType = "refund.created"
-	// EventTypeRefundFailed                           EventType = "refund.failed"
+	// EventTypeRefundCreated              						 EventType = "refund.created"
 	// EventTypeRefundUpdated                          EventType = "refund.updated"
+	// EventTypeRefundFailed               						 EventType = "refund.failed"
 	// EventTypeTaxSettingsUpdated                     EventType = "tax.settings.updated"
 	// EventTypeTaxRateCreated                         EventType = "tax_rate.created"
 	// EventTypeTaxRateUpdated                         EventType = "tax_rate.updated"

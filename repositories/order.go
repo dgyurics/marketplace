@@ -13,6 +13,7 @@ type OrderRepository interface {
 	/* Modify order(s) */
 	CreateOrder(ctx context.Context, order *types.Order) error
 	ConfirmOrderPayment(ctx context.Context, orderID string) error
+	RefundOrder(ctx context.Context, orderID string) error
 	/* GET order(s) */
 	GetOrderByIDAndUser(ctx context.Context, orderID, userID string) (types.Order, error)
 	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
@@ -338,6 +339,25 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 	}
 
 	return order, nil
+}
+
+// RefundOrder marks an order as refunded. It does NOT restock/update inventory.
+// Updating/Restocking inventory must be done manually
+func (r *orderRepository) RefundOrder(ctx context.Context, orderID string) error {
+	res, err := r.db.ExecContext(ctx, `
+		UPDATE orders
+		SET status = 'refunded', updated_at = NOW()
+		WHERE id = $1
+	`, orderID)
+	if err != nil {
+		return err
+	}
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return types.ErrNotFound
+	}
+	return nil
 }
 
 func (r *orderRepository) ConfirmOrderPayment(ctx context.Context, orderID string) error {

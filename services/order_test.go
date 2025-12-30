@@ -88,6 +88,11 @@ func (m *mockOrderRepo) GetOrderByID(ctx context.Context, orderID string) (types
 	return types.Order{}, args.Error(1)
 }
 
+func (m *mockOrderRepo) RefundOrder(ctx context.Context, orderID string) error {
+	args := m.Called(ctx, orderID)
+	return args.Error(0)
+}
+
 func (m *mockOrderRepo) GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error) {
 	args := m.Called(ctx, orderID)
 	if v := args.Get(0); v != nil {

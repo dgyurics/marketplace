@@ -59,32 +59,63 @@ func NewPaymentService(
 	}
 }
 
+// EventHandler handles incoming Stripe events.
+// It routes the event to the appropriate handler based on its type.
 func (s *paymentService) EventHandler(ctx context.Context, event stripe.Event) error {
-	pi, err := event.GetPaymentIntent()
-	if err != nil {
-		return fmt.Errorf("failed to extract payment intent: %w", err)
-	}
-
+	var err error
 	switch event.Type {
-	case stripe.EventTypePaymentIntentCreated:
-		err = s.handlePaymentIntentCreated(ctx, pi)
-	case stripe.EventTypePaymentIntentSucceeded:
-		err = s.handlePaymentIntentSucceeded(ctx, pi)
-	case stripe.EventTypePaymentIntentCanceled:
-		err = s.handlePaymentIntentCancelled(ctx, pi)
-	case stripe.EventTypePaymentIntentPaymentFailed:
-		err = s.handlePaymentIntentFailed(ctx, pi)
+	// Payment intent group
+	case
+		stripe.EventTypePaymentIntentSucceeded,
+		stripe.EventTypePaymentIntentCanceled,
+		stripe.EventTypePaymentIntentCreated,
+		stripe.EventTypePaymentIntentPaymentFailed:
+		err = s.handlePIEvent(ctx, event)
+
+	// Charge group
+	case stripe.EventTypeChargeRefunded:
+		err = s.handleChargeRefund(ctx, event)
+
 	default:
 		slog.DebugContext(ctx, "Unhandled Stripe event type", "type", event.Type)
 		return nil
 	}
 
 	if err != nil {
-		slog.Error("Error handling event", "type", event.Type, "error", err)
+		slog.Error("Handler failed", "type", event.Type, "error", err)
 		return err
 	}
 
-	slog.Debug("Successfully processed Stripe event", "type", event.Type, "id", event.ID)
+	slog.Debug("Processed event", "type", event.Type, "id", event.ID)
+	return nil
+}
+
+// handleChargeRefund handles Stripe Refund events.
+func (s *paymentService) handleChargeRefund(ctx context.Context, event stripe.Event) error {
+	charge, err := stripe.UnmarshalEventObject[stripe.Charge](&event)
+	if err != nil {
+		return err
+	}
+	return s.handleRefund(ctx, charge)
+}
+
+// handlePIEvent handles Stripe Payment Intent events.
+func (s *paymentService) handlePIEvent(ctx context.Context, event stripe.Event) error {
+	pi, err := stripe.UnmarshalEventObject[stripe.PaymentIntent](&event)
+	if err != nil {
+		return err
+	}
+
+	switch event.Type {
+	case stripe.EventTypePaymentIntentCreated:
+		return s.handlePaymentIntentCreated(ctx, pi)
+	case stripe.EventTypePaymentIntentSucceeded:
+		return s.handlePaymentIntentSucceeded(ctx, pi)
+	case stripe.EventTypePaymentIntentCanceled:
+		return s.handlePaymentIntentCancelled(ctx, pi)
+	case stripe.EventTypePaymentIntentPaymentFailed:
+		return s.handlePaymentIntentFailed(ctx, pi)
+	}
 	return nil
 }
 
@@ -341,6 +372,55 @@ func (s *paymentService) handlePaymentIntentFailed(_ context.Context, pi *stripe
 	return nil
 }
 
+// handleRefund handles a successful refund event from Stripe.
+// WARNING: partial refunds are not yet supported. The order will be marked as refunded regardless of the refund amount.
+func (s *paymentService) handleRefund(ctx context.Context, charge *stripe.Charge) error {
+	orderID := charge.Metadata["order_id"]
+	if orderID == "" {
+		return fmt.Errorf("order_id not found in charge metadata")
+	}
+
+	// do some basic validation
+	order, err := s.repo.GetOrderByID(ctx, orderID)
+	if err != nil {
+		return err
+	}
+	// Handle idempotency
+	if order.Status == types.OrderRefunded {
+		slog.Debug("Order already marked as refunded", "order_id", orderID)
+		return nil
+	}
+
+	// Check if the order is eligible for a refund
+	isEligible := order.Status == types.OrderPaid ||
+		order.Status == types.OrderFulfilled ||
+		order.Status == types.OrderShipped ||
+		order.Status == types.OrderDelivered
+
+	if !isEligible {
+		return fmt.Errorf("refund received for non-eligible order: %s, status=%s", order.ID, order.Status)
+	}
+
+	if !strings.EqualFold(utilities.Locale.Currency, charge.Currency) {
+		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", utilities.Locale.Currency, charge.Currency, order.ID)
+	}
+
+	if order.TotalAmount != charge.AmountRefunded {
+		slog.Warn("partial refund received", "order_id", order.ID, "order_amount", order.TotalAmount, "refund_amount", charge.AmountRefunded)
+	}
+
+	// mark order as refunded
+	err = s.repo.RefundOrder(ctx, order.ID)
+	if err != nil {
+		return fmt.Errorf("failed to mark order as refunded: order_id=%s, error=%w", order.ID, err)
+	}
+
+	slog.Debug("Charge refunded", "id", charge.ID, "order_id", orderID, "payment_intent_id", charge.PaymentIntent)
+
+	return nil
+}
+
+// SupportedEvent checks if the given Stripe event is supported by the payment service.
 func (s *paymentService) SupportedEvent(ctx context.Context, event stripe.Event) bool {
 	if !event.IsSupported() {
 		slog.DebugContext(ctx, "Skipping unsupported event", "type", event.Type)
