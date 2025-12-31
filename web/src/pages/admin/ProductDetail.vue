@@ -89,7 +89,7 @@ const categoryOptions = computed(() =>
 )
 
 const displayPrice = computed({
-  get: () => String(toMajorUnits(editProduct.value.price)),
+  get: () => toMajorUnits(editProduct.value.price),
   set: (value) => (editProduct.value.price = toMinorUnits(value)),
 })
 
@@ -121,8 +121,8 @@ const fetchProduct = async () => {
       tax_code: data.tax_code ?? '',
       details: data.details,
       category: data.category?.slug ?? '',
-      inventory: String(data.inventory),
-      cart_limit: data.cart_limit ? String(data.cart_limit) : '',
+      inventory: data.inventory,
+      cart_limit: data.cart_limit,
     }
   } catch {
     // Handle error silently
