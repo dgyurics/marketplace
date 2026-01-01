@@ -79,6 +79,8 @@ func (s *registerService) Register(ctx context.Context, email string) (string, e
 		return "", err
 	}
 
+	// FIXME move email code-block elsewhere
+	// FIXME omit email from link and simply use registration code for reference/look-up
 	// Send new account registration email
 	go func(email, code string) {
 		detailsLink := fmt.Sprintf("%s/auth/email/%s/registration-code/%s",

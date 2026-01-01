@@ -2,7 +2,6 @@ package routes
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -45,8 +44,8 @@ func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// create entry in pending_users table
-	regCode, err := h.regService.Register(r.Context(), strings.ToLower(reqBody.Email))
+	// create entry in pending_users table + email user registration link
+	_, err := h.regService.Register(r.Context(), strings.ToLower(reqBody.Email))
 	if err == types.ErrUniqueConstraintViolation {
 		u.RespondWithError(w, r, http.StatusConflict, "user with this email already exists")
 		return
@@ -55,9 +54,6 @@ func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	// TODO send email using regCode
-	slog.DebugContext(r.Context(), "Sending registration email", "email", reqBody.Email, "code", regCode)
 
 	u.RespondSuccess(w)
 }
@@ -98,8 +94,10 @@ func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request)
 
 	// Create the user
 	usr := types.User{
-		Email:    reqBody.Email,
-		Password: reqBody.Password,
+		Email:         reqBody.Email,
+		Password:      reqBody.Password,
+		Role:          types.RoleUser,
+		RequiresSetup: false,
 	}
 	err = h.userService.CreateUser(r.Context(), &usr)
 	if err == types.ErrUniqueConstraintViolation {

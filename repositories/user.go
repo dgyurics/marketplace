@@ -67,11 +67,11 @@ func (r *userRepository) CreateGuest(ctx context.Context, user *types.User) erro
 
 func (r *userRepository) CreateUser(ctx context.Context, user *types.User) error {
 	query := `
-		INSERT INTO users (id, email, password_hash, role)
-		VALUES ($1, $2, $3, 'user')
+		INSERT INTO users (id, email, password_hash, role, requires_setup)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, email, role, updated_at
 	`
-	err := r.db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash).
+	err := r.db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash, user.Role, user.RequiresSetup).
 		Scan(&user.ID, &user.Email, &user.Role, &user.UpdatedAt)
 	if isUniqueViolation(err) {
 		return types.ErrUniqueConstraintViolation
