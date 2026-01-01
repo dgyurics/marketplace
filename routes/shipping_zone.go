@@ -7,7 +7,6 @@ import (
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
-	"github.com/dgyurics/marketplace/utilities"
 	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
@@ -125,7 +124,7 @@ func (h *ShippingZoneRoutes) RemoveExcludedShippingZone(w http.ResponseWriter, r
 }
 
 func validateShippingZone(zone types.ShippingZone) error {
-	if zone.Country != utilities.Locale.CountryCode {
+	if zone.Country != u.Locale.CountryCode {
 		return errors.New("invalid country code")
 	}
 
@@ -141,7 +140,7 @@ func validateShippingZone(zone types.ShippingZone) error {
 }
 
 func validateExcludedShippingZone(zone types.ExcludedShippingZone) error {
-	if zone.Country != utilities.Locale.CountryCode {
+	if zone.Country != u.Locale.CountryCode {
 		return errors.New("invalid country code")
 	}
 

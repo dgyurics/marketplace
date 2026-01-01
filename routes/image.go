@@ -9,7 +9,6 @@ import (
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
-	"github.com/dgyurics/marketplace/utilities"
 	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
@@ -87,7 +86,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate a unique ID for the file/image
-	imgID, err := utilities.GenerateIDString()
+	imgID, err := u.GenerateIDString()
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, "error generating image ID")
 		return
@@ -121,7 +120,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	// Create the image record(s)
 	typs := []types.ImageType{imageType, types.Gallery, types.Thumbnail}
 	for idx, url := range urls {
-		id, err := utilities.GenerateIDString()
+		id, err := u.GenerateIDString()
 		if err != nil {
 			u.RespondWithError(w, r, http.StatusInternalServerError, "error generating image record ID")
 			return

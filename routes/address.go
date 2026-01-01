@@ -8,7 +8,6 @@ import (
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
-	"github.com/dgyurics/marketplace/utilities"
 	u "github.com/dgyurics/marketplace/utilities"
 	"github.com/gorilla/mux"
 )
@@ -114,7 +113,7 @@ func (h *AddressRoutes) RemoveAddress(w http.ResponseWriter, r *http.Request) {
 
 func validateAddress(address types.Address) error {
 	// case-sensitive
-	if address.Country != utilities.Locale.CountryCode {
+	if address.Country != u.Locale.CountryCode {
 		return errors.New("invalid country code")
 	}
 
