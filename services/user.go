@@ -14,11 +14,15 @@ type contextKey string
 const UserKey contextKey = "user"
 
 type UserService interface {
+	// CREATE
 	CreateUser(ctx context.Context, user *types.User) error
 	CreateGuest(ctx context.Context, user *types.User) error
-	SetCredentials(ctx context.Context, credential types.Credential) (types.User, error)
-	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
+	// UPDATE
+	UpdatePassword(ctx context.Context, curPass, newPass string) (*types.User, error)
+	// UpdateEmail(ctx context.Context, credential types.Credential) (*types.User, error)
+	// GET
 	Login(ctx context.Context, credential *types.Credential) (*types.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
 	GetAllAdmins(ctx context.Context) ([]types.User, error)
 }
@@ -58,26 +62,28 @@ func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
 	return s.repo.CreateUser(ctx, user)
 }
 
-func (s *userService) SetCredentials(ctx context.Context, credentials types.Credential) (types.User, error) {
-	hashedPassword, err := generateFromPassword(credentials.Password)
+func (s *userService) UpdatePassword(ctx context.Context, curPass, newPass string) (*types.User, error) {
+	// get the user
+	userID := getUserID(ctx)
+	usr, err := s.repo.GetUserByID(ctx, userID)
 	if err != nil {
-		return types.User{}, err
-	}
-	usr := getUser(ctx)
-	usr.Email = credentials.Email
-	usr.PasswordHash = string(hashedPassword)
-
-	// Update/Set credentials in database
-	// If the account type is guest, it will be converted to a user account
-	if err := s.repo.SetCredentials(ctx, &usr); err != nil {
-		return types.User{}, err
+		return usr, err
 	}
 
-	return types.User{
-		ID:    usr.ID,
-		Email: credentials.Email,
-		Role:  usr.Role,
-	}, nil
+	// compare old passwords
+	err = bcrypt.CompareHashAndPassword([]byte(usr.PasswordHash), []byte(curPass))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		return nil, types.ErrNotFound
+	}
+
+	// hash new password
+	hashedPassword, err := generateFromPassword(newPass)
+	if err != nil {
+		return &types.User{}, err
+	}
+
+	// update password
+	return s.repo.UpdatePassword(ctx, userID, string(hashedPassword))
 }
 
 // generateFromPassword generates a hashed password from a plaintext password

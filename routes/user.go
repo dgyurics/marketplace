@@ -197,31 +197,28 @@ func (h *UserRoutes) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// UpdatedCredentials is used used for overriding the default admin account, on system setup
-// FIXME allows for any email to be used (without verification)
-func (h *UserRoutes) UpdatedCredentials(w http.ResponseWriter, r *http.Request) {
-	// verify request contains email and password
-	var credentials types.Credential
-	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
+func (h *UserRoutes) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	var reqBody struct {
+		CurrentPassword string `json:"current_password"`
+		NewPassword     string `json:"new_password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
 	}
 
-	if !isValidEmail(credentials.Email) {
-		u.RespondWithError(w, r, http.StatusBadRequest, "email is required")
-		return
-	}
-	if credentials.Password == "" {
+	if reqBody.CurrentPassword == "" {
 		u.RespondWithError(w, r, http.StatusBadRequest, "password is required")
 		return
 	}
 
-	// Update user email and password
-	usr, err := h.userService.SetCredentials(r.Context(), credentials)
-	if err == types.ErrUniqueConstraintViolation {
-		u.RespondWithError(w, r, http.StatusConflict, err.Error())
+	if reqBody.NewPassword == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "password is required")
 		return
 	}
+
+	// Update password
+	usr, err := h.userService.UpdatePassword(r.Context(), reqBody.CurrentPassword, reqBody.NewPassword)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
@@ -231,8 +228,14 @@ func (h *UserRoutes) UpdatedCredentials(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Revoke existing refresh tokens
+	if err := h.refreshService.RevokeTokens(r.Context()); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	// Generate new access token
-	accessToken, err := h.jwtService.GenerateToken(usr)
+	accessToken, err := h.jwtService.GenerateToken(*usr)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -273,7 +276,7 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/users/login", h.guardLimit(h.Login, 5)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/refresh-token", h.limit(h.RefreshToken, 5, time.Hour)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/guest", h.limit(h.CreateGuestUser, 3, time.Hour)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users/credentials", h.secure(types.RoleAdmin)(h.UpdatedCredentials)).Methods(http.MethodPut)
+	h.muxRouter.Handle("/users/change-password", h.secure(types.RoleUser)(h.ChangePassword)).Methods(http.MethodPut)
 	h.muxRouter.Handle("/users/logout", h.secure(types.RoleGuest)(h.Logout)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users", h.secure(types.RoleStaff)(h.GetAllUsers)).Methods(http.MethodGet)
 }
