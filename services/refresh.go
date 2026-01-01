@@ -110,12 +110,3 @@ func getUserID(ctx context.Context) string {
 	}
 	return user.ID
 }
-
-// TODO: move somewhere else (util?)
-func getUser(ctx context.Context) (usr types.User) {
-	user, ok := ctx.Value(UserKey).(*types.User)
-	if !ok {
-		return
-	}
-	return *user
-}

@@ -19,7 +19,6 @@ import (
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/types/stripe"
 	"github.com/dgyurics/marketplace/utilities"
-	util "github.com/dgyurics/marketplace/utilities"
 )
 
 const (
@@ -34,7 +33,7 @@ type PaymentService interface {
 }
 
 type paymentService struct {
-	HttpClient   util.HTTPClient
+	HttpClient   utilities.HTTPClient
 	config       types.PaymentConfig
 	serviceEmail EmailService
 	serviceTmp   TemplateService
@@ -43,7 +42,7 @@ type paymentService struct {
 }
 
 func NewPaymentService(
-	httpClient util.HTTPClient,
+	httpClient utilities.HTTPClient,
 	config types.PaymentConfig,
 	serviceEmail EmailService,
 	serviceTmp TemplateService,
