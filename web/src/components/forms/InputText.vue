@@ -4,11 +4,13 @@
       v-model="value"
       :type="type || 'text'"
       :required="required || false"
+      :readonly="readonly || false"
       v-bind="{
         ...(pattern ? { pattern } : {}),
         ...(tabindex ? { tabindex } : {}),
       }"
       class="input-field"
+      :class="{ 'input-field--readonly': readonly }"
     />
     <span v-if="label" class="input-label" :class="{ 'input-label--optional': !required }">
       {{ label }}
@@ -26,6 +28,7 @@ const props = defineProps<{
   pattern?: string
   type?: string
   tabindex?: number
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -50,6 +53,18 @@ const value = computed({
   border-radius: 1px;
   font-size: 16px;
   box-sizing: border-box;
+}
+
+.input-field--readonly {
+  background-color: #f5f5f5;
+  color: #666;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.input-field--readonly:focus {
+  outline: none;
+  border-color: #ccc;
 }
 
 .input-label {
