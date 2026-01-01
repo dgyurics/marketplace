@@ -2,6 +2,7 @@
   <div class="auth-container">
     <template v-if="authStore.hasMinimumRole('user')">
       <h2>You are logged in</h2>
+      <button class="profile-button" :tabindex="0" @click="goToProfile">Profile</button>
       <button class="logout-button" :tabindex="0" @click="handleLogout">Logout</button>
       <div v-if="authStore.hasMinimumRole('staff')">
         <div class="button-group admin-buttons">
@@ -141,6 +142,10 @@ const goToCategories = () => {
   router.push('/admin/categories')
 }
 
+const goToProfile = () => {
+  router.push('/profile')
+}
+
 const goToProducts = () => {
   router.push('/admin/products')
 }
@@ -238,10 +243,15 @@ input:focus {
 }
 
 /* Single logout button */
-.logout-button {
+.logout-button,
+.profile-button {
   width: 200px;
   margin: 20px auto 0;
   display: block;
+}
+
+.profile-button {
+  margin: 10px auto 0;
 }
 
 /* Error message */

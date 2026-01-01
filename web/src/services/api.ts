@@ -106,8 +106,14 @@ export const passwordUpdate = async (
   return response.data
 }
 
-export const updateCredentials = async (email: string, password: string): Promise<AuthTokens> => {
-  const response = await apiClient.put('/users/credentials', { email, password })
+export const updatePassword = async (
+  currentPassword: string,
+  newPassword: string
+): Promise<AuthTokens> => {
+  const response = await apiClient.put('/users/change-password', {
+    current_password: currentPassword,
+    new_password: newPassword,
+  })
   return response.data
 }
 

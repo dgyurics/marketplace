@@ -1,7 +1,6 @@
 import type { NavigationGuardNext, RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
-import AccountSetup from '@/pages/AccountSetup.vue'
 import AdminCategories from '@/pages/admin/Category.vue'
 import AdminCategoryDetail from '@/pages/admin/CategoryDetail.vue'
 import AdminOrders from '@/pages/admin/Order.vue'
@@ -22,6 +21,7 @@ import PasswordResetRequest from '@/pages/PasswordResetRequest.vue'
 import Payment from '@/pages/Payment.vue'
 import Product from '@/pages/Product.vue'
 import ProductDetails from '@/pages/ProductDetail.vue'
+import Profile from '@/pages/Profile.vue'
 import Register from '@/pages/Register.vue'
 import RegisterConfirmation from '@/pages/RegisterConfirmation.vue'
 import ShippingAddress from '@/pages/ShippingAddress.vue'
@@ -32,7 +32,6 @@ import { useAuthStore } from '@/store/auth'
 async function initRoutes(): Promise<RouteRecordRaw[]> {
   const baseRoutes: RouteRecordRaw[] = [
     { path: '/', component: Home },
-    { path: '/auth/update', component: AccountSetup },
     { path: '/auth', component: LoginRegister },
     {
       path: '/auth/email/:email(.*)/registration-code/:registrationCode',
@@ -54,6 +53,7 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/checkout/payment', component: Payment },
     { path: '/checkout/confirmation', component: OrderConfirmation },
     { path: '/orders/:id', component: OrderDetail },
+    { path: '/profile', component: Profile, beforeEnter: requireUser },
     { path: '/unsupported', component: Unsupported },
     { path: '/admin/products', component: AdminProducts, beforeEnter: requireAdmin },
     { path: '/admin/products/:id', component: AdminProductEdit, beforeEnter: requireAdmin },
@@ -103,6 +103,15 @@ function requireAdmin(
   next: NavigationGuardNext
 ) {
   useAuthStore().hasMinimumRole('staff') ? next() : next('/')
+}
+
+// User route guard
+function requireUser(
+  _to: RouteLocationNormalized,
+  _from: RouteLocationNormalized,
+  next: NavigationGuardNext
+) {
+  useAuthStore().hasMinimumRole('user') ? next() : next('/')
 }
 
 // Export function to create router (to be called after Pinia is initialized)
