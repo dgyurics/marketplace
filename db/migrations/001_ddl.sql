@@ -75,14 +75,14 @@ CREATE TABLE IF NOT EXISTS pending_users (
 CREATE INDEX idx_pending_users_email
 ON pending_users(email);
 
-CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest');
+CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest', 'member', 'staff');
 
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY,
     email VARCHAR(255) UNIQUE,
     password_hash TEXT,
     role user_role_enum NOT NULL,
-    requires_setup BOOLEAN,
+    requires_setup BOOLEAN DEFAULT FALSE NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
