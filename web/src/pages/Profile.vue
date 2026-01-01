@@ -6,10 +6,17 @@
     <div class="user-info">
       <h3>Account Information</h3>
       <div class="form-group-flex">
-        <InputText label="email" type="email" readonly :model-value="userEmail" />
+        <InputText
+          label="email"
+          type="email"
+          :readonly="!isAdmin"
+          :model-value="userEmail"
+          required
+          @update:model-value="(val) => (editableEmail = val)"
+        />
       </div>
       <div class="form-group-flex">
-        <InputText label="account type" readonly :model-value="userRole" />
+        <InputText label="account type" readonly :model-value="userRole" required />
       </div>
       <div class="form-group-flex">
         <InputText
@@ -47,7 +54,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { InputText } from '@/components/forms'
-import { updatePassword } from '@/services/api'
+import { updatePassword, updateEmail } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 
 const authStore = useAuthStore()
@@ -55,10 +62,12 @@ const router = useRouter()
 
 const currentPassword = ref('')
 const newPassword = ref('')
+const editableEmail = ref('')
 const errorMessage = ref<string | null>(null)
 
 const userEmail = computed(() => authStore.user.email || 'Not set')
 const userRole = computed(() => authStore.user.role || 'guest')
+const isAdmin = computed(() => authStore.hasMinimumRole('admin'))
 
 const isValidPassword = (password: string) => {
   return password.length >= 3 && password.length <= 50
@@ -66,6 +75,28 @@ const isValidPassword = (password: string) => {
 
 const handleSubmit = async () => {
   errorMessage.value = null
+
+  // Check if admin changed email
+  if (isAdmin.value && editableEmail.value && editableEmail.value !== userEmail.value) {
+    try {
+      // TODO make password required for email change
+      authStore.setTokens(await updateEmail(editableEmail.value))
+      router.push('/auth')
+      return
+    } catch (error: any) {
+      const status = error.response?.status
+      if (status === 400) {
+        errorMessage.value = 'Invalid email address'
+      } else if (status === 409) {
+        errorMessage.value = 'Email already in use'
+      } else if (status === 429) {
+        errorMessage.value = 'Too many failed attempts'
+      } else {
+        errorMessage.value = 'Something went wrong'
+      }
+      return
+    }
+  }
 
   // Only attempt password change if both fields have input
   if (currentPassword.value && newPassword.value) {
@@ -85,7 +116,7 @@ const handleSubmit = async () => {
     }
 
     try {
-      await updatePassword(currentPassword.value, newPassword.value)
+      authStore.setTokens(await updatePassword(currentPassword.value, newPassword.value))
       router.push('/auth')
       return
     } catch (error: any) {

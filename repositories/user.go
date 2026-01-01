@@ -13,6 +13,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *types.User) error
 	CreateGuest(ctx context.Context, user *types.User) error
 	// update
+	UpdateEmail(ctx context.Context, userID, newEmail string) (*types.User, error)
 	UpdatePassword(ctx context.Context, userID, newPasswordHash string) (*types.User, error)
 	// get
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
@@ -63,6 +64,36 @@ func isUniqueViolation(err error) bool {
 	}
 
 	return false
+}
+
+func (r *userRepository) UpdateEmail(ctx context.Context, userID, newEmail string) (*types.User, error) {
+	updateQuery := `
+		UPDATE users
+		SET email = $1, updated_at = NOW()
+		WHERE id = $2
+		RETURNING id, email, password_hash, role, COALESCE(requires_setup, false) AS requires_setup, updated_at
+  `
+	var user types.User
+	err := r.db.QueryRowContext(ctx, updateQuery, newEmail, userID).
+		Scan(
+			&user.ID,
+			&user.Email,
+			&user.PasswordHash,
+			&user.Role,
+			&user.RequiresSetup,
+			&user.UpdatedAt)
+
+	if isUniqueViolation(err) {
+		return nil, types.ErrUniqueConstraintViolation
+	}
+	if err == sql.ErrNoRows {
+		return nil, types.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
 
 func (r *userRepository) UpdatePassword(ctx context.Context, userID, newPasswordHash string) (*types.User, error) {

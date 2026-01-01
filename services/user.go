@@ -19,7 +19,7 @@ type UserService interface {
 	CreateGuest(ctx context.Context, user *types.User) error
 	// UPDATE
 	UpdatePassword(ctx context.Context, curPass, newPass string) (*types.User, error)
-	// UpdateEmail(ctx context.Context, credential types.Credential) (*types.User, error)
+	UpdateEmail(ctx context.Context, newEmail string) (*types.User, error)
 	// GET
 	Login(ctx context.Context, credential *types.Credential) (*types.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
@@ -60,6 +60,10 @@ func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
 	}
 	user.ID = userID
 	return s.repo.CreateUser(ctx, user)
+}
+
+func (s *userService) UpdateEmail(ctx context.Context, newEmail string) (*types.User, error) {
+	return s.repo.UpdateEmail(ctx, getUserID(ctx), newEmail)
 }
 
 func (s *userService) UpdatePassword(ctx context.Context, curPass, newPass string) (*types.User, error) {

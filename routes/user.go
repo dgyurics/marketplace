@@ -261,6 +261,69 @@ func (h *UserRoutes) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *UserRoutes) ChangeEmail(w http.ResponseWriter, r *http.Request) {
+	var reqBody struct {
+		Email string `json:"email"`
+		// TODO make password required for email change
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
+		return
+	}
+
+	if reqBody.Email == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "Email is required")
+		return
+	}
+
+	// Update password
+	usr, err := h.userService.UpdateEmail(r.Context(), reqBody.Email)
+	if err == types.ErrUniqueConstraintViolation {
+		u.RespondWithError(w, r, http.StatusConflict, err.Error())
+		return
+	}
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Revoke existing refresh tokens
+	if err := h.refreshService.RevokeTokens(r.Context()); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Generate new access token
+	accessToken, err := h.jwtService.GenerateToken(*usr)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Generate new refresh token
+	var token string
+	token, err = h.refreshService.GenerateToken()
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Store refresh token
+	if err := h.refreshService.StoreToken(r.Context(), usr.ID, token); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	u.RespondWithJSON(w, http.StatusCreated, map[string]string{
+		"token":         accessToken,
+		"refresh_token": token,
+	})
+}
+
 func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	params := u.ParsePaginationParams(r, 1, 100)
 	users, err := h.userService.GetAllUsers(r.Context(), params.Page, params.Limit)
@@ -277,6 +340,7 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/users/refresh-token", h.limit(h.RefreshToken, 5, time.Hour)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/guest", h.limit(h.CreateGuestUser, 3, time.Hour)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/change-password", h.secure(types.RoleUser)(h.ChangePassword)).Methods(http.MethodPut)
+	h.muxRouter.Handle("/users/change-email", h.secure(types.RoleAdmin)(h.ChangeEmail)).Methods(http.MethodPut)
 	h.muxRouter.Handle("/users/logout", h.secure(types.RoleGuest)(h.Logout)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users", h.secure(types.RoleStaff)(h.GetAllUsers)).Methods(http.MethodGet)
 }

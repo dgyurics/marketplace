@@ -92,7 +92,7 @@ export const passwordReset = async (email: string): Promise<void> => {
   return response.data
 }
 
-// Update password using reset code (code in email link)
+// Update password using reset code (code in email link, user not logged in)
 export const passwordUpdate = async (
   email: string,
   newPassword: string,
@@ -106,6 +106,13 @@ export const passwordUpdate = async (
   return response.data
 }
 
+// Update email while logged in
+export const updateEmail = async (email: string): Promise<AuthTokens> => {
+  const response = await apiClient.put('/users/change-email', { email })
+  return response.data
+}
+
+// Update password while logged in
 export const updatePassword = async (
   currentPassword: string,
   newPassword: string
