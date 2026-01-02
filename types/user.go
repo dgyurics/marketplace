@@ -15,14 +15,13 @@ type PendingUser struct {
 }
 
 type User struct {
-	ID            string    `json:"id"`
-	Email         string    `json:"email"`
-	Password      string    `json:"-"`
-	PasswordHash  string    `json:"-"`
-	Role          Role      `json:"role"`
-	RequiresSetup bool      `json:"requires_setup"`
-	UpdatedAt     time.Time `json:"updated_at"`
-	CreatedAt     time.Time `json:"created_at"`
+	ID           string    `json:"id"`
+	Email        string    `json:"email"`
+	Password     string    `json:"-"`
+	PasswordHash string    `json:"-"`
+	Role         Role      `json:"role"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type Role string

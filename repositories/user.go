@@ -42,11 +42,11 @@ func (r *userRepository) CreateGuest(ctx context.Context, user *types.User) erro
 
 func (r *userRepository) CreateUser(ctx context.Context, user *types.User) error {
 	query := `
-		INSERT INTO users (id, email, password_hash, role, requires_setup)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO users (id, email, password_hash, role)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id, email, role, updated_at
 	`
-	err := r.db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash, user.Role, user.RequiresSetup).
+	err := r.db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash, user.Role).
 		Scan(&user.ID, &user.Email, &user.Role, &user.UpdatedAt)
 	if isUniqueViolation(err) {
 		return types.ErrUniqueConstraintViolation
@@ -71,7 +71,7 @@ func (r *userRepository) UpdateEmail(ctx context.Context, userID, newEmail strin
 		UPDATE users
 		SET email = $1, updated_at = NOW()
 		WHERE id = $2
-		RETURNING id, email, password_hash, role, COALESCE(requires_setup, false) AS requires_setup, updated_at
+		RETURNING id, email, password_hash, role, updated_at
   `
 	var user types.User
 	err := r.db.QueryRowContext(ctx, updateQuery, newEmail, userID).
@@ -80,7 +80,6 @@ func (r *userRepository) UpdateEmail(ctx context.Context, userID, newEmail strin
 			&user.Email,
 			&user.PasswordHash,
 			&user.Role,
-			&user.RequiresSetup,
 			&user.UpdatedAt)
 
 	if isUniqueViolation(err) {
@@ -101,7 +100,7 @@ func (r *userRepository) UpdatePassword(ctx context.Context, userID, newPassword
 		UPDATE users
 		SET password_hash = $1, updated_at = NOW()
 		WHERE id = $2
-		RETURNING id, email, password_hash, role, COALESCE(requires_setup, false) AS requires_setup, updated_at
+		RETURNING id, email, password_hash, role, updated_at
   `
 	var user types.User
 	err := r.db.QueryRowContext(ctx, updateQuery, newPasswordHash, userID).
@@ -110,7 +109,6 @@ func (r *userRepository) UpdatePassword(ctx context.Context, userID, newPassword
 			&user.Email,
 			&user.PasswordHash,
 			&user.Role,
-			&user.RequiresSetup,
 			&user.UpdatedAt)
 
 	if err == sql.ErrNoRows {
@@ -157,7 +155,6 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*typ
 			email,
 			password_hash,
 			role,
-			COALESCE(requires_setup, false) AS requires_setup,
 			updated_at
 		FROM users
 		WHERE email = $1
@@ -168,7 +165,6 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*typ
 			&user.Email,
 			&user.PasswordHash,
 			&user.Role,
-			&user.RequiresSetup,
 			&user.UpdatedAt)
 
 	// FIXME better to return types.ErrNotFound
@@ -188,7 +184,6 @@ func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]ty
 			id,
 			email,
 			role,
-			COALESCE(requires_setup, false) AS requires_setup,
 			updated_at,
 			created_at
 		FROM users
@@ -206,7 +201,6 @@ func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]ty
 			&user.ID,
 			&user.Email,
 			&user.Role,
-			&user.RequiresSetup,
 			&user.UpdatedAt,
 			&user.CreatedAt)
 		if err != nil {

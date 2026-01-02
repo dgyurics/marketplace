@@ -40,7 +40,7 @@
     <div class="submit-section">
       <form @submit.prevent="handleSubmit">
         <div class="button-group">
-          <button type="submit" class="btn-full-width mt-15">Update Profile</button>
+          <button type="submit" class="btn-full-width mt-15" tabindex="0">Update Profile</button>
         </div>
       </form>
 

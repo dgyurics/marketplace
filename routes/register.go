@@ -94,10 +94,9 @@ func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request)
 
 	// Create the user
 	usr := types.User{
-		Email:         reqBody.Email,
-		Password:      reqBody.Password,
-		Role:          types.RoleUser,
-		RequiresSetup: false,
+		Email:    reqBody.Email,
+		Password: reqBody.Password,
+		Role:     types.RoleUser,
 	}
 	err = h.userService.CreateUser(r.Context(), &usr)
 	if err == types.ErrUniqueConstraintViolation {

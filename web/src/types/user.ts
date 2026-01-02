@@ -12,7 +12,6 @@ export interface UserRecord {
   id: string
   email: string
   role: Role
-  requires_setup?: boolean
   created_at: string
   updated_at: string
 }
@@ -20,5 +19,4 @@ export interface UserRecord {
 export interface AuthTokens {
   token: string
   refresh_token: string
-  requires_setup: boolean
 }

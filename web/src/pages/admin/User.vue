@@ -14,14 +14,13 @@ import { formatDate } from '@/utilities/dateFormat'
 
 const users = ref<UserRecord[]>([])
 
-const columns = ['id', 'email', 'role', 'requires_setup', 'created', 'updated']
+const columns = ['id', 'email', 'role', 'created', 'updated']
 
 const formattedUsers = computed(() =>
   users.value.map((user) => ({
     id: user.id,
     email: user.email,
     role: user.role,
-    requires_setup: user.requires_setup,
     created: formatDate(new Date(user.created_at)),
     updated: formatDate(new Date(user.updated_at)),
   }))

@@ -103,9 +103,8 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u.RespondWithJSON(w, http.StatusOK, map[string]interface{}{
-		"token":          accessToken,
-		"refresh_token":  refreshToken,
-		"requires_setup": usr.RequiresSetup,
+		"token":         accessToken,
+		"refresh_token": refreshToken,
 	})
 }
 
@@ -339,8 +338,8 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/users/login", h.guardLimit(h.Login, 5)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/refresh-token", h.limit(h.RefreshToken, 5, time.Hour)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/guest", h.limit(h.CreateGuestUser, 3, time.Hour)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users/change-password", h.secure(types.RoleUser)(h.ChangePassword)).Methods(http.MethodPut)
-	h.muxRouter.Handle("/users/change-email", h.secure(types.RoleAdmin)(h.ChangeEmail)).Methods(http.MethodPut)
+	h.muxRouter.Handle("/users/change-password", h.secure(types.RoleUser)(h.limit(h.ChangePassword, 5, time.Hour))).Methods(http.MethodPut)
+	h.muxRouter.Handle("/users/change-email", h.secure(types.RoleAdmin)(h.limit(h.ChangeEmail, 5, time.Hour))).Methods(http.MethodPut)
 	h.muxRouter.Handle("/users/logout", h.secure(types.RoleGuest)(h.Logout)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users", h.secure(types.RoleStaff)(h.GetAllUsers)).Methods(http.MethodGet)
 }
