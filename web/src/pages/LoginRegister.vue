@@ -2,15 +2,18 @@
   <div class="auth-container">
     <template v-if="authStore.hasMinimumRole('user')">
       <h2>You are logged in</h2>
-      <button class="profile-button" :tabindex="0" @click="goToProfile">Profile</button>
-      <button class="logout-button" :tabindex="0" @click="handleLogout">Logout</button>
-      <div v-if="authStore.hasMinimumRole('staff')">
-        <div class="button-group admin-buttons">
-          <button :tabindex="0" @click="goToCategories">Categories</button>
-          <button :tabindex="0" @click="goToProducts">Products</button>
-          <button :tabindex="0" @click="goToOrders">Orders</button>
-          <button :tabindex="0" @click="goToUsers">Users</button>
-          <button :tabindex="0" @click="goToShippingZones">Shipping</button>
+      <div>
+        <!-- FIXME make this a proper menu component -->
+        <div class="button-group menu">
+          <button :tabindex="0" @click="goToProfile">Profile</button>
+          <template v-if="authStore.hasMinimumRole('staff')">
+            <button :tabindex="0" @click="goToCategories">Categories</button>
+            <button :tabindex="0" @click="goToProducts">Products</button>
+            <button :tabindex="0" @click="goToOrders">Orders</button>
+            <button :tabindex="0" @click="goToUsers">Users</button>
+            <button :tabindex="0" @click="goToShippingZones">Shipping</button>
+          </template>
+          <button :tabindex="0" @click="handleLogout">Logout</button>
         </div>
       </div>
     </template>
@@ -84,9 +87,6 @@ const handleLogin = async () => {
     const authTokens = await apiLogin(email.value, password.value)
     authStore.setTokens(authTokens)
 
-    if (authTokens.requires_setup) {
-      router.push('/auth/update')
-    }
     // Clear email + password field after successful login
     email.value = ''
     password.value = ''
@@ -230,28 +230,15 @@ input:focus {
   gap: 8px;
 }
 
-/* Admin button group - vertical layout */
-.button-group.admin-buttons {
+.button-group.menu {
   flex-direction: column;
   align-items: center;
   max-width: 200px;
   margin: 30px auto 0;
 }
 
-.button-group.admin-buttons button {
+.button-group.menu button {
   width: 100%;
-}
-
-/* Single logout button */
-.logout-button,
-.profile-button {
-  width: 200px;
-  margin: 20px auto 0;
-  display: block;
-}
-
-.profile-button {
-  margin: 10px auto 0;
 }
 
 /* Error message */
