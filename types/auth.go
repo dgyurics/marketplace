@@ -3,10 +3,9 @@ package types
 import "time"
 
 type Credential struct {
-	Email            string `json:"email"`
-	Password         string `json:"password"`
-	ResetCode        string `json:"reset_code"`
-	RegistrationCode string `json:"registration_code"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	ResetCode string `json:"reset_code"`
 }
 
 type RefreshToken struct {

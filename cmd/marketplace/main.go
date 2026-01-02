@@ -94,7 +94,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewPasswordRoutes(services.Password, services.User, services.Email, services.Template, config.BaseURL, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, baseRouter),
 		routes.NewProductRoutes(services.Product, baseRouter),
-		routes.NewRegisterRoutes(services.Register, services.User, services.JWT, services.Refresh, baseRouter),
+		routes.NewRegisterRoutes(services.User, services.JWT, services.Refresh, services.Email, services.Template, config.BaseURL, baseRouter),
 		routes.NewTaxRoutes(services.Cart, services.Tax, baseRouter),
 		routes.NewUserRoutes(services.User, services.JWT, services.Refresh, config.Auth, baseRouter),
 		routes.NewLocaleRoutes(baseRouter),
@@ -124,7 +124,6 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	orderRepository := repositories.NewOrderRepository(db)
 	passwordRepository := repositories.NewPasswordRepository(db)
 	rateLimitRepository := repositories.NewRateLimitRepository(db)
-	registerRepository := repositories.NewRegisterRepository(db)
 	refreshTokenRepository := repositories.NewRefreshRepository(db)
 	taxRepository := repositories.NewTaxRepository(db)
 	imageRepository := repositories.NewImageRepository(db)
@@ -152,7 +151,6 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	imageService := services.NewImageService(httpClient, imageRepository, config.Image)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	rateLimitService := services.NewRateLimitService(rateLimitRepository)
-	registerService := services.NewRegisterService(registerRepository, emailService, templateService, config.BaseURL)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	jwtService := services.NewJWTService(config.JWT)
 	taxService := services.NewTaxService(taxRepository, config.Payment, httpClient)
@@ -167,7 +165,6 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		Image:     imageService,
 		Password:  passwordService,
 		RateLimit: rateLimitService,
-		Register:  registerService,
 		Refresh:   refreshService,
 		Payment:   paymentService,
 		Email:     emailService,
@@ -193,7 +190,6 @@ type servicesContainer struct {
 	Payment   services.PaymentService
 	Product   services.ProductService
 	RateLimit services.RateLimitService
-	Register  services.RegisterService
 	Refresh   services.RefreshService
 	Shipping  services.ShippingZoneService
 	Schedule  services.ScheduleService

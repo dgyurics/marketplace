@@ -24,6 +24,7 @@ func createUniqueTestUser(t *testing.T, userRepo UserRepository) *types.User {
 	user.Email = email
 	user.PasswordHash = "hashedpassword"
 	user.Role = types.RoleUser
+	user.Verified = true
 
 	// Insert the user into the database
 	err := userRepo.CreateUser(ctx, &user)

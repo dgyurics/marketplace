@@ -62,6 +62,7 @@ func (s *scheduleService) Start(ctx context.Context) {
 				s.removeExpiredPasswordResets(ctxTimeout)
 				cancel()
 			}
+			// TODO ExpiredRegistrationCodes
 		}
 	}
 }

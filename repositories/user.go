@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/dgyurics/marketplace/types"
 	"github.com/lib/pq"
@@ -12,9 +13,11 @@ type UserRepository interface {
 	// create
 	CreateUser(ctx context.Context, user *types.User) error
 	CreateGuest(ctx context.Context, user *types.User) error
+	CreateRegistrationCode(ctx context.Context, userID, code string, expires time.Time) error
 	// update
 	UpdateEmail(ctx context.Context, userID, newEmail string) (*types.User, error)
 	UpdatePassword(ctx context.Context, userID, newPasswordHash string) (*types.User, error)
+	ConfirmRegistrationCode(ctx context.Context, code string) error
 	// get
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	GetUserByID(ctx context.Context, userID string) (*types.User, error)
@@ -42,11 +45,11 @@ func (r *userRepository) CreateGuest(ctx context.Context, user *types.User) erro
 
 func (r *userRepository) CreateUser(ctx context.Context, user *types.User) error {
 	query := `
-		INSERT INTO users (id, email, password_hash, role)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO users (id, email, password_hash, role, verified)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, email, role, updated_at
 	`
-	err := r.db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash, user.Role).
+	err := r.db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash, user.Role, user.Verified).
 		Scan(&user.ID, &user.Email, &user.Role, &user.UpdatedAt)
 	if isUniqueViolation(err) {
 		return types.ErrUniqueConstraintViolation
@@ -157,7 +160,7 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*typ
 			role,
 			updated_at
 		FROM users
-		WHERE email = $1
+		WHERE email = $1 AND verified = true
 	`
 	err := r.db.QueryRowContext(ctx, query, email).
 		Scan(
@@ -242,4 +245,35 @@ func (r *userRepository) GetAllAdmins(ctx context.Context) ([]types.User, error)
 		return nil, err
 	}
 	return admins, nil
+}
+
+func (r *userRepository) CreateRegistrationCode(ctx context.Context, userID, code string, expires time.Time) error {
+	query := `
+		INSERT INTO registration_codes(user_id, code, expires_at)
+		VALUES ($1, $2, $3)
+	`
+	_, err := r.db.ExecContext(ctx, query, userID, code, expires)
+	return err
+}
+
+func (r *userRepository) ConfirmRegistrationCode(ctx context.Context, code string) error {
+	query := `
+		UPDATE users
+		SET verified = true, updated_at = NOW()
+		WHERE id = (
+			SELECT user_id
+			FROM registration_codes
+			WHERE code = $1 AND expires_at > NOW()
+		)
+	`
+	res, err := r.db.ExecContext(ctx, query, code)
+	if err != nil {
+		return err
+	}
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return types.ErrNotFound
+	}
+	return nil
 }

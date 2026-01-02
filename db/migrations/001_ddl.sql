@@ -62,18 +62,15 @@ CREATE TABLE IF NOT EXISTS images (
 );
 CREATE INDEX idx_images_source ON images(source);
 
-CREATE TABLE IF NOT EXISTS pending_users (
-    id BIGINT PRIMARY KEY,
-    email VARCHAR(255) NOT NULL,
-    code_hash TEXT NOT NULL,
-    used BOOLEAN DEFAULT FALSE NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+CREATE TABLE IF NOT EXISTS registration_codes (
+  code CHAR(6) PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
--- For quick look-ups by email
-CREATE INDEX idx_pending_users_email
-ON pending_users(email);
+-- For cleanup queries
+CREATE INDEX idx_registration_codes_expires ON registration_codes(expires_at);
 
 CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest', 'member', 'staff');
 
@@ -82,6 +79,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE,
     password_hash TEXT,
     role user_role_enum NOT NULL,
+    verified BOOLEAN NOT NULL DEFAULT false,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

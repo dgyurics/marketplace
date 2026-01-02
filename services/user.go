@@ -2,6 +2,10 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
+	"errors"
+	"math/big"
+	"time"
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
@@ -17,9 +21,11 @@ type UserService interface {
 	// CREATE
 	CreateUser(ctx context.Context, user *types.User) error
 	CreateGuest(ctx context.Context, user *types.User) error
+	CreateRegistrationCode(ctx context.Context, userID string) (string, error)
 	// UPDATE
 	UpdatePassword(ctx context.Context, curPass, newPass string) (*types.User, error)
 	UpdateEmail(ctx context.Context, newEmail string) (*types.User, error)
+	ConfirmRegistrationCode(ctx context.Context, code string) error
 	// GET
 	Login(ctx context.Context, credential *types.Credential) (*types.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
@@ -51,15 +57,34 @@ func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
 	}
 	user.PasswordHash = string(hashedPassword)
 
-	// TODO - check if user making request has an existing guest account
-	// if so, use that ID instead of generating a new one
-
 	userID, err := utilities.GenerateIDString()
 	if err != nil {
 		return err
 	}
 	user.ID = userID
 	return s.repo.CreateUser(ctx, user)
+}
+
+func (s *userService) CreateRegistrationCode(ctx context.Context, userID string) (string, error) {
+	// generate the code
+	code, err := generateCode()
+	if err != nil {
+		return "", err
+	}
+
+	// store the registration code with an expiry of 15 minutes
+	now := time.Now().UTC()
+	if err := s.repo.CreateRegistrationCode(ctx, userID, code, now.Add(15*time.Minute)); err != nil {
+		return "", err
+	}
+
+	return code, nil
+}
+
+// ConfirmRegistrationCode marks a user as verified if a valid registration code is provided
+// Returns an error if the registration code is invalid or expired
+func (s *userService) ConfirmRegistrationCode(ctx context.Context, code string) error {
+	return s.repo.ConfirmRegistrationCode(ctx, code)
 }
 
 func (s *userService) UpdateEmail(ctx context.Context, newEmail string) (*types.User, error) {
@@ -125,4 +150,21 @@ func (s *userService) GetAllUsers(ctx context.Context, page, limit int) ([]types
 
 func (s *userService) GetAllAdmins(ctx context.Context) ([]types.User, error) {
 	return s.repo.GetAllAdmins(ctx)
+}
+
+// Allowed characters for the registration code
+const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const codeLength = 6
+
+// GenerateCode creates a random 6-character alphanumeric code.
+func generateCode() (string, error) {
+	code := make([]byte, codeLength)
+	for i := range code {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			return "", errors.New("failed to generate code")
+		}
+		code[i] = charset[num.Int64()]
+	}
+	return string(code), nil
 }

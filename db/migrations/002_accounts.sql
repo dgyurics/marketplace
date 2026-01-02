@@ -1,1 +1,1 @@
-INSERT INTO users (id, email, password_hash, role) VALUES (114717860949983232, 'admin@marketplace.com', '$2a$10$foTM0ULLDB3KW1uhsCkTkesYQknpocAbMNT4Xfdp.vQ1C1U4HLfai', 'admin')
+INSERT INTO users (id, email, password_hash, role, verified) VALUES (114717860949983232, 'admin@marketplace.com', '$2a$10$foTM0ULLDB3KW1uhsCkTkesYQknpocAbMNT4Xfdp.vQ1C1U4HLfai', 'admin', true)
