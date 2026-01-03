@@ -12,7 +12,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -21,7 +21,7 @@ const email = ref('')
 
 onMounted(() => {
   // Get email from query parameters
-  email.value = route.query.email || ''
+  email.value = (route.query['email'] as string) || ''
 })
 </script>
 

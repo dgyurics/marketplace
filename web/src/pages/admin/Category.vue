@@ -27,17 +27,18 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import CategoryTile from '@/components/CategoryTile.vue'
 import { InputText, SelectInput } from '@/components/forms'
 import { getCategories, createCategory } from '@/services/api'
+import type { Category } from '@/types/category'
 
 const router = useRouter()
 
-const categories = ref([])
+const categories = ref<Category[]>([])
 const newCategory = ref({
   name: '',
   slug: '',
@@ -49,7 +50,7 @@ const parentCategoryOptions = computed(() =>
   categories.value.map((category) => ({ value: category.id, label: category.name }))
 )
 
-const goToDetail = (categoryId) => {
+const goToDetail = (categoryId: string) => {
   router.push(`/admin/categories/${categoryId}`)
 }
 
@@ -64,11 +65,18 @@ const fetchCategories = async () => {
 
 const handleSubmit = async () => {
   try {
-    const categoryData = {
+    const categoryData: Partial<Category> = {
       name: newCategory.value.name,
       slug: newCategory.value.slug,
-      parent_id: newCategory.value.parent_id || undefined,
-      description: newCategory.value.description || undefined,
+    }
+
+    // Only add optional fields if they have values
+    if (newCategory.value.parent_id) {
+      categoryData.parent_id = newCategory.value.parent_id
+    }
+
+    if (newCategory.value.description) {
+      categoryData.description = newCategory.value.description
     }
 
     await createCategory(categoryData)
