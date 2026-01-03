@@ -12,7 +12,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -26,11 +26,16 @@ const emailSent = ref(false)
 onMounted(async () => {
   try {
     // Get email from route parameters
-    email.value = route.params.email
+    email.value = route.params['email'] as string
     await passwordReset(email.value)
     emailSent.value = true
-  } catch (error) {
-    router.push(`/error?status=${error.response?.status || 500}`)
+  } catch (error: any) {
+    const status = error.response?.status
+    if (status === 404) {
+      emailSent.value = true
+    } else {
+      router.push(`/error?status=${status || 500}`)
+    }
   }
 })
 </script>

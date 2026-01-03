@@ -22,7 +22,6 @@ import Payment from '@/pages/Payment.vue'
 import Product from '@/pages/Product.vue'
 import ProductDetails from '@/pages/ProductDetail.vue'
 import Profile from '@/pages/Profile.vue'
-import Register from '@/pages/Register.vue'
 import RegisterConfirmation from '@/pages/RegisterConfirmation.vue'
 import ShippingAddress from '@/pages/ShippingAddress.vue'
 import Unsupported from '@/pages/Unsupported.vue'
@@ -33,11 +32,6 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
   const baseRoutes: RouteRecordRaw[] = [
     { path: '/', component: Home },
     { path: '/auth', component: LoginRegister },
-    {
-      path: '/auth/email/:email(.*)/registration-code/:registrationCode',
-      component: Register,
-      props: true,
-    },
     { path: '/auth/register-confirm', component: RegisterConfirmation },
     { path: '/cart', component: Cart },
     { path: '/error', component: Error },

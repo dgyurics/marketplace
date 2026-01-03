@@ -40,28 +40,27 @@ func NewPasswordRoutes(
 }
 
 func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
-	var credentials types.Credential
-	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
+	var reqBody struct {
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
 	}
 
-	if credentials.Email == "" || !isValidEmail(credentials.Email) {
+	if reqBody.Email == "" || !isValidEmail(reqBody.Email) {
 		u.RespondWithError(w, r, http.StatusBadRequest, "email required")
 		return
 	}
 
 	// Check if the user exists
-	usr, err := h.serviceUser.GetUserByEmail(r.Context(), credentials.Email)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+	usr, err := h.serviceUser.GetUserByEmail(r.Context(), reqBody.Email)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
-
-	// If user does not exist, respond with success to avoid email enumeration
-	if usr == nil {
-		slog.Warn("Password reset requested for non-existing email: ", "email", credentials.Email)
-		u.RespondSuccess(w)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 

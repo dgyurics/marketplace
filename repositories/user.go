@@ -148,8 +148,6 @@ func (r *userRepository) GetUserByID(ctx context.Context, userID string) (*types
 }
 
 // GetUserByEmail retrieves a user from the database by email
-// Returns nil, nil if no user is found
-// FIXME refactor to return types.ErrNotFound when no user is found
 func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*types.User, error) {
 	var user types.User
 	query := `
@@ -169,14 +167,13 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*typ
 			&user.PasswordHash,
 			&user.Role,
 			&user.UpdatedAt)
-
-	// FIXME better to return types.ErrNotFound
 	if err == sql.ErrNoRows {
-		return nil, nil // Return nil, nil when no user is found
+		return nil, types.ErrNotFound
 	}
 	if err != nil {
-		return nil, err // Return error only on actual DB issues
+		return nil, err
 	}
+
 	return &user, nil
 }
 

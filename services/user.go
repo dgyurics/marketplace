@@ -133,9 +133,6 @@ func (s *userService) verifyEmail(ctx context.Context, credentials *types.Creden
 	if err != nil {
 		return nil, err
 	}
-	if user == nil {
-		return nil, types.ErrNotFound
-	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
