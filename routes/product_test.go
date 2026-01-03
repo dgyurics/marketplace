@@ -59,8 +59,6 @@ func (m *MockProductService) RemoveProduct(ctx context.Context, id string) error
 	return args.Error(0)
 }
 
-// TODO rewrite tests to use actual endpoint
-
 func TestGetProductByID(t *testing.T) {
 	// Create a mock service
 	mockService := new(MockProductService)

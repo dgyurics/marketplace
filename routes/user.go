@@ -112,7 +112,6 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var requestBody struct {
 		RefreshToken string `json:"refresh_token"`
-		// UserID       string `json:"user_id"` // TODO
 	}
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
