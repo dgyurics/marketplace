@@ -1,6 +1,7 @@
 import type { NavigationGuardNext, RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
+import AcceptInvite from '@/pages/AcceptInvite.vue'
 import AdminCategories from '@/pages/admin/Category.vue'
 import AdminCategoryDetail from '@/pages/admin/CategoryDetail.vue'
 import AdminOrders from '@/pages/admin/Order.vue'
@@ -31,6 +32,7 @@ import { useAuthStore } from '@/store/auth'
 async function initRoutes(): Promise<RouteRecordRaw[]> {
   const baseRoutes: RouteRecordRaw[] = [
     { path: '/', component: Home },
+    { path: '/auth/accept-invite', component: AcceptInvite },
     { path: '/auth', component: LoginRegister },
     { path: '/auth/register-confirm', component: RegisterConfirmation },
     { path: '/cart', component: Cart },

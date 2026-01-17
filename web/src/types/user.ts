@@ -1,5 +1,12 @@
 export type Role = 'admin' | 'user' | 'guest' | 'staff' | 'member'
 
+export enum AuthenticatedRole {
+  ADMIN = 'admin',
+  USER = 'user',
+  STAFF = 'staff',
+  MEMBER = 'member',
+}
+
 export interface JwtUser {
   user_id: string
   email: string

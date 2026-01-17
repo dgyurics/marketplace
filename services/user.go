@@ -21,11 +21,11 @@ type UserService interface {
 	// CREATE
 	CreateUser(ctx context.Context, user *types.User) error
 	CreateGuest(ctx context.Context, user *types.User) error
-	CreateRegistrationCode(ctx context.Context, userID string) (string, error)
+	CreateRegistrationCode(ctx context.Context, userID string, expiry time.Time) (string, error)
 	// UPDATE
 	UpdatePassword(ctx context.Context, curPass, newPass string) (*types.User, error)
 	UpdateEmail(ctx context.Context, newEmail string) (*types.User, error)
-	ConfirmRegistrationCode(ctx context.Context, code string) error
+	ConfirmRegistrationCode(ctx context.Context, code string) (*types.User, error)
 	// GET
 	Login(ctx context.Context, credential *types.Credential) (*types.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
@@ -65,16 +65,15 @@ func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
 	return s.repo.CreateUser(ctx, user)
 }
 
-func (s *userService) CreateRegistrationCode(ctx context.Context, userID string) (string, error) {
+func (s *userService) CreateRegistrationCode(ctx context.Context, userID string, expiry time.Time) (string, error) {
 	// generate the code
 	code, err := generateCode()
 	if err != nil {
 		return "", err
 	}
 
-	// store the registration code with an expiry of 15 minutes
-	now := time.Now().UTC()
-	if err := s.repo.CreateRegistrationCode(ctx, userID, code, now.Add(15*time.Minute)); err != nil {
+	// store the registration code
+	if err := s.repo.CreateRegistrationCode(ctx, userID, code, expiry); err != nil {
 		return "", err
 	}
 
@@ -83,7 +82,7 @@ func (s *userService) CreateRegistrationCode(ctx context.Context, userID string)
 
 // ConfirmRegistrationCode marks a user as verified if a valid registration code is provided
 // Returns an error if the registration code is invalid or expired
-func (s *userService) ConfirmRegistrationCode(ctx context.Context, code string) error {
+func (s *userService) ConfirmRegistrationCode(ctx context.Context, code string) (*types.User, error) {
 	return s.repo.ConfirmRegistrationCode(ctx, code)
 }
 

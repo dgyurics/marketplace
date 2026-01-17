@@ -20,6 +20,7 @@ import type {
   Locale,
   ShippingZone,
   ExcludedShippingZone,
+  AuthenticatedRole,
 } from '@/types'
 
 const apiClient = axios.create({
@@ -77,6 +78,18 @@ export const register = async (email: string, password: string): Promise<void> =
 export const registerConfirm = async (registrationCode: string): Promise<AuthTokens> => {
   const response = await apiClient.post('/register/confirm', {
     registration_code: registrationCode,
+  })
+  return response.data
+}
+
+// used to complete invite registration with new password
+export const registerInviteConfirm = async (
+  registrationCode: string,
+  password: string
+): Promise<AuthTokens> => {
+  const response = await apiClient.post('/register/invite/confirm', {
+    registration_code: registrationCode,
+    password,
   })
   return response.data
 }
@@ -241,6 +254,11 @@ export const getUsers = async (page: number = 1, limit: number = 50): Promise<Us
   params.append('limit', limit.toString())
 
   const response = await apiClient.get(`/users?${params}`)
+  return response.data
+}
+
+export const inviteUser = async (email: string, role: AuthenticatedRole): Promise<void> => {
+  const response = await apiClient.post('/register/invite', { email, role })
   return response.data
 }
 

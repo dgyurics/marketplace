@@ -17,7 +17,7 @@ type UserRepository interface {
 	// update
 	UpdateEmail(ctx context.Context, userID, newEmail string) (*types.User, error)
 	UpdatePassword(ctx context.Context, userID, newPasswordHash string) (*types.User, error)
-	ConfirmRegistrationCode(ctx context.Context, code string) error
+	ConfirmRegistrationCode(ctx context.Context, code string) (*types.User, error)
 	// get
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	GetUserByID(ctx context.Context, userID string) (*types.User, error)
@@ -253,7 +253,8 @@ func (r *userRepository) CreateRegistrationCode(ctx context.Context, userID, cod
 	return err
 }
 
-func (r *userRepository) ConfirmRegistrationCode(ctx context.Context, code string) error {
+func (r *userRepository) ConfirmRegistrationCode(ctx context.Context, code string) (*types.User, error) {
+	var usr types.User
 	query := `
 		UPDATE users
 		SET verified = true, updated_at = NOW()
@@ -262,15 +263,14 @@ func (r *userRepository) ConfirmRegistrationCode(ctx context.Context, code strin
 			FROM registration_codes
 			WHERE code = $1 AND expires_at > NOW()
 		)
+		RETURNING id, email, role
 	`
-	res, err := r.db.ExecContext(ctx, query, code)
+	err := r.db.QueryRowContext(ctx, query, code).Scan(&usr.ID, &usr.Email, &usr.Role)
+	if err == sql.ErrNoRows {
+		return nil, types.ErrNotFound
+	}
 	if err != nil {
-		return err
+		return nil, err
 	}
-	// lib/pq always returns nil error for RowsAffected()
-	rows, _ := res.RowsAffected()
-	if rows == 0 {
-		return types.ErrNotFound
-	}
-	return nil
+	return &usr, nil
 }
