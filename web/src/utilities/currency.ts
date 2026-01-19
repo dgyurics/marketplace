@@ -75,6 +75,15 @@ export function formatCurrency(
 }
 
 /**
+ * Same as formatPrice, but with special handling for zero amounts
+ * @param amount - Amount in minor units (e.g., cents)
+ * @returns "free" if amount is zero, otherwise formatted price (e.g., "$1,234.56")
+ */
+export function displayPrice(amount: number): string {
+  return amount === 0 ? 'free' : formatPrice(amount)
+}
+
+/**
  * Simple currency formatting with symbol (most common use case)
  * @param amount - Amount in minor units (e.g., cents)
  * @returns Formatted price with currency symbol (e.g., "$1,234.56")

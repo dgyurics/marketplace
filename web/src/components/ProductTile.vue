@@ -12,7 +12,7 @@
     <div class="product-info">
       <h3 class="product-title">{{ product.name }}</h3>
       <p class="product-summary">{{ product.summary }}</p>
-      <p class="product-price">{{ formatPrice(product.price) }}</p>
+      <p class="product-price">{{ displayPrice(product.price) }}</p>
     </div>
   </div>
 </template>
@@ -22,7 +22,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type { Product } from '@/types'
-import { formatPrice } from '@/utilities/currency'
+import { displayPrice } from '@/utilities/currency'
 
 const props = defineProps<{ product: Product }>()
 
@@ -99,6 +99,7 @@ const imgURL = computed(() => props.product.images.find((img) => img.type === 'h
   color: #222;
   margin: 5px 0;
   letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .product-summary {

@@ -18,7 +18,7 @@
         <h1 class="product-title">{{ product.name }}</h1>
         <p class="product-summary">{{ product.summary }}</p>
         <p class="product-description" v-html="product.description"></p>
-        <p class="product-price">{{ formatPrice(product.price) }}</p>
+        <p class="product-price">{{ displayPrice(product.price) }}</p>
       </div>
 
       <div class="product-actions">
@@ -65,7 +65,7 @@ import { getProductById, createGuestUser as apiCreateGuestUser } from '@/service
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
 import type { AuthTokens, Product } from '@/types'
-import { formatPrice } from '@/utilities/currency'
+import { displayPrice } from '@/utilities/currency'
 
 // @ts-ignore
 import 'swiper/css'
@@ -259,6 +259,7 @@ const addToCart = async () => {
 
 .product-price {
   margin-bottom: 30px;
+  text-transform: uppercase;
 }
 
 .product-title,
