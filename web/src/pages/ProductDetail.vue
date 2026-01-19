@@ -22,7 +22,7 @@
       </div>
 
       <div class="product-actions">
-        <div v-if="product.details" class="product-details">
+        <div v-if="Object.entries(product.details).length > 0" class="product-details">
           <h3>Details</h3>
           <div class="details">
             <p v-for="(value, key) in product.details" :key="key">
@@ -204,7 +204,7 @@ const addToCart = async () => {
 .product-detail-bottom {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   width: 100%;
   max-width: 1200px;
   padding: 0 80px;
@@ -225,6 +225,7 @@ const addToCart = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 20px;
 }
 
