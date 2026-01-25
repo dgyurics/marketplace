@@ -97,6 +97,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewRegisterRoutes(services.User, services.JWT, services.Refresh, services.Email, services.Template, config.BaseURL, baseRouter),
 		routes.NewTaxRoutes(services.Cart, services.Tax, baseRouter),
 		routes.NewUserRoutes(services.User, services.JWT, services.Refresh, config.Auth, baseRouter),
+		routes.NewClaimRoutes(services.Claim, baseRouter),
 		routes.NewLocaleRoutes(baseRouter),
 	)
 
@@ -128,6 +129,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	taxRepository := repositories.NewTaxRepository(db)
 	imageRepository := repositories.NewImageRepository(db)
 	shippingZoneRepository := repositories.NewShippingZoneRepository(db)
+	claimRepository := repositories.NewClaimRepository(db)
 
 	// create http client required by certain services
 	httpClient := utilities.NewDefaultHTTPClient(10 * time.Second) // TODO make this configurable
@@ -154,11 +156,13 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	jwtService := services.NewJWTService(config.JWT)
 	taxService := services.NewTaxService(taxRepository, config.Payment, httpClient)
+	claimService := services.NewClaimService(claimRepository)
 
 	return servicesContainer{
 		Address:   addressService,
 		User:      userService,
 		Category:  categoryService,
+		Claim:     claimService,
 		Product:   productService,
 		Cart:      cartService,
 		Order:     orderService,
@@ -182,6 +186,7 @@ type servicesContainer struct {
 	User      services.UserService
 	Cart      services.CartService
 	Category  services.CategoryService
+	Claim     services.ClaimService
 	Email     services.EmailService
 	Image     services.ImageService
 	JWT       services.JWTService
