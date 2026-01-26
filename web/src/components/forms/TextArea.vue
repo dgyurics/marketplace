@@ -1,6 +1,11 @@
 <template>
   <div class="input-container">
-    <textarea v-model="value" :required="required || false" class="input-field"></textarea>
+    <textarea
+      v-model="value"
+      :required="required || false"
+      class="input-field"
+      :class="{ 'input-field--not-resizable': resizable === false }"
+    ></textarea>
     <span v-if="label" class="input-label" :class="{ 'input-label--optional': !required }">
       {{ label }}
     </span>
@@ -14,6 +19,7 @@ const props = defineProps<{
   modelValue: string
   label?: string
   required?: boolean
+  resizable?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -40,6 +46,10 @@ const value = computed({
   box-sizing: border-box;
   resize: vertical;
   min-height: 80px;
+}
+
+.input-field--not-resizable {
+  resize: none;
 }
 
 .input-label {
