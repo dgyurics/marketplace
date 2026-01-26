@@ -1,7 +1,7 @@
+export { default as Address } from './Address.vue'
 export { default as InputNumber } from './InputNumber.vue'
 export { default as InputText } from './InputText.vue'
 export { default as KeyValueEditor } from './KeyValueEditor.vue'
 export { default as Payment } from './Payment.vue'
 export { default as SelectInput } from './SelectInput.vue'
 export { default as TextArea } from './TextArea.vue'
-export { default as Address } from './Address.vue'

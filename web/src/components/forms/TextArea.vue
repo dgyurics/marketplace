@@ -3,6 +3,7 @@
     <textarea
       v-model="value"
       :required="required || false"
+      :disabled="disabled || false"
       class="input-field"
       :class="{ 'input-field--not-resizable': resizable === false }"
     ></textarea>
@@ -20,6 +21,7 @@ const props = defineProps<{
   label?: string
   required?: boolean
   resizable?: boolean
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -50,6 +52,12 @@ const value = computed({
 
 .input-field--not-resizable {
   resize: none;
+}
+
+.input-field:disabled {
+  background-color: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
 }
 
 .input-label {

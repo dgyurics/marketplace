@@ -11,6 +11,7 @@ import AdminProductEdit from '@/pages/admin/ProductDetail.vue'
 import AdminShippingZones from '@/pages/admin/ShippingZone.vue'
 import AdminUsers from '@/pages/admin/User.vue'
 import Cart from '@/pages/Cart.vue'
+import ClaimItem from '@/pages/ClaimItem.vue'
 import Error from '@/pages/Error.vue'
 import Home from '@/pages/Home.vue'
 import LoginRegister from '@/pages/LoginRegister.vue'
@@ -36,6 +37,7 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/auth', component: LoginRegister },
     { path: '/auth/register-confirm', component: RegisterConfirmation },
     { path: '/cart', component: Cart },
+    { path: '/claim/:id', component: ClaimItem, beforeEnter: requireMember },
     { path: '/error', component: Error },
     { path: '/not-found', component: NotFound },
     { path: '/products/:id', component: ProductDetails, props: true },
@@ -108,6 +110,15 @@ function requireUser(
   next: NavigationGuardNext
 ) {
   useAuthStore().hasMinimumRole('user') ? next() : next('/')
+}
+
+// Member route guard
+function requireMember(
+  _to: RouteLocationNormalized,
+  _from: RouteLocationNormalized,
+  next: NavigationGuardNext
+) {
+  useAuthStore().hasMinimumRole('member') ? next() : next('/')
 }
 
 // Export function to create router (to be called after Pinia is initialized)

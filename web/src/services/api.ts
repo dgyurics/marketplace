@@ -377,3 +377,10 @@ export const getExcludedShippingZones = async (): Promise<ExcludedShippingZone[]
 export const removeExcludedShippingZone = async (zoneId: string): Promise<void> => {
   await apiClient.delete(`/shipping-zones/excluded/${zoneId}`)
 }
+
+export const claimItem = async (productId: string, pickupNotes: string): Promise<void> => {
+  const response = await apiClient.post(`/claims/items/${productId}`, {
+    pickup_notes: pickupNotes,
+  })
+  return response.data
+}

@@ -32,21 +32,34 @@
         </div>
         <div>
           <button
+            v-if="isFreeItem"
             class="btn-lg"
-            :disabled="isOutOfStock || hasReachedCartLimit"
+            :disabled="isOutOfStock || !canClaimItem"
             :tabindex="0"
-            @click="addToCart"
+            @click="goToClaim"
           >
-            <span v-if="!addedToCart && !isOutOfStock">Add to Cart</span>
-            <span v-else-if="isOutOfStock">Out of Stock</span>
-            <span v-else class="checkmark-animation">&#10003;</span>
+            <span v-if="!canClaimItem">Member Item</span>
+            <span v-else-if="!isOutOfStock">Claim Item</span>
+            <span v-else>Out of Stock</span>
           </button>
-          <p v-if="showLowStockWarning" class="low-stock-warning">
-            Only {{ product.inventory }} left in stock
-          </p>
-          <p v-else-if="hasReachedCartLimit" class="limit-reached-warning">
-            Limit {{ product.cart_limit }} per customer
-          </p>
+          <template v-else>
+            <button
+              class="btn-lg"
+              :disabled="isOutOfStock || hasReachedCartLimit"
+              :tabindex="0"
+              @click="addToCart"
+            >
+              <span v-if="!addedToCart && !isOutOfStock">Add to Cart</span>
+              <span v-else-if="isOutOfStock">Out of Stock</span>
+              <span v-else class="checkmark-animation">&#10003;</span>
+            </button>
+            <p v-if="showLowStockWarning" class="low-stock-warning">
+              Only {{ product.inventory }} left in stock
+            </p>
+            <p v-else-if="hasReachedCartLimit" class="limit-reached-warning">
+              Limit {{ product.cart_limit }} per customer
+            </p>
+          </template>
         </div>
       </div>
     </div>
@@ -59,7 +72,7 @@ import { storeToRefs } from 'pinia'
 import { Navigation, Pagination } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { ref, onMounted, computed, reactive } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { getProductById, createGuestUser as apiCreateGuestUser } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
@@ -75,6 +88,7 @@ import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 
 const route = useRoute()
+const router = useRouter()
 
 const authStore = useAuthStore()
 const { isAuthenticated } = storeToRefs(authStore)
@@ -109,6 +123,8 @@ const isOutOfStock = computed(() => currentQuantityInCart.value >= product.inven
 const showLowStockWarning = computed(
   () => isLowStock.value && !isOutOfStock.value && !hasReachedCartLimit.value
 )
+const isFreeItem = computed(() => product.price === 0)
+const canClaimItem = computed(() => isAuthenticated.value && authStore.hasMinimumRole('member'))
 
 onMounted(async () => {
   try {
@@ -139,6 +155,10 @@ const addToCart = async () => {
       product.inventory = 0 // Mark as out of stock
     }
   }
+}
+
+const goToClaim = () => {
+  router.push(`/claim/${product.id}`)
 }
 </script>
 
