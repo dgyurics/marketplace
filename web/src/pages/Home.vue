@@ -11,36 +11,98 @@
         </div>
       </div>
     </div>
+    <div class="product-section">
+      <div class="product-grid">
+        <ProductTile v-for="product in products" :key="product.id" :product="product" />
+      </div>
+      <IntersectionTrigger @intersect="fetchProducts" />
+    </div>
   </div>
 </template>
 
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+
+import IntersectionTrigger from '@/components/IntersectionTrigger.vue'
+import ProductTile from '@/components/ProductTile.vue'
+import { getProducts } from '@/services/api'
+import type { Product, ProductFilters } from '@/types'
+
+const products = ref<Product[]>([])
+const page = ref(1)
+const hasMore = ref(true)
+const isLoading = ref(false)
+
+const fetchProducts = async () => {
+  if (isLoading.value || !hasMore.value) return
+  isLoading.value = true
+
+  try {
+    const filters: ProductFilters = {
+      page: page.value,
+      limit: 9,
+      sortBy: 'newest',
+    }
+
+    const response = await getProducts(filters)
+    if (response.length === 0) {
+      hasMore.value = false
+    } else {
+      products.value.push(...response)
+      page.value += 1
+    }
+  } catch (error) {
+    console.error('Error fetching products:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchProducts()
+})
+</script>
+
 <style scoped>
 .home-container {
-  position: fixed;
-  top: 0;
-  left: 0;
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: #000;
-  overflow: hidden;
-  z-index: 1;
+  padding: 10px;
+  box-sizing: border-box;
 }
 
 .feature-container {
-  position: fixed;
-  top: 0;
-  left: 0;
   width: 100vw;
-  height: 100vh;
-  z-index: -1;
+  height: calc(50vh - 10px);
   overflow: hidden;
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  background-color: #000;
+  border-radius: 12px;
+}
+
+.product-section {
+  width: 100vw;
+  min-height: 50vh;
+  background-color: #fff;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  text-align: center;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  font-family: 'Open Sans', sans-serif;
+  margin-top: 20px;
 }
 
 .feature-image {
