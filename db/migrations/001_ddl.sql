@@ -62,16 +62,6 @@ CREATE TABLE IF NOT EXISTS images (
 );
 CREATE INDEX idx_images_source ON images(source);
 
-CREATE TABLE IF NOT EXISTS registration_codes (
-  code CHAR(6) PRIMARY KEY,
-  user_id BIGINT NOT NULL,
-  expires_at TIMESTAMP NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-);
--- For cleanup queries
-CREATE INDEX idx_registration_codes_expires ON registration_codes(expires_at);
-
 CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest', 'member', 'staff');
 
 CREATE TABLE IF NOT EXISTS users (
@@ -83,6 +73,16 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS registration_codes (
+  code CHAR(6) PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+-- For cleanup queries
+CREATE INDEX idx_registration_codes_expires ON registration_codes(expires_at);
 
 CREATE OR REPLACE VIEW v_products AS
 SELECT
