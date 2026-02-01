@@ -23,7 +23,6 @@ type ImageService interface {
 	StoreImage(productID string, file io.Reader, filename string) (string, error)
 	CreateImageURLs(productID, filename string, imgType ...types.ImageType) []string
 	CreateImageRecord(ctx context.Context, image *types.Image) error
-	ProductExists(ctx context.Context, productID string) (bool, error) // TODO move to product service
 	RemoveBackground(ctx context.Context, filePath, filename string) (string, error)
 	RemoveImage(ctx context.Context, id string) error
 	PromoteImage(ctx context.Context, id string) error
@@ -49,15 +48,6 @@ func NewImageService(HttpClient utilities.HTTPClient, repo repositories.ImageRep
 		baseURLRemBg:   config.BaseURLRembg,
 		imgDir:         config.ImageUploadPath,
 	}
-}
-
-func (s *imageService) ProductExists(ctx context.Context, productID string) (bool, error) {
-	// TODO verify productID is number
-	exists, err := s.repo.ProductExists(ctx, productID)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
 }
 
 // mkdir creates a directory for the image file, returning the full path to the file

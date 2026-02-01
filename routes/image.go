@@ -19,13 +19,15 @@ import (
 
 type ImageRoutes struct {
 	router
-	imageService services.ImageService
+	imageService   services.ImageService
+	productService services.ProductService
 }
 
-func NewImageRoutes(imageService services.ImageService, router router) *ImageRoutes {
+func NewImageRoutes(imageService services.ImageService, productService services.ProductService, router router) *ImageRoutes {
 	return &ImageRoutes{
-		router:       router,
-		imageService: imageService,
+		router:         router,
+		imageService:   imageService,
+		productService: productService,
 	}
 }
 
@@ -56,14 +58,13 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify product exists
-	// FIXME: move this to product service
-	exists, err := h.imageService.ProductExists(r.Context(), productID)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+	_, err := h.productService.GetProductByID(r.Context(), productID)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, "product not found")
 		return
 	}
-	if !exists {
-		u.RespondWithError(w, r, http.StatusNotFound, "product not found")
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
