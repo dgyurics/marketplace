@@ -16,7 +16,7 @@
           <input
             ref="fileInput"
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff"
+            accept="image/jpeg,image/png"
             class="file-input"
             :tabindex="0"
             @change="handleFileSelect"
@@ -181,7 +181,7 @@ const getErrorMessage = (error: unknown) => {
     case 413:
       return 'File too large. Choose a smaller image'
     case 415:
-      return 'Unsupported file format. Use JPEG, PNG, WebP, GIF, BMP, or TIFF'
+      return 'Unsupported file format. Use JPG or PNG'
     default:
       return 'Something went wrong'
   }

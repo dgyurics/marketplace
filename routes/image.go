@@ -47,7 +47,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 
 	// Parse the multipart form file
 	if err := r.ParseMultipartForm(30 << 20); err != nil { // 30 MB limit
-		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		u.RespondWithError(w, r, http.StatusRequestEntityTooLarge, err.Error())
 		return
 	}
 

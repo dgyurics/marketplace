@@ -139,7 +139,10 @@ func (s *imageService) IsSupportedImage(file io.Reader) (bool, error) {
 // isSupportedContentType checks if the content type is one of the supported image formats
 func isSupportedContentType(contentType string) bool {
 	switch contentType {
-	case "image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp", "image/tiff":
+	// "image/heic" <- HEIC support disabled for now
+	// "image/webp" <- WEBP support disabled for now
+	// "image/gif" <- GIF support disabled for now
+	case "image/jpeg", "image/png":
 		return true
 	default:
 		return false
