@@ -182,6 +182,8 @@ const getErrorMessage = (error: unknown) => {
       return 'File too large. Choose a smaller image'
     case 415:
       return 'Unsupported file format. Use JPG or PNG'
+    case 422:
+      return 'Unprocessable file. Resolution too high'
     default:
       return 'Something went wrong'
   }

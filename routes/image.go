@@ -2,6 +2,10 @@ package routes
 
 import (
 	"context"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
+	"io"
 	"net/http"
 	"path/filepath"
 
@@ -70,6 +74,24 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
+
+	// Ensure image resolution does not exceed img proxy limit (200 megapixels)
+	res, err := getResolution(file)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, "error getting image resolution")
+		return
+	}
+	slog.Debug("Image resolution", "pixels", res)
+	if res > 200_000_000 {
+		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "image resolution too high")
+		return
+	}
+
+	// Reset file reader to the beginning after reading for resolution
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, "error resetting file reader")
+		return
+	}
 
 	// Parse the multipart form for image type (hero, thumbnail, gallery)
 	imageType := types.ParseImageType(r.FormValue(formKeyType))
@@ -192,6 +214,15 @@ func (h *ImageRoutes) PromoteImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u.RespondSuccess(w)
+}
+
+func getResolution(r io.Reader) (int, error) {
+	//config, format, err := image.DecodeConfig(r)
+	config, _, err := image.DecodeConfig(r)
+	if err != nil {
+		return 0, err
+	}
+	return config.Width * config.Height, nil
 }
 
 func (h *ImageRoutes) RegisterRoutes() {
