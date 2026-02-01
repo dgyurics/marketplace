@@ -21,7 +21,6 @@ import (
 
 type ImageService interface {
 	StoreImage(productID string, file io.Reader, filename string) (string, error)
-	IsSupportedImage(file io.Reader) (bool, error)
 	CreateImageURLs(productID, filename string, imgType ...types.ImageType) []string
 	CreateImageRecord(ctx context.Context, image *types.Image) error
 	ProductExists(ctx context.Context, productID string) (bool, error) // TODO move to product service
@@ -92,61 +91,6 @@ func (s *imageService) StoreImage(productID string, file io.Reader, filename str
 	}
 
 	return filePath, nil
-}
-
-func (s *imageService) IsSupportedImage(file io.Reader) (bool, error) {
-	// Read the first 512 bytes to check the file type
-	buff := make([]byte, 512)
-	if _, err := file.Read(buff); err != nil {
-		return false, err
-	}
-
-	// Reset the read pointer
-	if seeker, ok := file.(io.Seeker); ok {
-		if _, err := seeker.Seek(0, io.SeekStart); err != nil {
-			return false, err
-		}
-	}
-
-	// Check for HEIC signature first (since http.DetectContentType doesn't detect it well)
-	// rembg does not support HEIC, so we can skip it for now
-	// if isHEIC(buff) {
-	// 	return true, nil
-	// }
-
-	// Detect content type
-	contentType := http.DetectContentType(buff) // This will return a valid MIME type based on the first 512 bytes
-	return isSupportedContentType(contentType), nil
-}
-
-// isHEIC checks if the file is a HEIC image by looking at the file signature
-// func isHEIC(buff []byte) bool {
-// 	if len(buff) < 12 {
-// 		return false
-// 	}
-
-// 	// HEIC files start with specific byte patterns
-// 	// Check for "ftyp" at offset 4 and then HEIC brand codes
-// 	if string(buff[4:8]) == "ftyp" {
-// 		// Check for HEIC brand codes at offset 8
-// 		brand := string(buff[8:12])
-// 		return brand == "heic" || brand == "heix" || brand == "heim" || brand == "heis" || brand == "mif1"
-// 	}
-
-// 	return false
-// }
-
-// isSupportedContentType checks if the content type is one of the supported image formats
-func isSupportedContentType(contentType string) bool {
-	switch contentType {
-	// "image/heic" <- HEIC support disabled for now
-	// "image/webp" <- WEBP support disabled for now
-	// "image/gif" <- GIF support disabled for now
-	case "image/jpeg", "image/png":
-		return true
-	default:
-		return false
-	}
 }
 
 func (s *imageService) CreateImageRecord(ctx context.Context, image *types.Image) error {

@@ -76,7 +76,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	// Ensure image resolution does not exceed img proxy limit (200 megapixels)
-	res, err := getResolution(file)
+	res, format, err := getImageInfo(file)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, "error getting image resolution")
 		return
@@ -86,24 +86,14 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "image resolution too high")
 		return
 	}
+	if !isSupportedFormat(format) {
+		u.RespondWithError(w, r, http.StatusUnsupportedMediaType, "unsupported image format")
+		return
+	}
 
-	// Reset file reader to the beginning after reading for resolution
+	// Reset file reader to the beginning after reading
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, "error resetting file reader")
-		return
-	}
-
-	// Parse the multipart form for image type (hero, thumbnail, gallery)
-	imageType := types.ParseImageType(r.FormValue(formKeyType))
-
-	// Validate file type
-	supported, err := h.imageService.IsSupportedImage(file)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, "error checking image format")
-		return
-	}
-	if !supported {
-		u.RespondWithError(w, r, http.StatusUnsupportedMediaType, "unsupported image format")
 		return
 	}
 
@@ -114,11 +104,9 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract file extension from original filename
+	// Construct the filename with the original file extension
 	originalFilename := fileHeader.Filename
 	ext := filepath.Ext(originalFilename) // Gets extension like ".jpg" or ".png"
-
-	// Append extension to generated ID
 	filename := imgID + ext
 
 	// Store the image on disk
@@ -132,6 +120,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	// Generate signed URL(s) for the image
 	// Note: If the image type is "hero", we generate URLs for hero, gallery, and thumbnail
 	var urls []string
+	imageType := types.ParseImageType(r.FormValue(formKeyType))
 	if imageType == types.Hero {
 		urls = h.imageService.CreateImageURLs(productID, filename, types.Hero, types.Gallery, types.Thumbnail)
 	} else {
@@ -216,13 +205,27 @@ func (h *ImageRoutes) PromoteImage(w http.ResponseWriter, r *http.Request) {
 	u.RespondSuccess(w)
 }
 
-func getResolution(r io.Reader) (int, error) {
-	//config, format, err := image.DecodeConfig(r)
-	config, _, err := image.DecodeConfig(r)
+// getImageInfo returns the total pixel count and format of the image from the reader
+// e.g., for a jpeg image of 1920x1080, returns (2073600, "jpeg", nil)
+// e.g., for a png image of 800x600, returns (480000, "png", nil)
+func getImageInfo(r io.Reader) (int, string, error) {
+	config, format, err := image.DecodeConfig(r)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
-	return config.Width * config.Height, nil
+	return config.Width * config.Height, format, nil
+}
+
+func isSupportedFormat(format string) bool {
+	switch format {
+	// "heic" <- HEIC support disabled for now
+	// "webp" <- WEBP support disabled for now
+	// "gif" <- GIF support disabled for now
+	case "jpeg", "png":
+		return true
+	default:
+		return false
+	}
 }
 
 func (h *ImageRoutes) RegisterRoutes() {
