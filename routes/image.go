@@ -2,10 +2,12 @@ package routes
 
 import (
 	"context"
+	"fmt"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"path/filepath"
 
@@ -43,137 +45,179 @@ const (
 	formKeyAltText = "alt_text" // Form key for alt text
 )
 
-// UploadImage handles the image upload for a product
-// It verifies the product exists, checks the image format, stores the image on disk,
-// generates signed URLs, and creates image records in the database.
+// UploadImage uploads and processes an image for a product.
 //
-// The image can be of type "hero", "gallery", or "thumbnail".
-// The image is stored in a subdirectory named after the product ID.
+// Process:
+// 1. Validates product exists and image format/resolution
+// 2. Stores image to disk
+// 3. Optionally removes background (if remove_bg=true)
+// 4. Generates signed URLs and creates database records
 //
-// The image file is expected to be sent as a multipart form file with the key [image].
-// The image [type] can be specified in the form data, defaulting to "gallery" if not provided.
-// The [alt_text] can also be provided in the form data.
+// Request:
+//
+//	Form: multipart/form-data with "image" file field
+//	Query: remove_bg=true (optional, blocks until background removal completes)
+//	Fields: type (hero|gallery|thumbnail, default: gallery), alt_text (optional)
+//
+// Response: 201 Created with image path
 func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
-	productID := mux.Vars(r)["id"]                       // product ID from path parameter
-	removeBg := r.URL.Query().Get("remove_bg") == "true" // optional remove background flag
+	productID := mux.Vars(r)["id"]
+	removeBg := r.URL.Query().Get("remove_bg") == "true"
 
-	// Parse the multipart form file
-	if err := r.ParseMultipartForm(int64(h.config.MaxFileSizeBytes)); err != nil {
-		u.RespondWithError(w, r, http.StatusRequestEntityTooLarge, err.Error())
-		return
-	}
-
-	// Verify product exists
-	_, err := h.productService.GetProductByID(r.Context(), productID)
-	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, "product not found")
-		return
-	}
+	// Parse and validate request
+	file, fileHeader, err := h.parseAndValidateRequest(w, r)
 	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Retrieve the file from the form data
-	file, fileHeader, err := r.FormFile(formKeyImage)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error retrieving file from form data")
 		return
 	}
 	defer file.Close()
 
-	// Ensure image resolution does not exceed img proxy limit (200 megapixels)
-	res, format, err := getImageInfo(file)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, "error getting image resolution")
-		return
-	}
-	slog.Debug("Image resolution", "pixels", res)
-	if res > h.config.MaxMegapixels*1_000_000 {
-		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "image resolution too high")
-		return
-	}
-	if !isSupportedFormat(format) {
-		u.RespondWithError(w, r, http.StatusUnsupportedMediaType, "unsupported image format")
+	// Validate image
+	if err := h.validateImage(w, r, file); err != nil {
 		return
 	}
 
-	// Reset file reader to the beginning after reading
+	// Reset file reader
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, "error resetting file reader")
 		return
 	}
 
-	// Generate a unique ID for the file/image
+	// Store image
+	filename, imagePath, err := h.storeImage(w, r, productID, file, fileHeader)
+	if err != nil {
+		return
+	}
+
+	// Remove background if requested
+	if removeBg {
+		if err := h.removeBackground(w, r, productID, imagePath, filename); err != nil {
+			return
+		}
+	}
+
+	// Create image records
+	if err := h.createImageRecords(w, r, productID, filename); err != nil {
+		return
+	}
+
+	u.RespondWithJSON(w, http.StatusCreated, map[string]string{"path": imagePath})
+}
+
+func (h *ImageRoutes) parseAndValidateRequest(w http.ResponseWriter, r *http.Request) (multipart.File, *multipart.FileHeader, error) {
+	if err := r.ParseMultipartForm(int64(h.config.MaxFileSizeBytes)); err != nil {
+		u.RespondWithError(w, r, http.StatusRequestEntityTooLarge, err.Error())
+		return nil, nil, err
+	}
+
+	productID := mux.Vars(r)["id"]
+	_, err := h.productService.GetProductByID(r.Context(), productID)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, "product not found")
+		return nil, nil, err
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return nil, nil, err
+	}
+
+	file, fileHeader, err := r.FormFile(formKeyImage)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "error retrieving file from form data")
+		return nil, nil, err
+	}
+
+	return file, fileHeader, nil
+}
+
+func (h *ImageRoutes) validateImage(w http.ResponseWriter, r *http.Request, file io.Reader) error {
+	res, format, err := getImageInfo(file)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, "error getting image resolution")
+		return err
+	}
+
+	slog.Debug("Image resolution", "pixels", res)
+	if res > h.config.MaxMegapixels*1_000_000 {
+		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "image resolution too high")
+		return fmt.Errorf("resolution too high")
+	}
+
+	if !isSupportedFormat(format) {
+		u.RespondWithError(w, r, http.StatusUnsupportedMediaType, "unsupported image format")
+		return fmt.Errorf("unsupported format: %s", format)
+	}
+
+	return nil
+}
+
+func (h *ImageRoutes) storeImage(w http.ResponseWriter, r *http.Request, productID string, file io.Reader, fileHeader *multipart.FileHeader) (string, string, error) {
 	imgID, err := u.GenerateIDString()
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, "error generating image ID")
-		return
+		return "", "", err
 	}
 
-	// Construct the filename with the original file extension
-	originalFilename := fileHeader.Filename
-	ext := filepath.Ext(originalFilename) // Gets extension like ".jpg" or ".png"
-	filename := imgID + ext
-
-	// Store the image on disk
+	filename := imgID + filepath.Ext(fileHeader.Filename)
 	imagePath, err := h.imageService.StoreImage(productID, file, filename)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, "error storing image")
-		return
+		return "", "", err
 	}
-	slog.Debug("Image uploaded successfully", "path", imagePath)
 
-	// Generate signed URL(s) for the image
-	// Note: If the image type is "hero", we generate URLs for hero, gallery, and thumbnail
-	var urls []string
+	slog.Debug("Image stored successfully", "path", imagePath)
+	return filename, imagePath, nil
+}
+
+func (h *ImageRoutes) removeBackground(w http.ResponseWriter, r *http.Request, productID, imagePath, filename string) error {
+	bgCtx := context.Background()
+	newImagePath, err := h.imageService.RemoveBackground(bgCtx, imagePath, filename)
+	if err != nil {
+		slog.Error("error removing background", "productID", productID, "imgPath", imagePath, "error", err)
+		u.RespondWithError(w, r, http.StatusInternalServerError, "error removing background")
+		return err
+	}
+
+	slog.Debug("Background removed successfully", "newPath", newImagePath)
+	return nil
+}
+
+func (h *ImageRoutes) createImageRecords(w http.ResponseWriter, r *http.Request, productID, filename string) error {
 	imageType := types.ParseImageType(r.FormValue(formKeyType))
-	if imageType == types.Hero {
-		urls = h.imageService.CreateImageURLs(productID, filename, types.Hero, types.Gallery, types.Thumbnail)
-	} else {
-		urls = h.imageService.CreateImageURLs(productID, filename, imageType)
-	}
-	slog.Debug("Generated signed URL", "url", urls)
+	imageTypes := h.getImageTypes(imageType)
+	urls := h.imageService.CreateImageURLs(productID, filename, imageTypes...)
 
-	// Create the image record(s)
-	typs := []types.ImageType{imageType, types.Gallery, types.Thumbnail}
+	slog.Debug("Generated signed URLs", "count", len(urls))
+
+	typesToCreate := []types.ImageType{imageType, types.Gallery, types.Thumbnail}
 	for idx, url := range urls {
 		id, err := u.GenerateIDString()
 		if err != nil {
 			u.RespondWithError(w, r, http.StatusInternalServerError, "error generating image record ID")
-			return
+			return err
 		}
+
 		if err := h.imageService.CreateImageRecord(r.Context(), &types.Image{
 			ID:        id,
 			ProductID: productID,
 			URL:       url,
-			Type:      typs[idx],
+			Type:      typesToCreate[idx],
 			AltText:   altTextFromForm(r),
 			Source:    filename,
 		}); err != nil {
-			slog.ErrorContext(r.Context(), "error creating image record", "productID", productID, "type", imageType, "error", err)
+			slog.Error("error creating image record", "productID", productID, "type", typesToCreate[idx], "error", err)
 			u.RespondWithError(w, r, http.StatusInternalServerError, "error creating image record")
-			return
+			return err
 		}
 	}
 
-	u.RespondWithJSON(w, http.StatusCreated, map[string]string{
-		"path": imagePath,
-	})
+	return nil
+}
 
-	// If background removal requested, do it asynchronously after response is sent
-	if removeBg {
-		go func() {
-			// Clone the context to prevent it from being canceled when the request completes
-			bgCtx := context.Background()
-			newImagePath, err := h.imageService.RemoveBackground(bgCtx, imagePath, filename)
-			if err != nil {
-				slog.ErrorContext(bgCtx, "error removing background", "productID", productID, "imgPath", imagePath, "error", err)
-				return
-			}
-			slog.Debug("Background removed successfully", "newPath", newImagePath)
-		}()
+func (h *ImageRoutes) getImageTypes(imageType types.ImageType) []types.ImageType {
+	if imageType == types.Hero {
+		return []types.ImageType{types.Hero, types.Gallery, types.Thumbnail}
 	}
+	return []types.ImageType{imageType}
 }
 
 func altTextFromForm(r *http.Request) *string {
