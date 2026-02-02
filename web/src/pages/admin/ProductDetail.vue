@@ -186,19 +186,20 @@ const handleDelete = async () => {
   }
 }
 
-const handleImageUploadSuccess = async () => {
-  // Refresh product data to show new images
-  await fetchProduct()
+const handleImageUploadSuccess = async (images) => {
+  product.value.images.push(...images)
 }
 
-const handleImageDeleted = async () => {
-  // Refresh product data to remove deleted image
-  await fetchProduct()
+const handleImageDeleted = async (imgId) => {
+  product.value.images = product.value.images.filter((img) => img.id !== imgId)
 }
 
-const handleImagePromoted = async () => {
-  // Refresh product data to reflect promoted image
-  await fetchProduct()
+const handleImagePromoted = async (imgId) => {
+  const idx = product.value.images.findIndex((img) => img.id === imgId)
+  if (idx > 0) {
+    const [promoted] = product.value.images.splice(idx, 1)
+    product.value.images.unshift(promoted)
+  }
 }
 
 const handleImageUploadError = (_error) => {

@@ -70,7 +70,10 @@ const props = defineProps<{
 // Provide default for images
 const images = computed(() => props.images || [])
 
-const emit = defineEmits(['upload-success', 'upload-error'])
+const emit = defineEmits<{
+  'upload-success': [images: Image[]]
+  'upload-error': [error: unknown]
+}>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
@@ -139,10 +142,15 @@ const handleUpload = async () => {
     errorMessage.value = ''
     successMessage.value = ''
 
-    await uploadImage(props.productId, selectedFile.value, imageType.value, removeBackground.value)
+    const images = await uploadImage(
+      props.productId,
+      selectedFile.value,
+      imageType.value,
+      removeBackground.value
+    )
 
     successMessage.value = 'Image uploaded successfully!'
-    emit('upload-success')
+    emit('upload-success', images)
 
     // Reset form
     resetForm()

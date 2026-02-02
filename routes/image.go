@@ -96,11 +96,12 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create image records
-	if err := h.createImageRecords(w, r, productID, filename); err != nil {
+	images, err := h.createImageRecords(w, r, productID, filename)
+	if err != nil {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusCreated, map[string]string{"path": imagePath})
+	u.RespondWithJSON(w, http.StatusCreated, images)
 }
 
 func (h *ImageRoutes) parseAndValidateRequest(w http.ResponseWriter, r *http.Request) (multipart.File, *multipart.FileHeader, error) {
@@ -181,7 +182,7 @@ func (h *ImageRoutes) removeBackground(w http.ResponseWriter, r *http.Request, p
 	return nil
 }
 
-func (h *ImageRoutes) createImageRecords(w http.ResponseWriter, r *http.Request, productID, filename string) error {
+func (h *ImageRoutes) createImageRecords(w http.ResponseWriter, r *http.Request, productID, filename string) ([]types.Image, error) {
 	imageType := types.ParseImageType(r.FormValue(formKeyType))
 	imageTypes := h.getImageTypes(imageType)
 	urls := h.imageService.CreateImageURLs(productID, filename, imageTypes...)
@@ -189,28 +190,31 @@ func (h *ImageRoutes) createImageRecords(w http.ResponseWriter, r *http.Request,
 	slog.Debug("Generated signed URLs", "count", len(urls))
 
 	typesToCreate := []types.ImageType{imageType, types.Gallery, types.Thumbnail}
+	images := make([]types.Image, 0, len(urls))
 	for idx, url := range urls {
 		id, err := u.GenerateIDString()
 		if err != nil {
 			u.RespondWithError(w, r, http.StatusInternalServerError, "error generating image record ID")
-			return err
+			return nil, err
 		}
 
-		if err := h.imageService.CreateImageRecord(r.Context(), &types.Image{
+		img := types.Image{
 			ID:        id,
 			ProductID: productID,
 			URL:       url,
 			Type:      typesToCreate[idx],
 			AltText:   altTextFromForm(r),
 			Source:    filename,
-		}); err != nil {
+		}
+		if err := h.imageService.CreateImageRecord(r.Context(), &img); err != nil {
 			slog.Error("error creating image record", "productID", productID, "type", typesToCreate[idx], "error", err)
 			u.RespondWithError(w, r, http.StatusInternalServerError, "error creating image record")
-			return err
+			return nil, err
 		}
+		images = append(images, img)
 	}
 
-	return nil
+	return images, nil
 }
 
 func (h *ImageRoutes) getImageTypes(imageType types.ImageType) []types.ImageType {

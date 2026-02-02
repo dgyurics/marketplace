@@ -9,6 +9,7 @@ import type {
   Category,
   CreateOrderResponse,
   AuthTokens,
+  Image,
   ImageType,
   Product,
   CreateProductRequest,
@@ -189,7 +190,7 @@ export const uploadImage = async (
   file: File,
   type: ImageType,
   removeBg: Boolean
-): Promise<{ path: string }> => {
+): Promise<Image[]> => {
   const formData = new FormData()
   formData.append('image', file)
   formData.append('type', type)

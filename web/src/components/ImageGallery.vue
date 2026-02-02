@@ -70,7 +70,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 
 import { removeImage, promoteImage } from '@/services/api'
@@ -82,7 +82,10 @@ defineProps({
   },
 })
 
-const emit = defineEmits(['image-deleted', 'image-promoted'])
+const emit = defineEmits<{
+  'image-deleted': [imageId: string]
+  'image-promoted': [imageId: string]
+}>()
 
 const previewImage = ref(null)
 const previewStyle = ref({})
@@ -96,7 +99,7 @@ const truncateUrl = (url) => {
 const handleDelete = async (imageId, productId) => {
   try {
     await removeImage(imageId, productId)
-    emit('image-deleted')
+    emit('image-deleted', imageId)
   } catch {
     // Handle error silently, consistent with other error handling in the app
   }
@@ -105,7 +108,7 @@ const handleDelete = async (imageId, productId) => {
 const handlePromote = async (imageId) => {
   try {
     await promoteImage(imageId)
-    emit('image-promoted')
+    emit('image-promoted', imageId)
   } catch {
     // Handle error silently, consistent with other error handling in the app
   }
