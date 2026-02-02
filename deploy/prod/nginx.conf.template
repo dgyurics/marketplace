@@ -105,7 +105,7 @@ server {
 
     # Specific route first - larger body size for product image uploads
     location /api/images/products/ {
-        client_max_body_size 50M;
+        client_max_body_size 30M;
         proxy_pass http://api_backend/images/products/;  # Explicit path replacement
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

@@ -21,13 +21,19 @@ type ImageRoutes struct {
 	router
 	imageService   services.ImageService
 	productService services.ProductService
+	config         types.ImageConfig
 }
 
-func NewImageRoutes(imageService services.ImageService, productService services.ProductService, router router) *ImageRoutes {
+func NewImageRoutes(
+	imageService services.ImageService,
+	productService services.ProductService,
+	config types.ImageConfig,
+	router router) *ImageRoutes {
 	return &ImageRoutes{
 		router:         router,
 		imageService:   imageService,
 		productService: productService,
+		config:         config,
 	}
 }
 
@@ -52,7 +58,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	removeBg := r.URL.Query().Get("remove_bg") == "true" // optional remove background flag
 
 	// Parse the multipart form file
-	if err := r.ParseMultipartForm(30 << 20); err != nil { // 30 MB limit
+	if err := r.ParseMultipartForm(int64(h.config.MaxFileSizeBytes)); err != nil {
 		u.RespondWithError(w, r, http.StatusRequestEntityTooLarge, err.Error())
 		return
 	}
@@ -83,7 +89,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slog.Debug("Image resolution", "pixels", res)
-	if res > 200_000_000 {
+	if res > h.config.MaxMegapixels*1_000_000 {
 		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "image resolution too high")
 		return
 	}
@@ -162,7 +168,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 			bgCtx := context.Background()
 			newImagePath, err := h.imageService.RemoveBackground(bgCtx, imagePath, filename)
 			if err != nil {
-				slog.ErrorContext(r.Context(), "error removing background", "productID", productID, "error", err)
+				slog.ErrorContext(bgCtx, "error removing background", "productID", productID, "imgPath", imagePath, "error", err)
 				return
 			}
 			slog.Debug("Background removed successfully", "newPath", newImagePath)

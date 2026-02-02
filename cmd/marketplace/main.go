@@ -89,7 +89,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewCartRoutes(services.Cart, services.Order, baseRouter),
 		routes.NewCategoryRoutes(services.Category, baseRouter),
 		routes.NewHealthRoutes(baseRouter),
-		routes.NewImageRoutes(services.Image, services.Product, baseRouter),
+		routes.NewImageRoutes(services.Image, services.Product, config.Image, baseRouter),
 		routes.NewOrderRoutes(services.Order, services.Tax, services.Payment, services.Cart, services.Address, baseRouter),
 		routes.NewPasswordRoutes(services.Password, services.User, services.Email, services.Template, config.BaseURL, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, baseRouter),
@@ -132,7 +132,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	claimRepository := repositories.NewClaimRepository(db)
 
 	// create http client required by certain services
-	httpClient := utilities.NewDefaultHTTPClient(10 * time.Second) // TODO make this configurable
+	httpClient := utilities.NewDefaultHTTPClient(30 * time.Second) // TODO make this configurable
 
 	// create services
 	templateService, err := services.NewTemplateService(config.TemplatesDir)
