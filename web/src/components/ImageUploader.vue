@@ -29,7 +29,8 @@
             @click="handleUpload"
             @keydown.enter="handleUpload"
           >
-            {{ uploading ? 'Uploading...' : 'Upload Image' }}
+            <LoadingSpinner v-if="uploading" />
+            <span v-else>Upload Image</span>
           </button>
         </div>
 
@@ -55,6 +56,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+
+import LoadingSpinner from './LoadingSpinner.vue'
 
 import { uploadImage } from '@/services/api'
 import type { Image, ImageType } from '@/types'
@@ -254,6 +257,9 @@ defineExpose({
   font-size: 14px;
   transition: background-color 0.2s;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .upload-btn:hover:not(:disabled) {
