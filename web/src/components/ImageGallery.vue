@@ -74,38 +74,36 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
 import { removeImage, promoteImage } from '@/services/api'
+import type { Image } from '@/types'
 
-defineProps({
-  images: {
-    type: Array,
-    default: () => [],
-  },
-})
+defineProps<{
+  images: Image[]
+}>()
 
 const emit = defineEmits<{
   'image-deleted': [imageId: string]
   'image-promoted': [imageId: string]
 }>()
 
-const previewImage = ref(null)
-const previewStyle = ref({})
+const previewImage = ref<Image | null>(null)
+const previewStyle = ref<Record<string, string | number>>({})
 const isClickPreview = ref(false)
 
-const truncateUrl = (url) => {
+const truncateUrl = (url: string) => {
   if (url.length <= 50) return url
   return `${url.substring(0, 47)}...`
 }
 
-const handleDelete = async (imageId, productId) => {
+const handleDelete = async (imageId: string) => {
   try {
-    await removeImage(imageId, productId)
+    await removeImage(imageId)
     emit('image-deleted', imageId)
   } catch {
     // Handle error silently, consistent with other error handling in the app
   }
 }
 
-const handlePromote = async (imageId) => {
+const handlePromote = async (imageId: string) => {
   try {
     await promoteImage(imageId)
     emit('image-promoted', imageId)
@@ -114,7 +112,7 @@ const handlePromote = async (imageId) => {
   }
 }
 
-const showPreview = (image, event) => {
+const showPreview = (image: Image, event: Event) => {
   if (isClickPreview.value) return // Don't show hover preview if click preview is active
 
   previewImage.value = image
@@ -126,7 +124,7 @@ const hidePreview = () => {
   previewImage.value = null
 }
 
-const togglePreview = (image, event) => {
+const togglePreview = (image: Image, event: Event) => {
   if (previewImage.value && previewImage.value.id === image.id && isClickPreview.value) {
     // Clicking on the same image again - hide preview
     previewImage.value = null
@@ -139,8 +137,8 @@ const togglePreview = (image, event) => {
   }
 }
 
-const updatePreviewPosition = (event) => {
-  const rect = event.target.getBoundingClientRect()
+const updatePreviewPosition = (event: Event) => {
+  const rect = (event.target as HTMLElement).getBoundingClientRect()
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight
 
@@ -174,8 +172,8 @@ const adjustPreviewPosition = () => {
       const viewportHeight = window.innerHeight
 
       let { left, top } = previewStyle.value
-      left = parseInt(left)
-      top = parseInt(top)
+      left = parseInt(String(left))
+      top = parseInt(String(top))
 
       if (rect.right > viewportWidth) {
         left = viewportWidth - rect.width - 10
@@ -194,11 +192,13 @@ const adjustPreviewPosition = () => {
 }
 
 // Hide click preview when clicking outside
-const handleClickOutside = (event) => {
+const handleClickOutside = (event: Event) => {
+  const target = event.target as HTMLElement
   if (
     isClickPreview.value &&
-    !event.target.closest('.image-preview') &&
-    !event.target.closest('.url-link')
+    target &&
+    !target.closest('.image-preview') &&
+    !target.closest('.url-link')
   ) {
     previewImage.value = null
     isClickPreview.value = false
