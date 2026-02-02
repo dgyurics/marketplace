@@ -134,6 +134,11 @@ func (s *imageService) RemoveBackground(ctx context.Context, filePath, filename 
 		return "", fmt.Errorf("failed to copy image file to form: %w", err)
 	}
 
+	// Add model field to form
+	if err := writer.WriteField("model", "isnet-general-use"); err != nil {
+		return "", fmt.Errorf("failed to write model field: %w", err)
+	}
+
 	// Close the multipart writer to finalize the form data
 	writer.Close()
 
