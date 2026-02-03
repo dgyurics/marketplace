@@ -75,7 +75,7 @@ onMounted(() => {
 
 .feature-container {
   width: 100vw;
-  height: calc(50vh - 10px);
+  height: calc(40vh - 10px);
   overflow: hidden;
   max-width: 1200px;
   margin: 0 auto;
