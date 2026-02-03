@@ -7,6 +7,15 @@
   src: url('./fonts/josefin-sans-v34-latin_latin-ext-100.woff2') format('woff2');
 }
 
+/* josefin-sans-300 - latin_latin-ext */
+/* @font-face {
+  font-display: block;
+  font-family: 'Josefin Sans';
+  font-style: normal;
+  font-weight: 300;
+  src: url('./fonts/josefin-sans-v34-latin_latin-ext-300.woff2') format('woff2');
+} */
+
 /* roboto-mono-regular - latin_latin-ext */
 @font-face {
   font-display: swap;
