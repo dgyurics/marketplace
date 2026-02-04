@@ -1,6 +1,6 @@
 <template>
   <main class="app-container">
-    <Banner :message="bannerMessage" />
+    <Banner v-if="TEST_MODE" :message="bannerMessage" />
     <NavBar v-if="!isMobile && !isNotFound" />
     <div class="content" :class="{ 'home-content': route.path === '/' }">
       <router-view />
@@ -16,6 +16,8 @@ import { useRoute, useRouter } from 'vue-router'
 import Banner from '@/components/Banner.vue'
 import Footer from '@/components/Footer.vue'
 import NavBar from '@/components/NavBar.vue'
+import { TEST_MODE } from '@/config'
+
 const route = useRoute()
 const router = useRouter()
 const isMobile = ref(false)
