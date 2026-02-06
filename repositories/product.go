@@ -31,6 +31,9 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 	if product.Category != nil {
 		categoryID = sql.NullString{String: product.Category.ID, Valid: true}
 	}
+	if len(product.Details) == 0 {
+		product.Details = json.RawMessage(`{}`)
+	}
 	query := `
 		INSERT INTO products (id, name, price, summary, description, details, tax_code, inventory, cart_limit, category_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id
