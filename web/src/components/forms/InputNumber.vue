@@ -17,7 +17,7 @@
 import { computed } from 'vue'
 
 const props = defineProps<{
-  modelValue: string
+  modelValue: string | number | undefined
   label?: string
   required?: boolean
   step?: string | number
@@ -28,7 +28,7 @@ const emit = defineEmits<{
 }>()
 
 const value = computed({
-  get: () => props.modelValue,
+  get: () => String(props.modelValue),
   set: (newValue) => emit('update:modelValue', newValue),
 })
 </script>
