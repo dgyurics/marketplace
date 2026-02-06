@@ -1,6 +1,5 @@
 <template>
   <div class="image-gallery">
-    <h3>Product Images</h3>
     <div v-if="!images.length" class="no-images">
       <p>No images uploaded yet</p>
     </div>
