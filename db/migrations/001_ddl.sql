@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS products (
     category_id BIGINT,
     inventory INT NOT NULL DEFAULT 0,
     cart_limit INT,
+    featured BOOLEAN DEFAULT FALSE NOT NULL, -- Defines whether the product should be highlighted in the UI homepage
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- TODO rename to enabled/disabled
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -194,6 +195,7 @@ SELECT
     p.inventory,
     p.cart_limit,
     COALESCE(p.tax_code, '') AS tax_code,
+    p.featured,
     c.slug AS category_slug,
     COALESCE(imgs.images, '[]') AS images,
     COALESCE(order_stats.total_sold, 0) AS total_sold,

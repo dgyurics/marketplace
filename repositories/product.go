@@ -35,8 +35,8 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		product.Details = json.RawMessage(`{}`)
 	}
 	query := `
-		INSERT INTO products (id, name, price, summary, description, details, tax_code, inventory, cart_limit, category_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id
+		INSERT INTO products (id, name, price, summary, description, details, tax_code, inventory, cart_limit, featured, category_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id
 	`
 	if err := r.db.QueryRowContext(ctx,
 		query,
@@ -49,6 +49,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		product.TaxCode,
 		product.Inventory,
 		product.CartLimit,
+		product.Featured,
 		categoryID,
 	).Scan(&product.ID); err != nil {
 		return err
@@ -76,6 +77,7 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 			&product.TaxCode,
 			&product.Summary,
 			&product.Details,
+			&product.Featured,
 			&imagesJSON,
 		); err != nil {
 			return nil, err
@@ -104,7 +106,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 	var queryBuilder strings.Builder
 	if len(filter.Categories) == 0 {
 		queryBuilder.WriteString(`
-			SELECT p.id, p.name, p.price, p.tax_code, p.summary, p.details, p.images
+			SELECT p.id, p.name, p.price, p.tax_code, p.summary, p.details, p.featured, p.images
 			FROM v_products p
 			WHERE true
 		`)
@@ -121,7 +123,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 				SELECT c.id FROM categories c
 				JOIN category_tree ct ON c.parent_id = ct.id
 			)
-			SELECT p.id, p.name, p.price, p.tax_code, p.summary, p.details, p.images
+			SELECT p.id, p.name, p.price, p.tax_code, p.summary, p.details, p.featured, p.images
 			FROM v_products p
 			JOIN category_tree ct ON ct.id = p.category_id
 			WHERE true
@@ -129,6 +131,10 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 	}
 
 	argIndex := len(args) + 1
+
+	if filter.Featured {
+		queryBuilder.WriteString(" AND p.featured = true")
+	}
 
 	if filter.InStock {
 		queryBuilder.WriteString(" AND p.inventory > 0")
@@ -156,6 +162,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		p.images,
 		p.inventory,
 		p.cart_limit,
+		p.featured,
 		c.id,
 		c.name,
 		c.slug,
@@ -180,6 +187,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		&imagesJSON,
 		&product.Inventory,
 		&product.CartLimit,
+		&product.Featured,
 		&categoryID,
 		&categoryName,
 		&categorySlug,
@@ -231,9 +239,10 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 		category_id = $7,
 		inventory = $8,
 		cart_limit = $9,
-		is_deleted = $10,
+		featured = $10,
+		is_deleted = $11,
 		updated_at = NOW()
-		WHERE id = $11
+		WHERE id = $12
 	`
 	res, err := r.db.ExecContext(ctx, query,
 		product.Name,
@@ -245,6 +254,7 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 		categoryID,
 		product.Inventory,
 		product.CartLimit,
+		product.Featured,
 		false,
 		product.ID,
 	)

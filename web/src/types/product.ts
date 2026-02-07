@@ -22,6 +22,7 @@ export interface ProductFilters {
   categories?: string[]
   sortBy?: SortBy
   inStock?: boolean
+  featured?: boolean
   page?: number
   limit?: number
 }

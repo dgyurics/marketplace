@@ -19,6 +19,7 @@ type Product struct {
 	Category    *Category       `json:"category"`
 	TaxCode     *string         `json:"tax_code,omitempty"`
 	Inventory   int             `json:"inventory"`
+	Featured    bool            `json:"featured"`
 	CartLimit   *int            `json:"cart_limit,omitempty"`
 	CreatedAt   string          `json:"created_at"`
 	UpdatedAt   string          `json:"updated_at"`
@@ -57,6 +58,7 @@ type Image struct {
 type ProductFilter struct {
 	SortBy     SortBy
 	InStock    bool
+	Featured   bool
 	Page       int
 	Limit      int
 	Categories []string // category slugs

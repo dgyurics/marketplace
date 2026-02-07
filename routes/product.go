@@ -44,10 +44,12 @@ func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 	inStock := r.URL.Query().Get("in_stock") == "true"
 	sortBy := types.ParseSortBy(r.URL.Query().Get("sort_by"))
 	categories := r.URL.Query()["category"]
+	featured := r.URL.Query().Get("featured") == "true"
 	filters := types.ProductFilter{
 		Page:       params.Page,
 		Limit:      params.Limit,
 		InStock:    inStock,
+		Featured:   featured,
 		SortBy:     sortBy,
 		Categories: categories,
 	}

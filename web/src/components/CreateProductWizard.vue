@@ -65,6 +65,13 @@
             ></TextArea>
           </div>
 
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input v-model="newProduct.featured" type="checkbox" />
+              <span>Featured</span>
+            </label>
+          </div>
+
           <div class="form-actions">
             <button type="submit" class="btn-primary" :tabindex="0">Next</button>
           </div>
@@ -188,6 +195,7 @@ const newProduct = ref({
   inventory: '',
   cart_limit: '',
   category: '',
+  featured: true,
 })
 
 const goToStep = async (step) => {
@@ -242,6 +250,7 @@ const createProductDraft = async () => {
       tax_code: newProduct.value.tax_code || undefined,
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit || undefined,
+      featured: newProduct.value.featured,
       ...(categoryId && { category: { id: categoryId } }),
     }
 
@@ -266,6 +275,7 @@ const updateProductDraft = async () => {
       details: newProduct.value.details,
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit || undefined,
+      featured: newProduct.value.featured,
       ...(categoryId && { category: { id: categoryId } }),
     }
 
@@ -295,6 +305,7 @@ const handleSubmit = async () => {
       details: newProduct.value.details,
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit || undefined,
+      featured: newProduct.value.featured,
       ...(categoryId && { category: { id: categoryId } }),
     }
 
@@ -325,6 +336,7 @@ const resetAndStart = () => {
     inventory: '',
     cart_limit: '',
     category: '',
+    featured: true,
   }
   tempProductId.value = null
   tempProductImages.value = []
@@ -430,6 +442,25 @@ const resetAndStart = () => {
 
 .form-group {
   margin-bottom: 10px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 10px;
+  margin-top: 8px;
+  margin-left: 4px;
+}
+
+.checkbox-label input[type='checkbox'] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  accent-color: #000;
 }
 
 .form-row-2col {

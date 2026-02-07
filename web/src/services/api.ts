@@ -160,7 +160,7 @@ export const removeUserAddress = async (addressId: string): Promise<void> => {
 }
 
 export const getProducts = async (filters: ProductFilters = {}): Promise<Product[]> => {
-  const { categories = [], sortBy, inStock, page = 1, limit = 10 } = filters
+  const { categories = [], sortBy, inStock, page = 1, limit = 10, featured } = filters
 
   const params = new URLSearchParams()
 
@@ -170,6 +170,11 @@ export const getProducts = async (filters: ProductFilters = {}): Promise<Product
 
   // Add categories
   categories.forEach((category: string) => params.append('category', category))
+
+  // Add featured filter
+  if (featured) {
+    params.append('featured', 'true')
+  }
 
   // Add sorting
   if (sortBy) {

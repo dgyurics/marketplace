@@ -42,6 +42,7 @@ const fetchProducts = async () => {
       page: page.value,
       limit: 9,
       sortBy: 'newest',
+      featured: true, // Fetch only featured products for the homepage
     }
 
     const response = await getProducts(filters)

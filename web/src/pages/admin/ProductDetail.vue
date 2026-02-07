@@ -17,6 +17,13 @@
           <TextArea v-model="editProduct.description" label="description"></TextArea>
         </div>
 
+        <div class="checkbox-row">
+          <label class="checkbox-label">
+            <input v-model="editProduct.featured" type="checkbox" />
+            <span>Featured</span>
+          </label>
+        </div>
+
         <!-- Details Section -->
         <KeyValueEditor
           ref="detailsEditor"
@@ -103,6 +110,7 @@ const editProduct = ref({
   category: '',
   inventory: '',
   cart_limit: '',
+  featured: false,
 })
 
 const fetchProduct = async () => {
@@ -123,6 +131,7 @@ const fetchProduct = async () => {
       category: data.category?.slug ?? '',
       inventory: data.inventory,
       cart_limit: data.cart_limit,
+      featured: data.featured ?? false,
     }
   } catch {
     // Handle error silently
@@ -160,6 +169,7 @@ const handleSubmit = async () => {
       details: editProduct.value.details,
       inventory: editProduct.value.inventory,
       cart_limit: editProduct.value.cart_limit || undefined,
+      featured: editProduct.value.featured,
       // Include category if one is selected
       ...(categoryId && { category: { id: categoryId } }),
     }
@@ -255,6 +265,28 @@ onMounted(() => {
 
 .form-row :deep(.input-container) {
   flex: 1 1 calc(33.333% - 10px);
+}
+
+.checkbox-row {
+  margin-top: 8px;
+  margin-left: 4px;
+  margin-bottom: 20px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #666;
+}
+
+.checkbox-label input[type='checkbox'] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  accent-color: #000;
 }
 
 .form-actions {
