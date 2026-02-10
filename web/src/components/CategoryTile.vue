@@ -56,7 +56,7 @@ const handleClick = () => {
 .category-title {
   font-size: 16px;
   font-weight: 500;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   margin-bottom: 5px;
 }
