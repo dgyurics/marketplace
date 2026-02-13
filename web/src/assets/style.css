@@ -213,3 +213,12 @@ h6 {
   -ms-user-select: none;     /* Internet Explorer/Edge */
   user-select: none;         /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
 }
+
+/* Floating Panel Container */
+.floating-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 30px;
+  margin-bottom: 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}

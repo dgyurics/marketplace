@@ -1,5 +1,5 @@
 <template>
-  <div class="wizard-section">
+  <div class="floating-panel">
     <div class="wizard-header">
       <h2>Create New Product</h2>
       <div class="wizard-steps">
@@ -67,11 +67,11 @@
 
           <div class="checkbox-group">
             <label class="checkbox-label">
-              <input v-model="newProduct.featured" type="checkbox" />
+              <input v-model="newProduct.featured" type="checkbox" :tabindex="0" />
               <span>Featured</span>
             </label>
             <label class="checkbox-label">
-              <input v-model="newProduct.pickup_only" type="checkbox" />
+              <input v-model="newProduct.pickup_only" type="checkbox" :tabindex="0" />
               <span>Pickup Only</span>
             </label>
           </div>
@@ -352,14 +352,6 @@ const resetAndStart = () => {
 </script>
 
 <style scoped>
-.wizard-section {
-  background: #fff;
-  border-radius: 12px;
-  padding: 30px;
-  margin-bottom: 40px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
 .wizard-header {
   margin-bottom: 30px;
 }

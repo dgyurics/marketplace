@@ -1,7 +1,16 @@
 <template>
   <div class="product-container">
+    <!-- Create Product Button -->
+    <div v-if="!showWizard" class="floating-panel button-container">
+      <button :tabindex="0" @click="showWizard = true">Create New Product</button>
+    </div>
+
     <!-- Create Product Wizard -->
-    <CreateProductWizard :categories="categories" :on-success="fetchProducts" />
+    <CreateProductWizard
+      v-if="showWizard"
+      :categories="categories"
+      :on-success="handleWizardSuccess"
+    />
 
     <!-- Products Grid -->
     <div class="products-section">
@@ -21,6 +30,12 @@ import { getProducts, getCategories } from '@/services/api'
 
 const products = ref([])
 const categories = ref([])
+const showWizard = ref(false)
+
+const handleWizardSuccess = async () => {
+  showWizard.value = false
+  await fetchProducts()
+}
 
 const fetchProducts = async () => {
   try {
@@ -53,9 +68,9 @@ onMounted(() => {
   padding: 20px;
 }
 
-/* Products Section */
-.products-section {
-  margin-top: 50px;
+.button-container {
+  display: flex;
+  justify-content: center;
 }
 
 .products-section h2 {
