@@ -10,6 +10,8 @@ export interface Product {
   inventory: number
   category?: Category
   description?: string
+  featured: boolean
+  pickup_only: boolean
   tax_code?: string
   cart_limit?: number
   created_at?: string

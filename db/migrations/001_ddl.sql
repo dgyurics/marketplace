@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS products (
     category_id BIGINT,
     inventory INT NOT NULL DEFAULT 0,
     cart_limit INT,
+    pickup_only BOOLEAN DEFAULT FALSE NOT NULL, -- Defines whether the product is only available for pickup
     featured BOOLEAN DEFAULT FALSE NOT NULL, -- Defines whether the product should be highlighted in the UI homepage
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- TODO rename to enabled/disabled
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -196,6 +197,7 @@ SELECT
     p.cart_limit,
     COALESCE(p.tax_code, '') AS tax_code,
     p.featured,
+    p.pickup_only,
     c.slug AS category_slug,
     COALESCE(imgs.images, '[]') AS images,
     COALESCE(order_stats.total_sold, 0) AS total_sold,
@@ -274,7 +276,7 @@ CREATE TABLE IF NOT EXISTS shipping_exclusions (
     UNIQUE(country, postal_code)
 );
 
--- Verified members are able to "claim" free products
+-- Verified members are able to claim items marked as free or pickup only
 CREATE TABLE claims (
   id BIGINT PRIMARY KEY,
   user_id BIGINT NOT NULL,

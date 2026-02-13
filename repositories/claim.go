@@ -29,7 +29,7 @@ func (r *claimRepository) ClaimItem(ctx context.Context, claim *types.Claim) err
 
 	// Lock the product row and check inventory atomically
 	var inventory int
-	err = tx.QueryRowContext(ctx, `SELECT inventory FROM products WHERE id = $1 AND price = 0 FOR UPDATE`, claim.Product.ID).Scan(&inventory)
+	err = tx.QueryRowContext(ctx, `SELECT inventory FROM products WHERE id = $1 AND (price = 0 OR pickup_only = true) FOR UPDATE`, claim.Product.ID).Scan(&inventory)
 	if err == sql.ErrNoRows {
 		return types.ErrNotFound
 	}

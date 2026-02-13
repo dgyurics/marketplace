@@ -65,10 +65,14 @@
             ></TextArea>
           </div>
 
-          <div class="form-group">
+          <div class="checkbox-group">
             <label class="checkbox-label">
               <input v-model="newProduct.featured" type="checkbox" />
               <span>Featured</span>
+            </label>
+            <label class="checkbox-label">
+              <input v-model="newProduct.pickup_only" type="checkbox" />
+              <span>Pickup Only</span>
             </label>
           </div>
 
@@ -201,12 +205,12 @@ const newProduct = ref({
 const goToStep = async (step) => {
   if (step === 2 && currentStep.value === 1) {
     // Create product draft and save ID for image uploads
-    await createProductDraft()
+    await createProduct()
     currentStep.value = step
   } else if (step === 2 && currentStep.value === 3) {
     // Coming back from step 3, update product with any changes
     if (tempProductId.value) {
-      await updateProductDraft()
+      await updateProduct()
     }
     currentStep.value = step
   } else if (step === 3 && currentStep.value === 2) {
@@ -238,7 +242,7 @@ const handleImagePromoted = (imageId) => {
   }
 }
 
-const createProductDraft = async () => {
+const createProduct = async () => {
   try {
     const categoryId = props.categories.find((cat) => cat.slug === newProduct.value.category)?.id
 
@@ -251,6 +255,7 @@ const createProductDraft = async () => {
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit || undefined,
       featured: newProduct.value.featured,
+      pickup_only: newProduct.value.pickup_only,
       ...(categoryId && { category: { id: categoryId } }),
     }
 
@@ -261,7 +266,7 @@ const createProductDraft = async () => {
   }
 }
 
-const updateProductDraft = async () => {
+const updateProduct = async () => {
   try {
     const categoryId = props.categories.find((cat) => cat.slug === newProduct.value.category)?.id
 
@@ -276,6 +281,7 @@ const updateProductDraft = async () => {
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit || undefined,
       featured: newProduct.value.featured,
+      pickup_only: newProduct.value.pickup_only,
       ...(categoryId && { category: { id: categoryId } }),
     }
 
@@ -306,6 +312,7 @@ const handleSubmit = async () => {
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit || undefined,
       featured: newProduct.value.featured,
+      pickup_only: newProduct.value.pickup_only,
       ...(categoryId && { category: { id: categoryId } }),
     }
 
@@ -444,6 +451,13 @@ const resetAndStart = () => {
   margin-bottom: 10px;
 }
 
+.checkbox-group {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 10px;
+  margin-top: 8px;
+}
+
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -451,9 +465,9 @@ const resetAndStart = () => {
   cursor: pointer;
   font-size: 13px;
   color: #666;
-  margin-bottom: 10px;
-  margin-top: 8px;
-  margin-left: 4px;
+  margin-bottom: 0;
+  margin-top: 0;
+  margin-left: 0;
 }
 
 .checkbox-label input[type='checkbox'] {

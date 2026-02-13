@@ -17,10 +17,14 @@
           <TextArea v-model="editProduct.description" label="description"></TextArea>
         </div>
 
-        <div class="checkbox-row">
+        <div class="checkbox-group">
           <label class="checkbox-label">
             <input v-model="editProduct.featured" type="checkbox" />
             <span>Featured</span>
+          </label>
+          <label class="checkbox-label">
+            <input v-model="editProduct.pickup_only" type="checkbox" />
+            <span>Pickup Only</span>
           </label>
         </div>
 
@@ -111,6 +115,7 @@ const editProduct = ref({
   inventory: '',
   cart_limit: '',
   featured: false,
+  pickup_only: false,
 })
 
 const fetchProduct = async () => {
@@ -132,6 +137,7 @@ const fetchProduct = async () => {
       inventory: data.inventory,
       cart_limit: data.cart_limit,
       featured: data.featured ?? false,
+      pickup_only: data.pickup_only ?? false,
     }
   } catch {
     // Handle error silently
@@ -170,6 +176,7 @@ const handleSubmit = async () => {
       inventory: editProduct.value.inventory,
       cart_limit: editProduct.value.cart_limit || undefined,
       featured: editProduct.value.featured,
+      pickup_only: editProduct.value.pickup_only,
       // Include category if one is selected
       ...(categoryId && { category: { id: categoryId } }),
     }
@@ -267,9 +274,10 @@ onMounted(() => {
   flex: 1 1 calc(33.333% - 10px);
 }
 
-.checkbox-row {
+.checkbox-group {
+  display: flex;
+  gap: 20px;
   margin-top: 8px;
-  margin-left: 4px;
   margin-bottom: 20px;
 }
 
@@ -280,6 +288,7 @@ onMounted(() => {
   cursor: pointer;
   font-size: 13px;
   color: #666;
+  margin: 0;
 }
 
 .checkbox-label input[type='checkbox'] {
