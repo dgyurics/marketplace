@@ -39,11 +39,7 @@
         />
 
         <!-- Image Gallery Section -->
-        <ImageGallery
-          :images="product.images || []"
-          @image-deleted="handleImageDeleted"
-          @image-promoted="handleImagePromoted"
-        />
+        <ImageGallery :images="product.images || []" @image-deleted="handleImageDeleted" />
 
         <!-- Image Upload Section -->
         <ImageUploader
@@ -209,14 +205,6 @@ const handleImageUploadSuccess = async (images) => {
 
 const handleImageDeleted = async (imgId) => {
   product.value.images = product.value.images.filter((img) => img.id !== imgId)
-}
-
-const handleImagePromoted = async (imgId) => {
-  const idx = product.value.images.findIndex((img) => img.id === imgId)
-  if (idx > 0) {
-    const [promoted] = product.value.images.splice(idx, 1)
-    product.value.images.unshift(promoted)
-  }
 }
 
 const handleImageUploadError = (_error) => {

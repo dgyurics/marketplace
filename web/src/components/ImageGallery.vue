@@ -11,7 +11,6 @@
             <th>URL</th>
             <th>Type</th>
             <th></th>
-            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -28,16 +27,6 @@
               </span>
             </td>
             <td class="type-cell">{{ image.type }}</td>
-            <td class="actions-cell">
-              <button
-                type="button"
-                class="promote-btn"
-                title="Promote image"
-                @click="handlePromote(image.id)"
-              >
-                ↑
-              </button>
-            </td>
             <td class="actions-cell">
               <button
                 type="button"
@@ -72,7 +61,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 
-import { removeImage, promoteImage } from '@/services/api'
+import { removeImage } from '@/services/api'
 import type { Image } from '@/types'
 
 defineProps<{
@@ -81,7 +70,6 @@ defineProps<{
 
 const emit = defineEmits<{
   'image-deleted': [imageId: string]
-  'image-promoted': [imageId: string]
 }>()
 
 const previewImage = ref<Image | null>(null)
@@ -97,15 +85,6 @@ const handleDelete = async (imageId: string) => {
   try {
     await removeImage(imageId)
     emit('image-deleted', imageId)
-  } catch {
-    // Handle error silently, consistent with other error handling in the app
-  }
-}
-
-const handlePromote = async (imageId: string) => {
-  try {
-    await promoteImage(imageId)
-    emit('image-promoted', imageId)
   } catch {
     // Handle error silently, consistent with other error handling in the app
   }
@@ -324,26 +303,6 @@ onUnmounted(() => {
 }
 
 .remove-btn:hover {
-  color: #000;
-}
-
-.promote-btn {
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: none;
-  color: #333;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.promote-btn:hover {
   color: #000;
 }
 

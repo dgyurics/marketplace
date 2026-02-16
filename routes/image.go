@@ -245,21 +245,6 @@ func (h *ImageRoutes) RemoveImage(w http.ResponseWriter, r *http.Request) {
 	u.RespondSuccess(w)
 }
 
-// PromoteImage sets an images updated_at timestamp to the current time
-// This is used to promote an image to the top of the gallery or thumbnail list
-func (h *ImageRoutes) PromoteImage(w http.ResponseWriter, r *http.Request) {
-	err := h.imageService.PromoteImage(r.Context(), mux.Vars(r)["image"])
-	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
-		return
-	}
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-	u.RespondSuccess(w)
-}
-
 // getImageInfo returns the total pixel count and format of the image from the reader
 // e.g., for a jpeg image of 1920x1080, returns (2073600, "jpeg", nil)
 // e.g., for a png image of 800x600, returns (480000, "png", nil)
@@ -286,5 +271,4 @@ func isSupportedFormat(format string) bool {
 func (h *ImageRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/images/products/{id}", h.secure(types.RoleAdmin)(h.UploadImage)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/images/{image}", h.secure(types.RoleAdmin)(h.RemoveImage)).Methods(http.MethodDelete)
-	h.muxRouter.Handle("/images/{image}", h.secure(types.RoleAdmin)(h.PromoteImage)).Methods(http.MethodPost)
 }

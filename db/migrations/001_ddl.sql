@@ -212,7 +212,7 @@ LEFT JOIN LATERAL (
             'type', i.type,
             'updated_at', i.updated_at,
             'alt_text', i.alt_text
-        ) ORDER BY i.updated_at DESC
+        ) ORDER BY i.id ASC
     ) AS images
     FROM images i
     WHERE i.product_id = p.id

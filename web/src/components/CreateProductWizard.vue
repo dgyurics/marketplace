@@ -85,11 +85,7 @@
       <!-- Step 2: Images -->
       <div v-show="currentStep === 2" class="step-content">
         <!-- Image Gallery Section -->
-        <ImageGallery
-          :images="tempProductImages"
-          @image-deleted="handleImageDeleted"
-          @image-promoted="handleImagePromoted"
-        />
+        <ImageGallery :images="tempProductImages" @image-deleted="handleImageDeleted" />
 
         <!-- Image Upload Section -->
         <div v-if="tempProductId" class="step-content">
@@ -232,14 +228,6 @@ const handleImageUploadError = (error) => {
 
 const handleImageDeleted = (imageId) => {
   tempProductImages.value = tempProductImages.value.filter((img) => img.id !== imageId)
-}
-
-const handleImagePromoted = (imageId) => {
-  const idx = tempProductImages.value.findIndex((img) => img.id === imageId)
-  if (idx > 0) {
-    const [promoted] = tempProductImages.value.splice(idx, 1)
-    tempProductImages.value.unshift(promoted)
-  }
 }
 
 const createProduct = async () => {

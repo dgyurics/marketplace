@@ -8,10 +8,8 @@ import (
 )
 
 type ImageRepository interface {
-	ProductExists(ctx context.Context, productID string) (bool, error)
 	CreateImage(ctx context.Context, image *types.Image) error
 	RemoveImage(ctx context.Context, id string) (ImageDeletionResult, error)
-	PromoteImage(ctx context.Context, id string) error
 }
 
 type imageRepository struct {
@@ -20,13 +18,6 @@ type imageRepository struct {
 
 func NewImageRepository(db *sql.DB) ImageRepository {
 	return &imageRepository{db: db}
-}
-
-func (r *imageRepository) ProductExists(ctx context.Context, productID string) (bool, error) {
-	var exists bool
-	query := `SELECT EXISTS(SELECT 1 FROM products WHERE id = $1)`
-	err := r.db.QueryRowContext(ctx, query, productID).Scan(&exists)
-	return exists, err
 }
 
 func (r *imageRepository) CreateImage(ctx context.Context, image *types.Image) error {
@@ -43,24 +34,6 @@ func (r *imageRepository) CreateImage(ctx context.Context, image *types.Image) e
 		image.Source,
 	)
 	return err
-}
-
-func (r *imageRepository) PromoteImage(ctx context.Context, id string) error {
-	query := `
-		UPDATE images
-		SET updated_at = NOW()
-		WHERE id = $1
-	`
-	res, err := r.db.ExecContext(ctx, query, id)
-	if err != nil {
-		return err
-	}
-	// lib/pq always returns nil error for RowsAffected()
-	rows, _ := res.RowsAffected()
-	if rows == 0 {
-		return types.ErrNotFound
-	}
-	return nil
 }
 
 type ImageDeletionResult struct {
