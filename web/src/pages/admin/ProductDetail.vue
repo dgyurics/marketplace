@@ -1,7 +1,6 @@
 <template>
   <div class="product-detail-container">
-    <div v-if="loading" class="loading">Loading product...</div>
-    <div v-else-if="product" class="edit-form">
+    <div v-if="product" class="edit-form">
       <form @submit.prevent="handleSubmit">
         <div class="form-row">
           <InputText v-model="editProduct.name" label="name" required />
@@ -88,7 +87,6 @@ const router = useRouter()
 
 const product = ref(null)
 const categories = ref([])
-const loading = ref(true)
 const detailsEditor = ref(null)
 
 const categoryOptions = computed(() =>
@@ -116,7 +114,6 @@ const editProduct = ref({
 
 const fetchProduct = async () => {
   try {
-    loading.value = true
     const productId = route.params.id
     const data = await getProductById(productId)
     product.value = data
@@ -138,8 +135,6 @@ const fetchProduct = async () => {
   } catch {
     // Handle error silently
     product.value = null
-  } finally {
-    loading.value = false
   }
 }
 
@@ -234,7 +229,6 @@ onMounted(() => {
   color: #333;
 }
 
-.loading,
 .error {
   text-align: center;
   padding: 40px;

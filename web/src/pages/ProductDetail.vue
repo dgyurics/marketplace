@@ -64,7 +64,6 @@
       </div>
     </div>
   </div>
-  <div v-else class="loading">Loading product...</div>
 </template>
 
 <script setup lang="ts">

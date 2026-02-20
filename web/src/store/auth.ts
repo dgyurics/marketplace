@@ -28,7 +28,6 @@ export const useAuthStore = defineStore('auth', {
     } as JwtUser,
     accessToken: '',
     refreshToken: getRefreshToken(),
-    loading: false,
     error: '',
   }),
 

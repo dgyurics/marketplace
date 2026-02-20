@@ -1,7 +1,6 @@
 <template>
   <div class="order-detail-container">
-    <div v-if="loading" class="loading">Loading order...</div>
-    <div v-else-if="order" class="order-detail">
+    <div v-if="order" class="order-detail">
       <div class="order-header">
         <h1>Order Details</h1>
         <div class="order-meta">
@@ -99,18 +98,14 @@ const route = useRoute()
 const router = useRouter()
 
 const order = ref<Order | null>(null)
-const loading = ref(true)
 
 const fetchOrder = async () => {
   try {
-    loading.value = true
     const orderId = route.params['id'] as string
     const data = await getOrderAdmin(orderId)
     order.value = data
   } catch {
     order.value = null
-  } finally {
-    loading.value = false
   }
 }
 
@@ -129,13 +124,6 @@ onMounted(() => {
   width: 800px;
   margin: auto;
   padding: 20px;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  font-size: 16px;
-  color: #666;
 }
 
 .order-header {

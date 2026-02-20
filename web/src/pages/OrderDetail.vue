@@ -1,7 +1,6 @@
 <template>
   <div class="order-detail-container">
-    <div v-if="loading" class="loading">Loading order...</div>
-    <div v-else-if="order" class="order-detail">
+    <div v-if="order" class="order-detail">
       <div class="order-header">
         <h1>Order Details</h1>
         <div class="order-meta">
@@ -94,7 +93,6 @@ const route = useRoute()
 const router = useRouter()
 
 const order = ref<Order | null>(null)
-const loading = ref(true)
 
 const addressAvailable = (address: Address) => address.id !== ''
 
@@ -119,7 +117,6 @@ const fetchOrder = async () => {
   const orderId = route.params['id'] as string
 
   try {
-    loading.value = true
     order.value = await tryGetOrder(orderId)
   } catch (error: any) {
     const status = error.response?.status
@@ -136,8 +133,6 @@ const fetchOrder = async () => {
 
     // For other errors, just clear the order
     order.value = null
-  } finally {
-    loading.value = false
   }
 }
 
@@ -152,13 +147,6 @@ onMounted(() => {
   width: 800px;
   margin: auto;
   padding: 20px;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  font-size: 16px;
-  color: #666;
 }
 
 .order-header {
