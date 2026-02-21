@@ -216,8 +216,8 @@ func TestGetCartWithImages(t *testing.T) {
 	fetchedProduct := cart[0].Product
 	assert.Equal(t, product.ID, fetchedProduct.ID, "Expected correct product ID")
 	assert.GreaterOrEqual(t, len(fetchedProduct.Images), 2, "Expected at least 2 images for the product")
-	assert.Equal(t, imageURLs[0], fetchedProduct.Images[1].URL, "Expected correct image URL")
-	assert.Equal(t, imageURLs[1], fetchedProduct.Images[0].URL, "Expected correct image URL")
+	assert.Equal(t, imageURLs[0], fetchedProduct.Images[0].URL, "Expected correct image URL")
+	assert.Equal(t, imageURLs[1], fetchedProduct.Images[1].URL, "Expected correct image URL")
 
 	// Cleanup
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
