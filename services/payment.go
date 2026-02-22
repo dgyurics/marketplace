@@ -111,7 +111,7 @@ func (s *paymentService) handlePIEvent(ctx context.Context, event stripe.Event) 
 	case stripe.EventTypePaymentIntentSucceeded:
 		return s.handlePaymentIntentSucceeded(ctx, pi)
 	case stripe.EventTypePaymentIntentCanceled:
-		return s.handlePaymentIntentCancelled(ctx, pi)
+		return s.handlePaymentIntentCanceled(ctx, pi)
 	case stripe.EventTypePaymentIntentPaymentFailed:
 		return s.handlePaymentIntentFailed(ctx, pi)
 	}
@@ -353,7 +353,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 	return nil
 }
 
-func (s *paymentService) handlePaymentIntentCancelled(_ context.Context, pi *stripe.PaymentIntent) error {
+func (s *paymentService) handlePaymentIntentCanceled(_ context.Context, pi *stripe.PaymentIntent) error {
 	orderID := pi.Metadata["order_id"]
 	if orderID == "" {
 		return fmt.Errorf("order_id not found in payment intent metadata")
