@@ -91,7 +91,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewHealthRoutes(baseRouter),
 		routes.NewImageRoutes(services.Image, services.Product, config.Image, baseRouter),
 		routes.NewOrderRoutes(services.Order, services.Tax, services.Payment, services.Cart, services.Address, baseRouter),
-		routes.NewPasswordRoutes(services.Password, services.User, services.Email, services.Template, config.BaseURL, baseRouter),
+		routes.NewPasswordRoutes(services.Password, services.User, services.Notification, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, baseRouter),
 		routes.NewProductRoutes(services.Product, baseRouter),
 		routes.NewRegisterRoutes(services.User, services.JWT, services.Refresh, services.Email, services.Template, config.BaseURL, baseRouter),
@@ -165,6 +165,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		Category:       categoryService,
 		Product:        productService,
 		Cart:           cartService,
+		Notification:   notificationService,
 		Order:          orderService,
 		Image:          imageService,
 		Password:       passwordService,
@@ -190,6 +191,7 @@ type servicesContainer struct {
 	Email          services.EmailService
 	Image          services.ImageService
 	JWT            services.JWTService
+	Notification   services.NotificationService
 	Order          services.OrderService
 	Password       services.PasswordService
 	Payment        services.PaymentService

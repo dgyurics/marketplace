@@ -14,28 +14,22 @@ import (
 
 type PasswordRoutes struct {
 	router
-	servicePassword services.PasswordService
-	serviceUser     services.UserService
-	serviceEmail    services.EmailService
-	serviceTemplate services.TemplateService
-	baseUrl         string
+	passwordService     services.PasswordService
+	userService         services.UserService
+	notificationService services.NotificationService
 }
 
 func NewPasswordRoutes(
-	servicePR services.PasswordService,
-	serviceUsr services.UserService,
-	serviceEmail services.EmailService,
-	serviceTmp services.TemplateService,
-	baseUrl string,
+	passwordService services.PasswordService,
+	userService services.UserService,
+	notificationService services.NotificationService,
 	router router,
 ) *PasswordRoutes {
 	return &PasswordRoutes{
-		router:          router,
-		servicePassword: servicePR,
-		serviceUser:     serviceUsr,
-		serviceEmail:    serviceEmail,
-		serviceTemplate: serviceTmp,
-		baseUrl:         baseUrl,
+		router:              router,
+		passwordService:     passwordService,
+		userService:         userService,
+		notificationService: notificationService,
 	}
 }
 
@@ -54,7 +48,7 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if the user exists
-	usr, err := h.serviceUser.GetUserByEmail(r.Context(), reqBody.Email)
+	usr, err := h.userService.GetUserByEmail(r.Context(), reqBody.Email)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -65,14 +59,14 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate password reset code
-	code, err := h.servicePassword.GenerateResetCode(r.Context())
+	code, err := h.passwordService.GenerateResetCode(r.Context())
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Store password reset code
-	if err := h.servicePassword.StoreResetCode(r.Context(), code, usr.ID); err != nil {
+	if err := h.passwordService.StoreResetCode(r.Context(), code, usr.ID); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -80,20 +74,9 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	// Send password reset email
 	go func(recEmail, code string) {
 		data := map[string]string{
-			"ResetLink": fmt.Sprintf("%s/auth/email/%s/password-reset/%s", h.baseUrl, recEmail, code),
+			"ResetLink": fmt.Sprintf("%s/auth/email/%s/password-reset/%s", h.notificationService.BaseURL(), recEmail, code),
 		}
-		body, err := h.serviceTemplate.RenderToString(services.PasswordReset, data)
-		if err != nil {
-			slog.Error("Error loading email template: ", "error", err)
-			return
-		}
-		email := &types.Email{
-			To:      []string{recEmail},
-			Subject: "Password Reset",
-			Body:    body,
-			IsHTML:  true,
-		}
-		if err := h.serviceEmail.Send(email); err != nil {
+		if err := h.notificationService.SendEmail(recEmail, "Password Reset", services.PasswordReset, data); err != nil {
 			slog.Error("Error sending password reset email: ", "error", err)
 		}
 	}(usr.Email, code)
@@ -125,7 +108,7 @@ func (h *PasswordRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *http.Req
 	}
 
 	// Validate the reset code
-	err := h.servicePassword.ValidateResetCode(r.Context(), credentials.ResetCode, credentials.Email)
+	err := h.passwordService.ValidateResetCode(r.Context(), credentials.ResetCode, credentials.Email)
 	if err == types.ErrConstraintViolation {
 		u.RespondWithError(w, r, http.StatusBadRequest, "invalid or expired reset code")
 		return
@@ -136,7 +119,7 @@ func (h *PasswordRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *http.Req
 	}
 
 	// Reset the password
-	err = h.servicePassword.ResetPassword(r.Context(), credentials.ResetCode, credentials.Email, credentials.Password)
+	err = h.passwordService.ResetPassword(r.Context(), credentials.ResetCode, credentials.Email, credentials.Password)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
