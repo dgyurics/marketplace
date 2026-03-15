@@ -10,5 +10,9 @@ docker compose -f deploy/prod/docker-compose.yaml stop nginx
 docker run --rm -v "marketplace_ssl-certs:/etc/letsencrypt" -p 80:80 -p 443:443 \
     certbot/certbot:v2.11.0 renew --force-renewal --standalone
 
+# Verbose
+docker run --rm -v "marketplace_ssl-certs:/etc/letsencrypt" -p 80:80 -p 443:443
+    certbot/certbot:v2.11.0 renew --force-renewal --standalone --logs-dir /etc/letsencrypt/logs -v
+
 # Start nginx
 docker compose -f deploy/prod/docker-compose.yaml start nginx

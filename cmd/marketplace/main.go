@@ -97,7 +97,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewRegisterRoutes(services.User, services.JWT, services.Refresh, services.Email, services.Template, config.BaseURL, baseRouter),
 		routes.NewTaxRoutes(services.Cart, services.Tax, baseRouter),
 		routes.NewUserRoutes(services.User, services.JWT, services.Refresh, config.Auth, baseRouter),
-		routes.NewClaimRoutes(services.Claim, baseRouter),
+		routes.NewPurchaseIntentRoutes(services.PurchaseIntent, baseRouter),
 		routes.NewLocaleRoutes(baseRouter),
 	)
 
@@ -129,7 +129,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	taxRepository := repositories.NewTaxRepository(db)
 	imageRepository := repositories.NewImageRepository(db)
 	shippingZoneRepository := repositories.NewShippingZoneRepository(db)
-	claimRepository := repositories.NewClaimRepository(db)
+	purchaseIntentRepository := repositories.NewPurchaseIntentRepository(db)
 
 	// create http client required by certain services
 	httpClient := utilities.NewDefaultHTTPClient(30 * time.Second) // TODO make this configurable
@@ -156,50 +156,50 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	jwtService := services.NewJWTService(config.JWT)
 	taxService := services.NewTaxService(taxRepository, config.Payment, httpClient)
-	claimService := services.NewClaimService(claimRepository)
+	purchaseIntentService := services.NewPurchaseIntentService(productRepository, purchaseIntentRepository, userService, productService, templateService, emailService, config.BaseURL)
 
 	return servicesContainer{
-		Address:   addressService,
-		User:      userService,
-		Category:  categoryService,
-		Claim:     claimService,
-		Product:   productService,
-		Cart:      cartService,
-		Order:     orderService,
-		Image:     imageService,
-		Password:  passwordService,
-		RateLimit: rateLimitService,
-		Refresh:   refreshService,
-		Payment:   paymentService,
-		Email:     emailService,
-		JWT:       jwtService,
-		Shipping:  shippingZoneService,
-		Schedule:  scheduleService,
-		Tax:       taxService,
-		Template:  templateService,
+		Address:        addressService,
+		User:           userService,
+		Category:       categoryService,
+		Product:        productService,
+		Cart:           cartService,
+		Order:          orderService,
+		Image:          imageService,
+		Password:       passwordService,
+		RateLimit:      rateLimitService,
+		PurchaseIntent: purchaseIntentService,
+		Refresh:        refreshService,
+		Payment:        paymentService,
+		Email:          emailService,
+		JWT:            jwtService,
+		Shipping:       shippingZoneService,
+		Schedule:       scheduleService,
+		Tax:            taxService,
+		Template:       templateService,
 	}
 }
 
 // servicesContainer holds all service dependencies
 type servicesContainer struct {
-	Address   services.AddressService
-	User      services.UserService
-	Cart      services.CartService
-	Category  services.CategoryService
-	Claim     services.ClaimService
-	Email     services.EmailService
-	Image     services.ImageService
-	JWT       services.JWTService
-	Order     services.OrderService
-	Password  services.PasswordService
-	Payment   services.PaymentService
-	Product   services.ProductService
-	RateLimit services.RateLimitService
-	Refresh   services.RefreshService
-	Shipping  services.ShippingZoneService
-	Schedule  services.ScheduleService
-	Tax       services.TaxService
-	Template  services.TemplateService
+	Address        services.AddressService
+	User           services.UserService
+	Cart           services.CartService
+	Category       services.CategoryService
+	Email          services.EmailService
+	Image          services.ImageService
+	JWT            services.JWTService
+	Order          services.OrderService
+	Password       services.PasswordService
+	Payment        services.PaymentService
+	Product        services.ProductService
+	PurchaseIntent services.PurchaseIntentService
+	RateLimit      services.RateLimitService
+	Refresh        services.RefreshService
+	Shipping       services.ShippingZoneService
+	Schedule       services.ScheduleService
+	Tax            services.TaxService
+	Template       services.TemplateService
 }
 
 // gracefulShutdown handles termination signals and gracefully shuts down the server.

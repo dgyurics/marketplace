@@ -28,6 +28,7 @@ type UserService interface {
 	ConfirmRegistrationCode(ctx context.Context, code string) (*types.User, error)
 	// GET
 	Login(ctx context.Context, credential *types.Credential) (*types.User, error)
+	GetUserByID(ctx context.Context, userID string) (*types.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
 	GetAllAdmins(ctx context.Context) ([]types.User, error)
@@ -117,6 +118,10 @@ func (s *userService) UpdatePassword(ctx context.Context, curPass, newPass strin
 // generateFromPassword generates a hashed password from a plaintext password
 func generateFromPassword(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+}
+
+func (s *userService) GetUserByID(ctx context.Context, userID string) (*types.User, error) {
+	return s.repo.GetUserByID(ctx, userID)
 }
 
 func (s *userService) GetUserByEmail(ctx context.Context, email string) (*types.User, error) {

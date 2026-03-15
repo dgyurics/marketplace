@@ -8,10 +8,11 @@ import AdminOrders from '@/pages/admin/Order.vue'
 import AdminOrderDetail from '@/pages/admin/OrderDetail.vue'
 import AdminProducts from '@/pages/admin/Product.vue'
 import AdminProductEdit from '@/pages/admin/ProductDetail.vue'
+import AdminPurchaseIntents from '@/pages/admin/PurchaseIntent.vue'
+import AdminPurchaseIntentDetail from '@/pages/admin/PurchaseIntentDetail.vue'
 import AdminShippingZones from '@/pages/admin/ShippingZone.vue'
 import AdminUsers from '@/pages/admin/User.vue'
 import Cart from '@/pages/Cart.vue'
-import ClaimItem from '@/pages/ClaimItem.vue'
 import Error from '@/pages/Error.vue'
 import Home from '@/pages/Home.vue'
 import LoginRegister from '@/pages/LoginRegister.vue'
@@ -24,6 +25,7 @@ import Payment from '@/pages/Payment.vue'
 import Product from '@/pages/Product.vue'
 import ProductDetails from '@/pages/ProductDetail.vue'
 import Profile from '@/pages/Profile.vue'
+import PurchaseIntent from '@/pages/PurchaseIntent.vue'
 import RegisterConfirmation from '@/pages/RegisterConfirmation.vue'
 import ShippingAddress from '@/pages/ShippingAddress.vue'
 import Unsupported from '@/pages/Unsupported.vue'
@@ -37,7 +39,7 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/auth', component: LoginRegister },
     { path: '/auth/register-confirm', component: RegisterConfirmation },
     { path: '/cart', component: Cart },
-    { path: '/claim/:id', component: ClaimItem, beforeEnter: requireMember },
+    { path: '/purchase-intent/:id', component: PurchaseIntent, beforeEnter: requireMember },
     { path: '/error', component: Error },
     { path: '/not-found', component: NotFound },
     { path: '/products/:id', component: ProductDetails, props: true },
@@ -59,6 +61,12 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/admin/categories/:id', component: AdminCategoryDetail, beforeEnter: requireAdmin },
     { path: '/admin/orders', component: AdminOrders, beforeEnter: requireAdmin },
     { path: '/admin/orders/:id', component: AdminOrderDetail, beforeEnter: requireAdmin },
+    { path: '/admin/purchase-intents', component: AdminPurchaseIntents, beforeEnter: requireAdmin },
+    {
+      path: '/admin/purchase-intents/:id',
+      component: AdminPurchaseIntentDetail,
+      beforeEnter: requireAdmin,
+    },
     { path: '/admin/shipping-zones', component: AdminShippingZones, beforeEnter: requireAdmin },
     { path: '/admin/users', component: AdminUsers, beforeEnter: requireAdmin },
     { path: '/new', component: Product, props: { sortBy: 'newest' }, name: 'NewProducts' },

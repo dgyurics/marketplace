@@ -10,10 +10,12 @@ import (
 type Template string
 
 const (
-	PasswordReset     Template = "password_reset.html"
-	OrderConfirmation Template = "order_confirmation.html"
-	OrderNotification Template = "order_notification.html"
-	EmailVerification Template = "email_verification.html"
+	PasswordReset              Template = "password_reset.html"
+	OrderConfirmation          Template = "order_confirmation.html"
+	OrderNotification          Template = "order_notification.html"
+	EmailVerification          Template = "email_verification.html"
+	PurchaseIntentUpdate       Template = "purchase_intent_update.html"
+	PurchaseIntentNotification Template = "purchase_intent_notification.html"
 )
 
 // TemplateService defines methods for managing HTML templates.

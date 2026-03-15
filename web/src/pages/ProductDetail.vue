@@ -31,15 +31,18 @@
           </div>
         </div>
         <div>
+          <button v-if="hasPendingOffer" class="btn-lg btn-pending" disabled>
+            <span>Offer Pending</span>
+          </button>
           <button
-            v-if="isFreeItem"
+            v-else-if="showPurchaseIntentButton"
             class="btn-lg"
-            :disabled="isOutOfStock || !canClaimItem"
+            :disabled="isOutOfStock || !canPurchaseIntent"
             :tabindex="0"
-            @click="goToClaim"
+            @click="goToPurchaseIntent"
           >
-            <span v-if="!canClaimItem">Member Item</span>
-            <span v-else-if="!isOutOfStock">Claim Item</span>
+            <span v-if="!canPurchaseIntent">Member Item</span>
+            <span v-else-if="!isOutOfStock">{{ isFreeItem ? 'Claim Item' : 'Make an Offer' }}</span>
             <span v-else>Out of Stock</span>
           </button>
           <template v-else>
@@ -73,10 +76,14 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import { ref, onMounted, computed, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getProductById, createGuestUser as apiCreateGuestUser } from '@/services/api'
+import {
+  getProductById,
+  createGuestUser as apiCreateGuestUser,
+  getPurchaseIntentsByProductId,
+} from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
-import type { AuthTokens, Product } from '@/types'
+import type { AuthTokens, Product, PurchaseIntent } from '@/types'
 import { displayPrice } from '@/utilities/currency'
 
 // @ts-ignore
@@ -110,6 +117,7 @@ const product = reactive<Product>({
 })
 
 const addedToCart = ref(false)
+const purchaseIntents = ref<PurchaseIntent[]>([])
 
 const isLowStock = computed(() => product.inventory > 0 && product.inventory <= 20)
 const currentQuantityInCart = computed(() => cartStore.itemCountByProductId(product.id))
@@ -124,14 +132,28 @@ const isOutOfStock = computed(() => currentQuantityInCart.value >= product.inven
 const showLowStockWarning = computed(
   () => isLowStock.value && !isOutOfStock.value && !hasReachedCartLimit.value
 )
-const isFreeItem = computed(() => product.price === 0 || product.pickup_only)
-const canClaimItem = computed(() => isAuthenticated.value && authStore.hasMinimumRole('member'))
+const isFreeItem = computed(() => product.price === 0)
+const isPickupOnly = computed(() => product.pickup_only)
+const canPurchaseIntent = computed(
+  () => isAuthenticated.value && authStore.hasMinimumRole('member')
+)
+const showPurchaseIntentButton = computed(() => isFreeItem.value || isPickupOnly.value)
+const hasPendingOffer = computed(() => purchaseIntents.value.some((pi) => pi.status === 'pending'))
 
 onMounted(async () => {
   try {
     const productData = await getProductById(String(route.params['id']))
     productData.images = productData.images.filter((img) => img.type === 'gallery')
     Object.assign(product, productData)
+
+    // Check if existing purchase intents exists
+    if (isAuthenticated.value) {
+      try {
+        purchaseIntents.value = await getPurchaseIntentsByProductId(String(route.params['id']))
+      } catch (error) {
+        console.error('Error fetching purchase intents:', error)
+      }
+    }
   } catch (error) {
     console.error('Error fetching product:', error)
   }
@@ -158,8 +180,8 @@ const addToCart = async () => {
   }
 }
 
-const goToClaim = () => {
-  router.push(`/claim/${product.id}`)
+const goToPurchaseIntent = () => {
+  router.push(`/purchase-intent/${product.id}`)
 }
 </script>
 
@@ -307,6 +329,12 @@ const goToClaim = () => {
   font-size: 12px;
   color: #c00;
   margin-top: 8px;
+}
+
+.btn-pending {
+  background-color: #ccc;
+  color: #666;
+  cursor: not-allowed;
 }
 
 .detail-item {

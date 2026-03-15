@@ -8,6 +8,8 @@ import type {
   Order,
   Category,
   CreateOrderResponse,
+  PurchaseIntent,
+  PurchaseIntentStatus,
   AuthTokens,
   Image,
   ImageType,
@@ -380,9 +382,37 @@ export const removeExcludedShippingZone = async (zoneId: string): Promise<void> 
   await apiClient.delete(`/shipping-zones/excluded/${zoneId}`)
 }
 
-export const claimItem = async (productId: string, pickupNotes: string): Promise<void> => {
-  const response = await apiClient.post(`/claims/items/${productId}`, {
+export const createPurchaseIntent = async (
+  productId: string,
+  offerPrice: number,
+  pickupNotes: string
+): Promise<void> => {
+  const response = await apiClient.post(`/purchase-intents/items/${productId}`, {
+    offer_price: offerPrice,
     pickup_notes: pickupNotes,
   })
+  return response.data
+}
+
+export const updatePurchaseIntent = async (
+  purchaseIntentId: string,
+  status: PurchaseIntentStatus
+): Promise<void> => {
+  const response = await apiClient.put(`/purchase-intents/${purchaseIntentId}/${status}`)
+  return response.data
+}
+
+export const getPurchaseIntents = async (): Promise<PurchaseIntent[]> => {
+  const response = await apiClient.get('/purchase-intents')
+  return response.data
+}
+
+export const getPurchaseIntentById = async (id: string): Promise<PurchaseIntent> => {
+  const response = await apiClient.get(`/purchase-intents/${id}`)
+  return response.data
+}
+
+export const getPurchaseIntentsByProductId = async (id: string): Promise<PurchaseIntent[]> => {
+  const response = await apiClient.get(`/purchase-intents/items/${id}`)
   return response.data
 }
