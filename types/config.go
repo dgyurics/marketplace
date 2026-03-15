@@ -113,6 +113,5 @@ type ImageConfig struct {
 type PaymentConfig struct {
 	Stripe      StripeConfig
 	Tax         TaxConfig
-	BaseURL     string
 	Environment Environment
 }

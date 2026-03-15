@@ -33,28 +33,25 @@ type PaymentService interface {
 }
 
 type paymentService struct {
-	HttpClient   utilities.HTTPClient
-	config       types.PaymentConfig
-	serviceEmail EmailService
-	serviceTmp   TemplateService
-	serviceUser  UserService
-	repo         repositories.OrderRepository
+	HttpClient          utilities.HTTPClient
+	config              types.PaymentConfig
+	notificationService NotificationService
+	serviceUser         UserService
+	repo                repositories.OrderRepository
 }
 
 func NewPaymentService(
 	httpClient utilities.HTTPClient,
 	config types.PaymentConfig,
-	serviceEmail EmailService,
-	serviceTmp TemplateService,
+	notificationService NotificationService,
 	serviceUser UserService,
 	repo repositories.OrderRepository) PaymentService {
 	return &paymentService{
-		HttpClient:   httpClient,
-		config:       config,
-		serviceEmail: serviceEmail,
-		serviceTmp:   serviceTmp,
-		serviceUser:  serviceUser,
-		repo:         repo,
+		HttpClient:          httpClient,
+		config:              config,
+		notificationService: notificationService,
+		serviceUser:         serviceUser,
+		repo:                repo,
 	}
 }
 
@@ -294,22 +291,11 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 
 	// Send payment success email to customer
 	go func(recEmail, orderID string) {
-		detailsLink := fmt.Sprintf("%s/orders/%s", s.config.BaseURL, orderID)
+		detailsLink := fmt.Sprintf("%s/orders/%s", s.notificationService.BaseURL(), orderID)
 		data := map[string]string{
 			"DetailsLink": detailsLink,
 		}
-		body, err := s.serviceTmp.RenderToString(OrderConfirmation, data)
-		if err != nil {
-			slog.Error("Error loading email template: ", "error", err)
-			return
-		}
-		email := &types.Email{
-			To:      []string{recEmail},
-			Subject: "Order Confirmation",
-			Body:    body,
-			IsHTML:  true,
-		}
-		if err := s.serviceEmail.Send(email); err != nil {
+		if err := s.notificationService.SendEmail(recEmail, "Order Confirmation", OrderConfirmation, data); err != nil {
 			slog.Error("Error sending order confirmation email: ", "order_id", order.ID, "error", err)
 		}
 	}(order.Address.Email, order.ID)
@@ -321,32 +307,16 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 			slog.Error("Error fetching admin users: ", "error", err)
 			return
 		}
-
-		// Extract emails
-		adminEmails := make([]string, len(admins))
-		for i, admin := range admins {
-			adminEmails[i] = admin.Email
-		}
-
-		detailsLink := fmt.Sprintf("%s/admin/orders/%s", s.config.BaseURL, orderID)
+		detailsLink := fmt.Sprintf("%s/admin/orders/%s", s.notificationService.BaseURL(), orderID)
 		data := map[string]string{
 			"OrderID":       order.ID,
 			"CustomerEmail": order.Address.Email,
 			"DetailsLink":   detailsLink,
 		}
-		body, err := s.serviceTmp.RenderToString(OrderNotification, data)
-		if err != nil {
-			slog.Error("Error loading email template: ", "error", err)
-			return
-		}
-		email := &types.Email{
-			To:      adminEmails,
-			Subject: "Order Notification",
-			Body:    body,
-			IsHTML:  true,
-		}
-		if err := s.serviceEmail.Send(email); err != nil {
-			slog.Error("Error sending order notification email: ", "order_id", order.ID, "error", err)
+		for _, admin := range admins {
+			if err := s.notificationService.SendEmail(admin.Email, "Order Notification", OrderNotification, data); err != nil {
+				slog.Error("Error sending order notification email: ", "order_id", order.ID, "error", err)
+			}
 		}
 	}(order)
 

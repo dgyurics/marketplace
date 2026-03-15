@@ -29,7 +29,7 @@ func LoadConfig() types.Config {
 		Email:        loadEmailConfig(),
 		Logger:       loadLoggerConfig(),
 		MachineID:    loadMachineID(),
-		Payment:      loadPaymentConfig(baseURL, environment),
+		Payment:      loadPaymentConfig(environment),
 		JWT:          loadJWTConfig(),
 		Image:        loadImageConfig(),
 		RateLimit:    loadRateLimit(),
@@ -147,11 +147,10 @@ func loadImageConfig() types.ImageConfig {
 	}
 }
 
-func loadPaymentConfig(baseURL string, env types.Environment) types.PaymentConfig {
+func loadPaymentConfig(env types.Environment) types.PaymentConfig {
 	return types.PaymentConfig{
 		Stripe:      loadStripeConfig(),
 		Tax:         loadTaxConfig(),
-		BaseURL:     baseURL,
 		Environment: env,
 	}
 }
