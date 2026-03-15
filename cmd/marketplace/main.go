@@ -142,6 +142,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	}
 	scheduleService := services.NewScheduleService(db)
 	emailService := services.NewEmailService(config.Email)
+	notificationService := services.NewNotificationService(emailService, templateService, config.BaseURL)
 	addressService := services.NewAddressService(addressRepository)
 	shippingZoneService := services.NewShippingZoneService(shippingZoneRepository)
 	userService := services.NewUserService(userRepository)
@@ -156,7 +157,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	jwtService := services.NewJWTService(config.JWT)
 	taxService := services.NewTaxService(taxRepository, config.Payment, httpClient)
-	purchaseIntentService := services.NewPurchaseIntentService(productRepository, purchaseIntentRepository, userService, productService, templateService, emailService, config.BaseURL)
+	purchaseIntentService := services.NewPurchaseIntentService(productRepository, purchaseIntentRepository, userService, productService, notificationService)
 
 	return servicesContainer{
 		Address:        addressService,

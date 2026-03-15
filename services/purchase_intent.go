@@ -21,31 +21,25 @@ type PurchaseIntentService interface {
 func NewPurchaseIntentService(
 	repoProduct repositories.ProductRepository,
 	repoPurchaseIntent repositories.PurchaseIntentRepository,
-	serviceUser UserService,
-	serviceProduct ProductService,
-	templateService TemplateService,
-	emailService EmailService,
-	baseURL string,
+	userService UserService,
+	productService ProductService,
+	notificationService NotificationService,
 ) PurchaseIntentService {
 	return &purchaseIntentService{
-		repoPurchaseIntent: repoPurchaseIntent,
-		repoProduct:        repoProduct,
-		serviceUser:        serviceUser,
-		serviceProduct:     serviceProduct,
-		templateService:    templateService,
-		emailService:       emailService,
-		baseURL:            baseURL,
+		repoPurchaseIntent:  repoPurchaseIntent,
+		repoProduct:         repoProduct,
+		userService:         userService,
+		productService:      productService,
+		notificationService: notificationService,
 	}
 }
 
 type purchaseIntentService struct {
-	repoPurchaseIntent repositories.PurchaseIntentRepository
-	repoProduct        repositories.ProductRepository
-	serviceUser        UserService
-	serviceProduct     ProductService
-	templateService    TemplateService
-	emailService       EmailService
-	baseURL            string
+	repoPurchaseIntent  repositories.PurchaseIntentRepository
+	repoProduct         repositories.ProductRepository
+	userService         UserService
+	productService      ProductService
+	notificationService NotificationService
 }
 
 func (ps *purchaseIntentService) CreatePurchaseIntent(ctx context.Context, purchaseIntent *types.PurchaseIntent) (err error) {
@@ -74,7 +68,7 @@ func (ps *purchaseIntentService) CreatePurchaseIntent(ctx context.Context, purch
 
 	// email customer if auto-accepted
 	if purchaseIntent.Status == types.PurchaseIntentAccepted {
-		purchaseIntent.Product, err = ps.serviceProduct.GetProductByID(ctx, purchaseIntent.Product.ID)
+		purchaseIntent.Product, err = ps.productService.GetProductByID(ctx, purchaseIntent.Product.ID)
 		if err != nil {
 			return err
 		}
@@ -91,7 +85,7 @@ func (ps *purchaseIntentService) UpdatePurchaseIntent(ctx context.Context, purch
 
 	// email customer if purchaseintent status changes to accepted or rejected
 	if purchaseIntent.Status == types.PurchaseIntentAccepted || purchaseIntent.Status == types.PurchaseIntentRejected {
-		product, err := ps.serviceProduct.GetProductByID(ctx, purchaseIntent.Product.ID)
+		product, err := ps.productService.GetProductByID(ctx, purchaseIntent.Product.ID)
 		if err != nil {
 			return err
 		}
@@ -115,7 +109,7 @@ func (ps *purchaseIntentService) GetPurchaseIntents(ctx context.Context) ([]type
 
 // Send payment intent update to user
 func (ps *purchaseIntentService) PaymentIntentUpdateEmail(purchaseIntent types.PurchaseIntent) {
-	usr, err := ps.serviceUser.GetUserByID(context.Background(), purchaseIntent.UserID)
+	usr, err := ps.userService.GetUserByID(context.Background(), purchaseIntent.UserID)
 	if err != nil {
 		slog.Error("Error fetching user", "ID", purchaseIntent.UserID, "error", err)
 		return
@@ -125,54 +119,29 @@ func (ps *purchaseIntentService) PaymentIntentUpdateEmail(purchaseIntent types.P
 		"ProductName": purchaseIntent.Product.Name,
 		"Status":      string(purchaseIntent.Status),
 	}
-	body, err := ps.templateService.RenderToString(PurchaseIntentUpdate, data)
-	if err != nil {
-		slog.Error("Error loading email template: ", "error", err)
-		return
-	}
-	email := &types.Email{
-		To:      []string{usr.Email},
-		Subject: "Purchase Intent Update",
-		Body:    body,
-		IsHTML:  true,
-	}
-	if err := ps.emailService.Send(email); err != nil {
+	if err := ps.notificationService.SendEmail(usr.Email, "Purchase Intent Update", PurchaseIntentUpdate, data); err != nil {
 		slog.Error("Error sending purchase intent update email: ", "purchase_intent_id", purchaseIntent.ID, "error", err)
 	}
 }
 
 // Send payment intent notification to admins
 func (ps *purchaseIntentService) PaymentIntentNotificationEmail(purchaseIntent types.PurchaseIntent) {
-	admins, err := ps.serviceUser.GetAllAdmins(context.Background())
+	admins, err := ps.userService.GetAllAdmins(context.Background())
 	if err != nil {
 		slog.Error("Error fetching admin users: ", "error", err)
 		return
 	}
 
-	// Extract emails
-	adminEmails := make([]string, len(admins))
-	for i, admin := range admins {
-		adminEmails[i] = admin.Email
-	}
-
-	detailsLink := fmt.Sprintf("%s/admin/purchase-intents/%s", ps.baseURL, purchaseIntent.ID)
+	detailsLink := fmt.Sprintf("%s/admin/purchase-intents/%s", ps.notificationService.BaseURL(), purchaseIntent.ID)
 	data := map[string]string{
 		"ID":          purchaseIntent.ID,
 		"CustomerID":  purchaseIntent.UserID,
 		"DetailsLink": detailsLink,
 	}
-	body, err := ps.templateService.RenderToString(PurchaseIntentNotification, data)
-	if err != nil {
-		slog.Error("Error loading email template: ", "error", err)
-		return
-	}
-	email := &types.Email{
-		To:      adminEmails,
-		Subject: "Purchase Intent Notification",
-		Body:    body,
-		IsHTML:  true,
-	}
-	if err := ps.emailService.Send(email); err != nil {
-		slog.Error("Error sending purchase intent notification email: ", "purchase_intent_id", purchaseIntent.ID, "error", err)
+
+	for _, admin := range admins {
+		if err := ps.notificationService.SendEmail(admin.Email, "Purchase Intent Notification", PurchaseIntentNotification, data); err != nil {
+			slog.Error("Error sending purchase intent notification email: ", "purchase_intent_id", purchaseIntent.ID, "error", err)
+		}
 	}
 }
