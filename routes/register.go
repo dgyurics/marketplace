@@ -17,29 +17,23 @@ import (
 
 type RegisterRoutes struct {
 	router
-	userService     services.UserService
-	jwtService      services.JWTService
-	refreshService  services.RefreshService
-	emailService    services.EmailService
-	templateService services.TemplateService
-	baseURL         string // TODO move BaseURL INSIDE tempalteService
+	userService         services.UserService
+	jwtService          services.JWTService
+	refreshService      services.RefreshService
+	notificationService services.NotificationService
 }
 
 func NewRegisterRoutes(userService services.UserService,
 	jwtService services.JWTService,
 	refreshService services.RefreshService,
-	emailService services.EmailService,
-	templateService services.TemplateService,
-	baseURL string,
+	notificationService services.NotificationService,
 	router router) *RegisterRoutes {
 	return &RegisterRoutes{
-		router:          router,
-		userService:     userService,
-		jwtService:      jwtService,
-		refreshService:  refreshService,
-		emailService:    emailService,
-		templateService: templateService,
-		baseURL:         baseURL,
+		router:              router,
+		userService:         userService,
+		jwtService:          jwtService,
+		refreshService:      refreshService,
+		notificationService: notificationService,
 	}
 }
 
@@ -84,24 +78,11 @@ func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
 
 	// email customer email verification link
 	go func(email, code string) {
-		detailsLink := fmt.Sprintf("%s/auth?registration-code=%s",
-			h.baseURL,
-			url.QueryEscape(code))
+		detailsLink := fmt.Sprintf("%s/auth?registration-code=%s", h.notificationService.BaseURL(), url.QueryEscape(code))
 		data := map[string]string{
 			"DetailsLink": detailsLink,
 		}
-		body, err := h.templateService.RenderToString(services.EmailVerification, data)
-		if err != nil {
-			slog.Error("Error loading email template: ", "error", err)
-			return
-		}
-		payload := &types.Email{
-			To:      []string{email},
-			Subject: "Email Verification",
-			Body:    body,
-			IsHTML:  true,
-		}
-		if err := h.emailService.Send(payload); err != nil {
+		if err := h.notificationService.SendEmail(email, "Email Verification", services.EmailVerification, data); err != nil {
 			slog.Error("Error sending new user registration email: ", "email", email, "error", err)
 		}
 	}(usr.Email, code)
@@ -181,24 +162,9 @@ func (h *RegisterRoutes) InviteUser(w http.ResponseWriter, r *http.Request) {
 
 	// send invitation email
 	go func(email, code string) {
-		detailsLink := fmt.Sprintf("%s/auth/accept-invite?registration-code=%s",
-			h.baseURL,
-			url.QueryEscape(code))
-		data := map[string]string{
-			"DetailsLink": detailsLink,
-		}
-		body, err := h.templateService.RenderToString(services.EmailVerification, data)
-		if err != nil {
-			slog.Error("Error loading email template: ", "error", err)
-			return
-		}
-		payload := &types.Email{
-			To:      []string{email},
-			Subject: "Invitation to join Marketplace",
-			Body:    body,
-			IsHTML:  true,
-		}
-		if err := h.emailService.Send(payload); err != nil {
+		detailsLink := fmt.Sprintf("%s/auth/accept-invite?registration-code=%s", h.notificationService.BaseURL(), url.QueryEscape(code))
+		data := map[string]string{"DetailsLink": detailsLink}
+		if err := h.notificationService.SendEmail(email, "Invitation to join Marketplace", services.EmailVerification, data); err != nil {
 			slog.Error("Error sending new user registration email: ", "email", email, "error", err)
 		}
 	}(usr.Email, code)
