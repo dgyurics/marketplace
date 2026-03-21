@@ -2,8 +2,11 @@ package services
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io"
+	"log/slog"
+	"os"
 	"path/filepath"
 )
 
@@ -29,12 +32,13 @@ type templateService struct {
 }
 
 // NewTemplateService initializes and loads all templates from the given directory.
-func NewTemplateService(templateDir string) (TemplateService, error) {
+func NewTemplateService(templateDir string) TemplateService {
 	tmpl, err := loadTemplates(templateDir)
 	if err != nil {
-		return nil, err
+		slog.Error("Failed to load templates", "error", err, "templateDir", templateDir)
+		os.Exit(1)
 	}
-	return &templateService{templates: tmpl}, nil
+	return &templateService{templates: tmpl}
 }
 
 // loadTemplates parses all templates in the specified directory.
@@ -44,7 +48,7 @@ func loadTemplates(templateDir string) (*template.Template, error) {
 		return nil, err
 	}
 	if len(files) == 0 {
-		return nil, err
+		return nil, fmt.Errorf("no templates found in directory: %s", templateDir)
 	}
 
 	return template.ParseFiles(files...)

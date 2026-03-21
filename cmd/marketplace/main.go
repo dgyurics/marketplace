@@ -135,11 +135,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	httpClient := utilities.NewDefaultHTTPClient(30 * time.Second) // TODO make this configurable
 
 	// create services
-	templateService, err := services.NewTemplateService(config.TemplatesDir)
-	if err != nil {
-		slog.Error("Failed to initialize template service", "error", err, "templatesDir", config.TemplatesDir)
-		os.Exit(1)
-	}
+	templateService := services.NewTemplateService(config.TemplatesDir)
 	scheduleService := services.NewScheduleService(db)
 	emailService := services.NewEmailService(config.Email)
 	notificationService := services.NewNotificationService(emailService, templateService, config.BaseURL)
@@ -161,34 +157,30 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 
 	return servicesContainer{
 		Address:        addressService,
-		User:           userService,
 		Category:       categoryService,
-		Product:        productService,
 		Cart:           cartService,
+		Image:          imageService,
+		JWT:            jwtService,
 		Notification:   notificationService,
 		Order:          orderService,
-		Image:          imageService,
 		Password:       passwordService,
-		RateLimit:      rateLimitService,
-		PurchaseIntent: purchaseIntentService,
-		Refresh:        refreshService,
 		Payment:        paymentService,
-		Email:          emailService,
-		JWT:            jwtService,
+		Product:        productService,
+		PurchaseIntent: purchaseIntentService,
+		RateLimit:      rateLimitService,
+		Refresh:        refreshService,
 		Shipping:       shippingZoneService,
 		Schedule:       scheduleService,
 		Tax:            taxService,
-		Template:       templateService,
+		User:           userService,
 	}
 }
 
 // servicesContainer holds all service dependencies
 type servicesContainer struct {
 	Address        services.AddressService
-	User           services.UserService
 	Cart           services.CartService
 	Category       services.CategoryService
-	Email          services.EmailService
 	Image          services.ImageService
 	JWT            services.JWTService
 	Notification   services.NotificationService
@@ -202,7 +194,7 @@ type servicesContainer struct {
 	Shipping       services.ShippingZoneService
 	Schedule       services.ScheduleService
 	Tax            services.TaxService
-	Template       services.TemplateService
+	User           services.UserService
 }
 
 // gracefulShutdown handles termination signals and gracefully shuts down the server.

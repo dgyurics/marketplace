@@ -7,8 +7,7 @@ import (
 )
 
 func TestRenderToString(t *testing.T) {
-	tmplMgr, err := NewTemplateService("../utilities/templates")
-	assert.NoError(t, err, "Template manager should load without errors")
+	tmplMgr := NewTemplateService("../utilities/templates")
 
 	data := map[string]interface{}{
 		"ResetLink": "http://marketplace.com/user/password-reset/1234",
