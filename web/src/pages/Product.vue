@@ -96,4 +96,24 @@ const resetAndFetch = () => {
   font-family: 'Open Sans', sans-serif;
   margin-top: 20px;
 }
+
+/* Tablet breakpoint */
+@media (max-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+}
+
+/* Mobile breakpoint */
+@media (max-width: 480px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .product-container {
+    padding: 15px;
+  }
+}
 </style>

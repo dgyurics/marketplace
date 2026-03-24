@@ -28,7 +28,6 @@ import ProductDetails from '@/pages/ProductDetail.vue'
 import Profile from '@/pages/Profile.vue'
 import RegisterConfirmation from '@/pages/RegisterConfirmation.vue'
 import ShippingAddress from '@/pages/ShippingAddress.vue'
-import Unsupported from '@/pages/Unsupported.vue'
 import { getCategories } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 
@@ -54,7 +53,6 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/checkout/confirmation', component: OrderConfirmation },
     { path: '/orders/:id', component: OrderDetail },
     { path: '/profile', component: Profile, beforeEnter: requireUser },
-    { path: '/unsupported', component: Unsupported },
     { path: '/admin/products', component: AdminProducts, beforeEnter: requireAdmin },
     { path: '/admin/products/:id', component: AdminProductEdit, beforeEnter: requireAdmin },
     { path: '/admin/categories', component: AdminCategories, beforeEnter: requireAdmin },

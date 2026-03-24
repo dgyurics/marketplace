@@ -1,7 +1,7 @@
 <template>
   <main class="app-container">
     <Banner v-if="TEST_MODE" :message="bannerMessage" />
-    <NavBar v-if="!isMobile && !isNotFound" />
+    <NavBar v-if="!isNotFound" />
     <div class="content" :class="{ 'home-content': route.path === '/' }">
       <router-view />
     </div>
@@ -10,8 +10,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
 import Banner from '@/components/Banner.vue'
 import Footer from '@/components/Footer.vue'
@@ -19,21 +19,12 @@ import NavBar from '@/components/NavBar.vue'
 import { TEST_MODE } from '@/config'
 
 const route = useRoute()
-const router = useRouter()
-const isMobile = ref(false)
 
 const isNotFound = computed(() => {
   return route.matched.length === 1 && route.matched[0].path === '/:pathMatch(.*)*'
 })
 
 const bannerMessage = 'DEMO ONLY - Products not for sale'
-
-onMounted(() => {
-  isMobile.value = window.innerWidth < 768
-  if (isMobile.value) {
-    router.replace('/unsupported')
-  }
-})
 </script>
 
 <style scoped>

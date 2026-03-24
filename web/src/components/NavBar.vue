@@ -61,7 +61,7 @@ nav {
   position: relative;
   top: 0;
   left: 0;
-  width: 100vw;
+  width: 100%;
   z-index: 1000;
   background: #fff;
   color: #000;
@@ -85,12 +85,10 @@ nav {
 .nav-left {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
 }
 
 .logo {
   text-transform: uppercase;
-  letter-spacing: 0.05em;
   font-size: 1rem;
   letter-spacing: 0.05em;
   color: #000;
@@ -149,13 +147,11 @@ nav {
 /* Right Section - Icons */
 .nav-right {
   display: flex;
-  justify-content: flex-end;
 }
 
 .nav-icons {
   display: flex;
   gap: 1.5rem;
-  justify-content: flex-end;
 }
 
 .nav-icons .icon {

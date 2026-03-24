@@ -66,37 +66,38 @@ onMounted(() => {
 
 <style scoped>
 .home-container {
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 10px;
+  padding: 0;
   box-sizing: border-box;
 }
 
 .feature-container {
-  width: 100vw;
+  width: calc(100% - 40px);
   height: calc(40vh - 10px);
   max-height: 400px;
   overflow: hidden;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 1160px;
+  margin: 10px auto 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   background-color: #000;
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .product-section {
-  width: 100vw;
+  width: 100%;
   min-height: 50vh;
   background-color: #fff;
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .product-grid {
@@ -107,15 +108,24 @@ onMounted(() => {
   margin-top: 20px;
 }
 
-.feature-image {
-  width: 100vw;
-  height: 100vh;
-  object-fit: cover;
-  position: absolute;
-  filter: grayscale(0.3);
-  top: 0;
-  left: 0;
-  z-index: -1;
+/* Tablet breakpoint */
+@media (max-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+}
+
+/* Mobile breakpoint */
+@media (max-width: 480px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .product-section {
+    padding: 15px;
+  }
 }
 
 .hero-content {
@@ -157,12 +167,13 @@ onMounted(() => {
 
 .hero-buttons button {
   color: #fff;
-  background: #0000;
+  background: transparent;
   border: 1px solid #fff;
   flex: none !important;
   display: inline-block !important;
 }
-button:hover {
+
+.hero-buttons button:hover {
   background: #ffffff;
   color: #000;
 }
