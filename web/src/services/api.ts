@@ -8,8 +8,8 @@ import type {
   Order,
   Category,
   CreateOrderResponse,
-  PurchaseIntent,
-  PurchaseIntentStatus,
+  Offer,
+  OfferStatus,
   AuthTokens,
   Image,
   ImageType,
@@ -382,37 +382,34 @@ export const removeExcludedShippingZone = async (zoneId: string): Promise<void> 
   await apiClient.delete(`/shipping-zones/excluded/${zoneId}`)
 }
 
-export const createPurchaseIntent = async (
+export const createOffer = async (
   productId: string,
-  offerPrice: number,
+  amount: number,
   pickupNotes: string
 ): Promise<void> => {
-  const response = await apiClient.post(`/purchase-intents/items/${productId}`, {
-    offer_price: offerPrice,
+  const response = await apiClient.post(`/offers/items/${productId}`, {
+    amount,
     pickup_notes: pickupNotes,
   })
   return response.data
 }
 
-export const updatePurchaseIntent = async (
-  purchaseIntentId: string,
-  status: PurchaseIntentStatus
-): Promise<void> => {
-  const response = await apiClient.put(`/purchase-intents/${purchaseIntentId}/${status}`)
+export const updateOffer = async (offerId: string, status: OfferStatus): Promise<void> => {
+  const response = await apiClient.put(`/offers/${offerId}/${status}`)
   return response.data
 }
 
-export const getPurchaseIntents = async (): Promise<PurchaseIntent[]> => {
-  const response = await apiClient.get('/purchase-intents')
+export const getOffers = async (): Promise<Offer[]> => {
+  const response = await apiClient.get('/offers')
   return response.data
 }
 
-export const getPurchaseIntentById = async (id: string): Promise<PurchaseIntent> => {
-  const response = await apiClient.get(`/purchase-intents/${id}`)
+export const getOfferById = async (id: string): Promise<Offer> => {
+  const response = await apiClient.get(`/offers/${id}`)
   return response.data
 }
 
-export const getPurchaseIntentsByProductId = async (id: string): Promise<PurchaseIntent[]> => {
-  const response = await apiClient.get(`/purchase-intents/items/${id}`)
+export const getOffersByProductId = async (id: string): Promise<Offer[]> => {
+  const response = await apiClient.get(`/offers/items/${id}`)
   return response.data
 }

@@ -35,13 +35,13 @@
             <span>Offer Pending</span>
           </button>
           <button
-            v-else-if="showPurchaseIntentButton"
+            v-else-if="showOfferButton"
             class="btn-lg"
-            :disabled="isOutOfStock || !canPurchaseIntent"
+            :disabled="isOutOfStock || !canOffer"
             :tabindex="0"
-            @click="goToPurchaseIntent"
+            @click="goToOffer"
           >
-            <span v-if="!canPurchaseIntent">Member Item</span>
+            <span v-if="!canOffer">Member Item</span>
             <span v-else-if="!isOutOfStock">{{ isFreeItem ? 'Claim Item' : 'Make an Offer' }}</span>
             <span v-else>Out of Stock</span>
           </button>
@@ -79,11 +79,11 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   getProductById,
   createGuestUser as apiCreateGuestUser,
-  getPurchaseIntentsByProductId,
+  getOffersByProductId,
 } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
-import type { AuthTokens, Product, PurchaseIntent } from '@/types'
+import type { AuthTokens, Product, Offer } from '@/types'
 import { displayPrice } from '@/utilities/currency'
 
 // @ts-ignore
@@ -117,7 +117,7 @@ const product = reactive<Product>({
 })
 
 const addedToCart = ref(false)
-const purchaseIntents = ref<PurchaseIntent[]>([])
+const offers = ref<Offer[]>([])
 
 const isLowStock = computed(() => product.inventory > 0 && product.inventory <= 20)
 const currentQuantityInCart = computed(() => cartStore.itemCountByProductId(product.id))
@@ -134,11 +134,9 @@ const showLowStockWarning = computed(
 )
 const isFreeItem = computed(() => product.price === 0)
 const isPickupOnly = computed(() => product.pickup_only)
-const canPurchaseIntent = computed(
-  () => isAuthenticated.value && authStore.hasMinimumRole('member')
-)
-const showPurchaseIntentButton = computed(() => isFreeItem.value || isPickupOnly.value)
-const hasPendingOffer = computed(() => purchaseIntents.value.some((pi) => pi.status === 'pending'))
+const canOffer = computed(() => isAuthenticated.value && authStore.hasMinimumRole('member'))
+const showOfferButton = computed(() => isFreeItem.value || isPickupOnly.value)
+const hasPendingOffer = computed(() => offers.value.some((pi) => pi.status === 'pending'))
 
 onMounted(async () => {
   try {
@@ -146,12 +144,12 @@ onMounted(async () => {
     productData.images = productData.images.filter((img) => img.type === 'gallery')
     Object.assign(product, productData)
 
-    // Check if existing purchase intents exists
+    // Check if existing offers exists
     if (isAuthenticated.value) {
       try {
-        purchaseIntents.value = await getPurchaseIntentsByProductId(String(route.params['id']))
+        offers.value = await getOffersByProductId(String(route.params['id']))
       } catch (error) {
-        console.error('Error fetching purchase intents:', error)
+        console.error('Error fetching offers:', error)
       }
     }
   } catch (error) {
@@ -180,8 +178,8 @@ const addToCart = async () => {
   }
 }
 
-const goToPurchaseIntent = () => {
-  router.push(`/purchase-intent/${product.id}`)
+const goToOffer = () => {
+  router.push(`/offer/${product.id}`)
 }
 </script>
 

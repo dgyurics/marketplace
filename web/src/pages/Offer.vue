@@ -1,5 +1,5 @@
 <template>
-  <div class="purchase-intent-container">
+  <div class="offer-container">
     <template v-if="success">
       <h2>{{ successMessage }}</h2>
       <h3>
@@ -53,7 +53,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { TextArea } from '@/components/forms'
-import { createPurchaseIntent, getProductById } from '@/services/api'
+import { createOffer, getProductById } from '@/services/api'
 import type { Product } from '@/types'
 import { displayPrice, toMajorUnits, toMinorUnits } from '@/utilities/currency'
 
@@ -107,7 +107,7 @@ const handleSubmit = async () => {
     const productId = route.params['id'] as string
     const finalOfferPrice = isFreeItem.value ? 0 : offerPriceValue.value
 
-    await createPurchaseIntent(productId, finalOfferPrice, pickupNotes.value.trim())
+    await createOffer(productId, finalOfferPrice, pickupNotes.value.trim())
     success.value = true
   } catch (error: any) {
     const status = error.response?.status
@@ -125,7 +125,7 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-.purchase-intent-container {
+.offer-container {
   max-width: 600px;
   margin: auto;
   padding: 20px;

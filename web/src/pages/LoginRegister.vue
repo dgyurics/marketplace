@@ -10,7 +10,7 @@
             <button :tabindex="0" @click="goToCategories">Categories</button>
             <button :tabindex="0" @click="goToProducts">Products</button>
             <button :tabindex="0" @click="goToOrders">Orders</button>
-            <button :tabindex="0" @click="goToPurchaseIntents">Purchase Intents</button>
+            <button :tabindex="0" @click="goToOffers">Offers</button>
             <button :tabindex="0" @click="goToUsers">Users</button>
             <button :tabindex="0" @click="goToShippingZones">Shipping</button>
           </template>
@@ -189,8 +189,8 @@ const goToUsers = () => {
   router.push('/admin/users')
 }
 
-const goToPurchaseIntents = () => {
-  router.push('/admin/purchase-intents')
+const goToOffers = () => {
+  router.push('/admin/offers')
 }
 
 const goToShippingZones = () => {

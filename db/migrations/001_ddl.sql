@@ -276,19 +276,19 @@ CREATE TABLE IF NOT EXISTS shipping_exclusions (
     UNIQUE(country, postal_code)
 );
 
-CREATE TYPE purchase_intent_status_enum AS ENUM (
+CREATE TYPE offer_status_enum AS ENUM (
     'pending',
     'accepted',
     'rejected',
     'canceled',
     'completed'
 );
-CREATE TABLE purchase_intents (
+CREATE TABLE offers (
   id BIGINT PRIMARY KEY,
   user_id BIGINT NOT NULL,
   product_id BIGINT NOT NULL,
-  offer_price BIGINT NOT NULL,
-  status purchase_intent_status_enum NOT NULL,
+  amount BIGINT NOT NULL,
+  status offer_status_enum NOT NULL,
   pickup_notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,

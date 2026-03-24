@@ -57,6 +57,27 @@ const imgURL = computed(() => props.product.images.find((img) => img.type === 'h
     box-shadow 0.2s ease-in-out;
 }
 
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .product-tile {
+    padding: 15px;
+  }
+
+  .image-container {
+    height: 200px;
+  }
+
+  .product-title {
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+
+  .product-summary {
+    font-size: 13px;
+    padding: 0 5px;
+  }
+}
+
 .product-tile:hover {
   transform: scale(1.02);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -74,10 +95,6 @@ const imgURL = computed(() => props.product.images.find((img) => img.type === 'h
   max-width: 100%;
   max-height: 100%;
   object-fit: contain; /* Ensures entire image is visible without cropping */
-}
-
-.image-reduce-size {
-  transform: scale(0.85);
 }
 
 .product-info {
