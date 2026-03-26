@@ -42,7 +42,7 @@
             @click="goToOffer"
           >
             <span v-if="!canOffer">Member Item</span>
-            <span v-else-if="!isOutOfStock">{{ isFreeItem ? 'Claim Item' : 'Make an Offer' }}</span>
+            <span v-else-if="!isOutOfStock">Make an Offer</span>
             <span v-else>Out of Stock</span>
           </button>
           <template v-else>
@@ -132,10 +132,9 @@ const isOutOfStock = computed(() => currentQuantityInCart.value >= product.inven
 const showLowStockWarning = computed(
   () => isLowStock.value && !isOutOfStock.value && !hasReachedCartLimit.value
 )
-const isFreeItem = computed(() => product.price === 0)
 const isPickupOnly = computed(() => product.pickup_only)
 const canOffer = computed(() => isAuthenticated.value && authStore.hasMinimumRole('member'))
-const showOfferButton = computed(() => isFreeItem.value || isPickupOnly.value)
+const showOfferButton = computed(() => isPickupOnly.value)
 const hasPendingOffer = computed(() => offers.value.some((pi) => pi.status === 'pending'))
 
 onMounted(async () => {
@@ -217,12 +216,8 @@ const goToOffer = () => {
   width: auto;
   max-width: 100%;
   height: 100%;
-  min-height: 100%;
   max-height: 500px;
   object-fit: contain;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* Ensure slides maintain consistent height */
@@ -279,13 +274,9 @@ const goToOffer = () => {
   color: #555;
 }
 
-.product-details p {
-  margin-bottom: 8px; /* Add light space between detail rows */
-}
-
-.product-detail-info {
-  width: 100%;
-  max-width: 600px;
+.product-details p,
+.details p {
+  margin-bottom: 8px;
 }
 
 .product-title {
@@ -309,8 +300,7 @@ const goToOffer = () => {
 .product-summary,
 .product-price,
 .product-details {
-  font-size: 14px; /* Match details section */
-  font-weight: normal;
+  font-size: 14px;
   font-family: 'Open Sans', sans-serif;
   color: #222;
 }
@@ -337,10 +327,6 @@ const goToOffer = () => {
 
 .detail-item {
   text-transform: capitalize;
-}
-
-.details p {
-  margin-bottom: 8px;
 }
 
 @keyframes scaleIn {

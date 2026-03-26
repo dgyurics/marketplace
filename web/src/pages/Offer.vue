@@ -1,19 +1,18 @@
 <template>
   <div class="offer-container">
     <template v-if="success">
-      <h2>{{ successMessage }}</h2>
+      <h2>Offer Submitted Successfully</h2>
       <h3>
         <span class="capitalize">{{ product?.name }}</span>
       </h3>
     </template>
     <template v-else>
-      <h2>{{ isFreeItem ? 'Claim Item' : 'Submit Offer' }}</h2>
+      <h2>Submit Offer</h2>
       <h3 v-if="product" class="capitalize">{{ product.name }}</h3>
 
       <form @submit.prevent="handleSubmit">
-        <!-- Offer field for non-free items -->
         <!-- TODO: convert to component -->
-        <div v-if="!isFreeItem" class="form-group-flex">
+        <div class="form-group-flex">
           <label for="offer-price">Your Offer</label>
           <div class="price-input-wrapper">
             <span class="price-symbol">$</span>
@@ -37,8 +36,7 @@
 
         <div class="button-group">
           <button type="submit" class="btn-full-width mt-15" :tabindex="0" :disabled="isSubmitting">
-            <span v-if="!isSubmitting">{{ isFreeItem ? 'Claim Item' : 'Submit Offer' }}</span>
-            <span v-else>{{ isFreeItem ? 'Claiming...' : 'Submitting...' }}</span>
+            <span v-if="!isSubmitting">Submit Offer</span>
           </button>
         </div>
 
@@ -66,24 +64,16 @@ const success = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
 
-const isFreeItem = computed(() => product.value?.price === 0)
-
 const displayOfferPrice = computed({
   get: () => toMajorUnits(offerPriceValue.value),
   set: (value) => (offerPriceValue.value = toMinorUnits(value)),
 })
 
-const successMessage = computed(() => {
-  return isFreeItem.value ? 'Item Claimed Successfully' : 'Offer Submitted Successfully'
-})
-
 onMounted(async () => {
-  const productId = route.params['id'] as string
   try {
+    const productId = route.params['id'] as string
     product.value = await getProductById(productId)
-    if (!isFreeItem.value) {
-      offerPriceValue.value = product.value?.price || 0
-    }
+    offerPriceValue.value = product.value.price
   } catch (error) {
     console.error('Error fetching product:', error)
   }
@@ -97,15 +87,15 @@ const handleSubmit = async () => {
     return
   }
 
-  if (!isFreeItem.value && (offerPriceValue.value === null || offerPriceValue.value < 0)) {
-    errorMessage.value = 'Please enter a valid offer amount'
+  if (offerPriceValue.value === null || offerPriceValue.value < 0) {
+    errorMessage.value = 'Invalid offer amount'
     return
   }
 
   try {
     isSubmitting.value = true
     const productId = route.params['id'] as string
-    const finalOfferPrice = isFreeItem.value ? 0 : offerPriceValue.value
+    const finalOfferPrice = offerPriceValue.value
 
     await createOffer(productId, finalOfferPrice, pickupNotes.value.trim())
     success.value = true
@@ -161,13 +151,6 @@ h3 {
   margin-bottom: 8px;
 }
 
-.form-group-flex input {
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
 .price-input-wrapper {
   display: flex;
   align-items: center;
@@ -189,8 +172,6 @@ h3 {
   border: none;
   padding: 10px;
   font-size: 14px;
-  margin: 0;
-  border-radius: 0;
 }
 
 .price-input-wrapper input::-webkit-outer-spin-button,
@@ -200,6 +181,7 @@ h3 {
 }
 
 .price-input-wrapper input[type='number'] {
+  appearance: textfield;
   -moz-appearance: textfield;
 }
 
@@ -216,8 +198,6 @@ h3 {
 }
 
 .button-group {
-  display: flex;
-  justify-content: space-between;
   margin-top: 30px;
 }
 
