@@ -177,4 +177,12 @@ onMounted(() => {
   background: #ffffff;
   color: #000;
 }
+
+/* Landscape mode adjustments */
+@media (orientation: landscape) and (max-height: 600px) {
+  .feature-container {
+    height: calc(60vh - 10px);
+    max-height: 500px;
+  }
+}
 </style>
