@@ -240,10 +240,12 @@ const goToOffer = () => {
 .product-detail-bottom {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   width: 100%;
   max-width: 1200px;
   padding: 0 80px;
+  gap: 40px;
+  margin-bottom: 50px;
 }
 
 .product-info {
@@ -252,7 +254,7 @@ const goToOffer = () => {
   max-width: 50%;
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Vertically center content */
+  justify-content: flex-start;
 }
 
 .product-actions {
@@ -261,8 +263,55 @@ const goToOffer = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 20px;
+}
+
+/* Tablet styles */
+@media (max-width: 768px) {
+  .product-detail-bottom {
+    flex-direction: column;
+    align-items: center;
+    padding: 0 40px;
+    gap: 15px;
+  }
+
+  .product-info {
+    max-width: 100%;
+    text-align: left;
+    width: 100%;
+  }
+
+  .product-actions {
+    width: 100%;
+    align-items: flex-start;
+  }
+}
+
+/* Mobile styles */
+@media (max-width: 480px) {
+  .product-detail {
+    padding: 15px;
+  }
+
+  .product-detail-bottom {
+    padding: 0 20px;
+    gap: 25px;
+  }
+
+  .gallery-container {
+    max-width: 100%;
+    height: 350px;
+    margin-bottom: 25px;
+  }
+
+  :deep(.swiper-slide) {
+    height: 350px;
+  }
+
+  .gallery-image {
+    max-height: 350px;
+  }
 }
 
 .product-details h3 {
@@ -291,7 +340,6 @@ const goToOffer = () => {
 }
 
 .product-price {
-  margin-bottom: 30px;
   text-transform: uppercase;
 }
 
@@ -310,7 +358,6 @@ const goToOffer = () => {
   animation: scaleIn 0.4s ease-in-out;
 }
 
-.error-message,
 .limit-reached-warning,
 .low-stock-warning {
   text-align: center;
