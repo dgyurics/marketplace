@@ -16,13 +16,15 @@
           </div>
         </div>
         <div class="divider"></div>
-        <div class="item-details">
-          <span class="item-price">{{ formatPrice(item.unit_price) }}</span>
-          <span class="item-quantity">Qty: {{ item.quantity }}</span>
+        <div class="item-actions">
+          <div class="item-details">
+            <span class="item-price">{{ formatPrice(item.unit_price) }}</span>
+            <span class="item-quantity">Qty: {{ item.quantity }}</span>
+          </div>
+          <button class="remove-button" :tabindex="0" @click="removeFromCart(item.product.id)">
+            <TrashIcon class="remove-icon" />
+          </button>
         </div>
-        <button class="remove-button" :tabindex="0" @click="removeFromCart(item.product.id)">
-          <XMarkIcon class="remove-icon" />
-        </button>
       </li>
     </ul>
 
@@ -42,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { XMarkIcon } from '@heroicons/vue/24/outline'
+import { TrashIcon } from '@heroicons/vue/24/outline'
 import { storeToRefs } from 'pinia'
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -95,11 +97,18 @@ const goToCheckout = () => {
   background: transparent;
   color: inherit; /* Match text color */
   border: none;
-  padding: 0;
+  padding: 8px;
   font-size: 14px;
   cursor: pointer;
   border-radius: 5px;
   transition: opacity 0.3s;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .remove-button {
+    align-self: center;
+  }
 }
 
 .remove-button:hover {
@@ -137,22 +146,29 @@ ul {
   padding: 20px;
   border-bottom: 1px solid #ddd;
   justify-content: space-between;
+  gap: 15px;
+}
+
+@media (max-width: 768px) {
+  .cart-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
 }
 
 /* Item Info */
 .item-info {
   display: flex;
   align-items: center;
-  flex: 3;
+  flex: 1;
   min-width: 0; /* Prevents text from shrinking */
 }
 
-/* Thumbnail Image */
-.item-image img {
-  width: 220px;
-  height: 220px;
-  object-fit: cover;
-  border-radius: 5px;
+@media (max-width: 768px) {
+  .item-info {
+    width: 100%;
+  }
 }
 
 .item-text {
@@ -160,16 +176,29 @@ ul {
   flex-direction: column;
   justify-content: center;
   margin-left: 20px;
-  max-width: 500px; /* Allows space for a long summary */
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .item-text {
+    margin-left: 15px;
+  }
 }
 
 .item-name {
   font-size: 18px;
   color: #333;
   font-weight: 500;
-  white-space: nowrap; /* Prevents stacking */
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .item-name {
+    white-space: normal;
+    font-size: 16px;
+  }
 }
 
 .item-summary {
@@ -187,7 +216,30 @@ ul {
   width: 2px;
   height: 80%;
   background-color: #ddd;
-  margin: 0 180px; /* Ensures wide spacing */
+  margin: 0 15px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .divider {
+    display: none;
+  }
+}
+
+/* Price & Quantity & Actions Group */
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .item-actions {
+    width: 100%;
+    justify-content: space-between;
+    margin: 10px 0;
+  }
 }
 
 /* Price & Quantity */
@@ -195,10 +247,16 @@ ul {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  flex: 1;
-  min-width: 120px; /* Prevents shrinking */
-  font-family: 'Open Sans', sans-serif;
+  min-width: 120px;
   font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .item-details {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
 }
 
 .item-price {
@@ -207,13 +265,18 @@ ul {
 
 .item-quantity {
   color: #444;
-  margin-top: 5px;
+  margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+  .item-quantity {
+    margin-top: 0;
+  }
 }
 
 .cart-total {
   text-align: right;
   font-size: 14px;
-  font-family: 'Open Sans', sans-serif;
   color: #444;
   margin-top: 20px;
   margin-bottom: 10px;
