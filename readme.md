@@ -14,21 +14,20 @@ A self-hosted e-commerce framework designed for local businesses and community c
 | Admin dashboard | ✅ | Product + Order management |
 | Geographic shipping | ✅ | Configure coverage and exclusions |
 | Image processing | ✅ | imgproxy + rembg (AI) background removal |
-| Payment processing | ❌ | Stripe (3rd party) |
 | Email delivery | ❌ | External SMTP (3rd party) |
+| Payment processing | ❌ | Stripe (3rd party) |
 
 ## Planned Enhancements
 
-* Documentation for setup and configuration
 * Mobile device support
+* Documentation for setup and configuration
 * Offline payment for trusted users
-* Self-hosted email server via boky/postfix
 * Database backup and recovery scripts
-* Customer support messaging system
-* Chat integration for trusted users
-* Product full-text search
 * Product variants (size, color, material, etc.)
+* Replace auth and account recovery with email-free solution
+* Replace email notifications with in-app messaging/notifications
 * Geographic access control via Nginx and GeoIP2
+* Product full-text search
 
 ## Local Development
 
