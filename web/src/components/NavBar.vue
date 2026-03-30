@@ -26,7 +26,12 @@
       <div class="nav-right">
         <div class="nav-icons">
           <!-- Mobile Menu Button -->
-          <button :tabindex="0" class="mobile-menu-btn" @click="toggleMobileMenu">
+          <button
+            ref="mobileMenuBtn"
+            :tabindex="0"
+            class="mobile-menu-btn"
+            @click="toggleMobileMenu"
+          >
             <Bars3Icon class="icon" />
           </button>
 
@@ -41,7 +46,7 @@
     </div>
 
     <!-- Mobile Menu Overlay -->
-    <div v-if="isMobileMenuOpen" class="mobile-menu">
+    <div v-if="isMobileMenuOpen" ref="mobileMenu" class="mobile-menu">
       <div class="mobile-nav-links">
         <router-link
           v-for="category in categories"
@@ -59,13 +64,26 @@
 
 <script setup lang="ts">
 import { Bars3Icon, ShoppingBagIcon, UserIcon } from '@heroicons/vue/24/outline'
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { getCategories } from '@/services/api'
 import type { Category } from '@/types'
 
 const categories = ref<Category[]>([])
 const isMobileMenuOpen = ref(false)
+const mobileMenuBtn = ref<HTMLElement>()
+const mobileMenu = ref<HTMLElement>()
+
+const handleClickOutside = (event: Event) => {
+  const target = event.target as HTMLElement
+  const menuBtn = mobileMenuBtn.value
+  const menu = mobileMenu.value
+
+  // Close menu if click is outside both the menu button and the menu itself
+  if (menuBtn && menu && !menuBtn.contains(target) && !menu.contains(target)) {
+    closeMobileMenu()
+  }
+}
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
@@ -75,14 +93,26 @@ const closeMobileMenu = () => {
   isMobileMenuOpen.value = false
 }
 
+// Watch for mobile menu state changes to manage the click listener
+watch(isMobileMenuOpen, (isOpen) => {
+  if (isOpen) {
+    document.addEventListener('click', handleClickOutside)
+  } else {
+    document.removeEventListener('click', handleClickOutside)
+  }
+})
+
+// Fetch categories from API
 onMounted(async () => {
-  // Fetch categories from API
   try {
     categories.value = (await getCategories()).filter((category) => !category.parent_id)
   } catch {
-    // Handle error silently
     categories.value = []
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
