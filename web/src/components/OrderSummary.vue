@@ -72,39 +72,122 @@ const total = computed(() => subtotal.value + taxAmount.value)
   margin-bottom: 20px;
   text-align: center;
 }
+
 .order-item {
   display: flex;
   margin-bottom: 20px;
   align-items: flex-start;
 }
+
 .order-item img {
   width: 80px;
   height: auto;
   margin-right: 15px;
   border-radius: 4px;
 }
+
 .details h4 {
   margin: 0 0 6px;
   font-weight: 500;
   color: #333;
 }
+
 .details p {
   font-size: 13px;
   color: #888;
   margin: 2px 0;
 }
+
 .italic {
   font-style: italic;
 }
+
 .totals {
   border-top: 1px solid #ddd;
   margin-top: 20px;
   padding-top: 15px;
   color: #555;
 }
+
 .totals p {
   display: flex;
   justify-content: space-between;
   margin: 5px 0;
+}
+
+/* Mobile and Tablet Responsive Styles */
+@media (max-width: 1024px) {
+  .order-summary {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    left: 0;
+    margin-top: 0;
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .order-summary {
+    padding: 16px;
+    font-size: 13px;
+  }
+
+  .order-item {
+    margin-bottom: 16px;
+  }
+
+  .order-item img {
+    width: 60px;
+    margin-right: 12px;
+  }
+
+  .details h4 {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .details p {
+    font-size: 12px;
+  }
+
+  .totals {
+    margin-top: 16px;
+    padding-top: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .order-summary {
+    padding: 12px;
+    border-radius: 4px;
+  }
+
+  .order-summary h3 {
+    font-size: 16px;
+    margin-bottom: 16px;
+  }
+
+  .order-item {
+    margin-bottom: 12px;
+  }
+
+  .order-item img {
+    width: 50px;
+    margin-right: 10px;
+  }
+
+  .details h4 {
+    font-size: 13px;
+  }
+
+  .details p {
+    font-size: 11px;
+  }
+
+  .totals p {
+    margin: 4px 0;
+    font-size: 12px;
+  }
 }
 </style>
