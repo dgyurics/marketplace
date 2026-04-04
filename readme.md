@@ -20,9 +20,9 @@ A self-hosted e-commerce framework designed for local businesses and community c
 ## Planned Enhancements
 
 * Mobile device support
-* Documentation for setup and configuration
-* Offline payment for trusted users
 * Database backup and recovery scripts
+* Documentation for setup and configuration
+* Pay on delivery for approved buyers
 * Product variants (size, color, material, etc.)
 * Replace auth and account recovery with email-free solution
 * Replace email notifications with in-app messaging/notifications
