@@ -48,32 +48,13 @@ func (ps *offerService) CreateOffer(ctx context.Context, offer *types.Offer) (er
 	if err != nil {
 		return err
 	}
-
-	// Determine status based on offer price and product price
-	product, err := ps.repoProduct.GetProductByID(ctx, offer.Product.ID)
-	if err != nil {
-		return err
-	}
-	if product.Price <= offer.Amount {
-		offer.Status = types.OfferAccepted
-	} else {
-		offer.Status = types.OfferPending
-	}
+	offer.Status = types.OfferPending
 
 	if err := ps.repoOffer.CreateOffer(ctx, offer); err != nil {
 		return err
 	}
 
 	go ps.OfferNotificationEmail(*offer)
-
-	// email customer if auto-accepted
-	if offer.Status == types.OfferAccepted {
-		offer.Product, err = ps.productService.GetProductByID(ctx, offer.Product.ID)
-		if err != nil {
-			return err
-		}
-		go ps.OfferUpdateEmail(*offer)
-	}
 
 	return nil
 }
