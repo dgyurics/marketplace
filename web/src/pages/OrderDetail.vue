@@ -149,6 +149,13 @@ onMounted(() => {
   padding: 20px;
 }
 
+@media (max-width: 768px) {
+  .order-detail-container {
+    width: 100%;
+    padding: 15px;
+  }
+}
+
 .order-header {
   margin-bottom: 30px;
   padding-bottom: 20px;
@@ -233,6 +240,14 @@ onMounted(() => {
   border-bottom: 1px solid #eee;
 }
 
+@media (max-width: 768px) {
+  .order-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+}
+
 .order-item:last-child {
   border-bottom: none;
 }
@@ -259,6 +274,14 @@ onMounted(() => {
   align-items: flex-end;
   gap: 4px;
   font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .item-details {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
 .item-quantity {
