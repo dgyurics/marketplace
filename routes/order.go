@@ -171,7 +171,6 @@ func (h *OrderRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/orders", h.secure(types.RoleGuest)(h.limit(h.CreateOrder, 5, time.Hour))).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/orders/{id}/public", h.GetOrderPublic).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/owner", h.secure(types.RoleGuest)(h.GetOrderOwner)).Methods(http.MethodPost)
-	// FIXME rename endpoint now that we have staff + admin
 	h.muxRouter.Handle("/orders/{id}/admin", h.secure(types.RoleStaff)(h.GetOrderAdmin)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secure(types.RoleStaff)(h.GetOrders)).Methods(http.MethodGet)
 }

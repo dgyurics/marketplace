@@ -7,6 +7,7 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
+	"github.com/gorilla/mux"
 )
 
 type ConversationRoutes struct {
@@ -14,9 +15,10 @@ type ConversationRoutes struct {
 	service services.ConversationService
 }
 
-func NewConversationRoutes(router router) *ConversationRoutes {
+func NewConversationRoutes(service services.ConversationService, router router) *ConversationRoutes {
 	return &ConversationRoutes{
-		router: router,
+		router:  router,
+		service: service,
 	}
 }
 
@@ -49,21 +51,64 @@ func (h *ConversationRoutes) CreateConversation(w http.ResponseWriter, r *http.R
 }
 
 func (h *ConversationRoutes) GetConversations(w http.ResponseWriter, r *http.Request) {
-	// retrieves slice of conversations without populating messages
+	conversations, err := h.service.GetConversations(r.Context())
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u.RespondWithJSON(w, http.StatusOK, conversations)
+}
+
+func (h *ConversationRoutes) GetConversationAdmin(w http.ResponseWriter, r *http.Request) {
+	conversation, err := h.service.GetConversationByID(r.Context(), mux.Vars(r)["id"])
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u.RespondWithJSON(w, http.StatusOK, conversation)
 }
 
 func (h *ConversationRoutes) GetConversation(w http.ResponseWriter, r *http.Request) {
-	// retrieves a single conversation, populating all associated messages
+	conversation, err := h.service.GetConversationByIDAndUser(r.Context(), mux.Vars(r)["id"])
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u.RespondWithJSON(w, http.StatusOK, conversation)
 }
 
 func (h *ConversationRoutes) CreateMessage(w http.ResponseWriter, r *http.Request) {
-	// conversationID := mux.Vars(r)["id"]
-	// h.service.CreateMessage()
+	var message types.Message
+	message.ConversationID = mux.Vars(r)["id"]
+
+	if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
+		return
+	}
+
+	if message.Body == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "body required")
+		return
+	}
+
+	if err := h.service.CreateMessage(r.Context(), &message); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
 }
 
 func (h *ConversationRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/conversations", h.secure(types.RoleAdmin)(h.CreateConversation)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/conversations", h.secure(types.RoleAdmin)(h.GetConversations)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/conversations/{id}", h.secure(types.RoleAdmin)(h.GetConversation)).Methods(http.MethodGet)
+	h.muxRouter.Handle("/conversations", h.secure(types.RoleStaff)(h.CreateConversation)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/conversations/{id}", h.secure(types.RoleGuest)(h.GetConversation)).Methods(http.MethodGet)
+	h.muxRouter.Handle("/conversations/{id}/admin", h.secure(types.RoleStaff)(h.GetConversationAdmin)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/conversations/{id}/message", h.secure(types.RoleGuest)(h.CreateMessage)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/conversations", h.secure(types.RoleGuest)(h.GetConversations)).Methods(http.MethodGet)
 }

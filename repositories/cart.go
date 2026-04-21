@@ -30,7 +30,7 @@ func (r *cartRepository) GetItems(ctx context.Context, userID string) ([]types.C
 			ci.product_id,
 			ci.quantity,
 			ci.unit_price,
-		  pv.name,
+			pv.name,
 			pv.price,
 			pv.summary,
 			pv.images

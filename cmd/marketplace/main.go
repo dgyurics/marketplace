@@ -88,6 +88,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewShippingZoneRoutes(services.Shipping, baseRouter),
 		routes.NewCartRoutes(services.Cart, services.Order, baseRouter),
 		routes.NewCategoryRoutes(services.Category, baseRouter),
+		routes.NewConversationRoutes(services.Conversation, baseRouter),
 		routes.NewHealthRoutes(baseRouter),
 		routes.NewImageRoutes(services.Image, services.Product, config.Image, baseRouter),
 		routes.NewOrderRoutes(services.Order, services.Tax, services.Payment, services.Cart, services.Address, baseRouter),
@@ -130,6 +131,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	imageRepository := repositories.NewImageRepository(db)
 	shippingZoneRepository := repositories.NewShippingZoneRepository(db)
 	offerRepository := repositories.NewOfferRepository(db)
+	conversationRepository := repositories.NewConversationRepository(db)
 
 	// create http client required by certain services
 	httpClient := utilities.NewDefaultHTTPClient(30 * time.Second) // TODO make this configurable
@@ -137,6 +139,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	// create services
 	templateService := services.NewTemplateService(config.TemplatesDir)
 	scheduleService := services.NewScheduleService(db)
+	conversationService := services.NewConversationService(conversationRepository)
 	emailService := services.NewEmailService(config.Email)
 	notificationService := services.NewNotificationService(emailService, templateService, config.BaseURL)
 	addressService := services.NewAddressService(addressRepository)
@@ -159,6 +162,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		Address:      addressService,
 		Category:     categoryService,
 		Cart:         cartService,
+		Conversation: conversationService,
 		Image:        imageService,
 		JWT:          jwtService,
 		Notification: notificationService,
@@ -181,6 +185,7 @@ type servicesContainer struct {
 	Address      services.AddressService
 	Cart         services.CartService
 	Category     services.CategoryService
+	Conversation services.ConversationService
 	Image        services.ImageService
 	JWT          services.JWTService
 	Notification services.NotificationService

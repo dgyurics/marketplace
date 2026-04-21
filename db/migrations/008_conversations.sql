@@ -4,15 +4,15 @@ CREATE TABLE conversations (
     id BIGINT PRIMARY KEY,
     type conversation_type_enum NOT NULL,
     subject TEXT NOT NULL,
-    last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     recipient_id BIGINT NOT NULL,
-    recipient_last_read_at TIMESTAMP,
+    recipient_last_read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     is_deleted BOOLEAN NOT NULL DEFAULT false,
     FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_conversations_recipient_id_last_message_at_is_deleted ON conversations(recipient_id, last_message_at DESC)
+CREATE INDEX idx_conversations_updated_at_is_deleted ON conversations(recipient_id, updated_at DESC)
 WHERE is_deleted = false;
 
 CREATE TABLE messages (
