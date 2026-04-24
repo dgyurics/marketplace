@@ -25,6 +25,7 @@ import type {
   ExcludedShippingZone,
   AuthenticatedRole,
 } from '@/types'
+import type { Conversation } from '@/types/conversation'
 
 const apiClient = axios.create({
   baseURL,
@@ -411,5 +412,16 @@ export const getOfferById = async (id: string): Promise<Offer> => {
 
 export const getOffersByProductId = async (id: string): Promise<Offer[]> => {
   const response = await apiClient.get(`/offers/items/${id}`)
+  return response.data
+}
+
+/* Conversation endpoints */
+export const getConversations = async (): Promise<Conversation[]> => {
+  const response = await apiClient.get('/conversations')
+  return response.data
+}
+
+export const getConversationById = async (id: string): Promise<Conversation> => {
+  const response = await apiClient.get(`/conversations/${id}`)
   return response.data
 }

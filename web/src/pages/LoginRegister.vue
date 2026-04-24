@@ -5,6 +5,7 @@
       <div>
         <!-- FIXME make this a proper menu component -->
         <div class="button-group menu">
+          <button :tabindex="0" @click="goToInbox">Messages</button>
           <button :tabindex="0" @click="goToProfile">Profile</button>
           <template v-if="authStore.hasMinimumRole('staff')">
             <button :tabindex="0" @click="goToCategories">Categories</button>
@@ -171,6 +172,10 @@ const handleRegister = async () => {
 
 const goToCategories = () => {
   router.push('/admin/categories')
+}
+
+const goToInbox = () => {
+  router.push('/inbox')
 }
 
 const goToProfile = () => {

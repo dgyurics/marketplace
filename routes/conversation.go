@@ -109,6 +109,6 @@ func (h *ConversationRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/conversations", h.secure(types.RoleStaff)(h.CreateConversation)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/conversations/{id}", h.secure(types.RoleGuest)(h.GetConversation)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/conversations/{id}/admin", h.secure(types.RoleStaff)(h.GetConversationAdmin)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/conversations/{id}/message", h.secure(types.RoleGuest)(h.CreateMessage)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/conversations/{id}/message", h.secure(types.RoleStaff)(h.CreateMessage)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/conversations", h.secure(types.RoleGuest)(h.GetConversations)).Methods(http.MethodGet)
 }

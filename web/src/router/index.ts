@@ -15,6 +15,7 @@ import AdminUsers from '@/pages/admin/User.vue'
 import Cart from '@/pages/Cart.vue'
 import Error from '@/pages/Error.vue'
 import Home from '@/pages/Home.vue'
+import Inbox from '@/pages/Inbox.vue'
 import LoginRegister from '@/pages/LoginRegister.vue'
 import NotFound from '@/pages/NotFound.vue'
 import Offer from '@/pages/Offer.vue'
@@ -53,6 +54,7 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/checkout/confirmation', component: OrderConfirmation },
     { path: '/orders/:id', component: OrderDetail },
     { path: '/profile', component: Profile, beforeEnter: requireUser },
+    { path: '/inbox', component: Inbox, beforeEnter: requireUser },
     { path: '/admin/products', component: AdminProducts, beforeEnter: requireAdmin },
     { path: '/admin/products/:id', component: AdminProductEdit, beforeEnter: requireAdmin },
     { path: '/admin/categories', component: AdminCategories, beforeEnter: requireAdmin },
