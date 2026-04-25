@@ -215,6 +215,10 @@ export const createGuestUser = async (): Promise<AuthTokens> => {
   return response.data
 }
 
+export const removeUser = async (userId: string): Promise<void> => {
+  await apiClient.delete(`/users/${userId}`)
+}
+
 export const getCart = async (): Promise<CartItem[]> => {
   const response = await apiClient.get('/carts')
   return response.data // Updated to return the array directly

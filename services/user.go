@@ -32,6 +32,8 @@ type UserService interface {
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
 	GetAllAdmins(ctx context.Context) ([]types.User, error)
+	// DELETE
+	RemoveUser(ctx context.Context, userID string) error
 }
 
 type userService struct {
@@ -151,6 +153,10 @@ func (s *userService) GetAllUsers(ctx context.Context, page, limit int) ([]types
 
 func (s *userService) GetAllAdmins(ctx context.Context) ([]types.User, error) {
 	return s.repo.GetAllAdmins(ctx)
+}
+
+func (s *userService) RemoveUser(ctx context.Context, userID string) error {
+	return s.repo.RemoveUser(ctx, userID)
 }
 
 // Allowed characters for the registration code

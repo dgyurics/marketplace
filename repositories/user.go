@@ -23,6 +23,8 @@ type UserRepository interface {
 	GetUserByID(ctx context.Context, userID string) (*types.User, error)
 	GetAllUsers(ctx context.Context, page, limit int) ([]types.User, error)
 	GetAllAdmins(ctx context.Context) ([]types.User, error)
+	// delete
+	RemoveUser(ctx context.Context, userID string) error
 }
 
 type userRepository struct {
@@ -273,4 +275,19 @@ func (r *userRepository) ConfirmRegistrationCode(ctx context.Context, code strin
 		return nil, err
 	}
 	return &usr, nil
+}
+
+// Cascade delete - removes order history, offer history, etc
+func (r *userRepository) RemoveUser(ctx context.Context, userID string) error {
+	query := `DELETE FROM users WHERE id = $1`
+	res, err := r.db.ExecContext(ctx, query, userID)
+	if err != nil {
+		return err
+	}
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return types.ErrNotFound
+	}
+	return nil
 }
