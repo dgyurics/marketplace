@@ -103,6 +103,22 @@ onMounted(() => {
   padding: 20px;
 }
 
+@media (max-width: 768px) {
+  .user-container {
+    width: calc(100% - 20px);
+    padding: 10px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .form-row :deep(.input-container) {
+    flex: 1 1 100%;
+  }
+}
+
 .invite-user-form {
   margin-bottom: 30px;
 }
@@ -125,12 +141,5 @@ onMounted(() => {
   font-size: 14px;
   margin-top: 10px;
   text-align: center;
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 300;
-  margin-bottom: 20px;
-  color: #333;
 }
 </style>
