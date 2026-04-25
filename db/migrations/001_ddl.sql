@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS categories (
+CREATE TABLE categories (
     id BIGINT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(255) UNIQUE NOT NULL,
@@ -9,9 +9,9 @@ CREATE TABLE IF NOT EXISTS categories (
 );
 
 -- For tax estimates only
-CREATE TABLE IF NOT EXISTS tax_rates (
+CREATE TABLE tax_rates (
     country CHAR(2) NOT NULL,
-    state VARCHAR(50),
+    state VARCHAR(10),
     tax_code VARCHAR(50), -- use NULL for general goods and services tax
     inclusive BOOLEAN DEFAULT FALSE NOT NULL,
     percentage INT NOT NULL, -- scaled by 10000 e.g. 725 = 0.0725
@@ -20,11 +20,11 @@ CREATE TABLE IF NOT EXISTS tax_rates (
     UNIQUE (country, state, tax_code)
 );
 
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE products (
     id BIGINT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     price BIGINT NOT NULL,
-    summary text NOT NULL,
+    summary TEXT NOT NULL,
     description TEXT,
     details JSONB DEFAULT '{}'::jsonb NOT NULL,
     tax_code VARCHAR(50),
@@ -51,7 +51,7 @@ WHERE is_deleted = FALSE;
 
 CREATE TYPE image_type_enum AS ENUM ('hero', 'thumbnail', 'gallery');
 
-CREATE TABLE IF NOT EXISTS images (
+CREATE TABLE images (
     id BIGINT PRIMARY KEY,
     product_id BIGINT NOT NULL,
     url TEXT NOT NULL,
@@ -60,13 +60,14 @@ CREATE TABLE IF NOT EXISTS images (
     alt_text VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
 );
-CREATE INDEX idx_images_source ON images(source);
+CREATE INDEX idx_images_source ON images (source);
+CREATE INDEX idx_images_product_id ON images(product_id);
 
 CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest', 'member', 'staff');
 
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     id BIGINT PRIMARY KEY,
     email VARCHAR(255) UNIQUE,
     password_hash TEXT,
@@ -76,7 +77,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS registration_codes (
+CREATE TABLE registration_codes (
   code CHAR(6) PRIMARY KEY,
   user_id BIGINT NOT NULL,
   expires_at TIMESTAMP NOT NULL,
@@ -84,7 +85,7 @@ CREATE TABLE IF NOT EXISTS registration_codes (
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 -- For cleanup queries
-CREATE INDEX idx_registration_codes_expires ON registration_codes(expires_at);
+CREATE INDEX idx_registration_codes_expires ON registration_codes (expires_at);
 
 CREATE OR REPLACE VIEW v_users AS
 SELECT
@@ -96,7 +97,7 @@ SELECT
     updated_at
 FROM users;
 
-CREATE UNLOGGED TABLE IF NOT EXISTS refresh_tokens (
+CREATE UNLOGGED TABLE refresh_tokens (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     token_hash TEXT NOT NULL,
@@ -108,7 +109,7 @@ CREATE UNLOGGED TABLE IF NOT EXISTS refresh_tokens (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
-CREATE UNLOGGED TABLE IF NOT EXISTS password_reset_codes (
+CREATE UNLOGGED TABLE password_reset_codes (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     code_hash TEXT NOT NULL,
@@ -116,10 +117,10 @@ CREATE UNLOGGED TABLE IF NOT EXISTS password_reset_codes (
     used BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS cart_items (
+CREATE TABLE cart_items (
     user_id BIGINT,
     product_id BIGINT,
     quantity INT NOT NULL,
@@ -127,25 +128,26 @@ CREATE TABLE IF NOT EXISTS cart_items (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (user_id, product_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS addresses (
+CREATE TABLE addresses (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     name VARCHAR(255),
     line1 VARCHAR(255) NOT NULL,
     line2 VARCHAR(255),
     city VARCHAR(255) NOT NULL, -- city, district, suburb, town, village
-    state VARCHAR(50), -- state, county, province, region
+    state VARCHAR(10), -- state, county, province, region
     postal_code VARCHAR(20) NOT NULL,
     country CHAR(2) NOT NULL, -- ISO 3166-1 alpha-2 country code
     email VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT
 );
+CREATE INDEX idx_addresses_user_id ON addresses(user_id);
 
 CREATE TYPE order_status_enum AS ENUM (
     'pending',
@@ -156,7 +158,7 @@ CREATE TYPE order_status_enum AS ENUM (
     'delivered',
     'canceled'
 );
-CREATE TABLE IF NOT EXISTS orders (
+CREATE TABLE orders (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     address_id BIGINT NOT NULL,
@@ -167,21 +169,21 @@ CREATE TABLE IF NOT EXISTS orders (
     status order_status_enum NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT,
     FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE RESTRICT
 );
 
-CREATE TABLE IF NOT EXISTS order_items (
+CREATE TABLE order_items (
     order_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
     quantity INT NOT NULL,
     unit_price BIGINT NOT NULL,
     PRIMARY KEY (order_id, product_id),
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+    FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE RESTRICT
 );
 CREATE INDEX idx_order_items_product_id_quantity
-ON order_items(product_id, quantity);
+ON order_items (product_id, quantity);
 
 -- View simplifies fetching product details including images and total sold count
 CREATE OR REPLACE VIEW v_products AS
@@ -241,12 +243,12 @@ JOIN products p ON oi.product_id = p.id
 LEFT JOIN images i ON i.product_id = p.id AND i.type = 'thumbnail';
 
 -- required for schedule service
-CREATE UNLOGGED TABLE IF NOT EXISTS job_schedules (
+CREATE UNLOGGED TABLE job_schedules (
     job_name     TEXT PRIMARY KEY,
     last_run_at  TIMESTAMP NOT NULL
 );
 
-CREATE UNLOGGED TABLE IF NOT EXISTS rate_limits (
+CREATE UNLOGGED TABLE rate_limits (
     ip_address INET,
     path TEXT,
     hit_count INTEGER DEFAULT 1,
@@ -255,7 +257,7 @@ CREATE UNLOGGED TABLE IF NOT EXISTS rate_limits (
 );
 
 -- Defines shipping zones supported by the marketplace
-CREATE TABLE IF NOT EXISTS shipping_zones (
+CREATE TABLE shipping_zones (
     id BIGINT PRIMARY KEY,
     country CHAR(2) NOT NULL,
     state VARCHAR(10) NOT NULL DEFAULT '',  -- empty string to allow UNIQUE constraint to work
@@ -268,7 +270,7 @@ ON shipping_zones (postal_code)
 WHERE postal_code != '';
 
 -- Defines shipping zones NOT supported by the marketplace
-CREATE TABLE IF NOT EXISTS shipping_exclusions (
+CREATE TABLE shipping_exclusions (
     id BIGINT PRIMARY KEY,
     country CHAR(2) NOT NULL,
     postal_code VARCHAR(20) NOT NULL,
@@ -292,6 +294,6 @@ CREATE TABLE offers (
   pickup_notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
-  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT,
+  FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE RESTRICT
 );
