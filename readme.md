@@ -22,12 +22,14 @@ A self-hosted e-commerce framework designed for local businesses and community c
 * Mobile device support
 * Database backup and recovery scripts
 * Documentation for setup and configuration
+* Demo mode for the admin dashboard with anonymized data
 * Pay on delivery for approved buyers
 * Product variants (size, color, material, etc.)
 * Replace auth and account recovery with email-free solution
 * Replace email notifications with in-app messaging/notifications
 * Geographic access control via Nginx and GeoIP2
 * Product full-text search
+* Simplify deployment and configuration to the max
 
 ## Local Development
 
