@@ -334,6 +334,20 @@ func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, users)
 }
 
+func (h *UserRoutes) GetUser(w http.ResponseWriter, r *http.Request) {
+	usr, err := h.userService.GetUserByID(r.Context(), mux.Vars(r)["id"])
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	u.RespondWithJSON(w, http.StatusOK, usr)
+}
+
 func (h *UserRoutes) RemoveUser(w http.ResponseWriter, r *http.Request) {
 	err := h.userService.RemoveUser(r.Context(), mux.Vars(r)["id"])
 	if err == types.ErrNotFound {
@@ -356,5 +370,6 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/users/change-email", h.secure(types.RoleAdmin)(h.limit(h.ChangeEmail, 5, time.Hour))).Methods(http.MethodPut)
 	h.muxRouter.Handle("/users/logout", h.secure(types.RoleGuest)(h.Logout)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users", h.secure(types.RoleStaff)(h.GetAllUsers)).Methods(http.MethodGet)
+	h.muxRouter.Handle("/users/{id}", h.secure(types.RoleAdmin)(h.GetUser)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/users/{id}", h.secure(types.RoleAdmin)(h.RemoveUser)).Methods(http.MethodDelete)
 }

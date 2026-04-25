@@ -215,6 +215,11 @@ export const createGuestUser = async (): Promise<AuthTokens> => {
   return response.data
 }
 
+export const getUser = async (userId: string): Promise<UserRecord> => {
+  const response = await apiClient.get(`/users/${userId}`)
+  return response.data
+}
+
 export const removeUser = async (userId: string): Promise<void> => {
   await apiClient.delete(`/users/${userId}`)
 }

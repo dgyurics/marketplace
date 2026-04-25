@@ -1,16 +1,19 @@
 <template>
   <div class="user-container">
-    <DataTable :columns="columns" :data="formattedUsers" />
+    <DataTable :columns="columns" :data="formattedUsers" :on-row-click="handleRowClick" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 import DataTable from '@/components/DataTable.vue'
 import { getUsers } from '@/services/api'
 import type { UserRecord } from '@/types'
 import { formatDate } from '@/utilities/dateFormat'
+
+const router = useRouter()
 
 const users = ref<UserRecord[]>([])
 
@@ -25,6 +28,10 @@ const formattedUsers = computed(() =>
     updated: formatDate(new Date(user.updated_at)),
   }))
 )
+
+const handleRowClick = (row: { [key: string]: unknown }) => {
+  router.push(`/admin/users/${row['id']}`)
+}
 
 const fetchUsers = async () => {
   try {
@@ -63,6 +70,10 @@ onMounted(() => {
   }
 }
 
+.invite-user-form {
+  margin-bottom: 30px;
+}
+
 .form-row {
   display: flex;
   gap: 10px;
@@ -74,5 +85,12 @@ onMounted(() => {
 
 .form-row :deep(.input-container) {
   flex: 1 1 calc(50% - 10px);
+}
+
+.error {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: 10px;
+  text-align: center;
 }
 </style>
