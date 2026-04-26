@@ -3,7 +3,7 @@
     <table>
       <thead>
         <tr>
-          <th v-for="column in columns" :key="column">
+          <th v-for="(column, colIndex) in columns" :key="column" :class="getColumnClass(colIndex)">
             {{ column }}
           </th>
         </tr>
@@ -15,7 +15,7 @@
           :class="{ 'clickable-row': onRowClick }"
           @click="handleRowClick(row, index)"
         >
-          <td v-for="column in columns" :key="column">
+          <td v-for="(column, colIndex) in columns" :key="column" :class="getColumnClass(colIndex)">
             {{ row[column] }}
           </td>
         </tr>
@@ -32,6 +32,12 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const getColumnClass = (index: number) => {
+  if (index >= 2 && index < 4) return 'hide-mobile'
+  if (index >= 4) return 'hide-landscape'
+  return ''
+}
 
 const handleRowClick = (row: { [key: string]: unknown }, index: number) => {
   if (props.onRowClick) {
@@ -83,5 +89,18 @@ tbody tr:last-child td {
 
 .clickable-row:hover {
   background-color: #f0f0f0;
+}
+
+@media (max-width: 480px) {
+  .hide-mobile,
+  .hide-landscape {
+    display: none;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .hide-landscape {
+    display: none;
+  }
 }
 </style>
