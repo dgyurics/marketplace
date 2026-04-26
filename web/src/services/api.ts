@@ -215,6 +215,11 @@ export const createGuestUser = async (): Promise<AuthTokens> => {
   return response.data
 }
 
+export const createUser = async (user: Partial<UserRecord>): Promise<UserRecord> => {
+  const response = await apiClient.post('/users', user)
+  return response.data
+}
+
 export const getUser = async (userId: string): Promise<UserRecord> => {
   const response = await apiClient.get(`/users/${userId}`)
   return response.data

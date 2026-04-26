@@ -60,7 +60,7 @@ func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	err := h.userService.CreateUser(r.Context(), &usr)
 	if err == types.ErrUniqueConstraintViolation {
-		u.RespondWithError(w, r, http.StatusConflict, "email already in-use")
+		u.RespondWithError(w, r, http.StatusConflict, err.Error())
 		return
 	}
 	if err != nil {

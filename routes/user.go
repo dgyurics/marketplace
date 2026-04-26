@@ -148,7 +148,28 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *UserRoutes) CreateUser(w http.ResponseWriter, r *http.Request) {}
+func (h *UserRoutes) CreateUser(w http.ResponseWriter, r *http.Request) {
+	var usr types.User
+	if err := json.NewDecoder(r.Body).Decode(&usr); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
+		return
+	}
+	if usr.Role == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "role is required")
+		return
+	}
+
+	err := h.userService.CreateUser(r.Context(), &usr)
+	if err == types.ErrUniqueConstraintViolation {
+		u.RespondWithError(w, r, http.StatusConflict, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u.RespondWithJSON(w, http.StatusCreated, usr)
+}
 
 func (h *UserRoutes) Logout(w http.ResponseWriter, r *http.Request) {
 	if err := h.refreshService.RevokeTokens(r.Context()); err != nil {
