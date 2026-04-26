@@ -1,5 +1,6 @@
 <template>
   <div class="order-container">
+    <h2>Orders</h2>
     <DataTable :columns="columns" :data="formattedOrders" :on-row-click="handleRowClick" />
   </div>
 </template>

@@ -69,12 +69,6 @@ const handleSubmit = async () => {
   top: -20px;
 }
 
-h2 {
-  font-size: 22px;
-  font-weight: 300;
-  margin-bottom: 50px;
-}
-
 /* Labels */
 label {
   font-weight: 500;

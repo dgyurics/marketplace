@@ -5,8 +5,8 @@
       <div>
         <!-- FIXME make this a proper menu component -->
         <div class="button-group menu">
-          <button :tabindex="0" @click="goToInbox">Messages</button>
           <button :tabindex="0" @click="goToProfile">Profile</button>
+          <button :tabindex="0" @click="goToInbox">Messages</button>
           <template v-if="authStore.hasMinimumRole('staff')">
             <button :tabindex="0" @click="goToCategories">Categories</button>
             <button :tabindex="0" @click="goToProducts">Products</button>
@@ -222,10 +222,8 @@ const handleLogout = async () => {
   top: -20px;
 }
 
-h2 {
-  font-size: 22px;
-  font-weight: 300;
-  margin-bottom: 50px;
+form {
+  margin-top: 50px;
 }
 
 /* Labels */

@@ -73,12 +73,6 @@ onMounted(() => {
   justify-content: center;
 }
 
-.products-section h2 {
-  margin: 0 0 20px 0;
-  font-size: 1.5rem;
-  font-weight: 300;
-}
-
 .product-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

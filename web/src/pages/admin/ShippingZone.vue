@@ -224,14 +224,6 @@ onMounted(() => {
   margin-bottom: 50px;
 }
 
-.section h2 {
-  font-size: 20px;
-  font-weight: 300;
-  margin-bottom: 20px;
-  color: #333;
-  text-align: center;
-}
-
 .new-zone-form {
   margin-bottom: 30px;
 }

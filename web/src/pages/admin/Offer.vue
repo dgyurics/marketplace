@@ -1,6 +1,6 @@
 <template>
   <div class="offer-container">
-    <h1 class="page-title">Offers</h1>
+    <h2>Offers</h2>
     <DataTable :columns="columns" :data="formattedOffers" :on-row-click="handleRowClick" />
   </div>
 </template>
@@ -74,12 +74,5 @@ onMounted(() => {
   max-width: 1200px;
   margin: auto;
   padding: 20px;
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 300;
-  margin-bottom: 20px;
-  color: #333;
 }
 </style>

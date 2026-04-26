@@ -344,14 +344,6 @@ const resetAndStart = () => {
   margin-bottom: 30px;
 }
 
-.wizard-header h2 {
-  font-size: 20px;
-  font-weight: 300;
-  margin-bottom: 20px;
-  color: #333;
-  text-align: center;
-}
-
 .wizard-steps {
   display: flex;
   gap: 20px;

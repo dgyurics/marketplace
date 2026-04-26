@@ -124,12 +124,6 @@ const handleSubmit = async () => {
   top: -20px;
 }
 
-h2 {
-  font-size: 22px;
-  font-weight: 300;
-  margin-bottom: 10px;
-}
-
 h3 {
   font-size: 16px;
   font-weight: 400;

@@ -147,19 +147,12 @@ const handleSubmit = async () => {
   top: -20px;
 }
 
-h2 {
-  font-size: 22px;
-  font-weight: 300;
-  margin-bottom: 50px;
-  text-align: center;
-}
-
 h3 {
   font-size: 18px;
   font-weight: 400;
-  margin: 30px 0 20px 0;
   text-align: center;
   text-transform: capitalize;
+  margin-bottom: 10px;
 }
 
 .user-info {

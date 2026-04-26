@@ -168,20 +168,6 @@ onMounted(loadConversations)
   }
 }
 
-h2 {
-  font-size: 22px;
-  font-weight: 300;
-  margin-bottom: 50px;
-  text-align: center;
-}
-
-h3 {
-  font-size: 18px;
-  font-weight: 400;
-  margin: 20px 0;
-  text-align: center;
-}
-
 .conversation-title {
   text-transform: capitalize;
 }

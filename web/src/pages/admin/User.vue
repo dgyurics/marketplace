@@ -1,5 +1,6 @@
 <template>
   <div class="user-container">
+    <h2>Users</h2>
     <DataTable :columns="columns" :data="formattedUsers" :on-row-click="handleRowClick" />
   </div>
 </template>

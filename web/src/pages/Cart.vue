@@ -120,12 +120,6 @@ const goToCheckout = () => {
   height: 24px;
 }
 
-h2 {
-  text-align: center;
-  font-size: 24px;
-  margin-bottom: 20px;
-}
-
 .empty-cart {
   text-align: center;
   font-size: 18px;
