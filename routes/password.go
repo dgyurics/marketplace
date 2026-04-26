@@ -79,7 +79,7 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		if err := h.notificationService.SendEmail(recEmail, "Password Reset", services.PasswordReset, data); err != nil {
 			slog.Error("Error sending password reset email: ", "error", err)
 		}
-	}(usr.Email, code)
+	}(*usr.Email, code)
 
 	u.RespondSuccess(w)
 }

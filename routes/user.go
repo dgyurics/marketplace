@@ -148,6 +148,8 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *UserRoutes) CreateUser(w http.ResponseWriter, r *http.Request) {}
+
 func (h *UserRoutes) Logout(w http.ResponseWriter, r *http.Request) {
 	if err := h.refreshService.RevokeTokens(r.Context()); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
@@ -158,11 +160,12 @@ func (h *UserRoutes) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserRoutes) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
 	// Create guest user
-	usr := types.User{}
-	err := h.userService.CreateGuest(ctx, &usr)
+	usr := types.User{
+		Role:     types.RoleGuest,
+		Verified: false,
+	}
+	err := h.userService.CreateUser(r.Context(), &usr)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -370,6 +373,7 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/users/change-email", h.secure(types.RoleAdmin)(h.limit(h.ChangeEmail, 5, time.Hour))).Methods(http.MethodPut)
 	h.muxRouter.Handle("/users/logout", h.secure(types.RoleGuest)(h.Logout)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users", h.secure(types.RoleStaff)(h.GetAllUsers)).Methods(http.MethodGet)
+	h.muxRouter.Handle("/users", h.secure(types.RoleAdmin)(h.CreateUser)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/{id}", h.secure(types.RoleAdmin)(h.GetUser)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/users/{id}", h.secure(types.RoleAdmin)(h.RemoveUser)).Methods(http.MethodDelete)
 }

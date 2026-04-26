@@ -29,7 +29,7 @@ func TestCreateProduct(t *testing.T) {
 	product := &types.Product{
 		Name:        "Test Product with Category",
 		Price:       150000,
-		Description: util.String("A test product with category description"),
+		Description: util.StringPtr("A test product with category description"),
 		Details:     []byte(`{"key": "value"}`),
 		Category:    &category,
 	}
@@ -71,7 +71,7 @@ func TestGetProducts(t *testing.T) {
 	product := &types.Product{
 		Name:        "Test Product for GetAll",
 		Price:       200000,
-		Description: util.String("A test product for get all"),
+		Description: util.StringPtr("A test product for get all"),
 		Details:     []byte(`{"key": "value"}`),
 		Category:    &category,
 	}
@@ -123,7 +123,7 @@ func TestGetProductsByCategory(t *testing.T) {
 	product := &types.Product{
 		Name:        "Test Product with Category",
 		Price:       200000,
-		Description: util.String("A test product with a category"),
+		Description: util.StringPtr("A test product with a category"),
 		Details:     []byte(`{"key": "value"}`),
 		Category:    &category,
 	}
@@ -180,7 +180,7 @@ func TestGetProductByID(t *testing.T) {
 	product := &types.Product{
 		Name:        "Test Product for GetByID",
 		Price:       250000,
-		Description: util.String("A test product for get by ID"),
+		Description: util.StringPtr("A test product for get by ID"),
 		Details:     []byte(`{"key": "value"}`),
 		Category:    &category,
 	}
@@ -226,7 +226,7 @@ func TestDeleteProduct(t *testing.T) {
 	product := &types.Product{
 		Name:        "Test Product for Deletion",
 		Price:       300000,
-		Description: util.String("A test product for deletion"),
+		Description: util.StringPtr("A test product for deletion"),
 		Details:     []byte(`{"key": "value"}`),
 		Category:    &category,
 	}

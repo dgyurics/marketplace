@@ -10,6 +10,7 @@ import (
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -108,7 +109,7 @@ func TestRevokeRefreshTokens(t *testing.T) {
 	// Mock the behavior of the repository
 	user := &types.User{
 		ID:    "user123",
-		Email: "user@example.com",
+		Email: utilities.StringPtr("user@example.com"),
 	}
 	ctx := context.WithValue(context.Background(), services.UserKey, user)
 	repo.On("RevokeTokens", mock.Anything, user.ID).Return(nil)

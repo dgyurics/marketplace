@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -59,7 +60,7 @@ func createJWTService() services.JWTService {
 
 func TestGenerateToken(t *testing.T) {
 	service := createJWTService()
-	user := types.User{ID: "123", Email: "user@example.com", Role: "admin"}
+	user := types.User{ID: "123", Email: utilities.StringPtr("user@example.com"), Role: "admin"}
 
 	token, err := service.GenerateToken(user)
 	assert.NoError(t, err)
@@ -68,7 +69,7 @@ func TestGenerateToken(t *testing.T) {
 
 func TestParseToken(t *testing.T) {
 	service := createJWTService()
-	user := types.User{ID: "123", Email: "user@example.com", Role: "admin"}
+	user := types.User{ID: "123", Email: utilities.StringPtr("user@example.com"), Role: "admin"}
 
 	token, _ := service.GenerateToken(user)
 	parsedUser, err := service.ParseToken(token)
@@ -97,7 +98,7 @@ func TestParseToken_ExpiredToken(t *testing.T) {
 		Expiry:     1 * time.Second,
 	})
 
-	user := types.User{ID: "123", Email: "user@example.com", Role: "admin"}
+	user := types.User{ID: "123", Email: utilities.StringPtr("user@example.com"), Role: "admin"}
 
 	// Generate the token
 	token, err := shortLivedService.GenerateToken(user)

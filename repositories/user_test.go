@@ -34,7 +34,7 @@ func TestGetUserByEmail(t *testing.T) {
 	user := createUniqueTestUser(t, repo)
 
 	// Retrieve the user by email
-	retrievedUser, err := repo.GetUserByEmail(ctx, user.Email)
+	retrievedUser, err := repo.GetUserByEmail(ctx, *user.Email)
 	assert.NoError(t, err, "Expected no error on getting user by email")
 	assert.NotNil(t, retrievedUser, "Expected retrieved user to not be nil")
 	assert.Equal(t, user.ID, retrievedUser.ID, "Expected user ID to match")
@@ -80,12 +80,19 @@ func TestCreateGuest(t *testing.T) {
 	repo := NewUserRepository(dbPool)
 	ctx := context.Background()
 
-	// Create a guest user
-	guestUser := &types.User{ID: utilities.MustGenerateIDString(), Email: ""}
-	err := repo.CreateGuest(ctx, guestUser)
+	// Create a guest user with nil password, unverified, and empty email
+	guestUser := &types.User{
+		ID:           utilities.MustGenerateIDString(),
+		Email:        nil,
+		PasswordHash: nil,
+		Role:         types.RoleGuest,
+		Verified:     false,
+	}
+	err := repo.CreateUser(ctx, guestUser)
 	assert.NoError(t, err, "Expected no error while creating a guest user")
 	assert.NotEmpty(t, guestUser.ID, "Expected guest user ID to be set")
 	assert.Equal(t, types.RoleGuest, guestUser.Role, "Expected role to be 'guest'")
+	assert.False(t, guestUser.Verified, "Expected guest user to be unverified")
 
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", guestUser.ID)

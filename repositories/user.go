@@ -12,7 +12,6 @@ import (
 type UserRepository interface {
 	// create
 	CreateUser(ctx context.Context, user *types.User) error
-	CreateGuest(ctx context.Context, user *types.User) error
 	CreateRegistrationCode(ctx context.Context, userID, code string, expires time.Time) error
 	// update
 	UpdateEmail(ctx context.Context, userID, newEmail string) (*types.User, error)
@@ -33,16 +32,6 @@ type userRepository struct {
 
 func NewUserRepository(db *sql.DB) UserRepository {
 	return &userRepository{db: db}
-}
-
-func (r *userRepository) CreateGuest(ctx context.Context, user *types.User) error {
-	query := `
-		INSERT INTO users (id, role)
-		VALUES ($1, 'guest')
-		RETURNING id, role, updated_at
-	`
-	return r.db.QueryRowContext(ctx, query, user.ID).
-		Scan(&user.ID, &user.Role, &user.UpdatedAt)
 }
 
 func (r *userRepository) CreateUser(ctx context.Context, user *types.User) error {

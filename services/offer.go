@@ -99,7 +99,7 @@ func (ps *offerService) OfferUpdateEmail(offer types.Offer) {
 		"ProductName": offer.Product.Name,
 		"Status":      string(offer.Status),
 	}
-	if err := ps.notificationService.SendEmail(usr.Email, "Offer Update", OfferUpdate, data); err != nil {
+	if err := ps.notificationService.SendEmail(*usr.Email, "Offer Update", OfferUpdate, data); err != nil {
 		slog.Error("Error sending offer update email: ", "offer_id", offer.ID, "error", err)
 	}
 }
@@ -120,7 +120,7 @@ func (ps *offerService) OfferNotificationEmail(offer types.Offer) {
 	}
 
 	for _, admin := range admins {
-		if err := ps.notificationService.SendEmail(admin.Email, "Offer Notification", OfferNotification, data); err != nil {
+		if err := ps.notificationService.SendEmail(*admin.Email, "Offer Notification", OfferNotification, data); err != nil {
 			slog.Error("Error sending offer notification email: ", "offer_id", offer.ID, "error", err)
 		}
 	}

@@ -53,8 +53,8 @@ func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
 
 	// create new user
 	usr := types.User{
-		Email:    strings.ToLower(reqBody.Email),
-		Password: reqBody.Password,
+		Email:    u.StringPtr(strings.ToLower(reqBody.Email)),
+		Password: &reqBody.Password,
 		Role:     types.RoleUser,
 		Verified: false,
 	}
@@ -84,7 +84,7 @@ func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		if err := h.notificationService.SendEmail(email, "Email Verification", services.EmailVerification, data); err != nil {
 			slog.Error("Error sending new user registration email: ", "email", email, "error", err)
 		}
-	}(usr.Email, code)
+	}(*usr.Email, code)
 
 	u.RespondSuccess(w)
 }

@@ -20,7 +20,6 @@ const UserKey contextKey = "user"
 type UserService interface {
 	// CREATE
 	CreateUser(ctx context.Context, user *types.User) error
-	CreateGuest(ctx context.Context, user *types.User) error
 	CreateRegistrationCode(ctx context.Context, userID string, expiry time.Time) (string, error)
 	// UPDATE
 	UpdatePassword(ctx context.Context, curPass, newPass string) (*types.User, error)
@@ -44,21 +43,15 @@ func NewUserService(repo repositories.UserRepository) UserService {
 	return &userService{repo: repo}
 }
 
-func (s *userService) CreateGuest(ctx context.Context, user *types.User) error {
-	userID, err := utilities.GenerateIDString()
-	if err != nil {
-		return err
-	}
-	user.ID = userID
-	return s.repo.CreateGuest(ctx, user)
-}
-
 func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
-	hashedPassword, err := generateFromPassword(user.Password)
-	if err != nil {
-		return err
+	if user.Password != nil {
+		hashedPassword, err := generateFromPassword(*user.Password)
+		if err != nil {
+			return err
+		}
+		passwordHashStr := string(hashedPassword)
+		user.PasswordHash = &passwordHashStr
 	}
-	user.PasswordHash = string(hashedPassword)
 
 	userID, err := utilities.GenerateIDString()
 	if err != nil {
@@ -102,7 +95,7 @@ func (s *userService) UpdatePassword(ctx context.Context, curPass, newPass strin
 	}
 
 	// compare old passwords
-	err = bcrypt.CompareHashAndPassword([]byte(usr.PasswordHash), []byte(curPass))
+	err = bcrypt.CompareHashAndPassword([]byte(*usr.PasswordHash), []byte(curPass))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		return nil, types.ErrNotFound
 	}
@@ -140,7 +133,7 @@ func (s *userService) verifyEmail(ctx context.Context, credentials *types.Creden
 		return nil, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(credentials.Password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		return nil, types.ErrNotFound
 	}

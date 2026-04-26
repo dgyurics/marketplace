@@ -21,8 +21,8 @@ func createUniqueTestUser(t *testing.T, userRepo UserRepository) *types.User {
 	user := types.User{ID: utilities.MustGenerateIDString()}
 
 	// Create a new user object
-	user.Email = email
-	user.PasswordHash = "hashedpassword"
+	user.Email = utilities.StringPtr(email)
+	user.PasswordHash = utilities.StringPtr("hashedpassword")
 	user.Role = types.RoleUser
 	user.Verified = true
 
@@ -38,11 +38,17 @@ func createUniqueTestUser(t *testing.T, userRepo UserRepository) *types.User {
 func createUniqueGuestUser(t *testing.T, userRepo UserRepository) *types.User {
 	ctx := context.Background()
 
-	// Create a new guest user object
-	user := types.User{ID: utilities.MustGenerateIDString()}
+	// Create a new guest user object with nil password, unverified, and empty email
+	user := types.User{
+		ID:           utilities.MustGenerateIDString(),
+		Email:        nil,
+		PasswordHash: nil,
+		Role:         types.RoleGuest,
+		Verified:     false,
+	}
 
 	// Insert the guest user into the database
-	err := userRepo.CreateGuest(ctx, &user)
+	err := userRepo.CreateUser(ctx, &user)
 	assert.NoError(t, err, "Expected no error on guest user creation")
 	assert.NotEmpty(t, user.ID, "Expected guest user ID to be set")
 

@@ -314,7 +314,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 			"DetailsLink":   detailsLink,
 		}
 		for _, admin := range admins {
-			if err := s.notificationService.SendEmail(admin.Email, "Order Notification", OrderNotification, data); err != nil {
+			if err := s.notificationService.SendEmail(*admin.Email, "Order Notification", OrderNotification, data); err != nil {
 				slog.Error("Error sending order notification email: ", "order_id", order.ID, "error", err)
 			}
 		}
