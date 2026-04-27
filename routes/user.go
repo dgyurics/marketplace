@@ -179,18 +179,18 @@ func (h *UserRoutes) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserRoutes) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 	// Create guest user
-	usr := types.User{
+	usr := &types.User{
 		Role:     types.RoleGuest,
 		Verified: false,
 	}
-	err := h.userService.CreateUser(r.Context(), &usr)
+	err := h.userService.CreateUser(r.Context(), usr)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Generate access token
-	accessToken, err := h.jwtService.GenerateToken(usr)
+	accessToken, err := h.jwtService.GenerateToken(*usr)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
