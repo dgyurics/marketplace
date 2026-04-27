@@ -6,7 +6,7 @@
     <div v-if="!selectedConversation" class="conversation-list">
       <div v-if="loading" class="loading">Loading conversations...</div>
       <div v-else-if="conversations.length === 0" class="no-conversations">
-        No conversations found.
+        No conversations found
       </div>
       <div v-else>
         <div
