@@ -40,6 +40,7 @@ func createUniqueGuestUser(t *testing.T, userRepo UserRepository) *types.User {
 
 	// Create a new guest user object with nil password, unverified, and empty email
 	user := types.User{
+		ID:           utilities.MustGenerateIDString(),
 		Email:        nil,
 		PasswordHash: nil,
 		Role:         types.RoleGuest,

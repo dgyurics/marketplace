@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -81,6 +82,7 @@ func TestCreateGuest(t *testing.T) {
 
 	// Create a guest user with nil password, unverified, and empty email
 	guestUser := &types.User{
+		ID:           utilities.MustGenerateIDString(),
 		Email:        nil,
 		PasswordHash: nil,
 		Role:         types.RoleGuest,
