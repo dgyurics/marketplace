@@ -20,7 +20,7 @@
       </div>
     </template>
     <template v-else>
-      <h2>{{ headerText }}</h2>
+      <h2>Sign In or Create an Account</h2>
 
       <form @submit.prevent>
         <div class="form-group">
@@ -49,15 +49,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-import {
-  login as apiLogin,
-  register as apiRegister,
-  logout as apiLogout,
-  registerConfirm,
-} from '@/services/api'
+import { login as apiLogin, register as apiRegister, logout as apiLogout } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 
 const authStore = useAuthStore()
@@ -65,26 +60,6 @@ const authStore = useAuthStore()
 const email = ref('')
 const password = ref('')
 const errorMessage = ref<string | null>(null)
-const headerText = ref('Sign In or Create an Account')
-
-const route = useRoute()
-
-onMounted(async () => {
-  const registrationCode = route.query['registration-code']
-  if (registrationCode) {
-    try {
-      await registerConfirm(registrationCode as string)
-      headerText.value = 'Registration Successful'
-    } catch (error: any) {
-      const status = error.response?.status
-      if (status === 400) {
-        errorMessage.value = 'Invalid registration code'
-      } else {
-        errorMessage.value = 'Something went wrong'
-      }
-    }
-  }
-})
 
 const isValidEmail = (email: string) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

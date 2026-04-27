@@ -77,7 +77,7 @@ func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
 
 	// email customer email verification link
 	go func(email, code string) {
-		detailsLink := fmt.Sprintf("%s/auth?registration-code=%s", h.notificationService.BaseURL(), url.QueryEscape(code))
+		detailsLink := fmt.Sprintf("%s?registration-code=%s", h.notificationService.BaseURL(), url.QueryEscape(code))
 		data := map[string]string{
 			"DetailsLink": detailsLink,
 		}

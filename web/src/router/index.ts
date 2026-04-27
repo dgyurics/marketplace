@@ -29,7 +29,7 @@ import ProductDetails from '@/pages/ProductDetail.vue'
 import Profile from '@/pages/Profile.vue'
 import RegisterConfirmation from '@/pages/RegisterConfirmation.vue'
 import ShippingAddress from '@/pages/ShippingAddress.vue'
-import { getCategories } from '@/services/api'
+import { getCategories, registerConfirm } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 
 async function initRoutes(): Promise<RouteRecordRaw[]> {
@@ -132,8 +132,34 @@ function requireMember(
 // Export function to create router (to be called after Pinia is initialized)
 export async function createAppRouter() {
   const routes = await initRoutes()
-  return createRouter({
+  const router = createRouter({
     history: createWebHistory(),
     routes,
   })
+
+  // global query parameter check
+  router.beforeEach(async (to, _from, next) => {
+    if (to.query['registration-code']) {
+      await handleRegistrationCode(to, next)
+      return
+    }
+    next()
+  })
+
+  return router
+}
+
+// Handle registration code confirmation
+async function handleRegistrationCode(to: RouteLocationNormalized, next: NavigationGuardNext) {
+  try {
+    const authTokens = await registerConfirm(to.query['registration-code'] as string)
+    const authStore = useAuthStore()
+    authStore.setTokens(authTokens)
+  } catch (error) {
+    console.error('Registration confirmation failed:', error)
+  }
+
+  // Remove registration-code from query params
+  const { 'registration-code': _, ...cleanQuery } = to.query
+  next({ ...to, query: cleanQuery, replace: true })
 }
