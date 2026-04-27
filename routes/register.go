@@ -69,7 +69,7 @@ func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create registration code
-	code, err := h.userService.CreateRegistrationCode(r.Context(), usr.ID, time.Now().Add(15*time.Minute))
+	code, err := h.userService.CreateRegistrationCode(r.Context(), usr.ID, time.Now().UTC().Add(24*time.Hour))
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -90,8 +90,7 @@ func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 // RegisterConfirm handles the confirmation of a user's registration code
-// It marks the user as verified if the registration code is valid. (Afterwards they can log in)
-// It returns a 400 status code if the registration code is invalid or expired
+// It marks the user as verified if the registration code is valid.
 func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request) {
 	// extract registration_code
 	var reqBody struct {
@@ -103,7 +102,7 @@ func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request)
 	}
 
 	// confirm the registration code (mark user as verified if valid)
-	_, err := h.userService.ConfirmRegistrationCode(r.Context(), reqBody.RegistrationCode)
+	usr, err := h.userService.ConfirmRegistrationCode(r.Context(), reqBody.RegistrationCode)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
@@ -113,7 +112,30 @@ func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	u.RespondSuccess(w)
+	// Generate new access token
+	accessToken, err := h.jwtService.GenerateToken(*usr)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Generate new refresh refreshToken
+	refreshToken, err := h.refreshService.GenerateToken()
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Store refresh token
+	if err := h.refreshService.StoreToken(r.Context(), usr.ID, refreshToken); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	u.RespondWithJSON(w, http.StatusCreated, types.TokenResponse{
+		Token:        accessToken,
+		RefreshToken: refreshToken,
+	})
 }
 
 func (h *RegisterRoutes) RegisterRoutes() {
