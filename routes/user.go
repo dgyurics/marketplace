@@ -19,21 +19,18 @@ type UserRoutes struct {
 	userService    services.UserService
 	jwtService     services.JWTService
 	refreshService services.RefreshService
-	config         types.AuthConfig
 }
 
 func NewUserRoutes(
 	userService services.UserService,
 	jwtService services.JWTService,
 	refreshService services.RefreshService,
-	config types.AuthConfig,
 	router router) *UserRoutes {
 	return &UserRoutes{
 		router:         router,
 		userService:    userService,
 		jwtService:     jwtService,
 		refreshService: refreshService,
-		config:         config,
 	}
 }
 
@@ -103,9 +100,9 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusOK, map[string]interface{}{
-		"token":         accessToken,
-		"refresh_token": refreshToken,
+	u.RespondWithJSON(w, http.StatusCreated, types.TokenResponse{
+		Token:        accessToken,
+		RefreshToken: refreshToken,
 	})
 }
 
@@ -142,9 +139,9 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusOK, map[string]string{
-		"token":         accessToken,
-		"refresh_token": requestBody.RefreshToken,
+	u.RespondWithJSON(w, http.StatusCreated, types.TokenResponse{
+		Token:        accessToken,
+		RefreshToken: requestBody.RefreshToken,
 	})
 }
 
@@ -199,24 +196,23 @@ func (h *UserRoutes) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate refresh token
-	var token string
-	token, err = h.refreshService.GenerateToken()
+	// Generate refresh refreshToken
+	refreshToken, err := h.refreshService.GenerateToken()
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Store refresh token
-	err = h.refreshService.StoreToken(r.Context(), usr.ID, token)
+	err = h.refreshService.StoreToken(r.Context(), usr.ID, refreshToken)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusCreated, map[string]string{
-		"token":         accessToken,
-		"refresh_token": token,
+	u.RespondWithJSON(w, http.StatusCreated, types.TokenResponse{
+		Token:        accessToken,
+		RefreshToken: refreshToken,
 	})
 }
 
@@ -264,23 +260,22 @@ func (h *UserRoutes) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate new refresh token
-	var token string
-	token, err = h.refreshService.GenerateToken()
+	// Generate new refresh refreshToken
+	refreshToken, err := h.refreshService.GenerateToken()
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Store refresh token
-	if err := h.refreshService.StoreToken(r.Context(), usr.ID, token); err != nil {
+	if err := h.refreshService.StoreToken(r.Context(), usr.ID, refreshToken); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusCreated, map[string]string{
-		"token":         accessToken,
-		"refresh_token": token,
+	u.RespondWithJSON(w, http.StatusCreated, types.TokenResponse{
+		Token:        accessToken,
+		RefreshToken: refreshToken,
 	})
 }
 
@@ -327,23 +322,22 @@ func (h *UserRoutes) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate new refresh token
-	var token string
-	token, err = h.refreshService.GenerateToken()
+	// Generate new refresh refreshToken
+	refreshToken, err := h.refreshService.GenerateToken()
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Store refresh token
-	if err := h.refreshService.StoreToken(r.Context(), usr.ID, token); err != nil {
+	if err := h.refreshService.StoreToken(r.Context(), usr.ID, refreshToken); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusCreated, map[string]string{
-		"token":         accessToken,
-		"refresh_token": token,
+	u.RespondWithJSON(w, http.StatusCreated, types.TokenResponse{
+		Token:        accessToken,
+		RefreshToken: refreshToken,
 	})
 }
 
