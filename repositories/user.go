@@ -245,6 +245,14 @@ func (r *userRepository) CreateRegistrationCode(ctx context.Context, userID, cod
 }
 
 func (r *userRepository) ConfirmRegistrationCode(ctx context.Context, code string) (*types.User, error) {
+	// init transaction
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// Set user to verified true if registration code is valid
 	var usr types.User
 	query := `
 		UPDATE users
@@ -256,13 +264,27 @@ func (r *userRepository) ConfirmRegistrationCode(ctx context.Context, code strin
 		)
 		RETURNING id, email, role
 	`
-	err := r.db.QueryRowContext(ctx, query, code).Scan(&usr.ID, &usr.Email, &usr.Role)
+	err = tx.QueryRowContext(ctx, query, code).Scan(&usr.ID, &usr.Email, &usr.Role)
 	if err == sql.ErrNoRows {
 		return nil, types.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
+
+	// Mark the registration code as used
+	query = `
+		DELETE FROM registration_codes
+		WHERE code = $1
+	`
+	if _, err := tx.ExecContext(ctx, query, code); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
 	return &usr, nil
 }
 
