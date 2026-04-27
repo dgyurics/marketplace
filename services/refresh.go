@@ -63,7 +63,7 @@ func (s *refreshService) StoreToken(ctx context.Context, userID, token string) e
 // ValidateToken verifies the refresh token and returns the associated user if valid.
 // FIXME rename GetUser
 func (s *refreshService) VerifyToken(ctx context.Context, token string) (*types.User, error) {
-	now := time.Now()
+	now := time.Now().UTC()
 	tokenHash := hashString(token, s.config.HMACSecret)
 	refreshToken, err := s.repo.GetToken(ctx, tokenHash)
 
@@ -83,7 +83,7 @@ func (s *refreshService) VerifyToken(ctx context.Context, token string) (*types.
 		return nil, errors.New("refresh token has expired")
 	}
 
-	if err := s.repo.UpdateLastUsed(ctx, refreshToken.ID, now.UTC()); err != nil {
+	if err := s.repo.UpdateLastUsed(ctx, refreshToken.ID, now); err != nil {
 		return nil, errors.New("failed to update refresh token usage")
 	}
 
