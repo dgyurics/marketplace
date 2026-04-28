@@ -122,7 +122,15 @@ onMounted(() => {
 }
 
 .form-row :deep(.input-container) {
-  flex: 1 1 calc(50% - 10px);
+  flex: 1 1 calc(50% - 5px);
+  width: calc(50% - 5px);
+  min-width: 0;
+}
+
+.form-row :deep(.input-field),
+.form-row :deep(.select-field) {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .error {
@@ -145,6 +153,7 @@ onMounted(() => {
 
   .form-row :deep(.input-container) {
     flex: 1 1 100%;
+    width: 100%;
   }
 }
 </style>
