@@ -23,6 +23,7 @@ import type {
   Locale,
   ShippingZone,
   ExcludedShippingZone,
+  RegistrationCode,
 } from '@/types'
 import type { Conversation } from '@/types/conversation'
 
@@ -82,6 +83,12 @@ export const registerConfirm = async (registrationCode: string): Promise<AuthTok
   const response = await apiClient.post('/register/confirm', {
     registration_code: registrationCode,
   })
+  return response.data
+}
+
+// used by admins to generate registration codes for new users
+export const createRegistrationCode = async (userId: string): Promise<RegistrationCode> => {
+  const response = await apiClient.post(`/register/${userId}/admin`)
   return response.data
 }
 

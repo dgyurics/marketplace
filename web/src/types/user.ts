@@ -27,3 +27,8 @@ export interface AuthTokens {
   token: string
   refresh_token: string
 }
+
+export interface RegistrationCode {
+  registration_code: string
+  expires_in: string
+}

@@ -28,6 +28,23 @@
         </div>
       </div>
 
+      <div class="info-row">
+        <label>Registration Link:</label>
+        <div class="code-section">
+          <span v-if="generatedCode" class="registration-link">
+            {{ registrationUrl }}
+          </span>
+          <span
+            v-else-if="!generatedCode"
+            v-auth="'admin'"
+            class="clickable-generate"
+            @click="handleGenerateCode"
+          >
+            click to generate
+          </span>
+        </div>
+      </div>
+
       <div class="user-actions">
         <button type="button" class="btn-full-width btn-outline" @click="goBack">
           Back to Users
@@ -46,17 +63,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getUser, removeUser } from '@/services/api'
-import type { UserRecord } from '@/types'
+import { getUser, removeUser, createRegistrationCode } from '@/services/api'
+import type { UserRecord, RegistrationCode } from '@/types'
 import { formatDate } from '@/utilities/dateFormat'
 
 const route = useRoute()
 const router = useRouter()
 
 const user = ref<UserRecord | null>(null)
+const generatedCode = ref<RegistrationCode | null>(null)
+
+const registrationUrl = computed(() => {
+  if (!generatedCode.value) return ''
+  const { protocol, host } = window.location
+  return `${protocol}//${host}?registration-code=${generatedCode.value.registration_code}`
+})
 
 const fetchUser = async () => {
   try {
@@ -74,6 +98,17 @@ const handleRemoveUser = async () => {
   try {
     await removeUser(user.value.id.toString())
     router.push('/admin/users')
+  } catch {
+    // Handle error silently
+  }
+}
+
+const handleGenerateCode = async () => {
+  if (!user.value) return
+
+  try {
+    const response = await createRegistrationCode(user.value.id)
+    generatedCode.value = response
   } catch {
     // Handle error silently
   }
@@ -144,12 +179,56 @@ onMounted(() => {
 .info-row {
   display: flex;
   margin-bottom: 15px;
+  align-items: center;
 }
 
 .info-row label {
   min-width: 100px;
   font-weight: 500;
   color: #666;
+}
+
+.code-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  margin-left: 20px;
+}
+
+.code-display {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  letter-spacing: 1px;
+  background-color: #f8f9fa;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #e1e5e9;
+  line-height: 1;
+}
+
+.registration-link {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px;
+  color: #333;
+  letter-spacing: 1px;
+  background-color: #f8f9fa;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #e1e5e9;
+  line-height: 1;
+  word-break: break-all;
+  display: inline-block;
+}
+
+.clickable-generate {
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  line-height: 1;
+  transition: color 0.2s;
 }
 
 .user-actions {

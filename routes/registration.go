@@ -12,6 +12,7 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
+	"github.com/gorilla/mux"
 )
 
 type RegistrationRoutes struct {
@@ -23,7 +24,7 @@ type RegistrationRoutes struct {
 	notificationService services.NotificationService
 }
 
-func NewRegisterRoutes(
+func NewRegistrationRoutes(
 	userService services.UserService,
 	registrationService services.RegistrationService,
 	jwtService services.JWTService,
@@ -139,7 +140,20 @@ func (h *RegistrationRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Requ
 	})
 }
 
+func (h *RegistrationRoutes) CreateCodeForUser(w http.ResponseWriter, r *http.Request) {
+	code, err := h.registrationService.CreateCode(r.Context(), mux.Vars(r)["id"], time.Now().UTC().Add(24*time.Hour))
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u.RespondWithJSON(w, http.StatusCreated, map[string]string{
+		"registration_code": code,
+		"expires_in":        "24h",
+	})
+}
+
 func (h *RegistrationRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/register", h.limit(h.Register, 2, time.Hour*6)).Methods(http.MethodPost)
+	h.muxRouter.Handle("/register/{id}/admin", h.secure(types.RoleAdmin)(h.CreateCodeForUser)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/register/confirm", h.limit(h.RegisterConfirm, 2, time.Hour*6)).Methods(http.MethodPost)
 }
