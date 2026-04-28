@@ -14,29 +14,33 @@ import (
 	u "github.com/dgyurics/marketplace/utilities"
 )
 
-type RegisterRoutes struct {
+type RegistrationRoutes struct {
 	router
 	userService         services.UserService
+	registrationService services.RegistrationService
 	jwtService          services.JWTService
 	refreshService      services.RefreshService
 	notificationService services.NotificationService
 }
 
-func NewRegisterRoutes(userService services.UserService,
+func NewRegisterRoutes(
+	userService services.UserService,
+	registrationService services.RegistrationService,
 	jwtService services.JWTService,
 	refreshService services.RefreshService,
 	notificationService services.NotificationService,
-	router router) *RegisterRoutes {
-	return &RegisterRoutes{
+	router router) *RegistrationRoutes {
+	return &RegistrationRoutes{
 		router:              router,
 		userService:         userService,
+		registrationService: registrationService,
 		jwtService:          jwtService,
 		refreshService:      refreshService,
 		notificationService: notificationService,
 	}
 }
 
-func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
+func (h *RegistrationRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	var reqBody types.Credential
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
@@ -69,7 +73,7 @@ func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create registration code
-	code, err := h.userService.CreateRegistrationCode(r.Context(), usr.ID, time.Now().UTC().Add(24*time.Hour))
+	code, err := h.registrationService.CreateCode(r.Context(), usr.ID, time.Now().UTC().Add(24*time.Hour))
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -89,10 +93,7 @@ func (h *RegisterRoutes) Register(w http.ResponseWriter, r *http.Request) {
 	u.RespondSuccess(w)
 }
 
-// RegisterConfirm handles the confirmation of a user's registration code
-// It marks the user as verified if the registration code is valid.
-func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request) {
-	// extract registration_code
+func (h *RegistrationRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request) {
 	var reqBody struct {
 		RegistrationCode string `json:"registration_code"`
 	}
@@ -101,8 +102,8 @@ func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// confirm the registration code (mark user as verified if valid)
-	usr, err := h.userService.ConfirmRegistrationCode(r.Context(), reqBody.RegistrationCode)
+	// verify registration code
+	usr, err := h.registrationService.VerifyCode(r.Context(), reqBody.RegistrationCode)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
@@ -138,7 +139,7 @@ func (h *RegisterRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-func (h *RegisterRoutes) RegisterRoutes() {
+func (h *RegistrationRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/register", h.limit(h.Register, 2, time.Hour*6)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/register/confirm", h.limit(h.RegisterConfirm, 2, time.Hour*6)).Methods(http.MethodPost)
 }

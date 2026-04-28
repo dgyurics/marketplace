@@ -95,7 +95,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewPasswordRoutes(services.Password, services.User, services.Notification, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, baseRouter),
 		routes.NewProductRoutes(services.Product, baseRouter),
-		routes.NewRegisterRoutes(services.User, services.JWT, services.Refresh, services.Notification, baseRouter),
+		routes.NewRegisterRoutes(services.User, services.Registration, services.JWT, services.Refresh, services.Notification, baseRouter),
 		routes.NewTaxRoutes(services.Cart, services.Tax, baseRouter),
 		routes.NewUserRoutes(services.User, services.JWT, services.Refresh, baseRouter),
 		routes.NewOfferRoutes(services.Offer, baseRouter),
@@ -132,6 +132,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	shippingZoneRepository := repositories.NewShippingZoneRepository(db)
 	offerRepository := repositories.NewOfferRepository(db)
 	conversationRepository := repositories.NewConversationRepository(db)
+	registrationRepository := repositories.NewRegistrationRepository(db)
 
 	// create http client required by certain services
 	httpClient := utilities.NewDefaultHTTPClient(30 * time.Second) // TODO make this configurable
@@ -154,6 +155,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	rateLimitService := services.NewRateLimitService(rateLimitRepository)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
+	registrationService := services.NewRegistrationService(registrationRepository)
 	jwtService := services.NewJWTService(config.JWT)
 	taxService := services.NewTaxService(taxRepository, config.Payment, httpClient)
 	offerService := services.NewOfferService(productRepository, offerRepository, userService, productService, notificationService)
@@ -173,6 +175,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		Offer:        offerService,
 		RateLimit:    rateLimitService,
 		Refresh:      refreshService,
+		Registration: registrationService,
 		Shipping:     shippingZoneService,
 		Schedule:     scheduleService,
 		Tax:          taxService,
@@ -196,6 +199,7 @@ type servicesContainer struct {
 	Product      services.ProductService
 	RateLimit    services.RateLimitService
 	Refresh      services.RefreshService
+	Registration services.RegistrationService
 	Shipping     services.ShippingZoneService
 	Schedule     services.ScheduleService
 	Tax          services.TaxService

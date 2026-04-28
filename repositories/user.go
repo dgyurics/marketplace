@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/dgyurics/marketplace/types"
 	"github.com/lib/pq"
@@ -12,11 +11,9 @@ import (
 type UserRepository interface {
 	// create
 	CreateUser(ctx context.Context, user *types.User) error
-	CreateRegistrationCode(ctx context.Context, userID, code string, expires time.Time) error
 	// update
 	UpdateEmail(ctx context.Context, userID, newEmail string) (*types.User, error)
 	UpdatePassword(ctx context.Context, userID, newPasswordHash string) (*types.User, error)
-	ConfirmRegistrationCode(ctx context.Context, code string) (*types.User, error)
 	// get
 	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 	GetUserByID(ctx context.Context, userID string) (*types.User, error)
@@ -233,59 +230,6 @@ func (r *userRepository) GetAllAdmins(ctx context.Context) ([]types.User, error)
 		return nil, err
 	}
 	return admins, nil
-}
-
-func (r *userRepository) CreateRegistrationCode(ctx context.Context, userID, code string, expires time.Time) error {
-	query := `
-		INSERT INTO registration_codes(user_id, code, expires_at)
-		VALUES ($1, $2, $3)
-	`
-	_, err := r.db.ExecContext(ctx, query, userID, code, expires)
-	return err
-}
-
-func (r *userRepository) ConfirmRegistrationCode(ctx context.Context, code string) (*types.User, error) {
-	// init transaction
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	// Set user to verified true if registration code is valid
-	var usr types.User
-	query := `
-		UPDATE users
-		SET verified = true, updated_at = NOW()
-		WHERE id = (
-			SELECT user_id
-			FROM registration_codes
-			WHERE code = $1 AND expires_at > NOW()
-		)
-		RETURNING id, email, role
-	`
-	err = tx.QueryRowContext(ctx, query, code).Scan(&usr.ID, &usr.Email, &usr.Role)
-	if err == sql.ErrNoRows {
-		return nil, types.ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	// Mark the registration code as used
-	query = `
-		DELETE FROM registration_codes
-		WHERE code = $1
-	`
-	if _, err := tx.ExecContext(ctx, query, code); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return &usr, nil
 }
 
 // Cascade delete - removes order history, offer history, etc

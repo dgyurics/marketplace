@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"math/big"
-	"time"
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
@@ -20,11 +19,9 @@ const UserKey contextKey = "user"
 type UserService interface {
 	// CREATE
 	CreateUser(ctx context.Context, user *types.User) error
-	CreateRegistrationCode(ctx context.Context, userID string, expiry time.Time) (string, error)
 	// UPDATE
 	UpdatePassword(ctx context.Context, curPass, newPass string) (*types.User, error)
 	UpdateEmail(ctx context.Context, newEmail string) (*types.User, error)
-	ConfirmRegistrationCode(ctx context.Context, code string) (*types.User, error)
 	// GET
 	Login(ctx context.Context, credential *types.Credential) (*types.User, error)
 	GetUserByID(ctx context.Context, userID string) (*types.User, error)
@@ -59,27 +56,6 @@ func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
 	}
 	user.ID = userID
 	return s.repo.CreateUser(ctx, user)
-}
-
-func (s *userService) CreateRegistrationCode(ctx context.Context, userID string, expiry time.Time) (string, error) {
-	// generate the code
-	code, err := generateCode()
-	if err != nil {
-		return "", err
-	}
-
-	// store the registration code
-	if err := s.repo.CreateRegistrationCode(ctx, userID, code, expiry); err != nil {
-		return "", err
-	}
-
-	return code, nil
-}
-
-// ConfirmRegistrationCode marks a user as verified if a valid registration code is provided
-// Returns an error if the registration code is invalid or expired
-func (s *userService) ConfirmRegistrationCode(ctx context.Context, code string) (*types.User, error) {
-	return s.repo.ConfirmRegistrationCode(ctx, code)
 }
 
 func (s *userService) UpdateEmail(ctx context.Context, newEmail string) (*types.User, error) {
