@@ -72,7 +72,7 @@ func (r *offerRepository) CreateOffer(ctx context.Context, offer *types.Offer) e
 
 	// Insert record into offers
 	query := `
-		INSERT INTO offers (id, user_id, product_id, amount, status, pickup_notes)
+		INSERT INTO offers (id, user_id, product_id, amount, status, comment)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 	if _, err := tx.ExecContext(ctx,
@@ -82,7 +82,7 @@ func (r *offerRepository) CreateOffer(ctx context.Context, offer *types.Offer) e
 		offer.Product.ID,
 		offer.Amount,
 		offer.Status,
-		offer.PickupNotes,
+		offer.Comment,
 	); err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func (r *offerRepository) GetOffersByProductIDAndUser(ctx context.Context, produ
 		product_id,
 		amount,
 		status,
-		pickup_notes,
+		comment,
 		created_at,
 		updated_at
 	FROM offers
@@ -172,7 +172,7 @@ func (r *offerRepository) GetOffersByProductIDAndUser(ctx context.Context, produ
 			&pi.Product.ID,
 			&pi.Amount,
 			&pi.Status,
-			&pi.PickupNotes,
+			&pi.Comment,
 			&pi.CreatedAt,
 			&pi.UpdatedAt,
 		); err != nil {
@@ -193,7 +193,7 @@ func (r *offerRepository) GetOfferByID(ctx context.Context, id string) (types.Of
 		product_id,
 		amount,
 		status,
-		pickup_notes,
+		comment,
 		created_at,
 		updated_at
 	FROM offers
@@ -206,7 +206,7 @@ func (r *offerRepository) GetOfferByID(ctx context.Context, id string) (types.Of
 		&pi.Product.ID,
 		&pi.Amount,
 		&pi.Status,
-		&pi.PickupNotes,
+		&pi.Comment,
 		&pi.CreatedAt,
 		&pi.UpdatedAt,
 	)
@@ -225,7 +225,7 @@ func (r *offerRepository) GetOffers(ctx context.Context) ([]types.Offer, error) 
 		product_id,
 		amount,
 		status,
-		pickup_notes,
+		comment,
 		created_at,
 		updated_at
 	FROM offers
@@ -245,7 +245,7 @@ func (r *offerRepository) GetOffers(ctx context.Context) ([]types.Offer, error) 
 			&pi.Product.ID,
 			&pi.Amount,
 			&pi.Status,
-			&pi.PickupNotes,
+			&pi.Comment,
 			&pi.CreatedAt,
 			&pi.UpdatedAt,
 		); err != nil {

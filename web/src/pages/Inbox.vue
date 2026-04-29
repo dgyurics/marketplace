@@ -1,3 +1,5 @@
+<!-- Refactor this 
+    should be message.vue and messagedetail.vue -->
 <template>
   <div class="inbox-container">
     <h2>Inbox</h2>

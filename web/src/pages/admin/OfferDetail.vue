@@ -23,7 +23,7 @@
         </div>
         <div class="info-row">
           <label>Amount:</label>
-          <span>{{ displayPrice(offer.amount) }}</span>
+          <span>{{ formatPrice(offer.amount) }}</span>
         </div>
         <div class="info-row">
           <label>Status:</label>
@@ -34,8 +34,8 @@
           </select>
         </div>
         <div class="info-row">
-          <label>Pickup Notes:</label>
-          <span class="pickup-notes">{{ offer.pickup_notes }}</span>
+          <label>Comment:</label>
+          <span class="pickup-notes">{{ offer.comment }}</span>
         </div>
         <div class="info-row">
           <label>Created:</label>
@@ -60,7 +60,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { getOfferById, updateOffer } from '@/services/api'
 import type { Offer, OfferStatus } from '@/types'
-import { displayPrice } from '@/utilities/currency'
+import { formatPrice } from '@/utilities/currency'
 import { formatDate } from '@/utilities/dateFormat'
 
 const route = useRoute()

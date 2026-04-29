@@ -291,7 +291,7 @@ CREATE TABLE offers (
   product_id BIGINT NOT NULL,
   amount BIGINT NOT NULL,
   status offer_status_enum NOT NULL,
-  pickup_notes TEXT,
+  comment TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,

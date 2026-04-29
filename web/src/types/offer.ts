@@ -6,7 +6,7 @@ export interface Offer {
   user_id: string
   product: Product
   amount: number
-  pickup_notes: string
+  comment: string
   status: OfferStatus
   created_at: string
   updated_at: string

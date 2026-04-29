@@ -2,9 +2,6 @@
   <div class="offer-container">
     <template v-if="success">
       <h2>Offer Submitted Successfully</h2>
-      <h3>
-        <span class="capitalize">{{ product?.name }}</span>
-      </h3>
     </template>
     <template v-else>
       <h2>Submit Offer</h2>
@@ -29,9 +26,9 @@
           <p class="help-text">Product price: {{ displayPrice(product?.price || 0) }}</p>
         </div>
 
-        <!-- Pickup details for all items -->
+        <!-- Optional comment -->
         <div class="form-group-flex">
-          <TextArea v-model="pickupNotes" label="Pickup Details" :resizable="false" required />
+          <TextArea v-model="comment" label="Comment" :resizable="false"></TextArea>
         </div>
 
         <div class="button-group">
@@ -58,7 +55,7 @@ import { displayPrice, toMajorUnits, toMinorUnits } from '@/utilities/currency'
 const route = useRoute()
 
 const product = ref<Product | null>(null)
-const pickupNotes = ref('')
+const comment = ref('')
 const offerPriceValue = ref<number>(0)
 const success = ref(false)
 const isSubmitting = ref(false)
@@ -82,11 +79,6 @@ onMounted(async () => {
 const handleSubmit = async () => {
   errorMessage.value = null
 
-  if (!pickupNotes.value.trim()) {
-    errorMessage.value = 'Pickup details must be provided'
-    return
-  }
-
   if (offerPriceValue.value === null || offerPriceValue.value < 0) {
     errorMessage.value = 'Invalid offer amount'
     return
@@ -97,7 +89,7 @@ const handleSubmit = async () => {
     const productId = route.params['id'] as string
     const finalOfferPrice = offerPriceValue.value
 
-    await createOffer(productId, finalOfferPrice, pickupNotes.value.trim())
+    await createOffer(productId, finalOfferPrice, comment.value.trim())
     success.value = true
   } catch (error: any) {
     const status = error.response?.status

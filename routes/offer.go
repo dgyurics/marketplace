@@ -36,12 +36,6 @@ func (h *OfferRoutes) CreateOffer(w http.ResponseWriter, r *http.Request) {
 		ID: productID,
 	}
 
-	// PickupNotes cannot be blank
-	if offer.PickupNotes == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Pickup notes is required")
-		return
-	}
-
 	// Create offer
 	err := h.service.CreateOffer(r.Context(), &offer)
 	if err == types.ErrNotFound {

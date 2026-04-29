@@ -389,11 +389,11 @@ export const removeExcludedShippingZone = async (zoneId: string): Promise<void> 
 export const createOffer = async (
   productId: string,
   amount: number,
-  pickupNotes: string
+  comment?: string
 ): Promise<void> => {
   const response = await apiClient.post(`/offers/items/${productId}`, {
     amount,
-    pickup_notes: pickupNotes,
+    ...(comment?.trim() && { comment }),
   })
   return response.data
 }
