@@ -33,7 +33,7 @@
       </form>
     </div>
 
-    <div v-else class="error">Category not found or failed to load.</div>
+    <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
   </div>
 </template>
 
@@ -49,6 +49,7 @@ const router = useRouter()
 
 const category = ref(null)
 const categories = ref([])
+const errorMessage = ref('')
 
 const editCategory = ref({
   name: '',
@@ -77,7 +78,7 @@ const fetchCategory = async () => {
       description: data.description ?? '',
     }
   } catch {
-    // Handle error silently
+    errorMessage.value = 'Category not found or failed to load.'
     category.value = null
   }
 }

@@ -68,7 +68,7 @@
       </form>
     </div>
 
-    <div v-else class="error">Product not found or failed to load.</div>
+    <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
   </div>
 </template>
 
@@ -88,6 +88,7 @@ const router = useRouter()
 const product = ref(null)
 const categories = ref([])
 const detailsEditor = ref(null)
+const errorMessage = ref('')
 
 const categoryOptions = computed(() =>
   categories.value.map((category) => ({ value: category.slug, label: category.name }))
@@ -133,7 +134,7 @@ const fetchProduct = async () => {
       pickup_only: data.pickup_only ?? false,
     }
   } catch {
-    // Handle error silently
+    errorMessage.value = 'Product not found or failed to load.'
     product.value = null
   }
 }
