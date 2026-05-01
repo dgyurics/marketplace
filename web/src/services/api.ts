@@ -130,6 +130,14 @@ export const updatePassword = async (
   return response.data
 }
 
+// Set password for users without a password (e.g. users given a registration code)
+export const setPassword = async (newPassword: string): Promise<AuthTokens> => {
+  const response = await apiClient.post('/users/set-password', {
+    new_password: newPassword,
+  })
+  return response.data
+}
+
 export const logout = async () => {
   const response = await apiClient.post('/users/logout')
   return response.data

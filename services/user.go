@@ -20,6 +20,7 @@ type UserService interface {
 	// CREATE
 	CreateUser(ctx context.Context, user *types.User) error
 	// UPDATE
+	SetPassword(ctx context.Context, newPass string) (*types.User, error)
 	UpdatePassword(ctx context.Context, curPass, newPass string) (*types.User, error)
 	UpdateEmail(ctx context.Context, newEmail string) (*types.User, error)
 	// GET
@@ -60,6 +61,25 @@ func (s *userService) CreateUser(ctx context.Context, user *types.User) error {
 
 func (s *userService) UpdateEmail(ctx context.Context, newEmail string) (*types.User, error) {
 	return s.repo.UpdateEmail(ctx, getUserID(ctx), newEmail)
+}
+
+func (s *userService) SetPassword(ctx context.Context, password string) (*types.User, error) {
+	userID := getUserID(ctx)
+	usr, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return usr, err
+	}
+
+	if usr.PasswordHash != nil {
+		return nil, types.ErrConstraintViolation
+	}
+
+	hashedPassword, err := generateFromPassword(password)
+	if err != nil {
+		return &types.User{}, err
+	}
+
+	return s.repo.UpdatePassword(ctx, userID, string(hashedPassword))
 }
 
 func (s *userService) UpdatePassword(ctx context.Context, curPass, newPass string) (*types.User, error) {

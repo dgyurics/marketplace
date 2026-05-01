@@ -54,7 +54,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { InputText } from '@/components/forms'
-import { updatePassword, updateEmail } from '@/services/api'
+import { updatePassword, updateEmail, setPassword } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 
 const authStore = useAuthStore()
@@ -73,66 +73,91 @@ const isValidPassword = (password: string) => {
   return password.length >= 3 && password.length <= 50
 }
 
+const handleEmailUpdate = async () => {
+  authStore.setTokens(await updateEmail(editableEmail.value))
+  router.push('/auth')
+}
+
+const handleSetPassword = async () => {
+  authStore.setTokens(await setPassword(newPassword.value))
+  router.push('/auth')
+}
+
+const handleUpdatePassword = async () => {
+  authStore.setTokens(await updatePassword(currentPassword.value, newPassword.value))
+  router.push('/auth')
+}
+
+const validatePasswords = () => {
+  if (!isValidPassword(newPassword.value)) {
+    errorMessage.value = 'New password must be between 3 and 50 characters'
+    return false
+  }
+
+  if (currentPassword.value && !isValidPassword(currentPassword.value)) {
+    errorMessage.value = 'Current password must be between 3 and 50 characters'
+    return false
+  }
+
+  if (currentPassword.value && currentPassword.value === newPassword.value) {
+    errorMessage.value = 'New password must be different from current password'
+    return false
+  }
+
+  return true
+}
+
+const handlePasswordChange = async () => {
+  if (!validatePasswords()) return
+
+  try {
+    if (currentPassword.value) {
+      await handleUpdatePassword()
+    } else {
+      await handleSetPassword()
+    }
+  } catch (error: any) {
+    const status = error.response?.status
+    if (status === 409) {
+      errorMessage.value = 'Password exists, current password required'
+    } else {
+      setError(status, 'password')
+    }
+  }
+}
+
+const setError = (status: number, type: 'email' | 'password') => {
+  if (status === 400) {
+    errorMessage.value = type === 'email' ? 'Invalid email address' : 'Invalid password'
+  } else if (status === 409) {
+    errorMessage.value = type === 'email' ? 'Email already in use' : 'Password conflict'
+  } else if (status === 429) {
+    errorMessage.value = 'Too many failed attempts'
+  } else {
+    errorMessage.value = 'Something went wrong'
+  }
+}
+
 const handleSubmit = async () => {
   errorMessage.value = null
 
-  // Check if admin changed email
+  // Handle email change
   if (isAdmin.value && editableEmail.value && editableEmail.value !== userEmail.value) {
     try {
-      // TODO make password required for email change
-      authStore.setTokens(await updateEmail(editableEmail.value))
-      router.push('/auth')
+      await handleEmailUpdate()
       return
     } catch (error: any) {
-      const status = error.response?.status
-      if (status === 400) {
-        errorMessage.value = 'Invalid email address'
-      } else if (status === 409) {
-        errorMessage.value = 'Email already in use'
-      } else if (status === 429) {
-        errorMessage.value = 'Too many failed attempts'
-      } else {
-        errorMessage.value = 'Something went wrong'
-      }
+      setError(error.response?.status, 'email')
       return
     }
   }
 
-  // Only attempt password change if both fields have input
-  if (currentPassword.value && newPassword.value) {
-    if (!isValidPassword(currentPassword.value)) {
-      errorMessage.value = 'Current password must be between 3 and 50 characters'
-      return
-    }
-
-    if (!isValidPassword(newPassword.value)) {
-      errorMessage.value = 'New password must be between 3 and 50 characters'
-      return
-    }
-
-    if (currentPassword.value === newPassword.value) {
-      errorMessage.value = 'New password must be different from current password'
-      return
-    }
-
-    try {
-      authStore.setTokens(await updatePassword(currentPassword.value, newPassword.value))
-      router.push('/auth')
-      return
-    } catch (error: any) {
-      const status = error.response?.status
-      if (status === 400) {
-        errorMessage.value = 'Invalid password'
-      } else if (status === 429) {
-        errorMessage.value = 'Too many failed attempts'
-      } else {
-        errorMessage.value = 'Something went wrong'
-      }
-      return
-    }
+  // Handle password change
+  if (newPassword.value) {
+    await handlePasswordChange()
+    return
   }
 
-  // If we get here and no password fields were filled, redirect to auth
   router.push('/auth')
 }
 </script>
@@ -178,5 +203,9 @@ h3 {
   color: #e74c3c;
   margin-top: 15px;
   font-size: 14px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  width: 100%;
 }
 </style>

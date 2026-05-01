@@ -279,6 +279,66 @@ func (h *UserRoutes) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *UserRoutes) SetPassword(w http.ResponseWriter, r *http.Request) {
+	var reqBody struct {
+		NewPassword string `json:"new_password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
+		return
+	}
+
+	if reqBody.NewPassword == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "password is required")
+		return
+	}
+
+	usr, err := h.userService.SetPassword(r.Context(), reqBody.NewPassword)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err == types.ErrConstraintViolation {
+		u.RespondWithError(w, r, http.StatusConflict, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Revoke existing refresh tokens
+	if err := h.refreshService.RevokeTokens(r.Context()); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Generate new access token
+	accessToken, err := h.jwtService.GenerateToken(*usr)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Generate new refresh refreshToken
+	refreshToken, err := h.refreshService.GenerateToken()
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Store refresh token
+	if err := h.refreshService.StoreToken(r.Context(), usr.ID, refreshToken); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	u.RespondWithJSON(w, http.StatusCreated, types.TokenResponse{
+		Token:        accessToken,
+		RefreshToken: refreshToken,
+	})
+}
+
 func (h *UserRoutes) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 	var reqBody struct {
 		Email string `json:"email"`
@@ -385,6 +445,7 @@ func (h *UserRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/users/refresh-token", h.limit(h.RefreshToken, 5, time.Hour)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/guest", h.limit(h.CreateGuestUser, 3, time.Hour)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/change-password", h.secure(types.RoleUser)(h.limit(h.ChangePassword, 5, time.Hour))).Methods(http.MethodPut)
+	h.muxRouter.Handle("/users/set-password", h.secure(types.RoleUser)(h.limit(h.SetPassword, 5, time.Hour))).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users/change-email", h.secure(types.RoleAdmin)(h.limit(h.ChangeEmail, 5, time.Hour))).Methods(http.MethodPut)
 	h.muxRouter.Handle("/users/logout", h.secure(types.RoleGuest)(h.Logout)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/users", h.secure(types.RoleStaff)(h.GetAllUsers)).Methods(http.MethodGet)
