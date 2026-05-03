@@ -121,13 +121,41 @@ onMounted(() => {
 
 .form-row :deep(.input-container) {
   flex: 1 1 calc(25% - 10px);
+  min-width: 0;
+}
+
+.form-row :deep(.input-field),
+.form-row :deep(.select-field) {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
-  font-family: 'Open Sans', sans-serif;
   margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .category-container {
+    width: calc(100% - 20px);
+    padding: 10px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .form-row :deep(.input-container) {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .category-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
 }
 </style>
