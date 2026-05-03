@@ -34,6 +34,7 @@ CREATE TABLE products (
     pickup_only BOOLEAN DEFAULT FALSE NOT NULL, -- Defines whether the product is only available for pickup
     featured BOOLEAN DEFAULT FALSE NOT NULL, -- Defines whether the product should be highlighted in the UI homepage
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- TODO rename to enabled/disabled
+    sort_order INT DEFAULT 0 NOT NULL, -- Higher numbers appear first
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE SET NULL
@@ -200,6 +201,7 @@ SELECT
     COALESCE(p.tax_code, '') AS tax_code,
     p.featured,
     p.pickup_only,
+    p.sort_order,
     c.slug AS category_slug,
     COALESCE(imgs.images, '[]') AS images,
     COALESCE(order_stats.total_sold, 0) AS total_sold,

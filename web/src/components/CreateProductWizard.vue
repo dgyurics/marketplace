@@ -57,6 +57,13 @@
             </div>
           </div>
 
+          <div class="form-row-2col">
+            <div class="form-group">
+              <InputNumber v-model="newProduct.sort_order" label="Sort Order" min="0" />
+            </div>
+            <div class="form-group"></div>
+          </div>
+
           <div class="form-group">
             <TextArea
               v-model="newProduct.description"
@@ -196,6 +203,8 @@ const newProduct = ref({
   cart_limit: '',
   category: '',
   featured: true,
+  pickup_only: false,
+  sort_order: 0,
 })
 
 const goToStep = async (step) => {
@@ -244,6 +253,7 @@ const createProduct = async () => {
       cart_limit: newProduct.value.cart_limit || undefined,
       featured: newProduct.value.featured,
       pickup_only: newProduct.value.pickup_only,
+      sort_order: newProduct.value.sort_order,
       ...(categoryId && { category: { id: categoryId } }),
     }
 
@@ -270,6 +280,7 @@ const updateProduct = async () => {
       cart_limit: newProduct.value.cart_limit || undefined,
       featured: newProduct.value.featured,
       pickup_only: newProduct.value.pickup_only,
+      sort_order: newProduct.value.sort_order,
       ...(categoryId && { category: { id: categoryId } }),
     }
 
@@ -301,6 +312,7 @@ const handleSubmit = async () => {
       cart_limit: newProduct.value.cart_limit || undefined,
       featured: newProduct.value.featured,
       pickup_only: newProduct.value.pickup_only,
+      sort_order: newProduct.value.sort_order,
       ...(categoryId && { category: { id: categoryId } }),
     }
 
@@ -332,6 +344,8 @@ const resetAndStart = () => {
     cart_limit: '',
     category: '',
     featured: true,
+    pickup_only: false,
+    sort_order: 0,
   }
   tempProductId.value = null
   tempProductImages.value = []

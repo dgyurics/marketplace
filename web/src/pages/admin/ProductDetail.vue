@@ -7,6 +7,7 @@
           <InputNumber v-model="displayPrice" label="Price" step="0.01" required />
           <InputNumber v-model="editProduct.inventory" label="inventory" required />
           <InputNumber v-model="editProduct.cart_limit" label="cart limit" />
+          <InputNumber v-model="editProduct.sort_order" label="sort order" min="0" />
           <InputText v-model="editProduct.tax_code" label="tax code" />
           <SelectInput v-model="editProduct.category" label="category" :options="categoryOptions" />
           <InputText v-model="editProduct.summary" label="summary" required />
@@ -111,6 +112,7 @@ const editProduct = ref({
   cart_limit: '',
   featured: false,
   pickup_only: false,
+  sort_order: 0,
 })
 
 const fetchProduct = async () => {
@@ -132,6 +134,7 @@ const fetchProduct = async () => {
       cart_limit: data.cart_limit,
       featured: data.featured ?? false,
       pickup_only: data.pickup_only ?? false,
+      sort_order: data.sort_order ?? 0,
     }
   } catch {
     errorMessage.value = 'Product not found or failed to load.'
@@ -169,6 +172,7 @@ const handleSubmit = async () => {
       cart_limit: editProduct.value.cart_limit || undefined,
       featured: editProduct.value.featured,
       pickup_only: editProduct.value.pickup_only,
+      sort_order: editProduct.value.sort_order,
       // Include category if one is selected
       ...(categoryId && { category: { id: categoryId } }),
     }

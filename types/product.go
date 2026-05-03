@@ -20,6 +20,7 @@ type Product struct {
 	TaxCode     *string         `json:"tax_code,omitempty"`
 	Inventory   int             `json:"inventory"`
 	Featured    bool            `json:"featured"`
+	SortOrder   int             `json:"sort_order"`
 	PickupOnly  bool            `json:"pickup_only"`
 	CartLimit   *int            `json:"cart_limit,omitempty"`
 	CreatedAt   string          `json:"created_at"`
@@ -71,7 +72,7 @@ const (
 	SortByPrice      SortBy = "price"
 	SortByPopularity SortBy = "total_sold"
 	SortByNewest     SortBy = "created_at"
-	SortByDefault    SortBy = "created_at"
+	SortBySortOrder  SortBy = "sort_order"
 )
 
 func ParseSortBy(sortBy string) SortBy {
@@ -83,6 +84,6 @@ func ParseSortBy(sortBy string) SortBy {
 	case "newest":
 		return SortByNewest
 	default:
-		return SortByDefault
+		return SortBySortOrder
 	}
 }

@@ -165,6 +165,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		p.inventory,
 		p.cart_limit,
 		p.featured,
+		p.sort_order,
 		p.pickup_only,
 		c.id,
 		c.name,
@@ -191,6 +192,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		&product.Inventory,
 		&product.CartLimit,
 		&product.Featured,
+		&product.SortOrder,
 		&product.PickupOnly,
 		&categoryID,
 		&categoryName,
@@ -244,10 +246,11 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 		inventory = $8,
 		cart_limit = $9,
 		featured = $10,
-		pickup_only = $11,
-		is_deleted = $12,
+		sort_order = $11,
+		pickup_only = $12,
+		is_deleted = $13,
 		updated_at = NOW()
-		WHERE id = $13
+		WHERE id = $14
 	`
 	res, err := r.db.ExecContext(ctx, query,
 		product.Name,
@@ -260,6 +263,7 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 		product.Inventory,
 		product.CartLimit,
 		product.Featured,
+		product.SortOrder,
 		product.PickupOnly,
 		false,
 		product.ID,
