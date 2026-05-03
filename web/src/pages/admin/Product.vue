@@ -75,8 +75,19 @@ onMounted(() => {
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
-  font-family: 'Open Sans', sans-serif;
+}
+
+@media (max-width: 768px) {
+  .product-container {
+    width: calc(100% - 20px);
+    padding: 10px;
+  }
+
+  .product-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
 }
 </style>
