@@ -1,0 +1,6 @@
+Order Notification
+
+Order ID: {{.OrderID}}
+Customer Email: {{.CustomerEmail}}
+
+Details can be found here: {{.DetailsLink}}
