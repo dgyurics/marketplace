@@ -207,7 +207,7 @@ func (r *userRepository) GetAllUsers(ctx context.Context, page, limit int) ([]ty
 func (r *userRepository) GetAllAdmins(ctx context.Context) ([]types.User, error) {
 	admins := []types.User{}
 	query := `
-		SELECT email
+		SELECT id, email
 		FROM users
 		WHERE role = 'admin'
 	`
@@ -218,7 +218,7 @@ func (r *userRepository) GetAllAdmins(ctx context.Context) ([]types.User, error)
 	defer rows.Close()
 	for rows.Next() {
 		var user types.User
-		err = rows.Scan(&user.Email)
+		err = rows.Scan(&user.ID, &user.Email)
 		if err != nil {
 			return nil, err
 		}
