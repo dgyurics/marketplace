@@ -1,0 +1,1 @@
+INSERT INTO users (id, role, verified) VALUES (1,'system',true);
