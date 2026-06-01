@@ -17,7 +17,7 @@ COPY middleware/ middleware/
 COPY db/ db/
 
 # Build application
-RUN go build -o bin/marketplace ./cmd/marketplace
+RUN CGO_ENABLED=0 GOOS=linux go build -o bin/marketplace ./cmd/marketplace
 
 FROM alpine:3.22
 
