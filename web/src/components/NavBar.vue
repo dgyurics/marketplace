@@ -38,6 +38,9 @@
           <router-link to="/cart" :tabindex="0">
             <ShoppingBagIcon class="icon" />
           </router-link>
+          <router-link v-if="authStore.hasMinimumRole('user')" to="/inbox" :tabindex="0">
+            <EnvelopeIcon class="icon" />
+          </router-link>
           <router-link to="/auth" :tabindex="0">
             <UserIcon class="icon" />
           </router-link>
@@ -63,12 +66,14 @@
 </template>
 
 <script setup lang="ts">
-import { Bars3Icon, ShoppingBagIcon, UserIcon } from '@heroicons/vue/24/outline'
+import { Bars3Icon, EnvelopeIcon, ShoppingBagIcon, UserIcon } from '@heroicons/vue/24/outline'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { getCategories } from '@/services/api'
+import { useAuthStore } from '@/store/auth'
 import type { Category } from '@/types'
 
+const authStore = useAuthStore()
 const categories = ref<Category[]>([])
 const isMobileMenuOpen = ref(false)
 const mobileMenuBtn = ref<HTMLElement>()
@@ -199,7 +204,15 @@ nav {
 /* Icons */
 .nav-icons {
   display: flex;
+  align-items: center;
   gap: 1.5rem;
+}
+
+.nav-icons a,
+.mobile-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .icon {
