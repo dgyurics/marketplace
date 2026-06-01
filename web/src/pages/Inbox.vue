@@ -1,11 +1,8 @@
-<!-- Refactor this 
-    should be message.vue and messagedetail.vue -->
 <template>
   <div class="inbox-container">
     <h2>Inbox</h2>
 
-    <!-- Conversation List -->
-    <div v-if="!selectedConversation" class="conversation-list">
+    <div class="conversation-list">
       <div v-if="loading" class="loading">Loading conversations...</div>
       <div v-else-if="conversations.length === 0" class="no-conversations">
         No conversations found
@@ -14,15 +11,18 @@
         <div
           v-for="conversation in conversations"
           :key="conversation.id"
-          class="conversation-item"
+          :class="['conversation-item', { 'conversation-item--unread': isUnread(conversation) }]"
           tabindex="0"
-          @click="selectConversation(conversation.id)"
-          @keydown.enter="selectConversation(conversation.id)"
+          @click="openConversation(conversation.id)"
+          @keydown.enter="openConversation(conversation.id)"
         >
           <div class="conversation-header">
             <div class="subject">
+              <span v-if="isUnread(conversation)" class="unread-badge">new</span>
               <span class="subject-label">Subject: </span>
-              <span class="subject-text">{{ conversation.subject }}</span>
+              <span :class="['subject-text', { 'subject-text--unread': isUnread(conversation) }]">
+                {{ conversation.subject }}
+              </span>
             </div>
             <div class="date-time">
               <div class="date">{{ formatDate(conversation.updated_at) }}</div>
@@ -32,44 +32,22 @@
       </div>
     </div>
 
-    <!-- Conversation Detail -->
-    <div v-else class="conversation-detail">
-      <div class="detail-header">
-        <h3 class="conversation-title">{{ selectedConversation.subject }}</h3>
-      </div>
-
-      <div class="messages">
-        <div v-if="selectedConversation.messages.length === 0" class="no-messages">
-          No messages in this conversation.
-        </div>
-        <div v-for="message in selectedConversation.messages" :key="message.id" class="message">
-          <div class="message-header">
-            <div class="message-time">{{ formatDate(message.created_at) }}</div>
-          </div>
-          <div class="message-body">{{ message.body }}</div>
-        </div>
-      </div>
-
-      <button type="button" class="btn-full-width btn-outline mt-30" @click="goBack">
-        Back to Inbox
-      </button>
-    </div>
-
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
-import { getConversations, getConversationById } from '@/services/api'
+import { getConversations } from '@/services/api'
 import type { Conversation } from '@/types/conversation'
 import { formatDate } from '@/utilities'
 
 const conversations = ref<Conversation[]>([])
-const selectedConversation = ref<Conversation | null>(null)
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
+const router = useRouter()
 
 const loadConversations = async () => {
   loading.value = true
@@ -90,24 +68,14 @@ const loadConversations = async () => {
   }
 }
 
-const selectConversation = async (id: string) => {
-  try {
-    selectedConversation.value = await getConversationById(id)
-  } catch (error: unknown) {
-    const status = (error as { response?: { status?: number } })?.response?.status
-    if (status === 404) {
-      errorMessage.value = 'Conversation not found'
-    } else if (status === 403) {
-      errorMessage.value = 'Access denied to this conversation'
-    } else {
-      errorMessage.value = 'Failed to load conversation details'
-    }
-  }
+const openConversation = (id: string) => {
+  router.push(`/inbox/${id}`)
 }
 
-const goBack = () => {
-  selectedConversation.value = null
-  errorMessage.value = null
+const isUnread = (conversation: Conversation): boolean => {
+  const lastRead = new Date(conversation.recipient_last_read_at).getTime()
+  const updatedAt = new Date(conversation.updated_at).getTime()
+  return updatedAt > lastRead
 }
 
 onMounted(loadConversations)
@@ -145,33 +113,6 @@ onMounted(loadConversations)
   .from {
     font-size: 13px;
   }
-
-  .detail-header h3 {
-    font-size: 16px;
-    margin: 15px 0;
-  }
-
-  .conversation-meta {
-    font-size: 12px;
-  }
-
-  .message {
-    padding: 12px;
-    margin-bottom: 10px;
-  }
-
-  .message-header {
-    font-size: 12px;
-  }
-
-  .message-body {
-    font-size: 14px;
-    line-height: 1.4;
-  }
-}
-
-.conversation-title {
-  text-transform: capitalize;
 }
 
 .loading {
@@ -180,8 +121,7 @@ onMounted(loadConversations)
   color: #666;
 }
 
-.no-conversations,
-.no-messages {
+.no-conversations {
   padding: 20px;
   color: #666;
   font-style: italic;
@@ -214,21 +154,47 @@ onMounted(loadConversations)
 }
 
 .subject {
-  font-weight: 500;
-  font-size: 16px;
+  /* font-weight: 500;
+  font-size: 16px; */
   flex: 1;
   margin-right: 10px;
   text-align: left;
+
+  font-weight: 400;
+  font-size: 14px;
+  text-transform: lowercase;
 }
 
 .subject-label {
   color: #888;
-  font-weight: 400;
-  font-size: 14px;
+}
+
+.conversation-item--unread {
+  border-left: 3px solid #3d3d3d;
+}
+
+.subject-text--unread {
+  font-weight: 600;
+}
+
+.unread-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #fff;
+  background-color: #3d3d3d;
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-right: 7px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
 }
 
 .subject-text {
-  text-transform: lowercase;
+  color: #3d3d3d;
 }
 
 .date-time {
@@ -249,57 +215,6 @@ onMounted(loadConversations)
   color: #666;
   font-size: 14px;
   margin-bottom: 8px;
-}
-
-/* Conversation Detail Styles */
-.conversation-detail {
-  margin-top: 20px;
-}
-
-.detail-header {
-  margin-bottom: 30px;
-}
-
-.conversation-meta {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 10px;
-  font-size: 14px;
-  color: #666;
-}
-
-.messages {
-  text-align: left;
-}
-
-.message {
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 15px;
-  margin-bottom: 15px;
-}
-
-.message-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  font-size: 14px;
-  color: #666;
-}
-
-.sender {
-  font-weight: 500;
-}
-
-.message-time {
-  font-size: 12px;
-}
-
-.message-body {
-  line-height: 1.5;
-  white-space: pre-wrap;
 }
 
 .error {
