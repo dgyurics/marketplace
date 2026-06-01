@@ -142,7 +142,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	scheduleService := services.NewScheduleService(db)
 	conversationService := services.NewConversationService(conversationRepository)
 	emailService := services.NewEmailService(config.Email)
-	notificationService := services.NewNotificationService(emailService, templateService, config.BaseURL)
+	notificationService := services.NewNotificationService(emailService, templateService, conversationService, config.BaseURL)
 	addressService := services.NewAddressService(addressRepository)
 	shippingZoneService := services.NewShippingZoneService(shippingZoneRepository)
 	userService := services.NewUserService(userRepository)

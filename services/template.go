@@ -24,17 +24,12 @@ const (
 type TextTemplate string
 
 const (
-	// these go to admins when an order/offer is received
-	OrderNotificationMessage TextTemplate = "order_notification.txt"
-	OfferNotificationMessage TextTemplate = "offer_notification.txt"
-
-	// these go to users when an order/offer is created
 	OrderConfirmationMessage TextTemplate = "order_confirmation.txt"
+	OrderNotificationMessage TextTemplate = "order_notification.txt"
+	OrderUpdateMessage       TextTemplate = "order_update.txt"
+	OfferUpdateMessage       TextTemplate = "offer_update.txt"
 	OfferConfirmationMessage TextTemplate = "offer_confirmation.txt"
-
-	// these go to users when an order/offer status changes
-	OrderUpdateMessage TextTemplate = "order_update.txt"
-	OfferUpdateMessage TextTemplate = "offer_update.txt"
+	OfferNotificationMessage TextTemplate = "offer_notification.txt"
 )
 
 // TemplateService defines the interface for rendering templates.

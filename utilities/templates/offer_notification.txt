@@ -1,1 +1,4 @@
-Offer recieved ID: {{.ID}}
+Offer ID: {{.OfferID}}
+Customer ID: {{.CustomerID}}
+
+Details can be found here: {{.DetailsLink}}

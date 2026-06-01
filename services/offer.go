@@ -99,12 +99,16 @@ func (ps *offerService) OfferUpdateEmail(offer types.Offer) {
 		"ProductName": offer.Product.Name,
 		"Status":      string(offer.Status),
 	}
+	if usr.Email == nil {
+		slog.Debug("Error sending offer update email, nil email")
+		return
+	}
 	if err := ps.notificationService.SendEmail(*usr.Email, "Offer Update", OfferUpdate, data); err != nil {
 		slog.Error("Error sending offer update email: ", "offer_id", offer.ID, "error", err)
 	}
 }
 
-// Send payment intent notification to admins
+// Offer received notification to admins
 func (ps *offerService) OfferNotificationEmail(offer types.Offer) {
 	admins, err := ps.userService.GetAllAdmins(context.Background())
 	if err != nil {
@@ -114,14 +118,14 @@ func (ps *offerService) OfferNotificationEmail(offer types.Offer) {
 
 	detailsLink := fmt.Sprintf("%s/admin/offers/%s", ps.notificationService.BaseURL(), offer.ID)
 	data := map[string]string{
-		"ID":          offer.ID,
+		"OfferID":     offer.ID,
 		"CustomerID":  offer.UserID,
 		"DetailsLink": detailsLink,
 	}
 
 	for _, admin := range admins {
-		if err := ps.notificationService.SendEmail(*admin.Email, "Offer Notification", OfferNotification, data); err != nil {
-			slog.Error("Error sending offer notification email: ", "offer_id", offer.ID, "error", err)
+		if err := ps.notificationService.Notify(admin.ID, OfferNotificationAdmin, data); err != nil {
+			slog.Error("Error sending offer notification to admins: ", "offer_id", offer.ID, "error", err)
 		}
 	}
 }

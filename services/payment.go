@@ -300,7 +300,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 		}
 	}(order.Address.Email, order.ID)
 
-	// Send order notification email to admins
+	// Order received notification to admins
 	go func(order types.Order) {
 		admins, err := s.serviceUser.GetAllAdmins(context.Background())
 		if err != nil {
@@ -314,8 +314,8 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 			"DetailsLink":   detailsLink,
 		}
 		for _, admin := range admins {
-			if err := s.notificationService.SendEmail(*admin.Email, "Order Notification", OrderNotification, data); err != nil {
-				slog.Error("Error sending order notification email: ", "order_id", order.ID, "error", err)
+			if err := s.notificationService.Notify(admin.ID, OrderNotificationAdmin, data); err != nil {
+				slog.Error("Error sending order notification to admins: ", "order_id", orderID, "error", err)
 			}
 		}
 	}(order)
