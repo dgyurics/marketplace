@@ -36,6 +36,7 @@
           key-placeholder="Key (e.g., color, size, material)"
           value-placeholder="Value"
           pair-name="Detail"
+          class="details-editor"
         />
 
         <!-- Image Gallery Section -->
@@ -222,6 +223,8 @@ onMounted(() => {
   max-width: 800px;
   margin: auto;
   padding: 20px;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .header {
@@ -257,8 +260,21 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-.form-row :deep(.input-container) {
+.form-row > * {
   flex: 1 1 calc(33.333% - 10px);
+  min-width: 0;
+}
+
+.textarea-row {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.details-editor {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .checkbox-group {
@@ -290,5 +306,50 @@ onMounted(() => {
   flex-direction: column;
   gap: 15px;
   margin-top: 30px;
+}
+
+@media (max-width: 768px) {
+  .product-detail-container {
+    padding: 10px;
+  }
+
+  .edit-form {
+    padding: 15px;
+  }
+
+  .form-row {
+    display: block;
+  }
+
+  .form-row > * {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-bottom: 15px;
+  }
+
+  .textarea-row {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .details-editor {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .form-row > *:last-child {
+    margin-bottom: 0;
+  }
+
+  .checkbox-group {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
 }
 </style>
