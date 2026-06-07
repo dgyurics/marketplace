@@ -32,6 +32,11 @@ func (h *PaymentRoutes) EventHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := h.paymentService.SignatureVerifier(body, r.Header.Get("Stripe-Signature")); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "error verifying signature")
+		return
+	}
+
 	var event stripe.Event
 	if err := json.Unmarshal(body, &event); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
@@ -40,11 +45,6 @@ func (h *PaymentRoutes) EventHandler(w http.ResponseWriter, r *http.Request) {
 
 	if !h.paymentService.SupportedEvent(r.Context(), event) {
 		u.RespondSuccess(w)
-		return
-	}
-
-	if err := h.paymentService.SignatureVerifier(body, r.Header.Get("Stripe-Signature")); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error verifying signature")
 		return
 	}
 
