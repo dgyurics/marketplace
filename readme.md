@@ -19,7 +19,6 @@ A self-hosted e-commerce framework designed for local businesses and community c
 
 ## Planned Enhancements
 
-* Mobile device support
 * Database backup and recovery scripts
 * Documentation for setup and configuration
 * Demo mode for the admin dashboard with anonymized data
