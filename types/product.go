@@ -21,6 +21,7 @@ type Product struct {
 	Inventory   int             `json:"inventory"`
 	Featured    bool            `json:"featured"`
 	SortOrder   int             `json:"sort_order"`
+	Negotiable  bool            `json:"negotiable"`
 	PickupOnly  bool            `json:"pickup_only"`
 	CartLimit   *int            `json:"cart_limit,omitempty"`
 	CreatedAt   string          `json:"created_at"`

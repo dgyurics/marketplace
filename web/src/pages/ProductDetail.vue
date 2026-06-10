@@ -114,6 +114,7 @@ const product = reactive<Product>({
   cart_limit: 0,
   featured: false,
   pickup_only: false,
+  negotiable: false,
 })
 
 const addedToCart = ref(false)
@@ -132,9 +133,9 @@ const isOutOfStock = computed(() => currentQuantityInCart.value >= product.inven
 const showLowStockWarning = computed(
   () => isLowStock.value && !isOutOfStock.value && !hasReachedCartLimit.value
 )
-const isPickupOnly = computed(() => product.pickup_only)
+
 const canOffer = computed(() => isAuthenticated.value && authStore.hasMinimumRole('member'))
-const showOfferButton = computed(() => isPickupOnly.value)
+const showOfferButton = computed(() => product.negotiable)
 const hasPendingOffer = computed(() => offers.value.some((pi) => pi.status === 'pending'))
 
 onMounted(async () => {

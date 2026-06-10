@@ -54,7 +54,7 @@ func (ps *offerService) CreateOffer(ctx context.Context, offer *types.Offer) (er
 		return err
 	}
 
-	go ps.OfferNotificationEmail(*offer)
+	go ps.OfferNotification(*offer)
 
 	return nil
 }
@@ -109,7 +109,7 @@ func (ps *offerService) OfferUpdateEmail(offer types.Offer) {
 }
 
 // Offer received notification to admins
-func (ps *offerService) OfferNotificationEmail(offer types.Offer) {
+func (ps *offerService) OfferNotification(offer types.Offer) {
 	admins, err := ps.userService.GetAllAdmins(context.Background())
 	if err != nil {
 		slog.Error("Error fetching admin users: ", "error", err)

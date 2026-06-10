@@ -51,7 +51,7 @@ func (r *offerRepository) CreateOffer(ctx context.Context, offer *types.Offer) e
 
 	// Lock product row and check inventory atomically
 	var inventory int
-	err = tx.QueryRowContext(ctx, `SELECT inventory FROM products WHERE id = $1 AND (price = 0 OR pickup_only = true) FOR UPDATE`, offer.Product.ID).
+	err = tx.QueryRowContext(ctx, `SELECT inventory FROM products WHERE id = $1 AND negotiable = true FOR UPDATE`, offer.Product.ID).
 		Scan(&inventory)
 	if err == sql.ErrNoRows {
 		return types.ErrNotFound
@@ -109,7 +109,7 @@ func (r *offerRepository) UpdateOffer(ctx context.Context, offer *types.Offer) e
 
 		// Lock product row and check inventory atomically
 		var inventory int
-		err = tx.QueryRowContext(ctx, `SELECT inventory FROM products WHERE id = $1 AND (price = 0 OR pickup_only = true) FOR UPDATE`, offer.Product.ID).
+		err = tx.QueryRowContext(ctx, `SELECT inventory FROM products WHERE id = $1 AND negotiable = true FOR UPDATE`, offer.Product.ID).
 			Scan(&inventory)
 		if err == sql.ErrNoRows {
 			return types.ErrNotFound

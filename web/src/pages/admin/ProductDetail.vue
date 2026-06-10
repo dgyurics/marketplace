@@ -26,6 +26,10 @@
             <input v-model="editProduct.pickup_only" type="checkbox" />
             <span>Pickup Only</span>
           </label>
+          <label class="checkbox-label">
+            <input v-model="editProduct.negotiable" type="checkbox" />
+            <span>Negotiable</span>
+          </label>
         </div>
 
         <!-- Details Section -->
@@ -113,6 +117,7 @@ const editProduct = ref({
   cart_limit: '',
   featured: false,
   pickup_only: false,
+  negotiable: false,
   sort_order: 0,
 })
 
@@ -135,6 +140,7 @@ const fetchProduct = async () => {
       cart_limit: data.cart_limit,
       featured: data.featured ?? false,
       pickup_only: data.pickup_only ?? false,
+      negotiable: data.negotiable ?? false,
       sort_order: data.sort_order ?? 0,
     }
   } catch {
@@ -173,6 +179,7 @@ const handleSubmit = async () => {
       cart_limit: editProduct.value.cart_limit || undefined,
       featured: editProduct.value.featured,
       pickup_only: editProduct.value.pickup_only,
+      negotiable: editProduct.value.negotiable,
       sort_order: editProduct.value.sort_order,
       // Include category if one is selected
       ...(categoryId && { category: { id: categoryId } }),

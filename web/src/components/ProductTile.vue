@@ -13,6 +13,7 @@
       <h3 class="product-title">{{ product.name }}</h3>
       <p class="product-summary">{{ product.summary }}</p>
       <p class="product-price">{{ displayPrice(product.price) }}</p>
+      <p v-if="product.negotiable" class="negotiable-label">make an offer</p>
     </div>
   </div>
 </template>
@@ -124,5 +125,14 @@ const imgURL = computed(() => props.product.images.find((img) => img.type === 'h
   color: #666;
   margin-top: 5px;
   padding: 0 10px;
+}
+
+.negotiable-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #aaa;
+  margin: 3px 0 0;
 }
 </style>
