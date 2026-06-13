@@ -1,5 +1,5 @@
--- ALTER TABLE products
--- ADD COLUMN sort_order INT DEFAULT 0 NOT NULL;
+ALTER TABLE products
+ADD COLUMN sort_order INT DEFAULT 0 NOT NULL;
 
 DROP VIEW v_products;
 
