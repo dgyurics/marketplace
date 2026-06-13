@@ -12,7 +12,7 @@ services:
       options:
         max-size: 10m
         max-file: 5
-        compress: true
+        compress: "true"
     env_file:
       - .env
     # TODO: Resource limits to be tuned later      
@@ -39,7 +39,7 @@ services:
       options:
         max-size: 10m
         max-file: 5
-        compress: true
+        compress: "true"
     env_file:
       - .env
     # TODO: Resource limits to be tuned later      
@@ -64,7 +64,7 @@ services:
       options:
         max-size: 10m
         max-file: 5
-        compress: true
+        compress: "true"
     env_file:
       - .env
     # TODO: Resource limits to be tuned later      
@@ -85,7 +85,7 @@ services:
       options:
         max-size: 10m
         max-file: 5
-        compress: true
+        compress: "true"
     env_file:
       - .env
     # TODO: Resource limits to be tuned later      
@@ -112,7 +112,7 @@ services:
       options:
         max-size: 10m
         max-file: 5
-        compress: true
+        compress: "true"
     env_file:
       - .env
     volumes:
@@ -133,7 +133,7 @@ services:
       options:
         max-size: 10m
         max-file: 5
-        compress: true
+        compress: "true"
     env_file:
       - .env
     # TODO: Resource limits to be tuned later      
