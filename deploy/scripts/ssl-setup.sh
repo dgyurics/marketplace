@@ -2,6 +2,7 @@
 
 # SSL setup script
 # - Obtains initial SSL certificate for the given domain and Docker volume
+# Usage: ./deploy/scripts/ssl-setup.sh <domain> <ssl-volume-name>
 # - NOTE: Stop nginx manually before running (e.g. docker compose stop nginx)
 #         certbot --standalone binds to port 80 directly, so nginx must not be running
 

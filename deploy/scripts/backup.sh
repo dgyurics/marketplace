@@ -2,6 +2,7 @@
 
 # Local volume backup script
 # - Backs up exactly one Docker volume passed as an argument
+# Usage: ./deploy/scripts/backup.sh <docker-volume-name>
 
 set -euo pipefail
 

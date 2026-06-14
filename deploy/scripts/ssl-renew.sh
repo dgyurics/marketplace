@@ -2,6 +2,7 @@
 
 # SSL renewal script
 # - Renews SSL certificate for the given Docker volume
+# Usage: ./deploy/scripts/ssl-renew.sh <ssl-volume-name>
 # - NOTE: Stop nginx manually before running (e.g. docker compose stop nginx)
 #         certbot --standalone binds to ports 80 and 443 directly, so nginx must not be running
 

@@ -2,6 +2,7 @@
 
 # Local volume restore script
 # - Restores exactly one Docker volume from a selected backup directory
+# Usage: ./deploy/scripts/restore.sh <docker-volume-name> <backup-directory>
 
 set -euo pipefail
 
