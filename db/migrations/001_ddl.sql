@@ -32,6 +32,7 @@ CREATE TABLE products (
     inventory INT NOT NULL DEFAULT 0,
     cart_limit INT,
     pickup_only BOOLEAN DEFAULT FALSE NOT NULL, -- Defines whether the product is only available for pickup
+    negotiable BOOLEAN DEFAULT FALSE NOT NULL, -- Defines whether the product accepts offers
     featured BOOLEAN DEFAULT FALSE NOT NULL, -- Defines whether the product should be highlighted in the UI homepage
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL, -- TODO rename to enabled/disabled
     sort_order INT DEFAULT 0 NOT NULL, -- Higher numbers appear first
@@ -66,7 +67,7 @@ CREATE TABLE images (
 CREATE INDEX idx_images_source ON images (source);
 CREATE INDEX idx_images_product_id ON images(product_id);
 
-CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest', 'member', 'staff');
+CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'guest', 'member', 'staff', 'system');
 
 CREATE TABLE users (
     id BIGINT PRIMARY KEY,
@@ -200,6 +201,7 @@ SELECT
     p.cart_limit,
     COALESCE(p.tax_code, '') AS tax_code,
     p.featured,
+    p.negotiable,
     p.pickup_only,
     p.sort_order,
     c.slug AS category_slug,
@@ -299,3 +301,32 @@ CREATE TABLE offers (
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE RESTRICT
 );
+
+CREATE TYPE conversation_type_enum AS ENUM ('support', 'notification');
+
+CREATE TABLE conversations (
+    id BIGINT PRIMARY KEY,
+    type conversation_type_enum NOT NULL,
+    subject TEXT NOT NULL,
+    recipient_id BIGINT NOT NULL,
+    recipient_last_read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT false,
+    FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_conversations_updated_at_is_deleted ON conversations(recipient_id, updated_at DESC)
+WHERE is_deleted = false;
+
+CREATE TABLE messages (
+    id BIGINT PRIMARY KEY,
+    sender_id BIGINT NOT NULL,
+    conversation_id BIGINT NOT NULL,
+    body TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_messages_conversation_id ON messages(conversation_id, created_at DESC);

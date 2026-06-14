@@ -1,2 +1,0 @@
-ALTER TABLE messages
-ALTER COLUMN sender_id SET NOT NULL;
