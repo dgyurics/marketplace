@@ -1,18 +1,37 @@
 #!/bin/bash
 
 # SSL renewal script
-cd "$(dirname "$0")/../../.."
+# - Renews SSL certificate for the given Docker volume
+# - NOTE: Stop nginx manually before running (e.g. docker compose stop nginx)
+#         certbot --standalone binds to ports 80 and 443 directly, so nginx must not be running
 
-# Stop nginx
-docker compose -f deploy/prod/docker-compose.yaml stop nginx
+set -euo pipefail
 
-# Renew SSL certificate
-docker run --rm -v "marketplace_ssl-certs:/etc/letsencrypt" -p 80:80 -p 443:443 \
-    certbot/certbot:v2.11.0 renew --force-renewal --standalone
+print_info() { echo "[INFO] $1"; }
+print_error() { echo "[ERROR] $1"; }
 
-# Verbose
-docker run --rm -v "marketplace_ssl-certs:/etc/letsencrypt" -p 80:80 -p 443:443
-    certbot/certbot:v2.11.0 renew --force-renewal --standalone --logs-dir /etc/letsencrypt/logs -v
+if [ "$#" -ne 1 ]; then
+    print_error "Usage: $0 <ssl-volume-name>"
+    exit 1
+fi
 
-# Start nginx
-docker compose -f deploy/prod/docker-compose.yaml start nginx
+VOLUME="$1"
+
+cd "$(dirname "$0")/../prod"
+
+if ! docker volume inspect "$VOLUME" >/dev/null 2>&1; then
+    print_error "Volume '$VOLUME' not found."
+    exit 1
+fi
+
+print_info "Renewing SSL certificate for volume '$VOLUME'..."
+docker run --rm \
+    -v "$VOLUME:/etc/letsencrypt" \
+    -p 80:80 \
+    -p 443:443 \
+    certbot/certbot:v2.11.0 renew --force-renewal --standalone --logs-dir /etc/letsencrypt/logs -v || {
+    print_error "SSL renewal failed."
+    exit 1
+}
+
+print_info "SSL renewal complete."
