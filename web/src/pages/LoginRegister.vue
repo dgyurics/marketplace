@@ -2,21 +2,7 @@
   <div class="auth-container">
     <template v-if="authStore.hasMinimumRole('user')">
       <h2>You are logged in</h2>
-      <div>
-        <!-- FIXME make this a proper menu component -->
-        <div class="button-group menu">
-          <button :tabindex="0" @click="goToProfile">Profile</button>
-          <template v-if="authStore.hasMinimumRole('staff')">
-            <button :tabindex="0" @click="goToCategories">Categories</button>
-            <button :tabindex="0" @click="goToProducts">Products</button>
-            <button :tabindex="0" @click="goToOrders">Orders</button>
-            <button :tabindex="0" @click="goToOffers">Offers</button>
-            <button :tabindex="0" @click="goToUsers">Users</button>
-            <button :tabindex="0" @click="goToShippingZones">Shipping</button>
-          </template>
-          <button :tabindex="0" @click="handleLogout">Logout</button>
-        </div>
-      </div>
+      <UserMenu />
     </template>
     <template v-else>
       <h2>Sign In or Create an Account</h2>
@@ -51,7 +37,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { login as apiLogin, register as apiRegister, logout as apiLogout } from '@/services/api'
+import UserMenu from '@/components/UserMenu.vue'
+import { login as apiLogin, register as apiRegister } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 
 const authStore = useAuthStore()
@@ -141,43 +128,6 @@ const handleRegister = async () => {
     } else {
       errorMessage.value = 'Something went wrong'
     }
-  }
-}
-
-const goToCategories = () => {
-  router.push('/admin/categories')
-}
-
-const goToProfile = () => {
-  router.push('/profile')
-}
-
-const goToProducts = () => {
-  router.push('/admin/products')
-}
-
-const goToOrders = () => {
-  router.push('/admin/orders')
-}
-
-const goToUsers = () => {
-  router.push('/admin/users')
-}
-
-const goToOffers = () => {
-  router.push('/admin/offers')
-}
-
-const goToShippingZones = () => {
-  router.push('/admin/shipping-zones')
-}
-
-const handleLogout = async () => {
-  try {
-    await apiLogout()
-    authStore.clearTokens()
-  } catch (error) {
-    console.error('Logout error:', error)
   }
 }
 </script>
