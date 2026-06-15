@@ -57,4 +57,22 @@ const handleLogout = async () => {
 .button-group.menu button {
   width: 100%;
 }
+
+@media (max-width: 768px) {
+  .button-group.menu {
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+
+  .button-group.menu button {
+    padding: 14px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .button-group.menu {
+    padding: 0;
+  }
+}
 </style>
