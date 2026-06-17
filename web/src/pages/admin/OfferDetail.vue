@@ -27,7 +27,7 @@
         </div>
         <div class="info-row">
           <label>Status:</label>
-          <select v-model="currentStatus" @change="handleStatusChange" class="status-select">
+          <select v-model="currentStatus" class="status-select" @change="handleStatusChange">
             <option v-for="status in statusOptions" :key="status" :value="status">
               {{ status }}
             </option>
