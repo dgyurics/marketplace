@@ -135,7 +135,7 @@ lint:
 fmt:
 	@echo "Formatting code..."
 	go fmt ./...
-	cd $(WEB_DIR) && npm run format
+	cd $(WEB_DIR) && npm run lint:fix
 
 # ============================================================================
 # Utilities
