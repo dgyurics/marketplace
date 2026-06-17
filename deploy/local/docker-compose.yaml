@@ -46,5 +46,14 @@ services:
       context: ../../
       dockerfile: deploy/local/Dockerfile.rembg
 
+  mailpit:
+    container_name: mailpit
+    build:
+      context: ../../
+      dockerfile: deploy/local/Dockerfile.mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
 volumes:
   postgres-data:
