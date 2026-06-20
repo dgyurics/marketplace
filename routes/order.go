@@ -87,11 +87,15 @@ func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, orders)
 }
 
-// CreateOrder handles order creation
-// It fetches the shipping address and cart items, calculates tax,
-// creates the order, generates a payment intent, and clears the cart.
-// The final step is handled by the /payment/events webhook, which marks the order as paid
-// upon successful payment. After this, the order is ready for fulfillment.
+// CreateOrder creates an order by:
+// 1) loading the shipping address and cart items,
+// 2) calculating tax via Stripe's /tax/calculations endpoint,
+// 3) computing order totals,
+// 4) persisting the order, and
+// 5) creating a Stripe PaymentIntent.
+//
+// Payment completion is finalized asynchronously by /payment/events,
+// which marks the order as paid. Once paid, the order is ready for fulfillment.
 func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	// Fetch shipping address
 	addr, err := h.addressService.GetAddress(r.Context(), r.URL.Query().Get("shipping_id"))
