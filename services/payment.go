@@ -172,19 +172,25 @@ func (s *paymentService) SignatureVerifier(payload []byte, sigHeader string) err
 	return errors.New("signature verification failed: no matching v1 signature found")
 }
 
-// FIXME impose a minimum cart-total when using Stripe checkout
-// For example, USD is $0.50 (equivalent to the cost of executing the transaction)
-// CreatePaymentIntent creates a new Stripe Payment Intent.
-// [refID] is a unique reference ID for idempotency. Currently this is the order ID
-// [amount] is the amount in the smallest currency unit (e.g., cents for USD).
-func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, amount int64, email string) (pi stripe.PaymentIntent, err error) {
+// TODO: Enforce Stripe minimum charge amount by currency
+// (e.g., USD minimum is $0.50 to cover transaction cost).
+//
+// CreatePaymentIntent creates a Stripe PaymentIntent.
+// refID is a unique idempotency reference (currently the order ID).
+// amount is in the smallest currency unit (for example, cents for USD).
+func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, amount int64, email string) (stripe.PaymentIntent, error) {
+	var pi stripe.PaymentIntent
+
 	// Build request
-	reqURL := fmt.Sprintf("%s/payment_intents", s.config.Stripe.BaseURL)
+	reqURL, err := url.JoinPath(s.config.Stripe.BaseURL, "payment_intents")
+	if err != nil {
+		return pi, err
+	}
 	data, ok := utilities.LocaleData[utilities.Locale.CountryCode]
 	if !ok {
 		return pi, fmt.Errorf("unsupported country code: %s", utilities.Locale.CountryCode)
 	}
-	// https://selfco.io/checkout/confirmation
+
 	payload := url.Values{
 		"amount":                {fmt.Sprintf("%d", amount)},
 		"currency":              {data.Currency},
@@ -224,7 +230,7 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 		return pi, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return
+	return pi, nil
 }
 
 // handlePaymentIntentCreated processes the PaymentIntentCreated event.
