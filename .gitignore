@@ -10,7 +10,7 @@ dist
 
 # Environment files
 .env
-.env.backup.*
+.env.backup*
 
 # Generated files
 deploy/prod/nginx.conf
