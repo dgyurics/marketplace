@@ -76,8 +76,8 @@ server {
         application/json;
 
     # Rate limited API endpoints
-    location ~ ^/api/users/(.*)$ {
-        proxy_pass http://api_backend/users/$1;
+    location ~ ^/api/users(/.*)?$ {
+        proxy_pass http://api_backend/users$1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -85,8 +85,8 @@ server {
         limit_req zone=users burst=10 nodelay;
     }
 
-    location ~ ^/api/orders/(.*)$ {
-        proxy_pass http://api_backend/orders/$1;
+    location ~ ^/api/orders(/.*)?$ {
+        proxy_pass http://api_backend/orders$1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
