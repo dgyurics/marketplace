@@ -15,10 +15,14 @@ services:
         compress: "true"
     env_file:
       - .env
-    # TODO: Resource limits to be tuned later      
-    # mem_limit: 1g
-    # mem_reservation: 512m
-    # cpus: 1.0            
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.50"
+        reservations:
+          memory: 32m
+          cpus: "0.10"
     ports:
       - "80:80"
       - "443:443"
@@ -42,10 +46,14 @@ services:
         compress: "true"
     env_file:
       - .env
-    # TODO: Resource limits to be tuned later      
-    # mem_limit: 1g
-    # mem_reservation: 512m
-    # cpus: 1.0            
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.00"
+        reservations:
+          memory: 128m
+          cpus: "0.25"
     volumes:
       - images-data:/images:rw
     depends_on:
@@ -67,10 +75,14 @@ services:
         compress: "true"
     env_file:
       - .env
-    # TODO: Resource limits to be tuned later      
-    # mem_limit: 1g
-    # mem_reservation: 512m
-    # cpus: 1.0            
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.50"
+        reservations:
+          memory: 32m
+          cpus: "0.10"
     depends_on:
       - api
   
@@ -88,10 +100,14 @@ services:
         compress: "true"
     env_file:
       - .env
-    # TODO: Resource limits to be tuned later      
-    # mem_limit: 1g
-    # mem_reservation: 512m
-    # cpus: 1.0            
+    deploy:
+      resources:
+        limits:
+          memory: 1024m
+          cpus: "1.00"
+        reservations:
+          memory: 256m
+          cpus: "0.50"
     ports:
       - "5432:5432"
     volumes:
@@ -117,10 +133,14 @@ services:
       - .env
     volumes:
       - images-data:/images:ro
-    # TODO: Resource limits to be tuned later      
-    # mem_limit: 1g
-    # mem_reservation: 512m
-    # cpus: 1.0            
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
+          cpus: "1.00"
+        reservations:
+          memory: 384m
+          cpus: "0.25"
 
   rembg:
     container_name: rembg
@@ -136,10 +156,14 @@ services:
         compress: "true"
     env_file:
       - .env
-    # TODO: Resource limits to be tuned later      
-    # mem_limit: 1g
-    # mem_reservation: 512m
-    # cpus: 1.0      
+    deploy:
+      resources:
+        limits:
+          memory: 2048m
+          cpus: "1.50"
+        reservations:
+          memory: 1024m
+          cpus: "0.50"
 
 volumes:
   postgres-data:
