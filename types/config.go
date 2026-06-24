@@ -100,11 +100,13 @@ type StripeConfig struct {
 	Version              string // 2025-04-30.basil
 }
 
+// TODO break this up into ImgProxyConfig & RemBgConfig
 type ImageConfig struct {
-	Key              []byte // hex encoded key for imgproxy
-	Salt             []byte // hex encoded salt for imgproxy
-	BaseURLImgproxy  string // base URL for imgproxy, e.g. http://localhost:8002
-	BaseURLRembg     string // base URL for rembg, e.g. http://localhost:7001
+	Key             []byte // hex encoded key for imgproxy
+	Salt            []byte // hex encoded salt for imgproxy
+	BaseURLImgproxy string // base URL for imgproxy, e.g. http://localhost:8002
+	BaseURLRembg    string // base URL for rembg, e.g. http://localhost:7001
+	// TODO RembgMode string // see https://github.com/danielgatis/rembg for available models
 	ImageUploadPath  string // directory for storing images, e.g. /images
 	MaxMegapixels    int    // maximum allowed resolution (width x height)
 	MaxFileSizeBytes int    // maximum allowed file size (in bytes)
