@@ -8,8 +8,13 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Upgrade pip and install rembg with explicit dependencies
+# Visit https://github.com/danielgatis/rembg for additional rembg options
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir "rembg[cli]" onnxruntime
+    && pip install --no-cache-dir "rembg[cpu,cli]" onnxruntime
+
+# Pre-download the ISNet model to avoid first-run delay
+RUN mkdir -p /root/.u2net \
+    && python -c "from rembg import new_session; new_session('isnet-general-use')"
 
 # Run rembg as HTTP server
 CMD ["rembg", "s", "--host", "0.0.0.0", "--port", "80"]
