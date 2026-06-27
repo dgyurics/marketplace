@@ -73,9 +73,10 @@ const openConversation = (id: string) => {
 }
 
 const isUnread = (conversation: Conversation): boolean => {
+  const tolerance = 50 // ms
   const lastRead = new Date(conversation.recipient_last_read_at).getTime()
   const updatedAt = new Date(conversation.updated_at).getTime()
-  return updatedAt > lastRead
+  return updatedAt + tolerance > lastRead
 }
 
 onMounted(loadConversations)
