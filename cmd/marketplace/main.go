@@ -138,7 +138,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	httpClient := utilities.NewDefaultHTTPClient(30 * time.Second) // TODO make this configurable
 
 	// create services
-	templateService := services.NewTemplateService(config.TemplatesDir)
+	templateService := services.NewTemplateService()
 	scheduleService := services.NewScheduleService(db)
 	conversationService := services.NewConversationService(conversationRepository)
 	emailService := services.NewEmailService(config.Email)

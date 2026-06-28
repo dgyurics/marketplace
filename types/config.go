@@ -7,21 +7,20 @@ import (
 )
 
 type Config struct {
-	Auth         AuthConfig
-	BaseURL      string
-	Country      string
-	Database     DBConfig
-	Email        EmailConfig
-	Environment  Environment
-	Image        ImageConfig
-	JWT          JWTConfig
-	Logger       LoggerConfig
-	MachineID    uint8
-	Payment      PaymentConfig
-	RateLimit    bool
-	Server       ServerConfig
-	Tax          TaxConfig
-	TemplatesDir string // path to directory containing email templates
+	Auth        AuthConfig
+	BaseURL     string
+	Country     string
+	Database    DBConfig
+	Email       EmailConfig
+	Environment Environment
+	Image       ImageConfig
+	JWT         JWTConfig
+	Logger      LoggerConfig
+	MachineID   uint8
+	Payment     PaymentConfig
+	RateLimit   bool
+	Server      ServerConfig
+	Tax         TaxConfig
 }
 
 // ServerConfig is based on net/http.Server.

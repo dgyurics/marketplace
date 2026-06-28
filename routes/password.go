@@ -76,7 +76,7 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		data := map[string]string{
 			"ResetLink": fmt.Sprintf("%s/auth/email/%s/password-reset/%s", h.notificationService.BaseURL(), recEmail, code),
 		}
-		if err := h.notificationService.SendEmail(recEmail, "Password Reset", services.PasswordReset, data); err != nil {
+		if err := h.notificationService.SendEmail(recEmail, services.SubjectPasswordReset, services.EmailPasswordReset, data); err != nil {
 			slog.Error("Error sending password reset email: ", "error", err)
 		}
 	}(*usr.Email, code)

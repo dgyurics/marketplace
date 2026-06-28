@@ -86,7 +86,7 @@ func (h *RegistrationRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		data := map[string]string{
 			"DetailsLink": detailsLink,
 		}
-		if err := h.notificationService.SendEmail(email, "Email Verification", services.EmailVerification, data); err != nil {
+		if err := h.notificationService.SendEmail(email, services.SubjectEmailVerify, services.EmailVerification, data); err != nil {
 			slog.Error("Error sending new user registration email: ", "email", email, "error", err)
 		}
 	}(*usr.Email, code)

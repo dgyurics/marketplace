@@ -301,7 +301,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 		data := map[string]string{
 			"DetailsLink": detailsLink,
 		}
-		if err := s.notificationService.SendEmail(recEmail, "Order Confirmation", OrderConfirmation, data); err != nil {
+		if err := s.notificationService.SendEmail(recEmail, SubjectOrderConf, EmailOrderConf, data); err != nil {
 			slog.Error("Error sending order confirmation email: ", "order_id", order.ID, "error", err)
 		}
 	}(order.Address.Email, order.ID)
@@ -315,12 +315,11 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 		}
 		detailsLink := fmt.Sprintf("%s/admin/orders/%s", s.notificationService.BaseURL(), orderID)
 		data := map[string]string{
-			"OrderID":       order.ID,
-			"CustomerEmail": order.Address.Email,
-			"DetailsLink":   detailsLink,
+			"OrderID":     order.ID,
+			"DetailsLink": detailsLink,
 		}
 		for _, admin := range admins {
-			if err := s.notificationService.Notify(admin.ID, OrderNotificationAdmin, data); err != nil {
+			if err := s.notificationService.Notify(admin.ID, "order received", NotifyOrderRecv, data); err != nil {
 				slog.Error("Error sending order notification to admins: ", "order_id", orderID, "error", err)
 			}
 		}

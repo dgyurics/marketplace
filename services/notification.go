@@ -7,21 +7,10 @@ import (
 	"github.com/dgyurics/marketplace/types"
 )
 
-type NotificationType string
-
-const (
-	OrderConfirmationCustomer NotificationType = "order confirmed"
-	OrderUpdateCustomer       NotificationType = "order update"
-	OrderNotificationAdmin    NotificationType = "order received"
-	OfferConfirmationCustomer NotificationType = "offer confirmed"
-	OfferStatusUpdate         NotificationType = "offer update"
-	OfferNotificationAdmin    NotificationType = "offer received"
-)
-
 type NotificationService interface {
 	BaseURL() string
-	Notify(recipientID string, notificationType NotificationType, data interface{}) error
-	SendEmail(to, subject string, templateName HtmlTemplate, data interface{}) error
+	Notify(to, subject string, template HtmlTemplate, data interface{}) error
+	SendEmail(to, subject string, tempalte HtmlTemplate, data interface{}) error
 }
 
 type notificationService struct {
@@ -59,19 +48,19 @@ func (s *notificationService) SendEmail(to, subject string, template HtmlTemplat
 	return s.emailService.Send(email)
 }
 
-func (s *notificationService) Notify(recipientID string, notificationType NotificationType, data interface{}) error {
+func (s *notificationService) Notify(to, subject string, template HtmlTemplate, data interface{}) error {
 	ctx := systemContext()
 
 	conv := &types.Conversation{
+		RecipientID: to,
 		Type:        types.Notification,
-		Subject:     string(notificationType),
-		RecipientID: recipientID,
+		Subject:     subject,
 	}
 	if err := s.conversationService.CreateConversation(ctx, conv); err != nil {
 		return err
 	}
 
-	body, err := s.templateService.RenderTextToString(getTemplateForNotificationType(notificationType), data)
+	body, err := s.templateService.RenderHtmlToString(template, data)
 	if err != nil {
 		return err
 	}
@@ -82,25 +71,6 @@ func (s *notificationService) Notify(recipientID string, notificationType Notifi
 	}
 
 	return s.conversationService.CreateMessage(ctx, msg)
-}
-
-func getTemplateForNotificationType(notificationType NotificationType) TextTemplate {
-	switch notificationType {
-	case OrderConfirmationCustomer:
-		return OrderConfirmationMessage
-	case OrderUpdateCustomer:
-		return OrderUpdateMessage
-	case OrderNotificationAdmin:
-		return OrderNotificationMessage
-	case OfferConfirmationCustomer:
-		return OfferConfirmationMessage
-	case OfferStatusUpdate:
-		return OfferUpdateMessage
-	case OfferNotificationAdmin:
-		return OfferNotificationMessage
-	}
-	slog.Warn("unknown notification type", "type", notificationType)
-	return OrderNotificationMessage
 }
 
 const systemUserID = "1"

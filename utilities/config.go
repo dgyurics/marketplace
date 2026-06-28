@@ -20,21 +20,20 @@ func LoadConfig() types.Config {
 	environment := loadEnvironment()
 
 	return types.Config{
-		BaseURL:      baseURL,
-		Country:      loadCountry(),
-		Environment:  environment,
-		Server:       loadServerConfig(),
-		Auth:         loadAuthConfig(),
-		Database:     loadDBConfig(),
-		Email:        loadEmailConfig(),
-		Logger:       loadLoggerConfig(),
-		MachineID:    loadMachineID(),
-		Payment:      loadPaymentConfig(environment),
-		JWT:          loadJWTConfig(),
-		Image:        loadImageConfig(),
-		RateLimit:    loadRateLimit(),
-		Tax:          loadTaxConfig(),
-		TemplatesDir: loadTemplatesDir(),
+		BaseURL:     baseURL,
+		Country:     loadCountry(),
+		Environment: environment,
+		Server:      loadServerConfig(),
+		Auth:        loadAuthConfig(),
+		Database:    loadDBConfig(),
+		Email:       loadEmailConfig(),
+		Logger:      loadLoggerConfig(),
+		MachineID:   loadMachineID(),
+		Payment:     loadPaymentConfig(environment),
+		JWT:         loadJWTConfig(),
+		Image:       loadImageConfig(),
+		RateLimit:   loadRateLimit(),
+		Tax:         loadTaxConfig(),
 	}
 }
 
@@ -174,10 +173,6 @@ func loadEnvironment() types.Environment {
 	default:
 		return types.Development
 	}
-}
-
-func loadTemplatesDir() string {
-	return "./utilities/templates"
 }
 
 func loadBaseURL() string {

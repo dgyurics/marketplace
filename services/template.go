@@ -3,63 +3,67 @@ package services
 import (
 	"bytes"
 	"fmt"
-	htmltemplate "html/template"
+	"html/template"
 	"log/slog"
 	"os"
 	"path/filepath"
-	texttemplate "text/template"
 )
 
+const templatesDir = "./utilities/templates"
+
+const (
+	SubjectPasswordReset string = "password reset"
+	SubjectEmailVerify   string = "verify your email"
+	SubjectOrderConf     string = "order confirmation"
+	SubjectOrderUpdate   string = "order update"
+	SubjectOrderRecv     string = "new order received"
+	SubjectOfferConf     string = "offer confirmation"
+	SubjectOfferUpdate   string = "offer update"
+	SubjectOfferRecv     string = "new offer received"
+)
+
+// HtmlTemplate identifies a template file by name.
 type HtmlTemplate string
 
+// Email templates (sent via SMTP)
 const (
-	PasswordReset     HtmlTemplate = "password_reset.html"
-	OrderConfirmation HtmlTemplate = "order_confirmation.html"
-	OrderNotification HtmlTemplate = "order_notification.html"
-	EmailVerification HtmlTemplate = "email_verification.html"
-	OfferUpdate       HtmlTemplate = "offer_update.html"
-	OfferNotification HtmlTemplate = "offer_notification.html"
+	EmailPasswordReset HtmlTemplate = "email_password_reset.html"
+	EmailVerification  HtmlTemplate = "email_verification.html"
+	EmailOrderConf     HtmlTemplate = "email_order_confirmation.html"
+	EmailOfferConf     HtmlTemplate = "email_offer_confirmation.html"
 )
 
-type TextTemplate string
-
+// Notification templates (rendered in the user inbox)
 const (
-	OrderConfirmationMessage TextTemplate = "order_confirmation.txt"
-	OrderNotificationMessage TextTemplate = "order_notification.txt"
-	OrderUpdateMessage       TextTemplate = "order_update.txt"
-	OfferUpdateMessage       TextTemplate = "offer_update.txt"
-	OfferConfirmationMessage TextTemplate = "offer_confirmation.txt"
-	OfferNotificationMessage TextTemplate = "offer_notification.txt"
+	NotifyOrderConf   HtmlTemplate = "notify_order_confirmation.html"
+	NotifyOrderUpdate HtmlTemplate = "notify_order_update.html" // Not yet implemented
+	NotifyOrderRecv   HtmlTemplate = "notify_order_received.html"
+	NotifyOfferUpdate HtmlTemplate = "notify_offer_update.html"
+	NotifyOfferConf   HtmlTemplate = "notify_offer_confirmation.html"
+	NotifyOfferRecv   HtmlTemplate = "notify_offer_received.html"
 )
 
-// TemplateService defines the interface for rendering templates.
+// TemplateService renders named HTML templates with the provided data.
 type TemplateService interface {
 	RenderHtmlToString(name HtmlTemplate, data interface{}) (string, error)
-	RenderTextToString(name TextTemplate, data interface{}) (string, error)
 }
 
 type templateService struct {
-	templates     *htmltemplate.Template
-	textTemplates *texttemplate.Template
+	templates *template.Template
 }
 
-// NewTemplateService initializes and loads all templates from the given directory.
-func NewTemplateService(templateDir string) TemplateService {
-	tmpl, err := loadTemplates(templateDir)
+// NewTemplateService loads all HTML templates at startup.
+func NewTemplateService() TemplateService {
+	templates, err := loadTemplates(templatesDir)
 	if err != nil {
-		slog.Error("Failed to load templates", "error", err, "templateDir", templateDir)
+		slog.Error("Failed to load templates", "error", err, "directory", templatesDir)
 		os.Exit(1)
 	}
-	txtTmpl, err := loadTextTemplates(templateDir)
-	if err != nil {
-		slog.Error("Failed to load templates", "error", err, "templateDir", templateDir)
-		os.Exit(1)
-	}
-	return &templateService{templates: tmpl, textTemplates: txtTmpl}
+	return &templateService{templates}
 }
 
-// loadTemplates parses all html templates in the specified directory.
-func loadTemplates(templateDir string) (*htmltemplate.Template, error) {
+// loadTemplates parses all .html files in the given directory into a single template set.
+func loadTemplates(templateDir string) (*template.Template, error) {
 	files, err := filepath.Glob(filepath.Join(templateDir, "*.html"))
 	if err != nil {
 		return nil, err
@@ -67,32 +71,12 @@ func loadTemplates(templateDir string) (*htmltemplate.Template, error) {
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no templates found in directory: %s", templateDir)
 	}
-
-	return htmltemplate.ParseFiles(files...)
+	return template.ParseFiles(files...)
 }
 
-// loadTextTemplates parses all text templates in the specified directory.
-func loadTextTemplates(templateDir string) (*texttemplate.Template, error) {
-	files, err := filepath.Glob(filepath.Join(templateDir, "*.txt"))
-	if err != nil {
-		return nil, err
-	}
-	if len(files) == 0 {
-		return nil, fmt.Errorf("no templates found in directory: %s", templateDir)
-	}
-	return texttemplate.ParseFiles(files...)
-}
-
-// RenderHtmlToString renders an html template to a string.
+// RenderHtmlToString executes the named template with the given data and returns the result.
 func (s *templateService) RenderHtmlToString(name HtmlTemplate, data interface{}) (string, error) {
 	var buf bytes.Buffer
 	err := s.templates.ExecuteTemplate(&buf, string(name), data)
-	return buf.String(), err
-}
-
-// RenderTextToString renders a text template to a string.
-func (s *templateService) RenderTextToString(name TextTemplate, data interface{}) (string, error) {
-	var buf bytes.Buffer
-	err := s.textTemplates.ExecuteTemplate(&buf, string(name), data)
 	return buf.String(), err
 }
