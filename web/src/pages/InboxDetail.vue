@@ -17,7 +17,7 @@
           <div class="message-header">
             <div class="message-time">{{ formatDate(message.created_at) }}</div>
           </div>
-          <div class="message-body">{{ message.body }}</div>
+          <div class="message-body" v-html="message.body"></div>
         </div>
       </div>
 
@@ -83,7 +83,7 @@ watch(
 )
 </script>
 
-<style scoped>
+<style>
 .inbox-container {
   max-width: 900px;
   width: calc(100% - 40px);
@@ -169,8 +169,20 @@ watch(
 }
 
 .message-body {
-  line-height: 1.5;
+  line-height: 1.6;
   white-space: pre-wrap;
+  font-size: 15px;
+  color: #333;
+  letter-spacing: 0.2px;
+}
+
+.message-body a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.message-body a:hover {
+  color: #1d4ed8;
 }
 
 .error {
