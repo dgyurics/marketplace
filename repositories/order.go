@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/dgyurics/marketplace/types"
@@ -177,12 +176,6 @@ func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string
 
 func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, userID string) (types.Order, error) {
 	var order types.Order
-	if orderID == "" {
-		return order, errors.New("order ID is required")
-	}
-	if userID == "" {
-		return order, errors.New("user ID is required")
-	}
 	query := `
 		SELECT
 			o.id,
