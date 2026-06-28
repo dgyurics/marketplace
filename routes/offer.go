@@ -123,6 +123,9 @@ func (h *OfferRoutes) GetOffers(w http.ResponseWriter, r *http.Request) {
 func (h *OfferRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/offers/items/{id}", h.secure(types.RoleMember)(h.limit(h.CreateOffer, 5, time.Hour))).Methods(http.MethodPost)
 	h.muxRouter.Handle("/offers/{id}/{action}", h.secure(types.RoleAdmin)(h.UpdateOffer)).Methods(http.MethodPut)
+	// TODO
+	// 	h.muxRouter.Handle("/offers/{id}/owner", h.secure(types.RoleGuest)(h.GetOfferOwner)).Methods(http.MethodPost)
+	// h.muxRouter.Handle("/offers/{id}/admin", h.secure(types.RoleAdmin)(h.GetOfferAdmin)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/offers/{id}", h.secure(types.RoleAdmin)(h.GetOfferByID)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/offers/items/{id}", h.secure(types.RoleMember)(h.GetOfferByProductID)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/offers", h.secure(types.RoleAdmin)(h.GetOffers)).Methods(http.MethodGet)
