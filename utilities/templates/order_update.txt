@@ -1,1 +1,0 @@
-The status of your order on {{.ProductName}} has changed to {{.Status}}.

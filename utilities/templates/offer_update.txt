@@ -1,1 +1,0 @@
-The status of your offer on {{.ProductName}} has changed to {{.Status}}.
