@@ -172,6 +172,7 @@ func calculateOrderFromCart(order *types.Order, cart []types.CartItem) {
 }
 
 func (h *OrderRoutes) RegisterRoutes() {
+	// FIXME enable idompotency by accepting a client-generated id
 	h.muxRouter.Handle("/orders", h.secure(types.RoleGuest)(h.limit(h.CreateOrder, 5, time.Hour))).Methods(http.MethodPost)
 	h.muxRouter.HandleFunc("/orders/{id}/public", h.GetOrderPublic).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/owner", h.secure(types.RoleGuest)(h.GetOrderOwner)).Methods(http.MethodPost)

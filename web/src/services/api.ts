@@ -259,6 +259,7 @@ export const removeItemFromCart = async (productId: string) => {
   return response.data
 }
 
+// FIXME enable idompotency by sending a client-generated id
 export const createOrder = async (shippingID: string): Promise<CreateOrderResponse> => {
   const params = new URLSearchParams()
   params.append('shipping_id', shippingID)
