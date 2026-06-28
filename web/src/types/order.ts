@@ -14,14 +14,7 @@ export interface OrderItem {
   unit_price: number
 }
 
-export type OrderStatus =
-  | 'pending'
-  | 'paid'
-  | 'refunded'
-  | 'fulfilled'
-  | 'shipped'
-  | 'delivered'
-  | 'canceled'
+export type OrderStatus = 'pending' | 'paid' | 'refunded' | 'shipped' | 'delivered' | 'canceled'
 
 export interface Order {
   id: string

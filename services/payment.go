@@ -367,7 +367,6 @@ func (s *paymentService) handleRefund(ctx context.Context, charge *stripe.Charge
 
 	// Check if the order is eligible for a refund
 	isEligible := order.Status == types.OrderPaid ||
-		order.Status == types.OrderFulfilled ||
 		order.Status == types.OrderShipped ||
 		order.Status == types.OrderDelivered
 
