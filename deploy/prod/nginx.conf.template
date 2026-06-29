@@ -1,166 +1,166 @@
 # Hide nginx version
 server_tokens off;
 
-# Rate limiting zones - define the limits
-limit_req_zone $binary_remote_addr zone=users:10m rate=10r/m;
-limit_req_zone $binary_remote_addr zone=orders:10m rate=5r/m;
-limit_req_zone $binary_remote_addr zone=webhooks:10m rate=100r/m;
+# Rate limiting
+limit_req_zone $binary_remote_addr zone=users:10m       rate=10r/m;
+limit_req_zone $binary_remote_addr zone=orders:10m      rate=5r/m;
+limit_req_zone $binary_remote_addr zone=webhooks:10m    rate=100r/m;
 limit_req_zone $binary_remote_addr zone=api_general:10m rate=20r/m;
-limit_req_zone $binary_remote_addr zone=img_proxy:10m rate=100r/m;
-limit_req_zone $binary_remote_addr zone=frontend:10m rate=20r/m;
-
-# Return 429 instead of 503 for rate limit errors
+limit_req_zone $binary_remote_addr zone=img_proxy:10m   rate=100r/m;
+limit_req_zone $binary_remote_addr zone=frontend:10m    rate=20r/m;
 limit_req_status 429;
 
-# Define cache path
+# Image cache
 proxy_cache_path /var/cache/nginx/images
-    levels=1:2
-    keys_zone=images:100m
-    max_size=2g
-    inactive=30d
-    use_temp_path=off;
+   levels=1:2
+   keys_zone=images:100m
+   max_size=2g
+   inactive=30d
+   use_temp_path=off;
 
 upstream api_backend {
-    server api:8000;
+   server api:8000;
 }
 
 upstream web_backend {
-    server web:80;
+   server web:80;
 }
 
 upstream imgproxy_backend {
-    server imgproxy:80;
+   server imgproxy:80;
+}
+
+# HTTP → HTTPS redirect
+server {
+   listen      80;
+   server_name {{DOMAIN}} www.{{DOMAIN}};
+
+   location / {
+      return 301 https://$server_name$request_uri;
+   }
 }
 
 server {
-    listen 80;
-    server_name {{DOMAIN}} www.{{DOMAIN}};
+   listen      443 ssl;
+   http2       on;
+   server_name {{DOMAIN}} www.{{DOMAIN}};
 
-    # Redirect to HTTPS
-    location / {
-        return 301 https://$server_name$request_uri;
-    }
-}
+   # SSL
+   ssl_certificate         /etc/letsencrypt/live/{{DOMAIN}}/fullchain.pem;
+   ssl_certificate_key     /etc/letsencrypt/live/{{DOMAIN}}/privkey.pem;
+   ssl_protocols           TLSv1.2 TLSv1.3;
+   ssl_ciphers             ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384;
+   ssl_prefer_server_ciphers off;
+   ssl_session_cache       shared:SSL:10m;
+   ssl_session_timeout     10m;
 
-server {
-    listen 443 ssl;
-    http2 on;
-    server_name {{DOMAIN}} www.{{DOMAIN}};
+   # Security headers
+   add_header Strict-Transport-Security  "max-age=31536000; includeSubDomains; preload" always;
+   add_header X-Content-Type-Options     "nosniff" always;
+   add_header X-Frame-Options            "SAMEORIGIN" always;
+   add_header Referrer-Policy            "strict-origin-when-cross-origin" always;
 
-    # SSL configuration
-    ssl_certificate /etc/letsencrypt/live/{{DOMAIN}}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/{{DOMAIN}}/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384;
-    ssl_prefer_server_ciphers off;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 10m;
+   # Gzip
+   gzip            on;
+   gzip_vary       on;
+   gzip_proxied    any;
+   gzip_min_length 1024;
+   gzip_comp_level 6;
+   gzip_types
+      text/javascript
+      text/css
+      text/plain
+      application/javascript
+      application/json;
 
-    # Security Headers
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+   # API: users
+   location ~ ^/api/users(/.*)?$ {
+      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header Host              $host;
+      proxy_set_header X-Real-IP         $remote_addr;
 
-    # Gzip compression for API responses
-    gzip on;
-    gzip_vary on;
-    gzip_proxied any;
-    gzip_min_length 1024;
-    gzip_comp_level 6;
-    gzip_types
-        text/javascript
-        text/css
-        text/plain
-        application/javascript    
-        application/json;
+      proxy_pass                         http://api_backend/users$1;
+      limit_req                          zone=users burst=10 nodelay;
+   }
 
-    # Rate limited API endpoints
-    location ~ ^/api/users(/.*)?$ {
-        proxy_pass http://api_backend/users$1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        limit_req zone=users burst=10 nodelay;
-    }
+   # API: orders
+   location ~ ^/api/orders(/.*)?$ {
+      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header Host              $host;
+      proxy_set_header X-Real-IP         $remote_addr;
 
-    location ~ ^/api/orders(/.*)?$ {
-        proxy_pass http://api_backend/orders$1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        limit_req zone=orders burst=5 nodelay;
-    }
+      proxy_pass                         http://api_backend/orders$1;
+      limit_req                          zone=orders burst=5 nodelay;
+   }
 
-    location /api/payment/events {
-        proxy_pass http://api_backend/payment/events;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        limit_req zone=webhooks burst=100 nodelay;
-    }
+   # API: stripe webhooks
+   location /api/payment/events {
+      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header Host              $host;
+      proxy_set_header X-Real-IP         $remote_addr;
 
-    # Specific route first - larger body size for product image uploads
-    location /api/images/products/ {
-        client_max_body_size 30M;
-        proxy_pass http://api_backend/images/products/;  # Explicit path replacement
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
+      proxy_pass                         http://api_backend/payment/events;
+      limit_req                          zone=webhooks burst=100 nodelay;
+   }
 
-    # API routes - send /api/* to backend
-    location /api/ {
-        client_max_body_size 512k;
-        proxy_pass http://api_backend/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        limit_req zone=api_general burst=20 nodelay;
-    }
+   # API: image uploads (larger body)
+   location /api/images/products/ {
+      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header Host              $host;
+      proxy_set_header X-Real-IP         $remote_addr;
 
-    # Image proxy routes - send /images/* to imgproxy
-    location /images/ {
-        proxy_pass http://imgproxy_backend/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        limit_req zone=img_proxy burst=100 nodelay;
+      proxy_pass                         http://api_backend/images/products/;
+      client_max_body_size               30M;
+   }
 
-        # Enable caching
-        proxy_cache images;
-        proxy_cache_valid 200 7d; # Cache successful responses for 7 days
-        proxy_cache_valid 404 5m; # Cache 404 responses for 5 minute
-        proxy_cache_valid 500 502 503 504 1m;  # Cache 5xx errors briefly
-        proxy_cache_key $uri$is_args$args; # Cache key based on URL and query string
-        # proxy_cache_bypass $http_cache_control;  # Allows Cache-Control: no-cache to bypass (for debugging)
+   # API: catch-all
+   location /api/ {
+      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header Host              $host;
+      proxy_set_header X-Real-IP         $remote_addr;
 
-        # Prevent thundering herd
-        proxy_cache_lock on;
-        proxy_cache_lock_timeout 5s;
+      proxy_pass                         http://api_backend/;
+      client_max_body_size               512k;
+      limit_req                          zone=api_general burst=20 nodelay;
+   }
 
-        add_header X-Cache-Status $upstream_cache_status; # Add cache status header
+   # Image proxy (imgproxy) with caching
+   location /images/ {
+      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header Host              $host;
+      proxy_set_header X-Real-IP         $remote_addr;
 
-        # Cache even if only 1 user requests it
-        proxy_cache_min_uses 1;
+      proxy_pass                         http://imgproxy_backend/;
+      limit_req                          zone=img_proxy burst=100 nodelay;
 
-        # Serve stale content if imgproxy is down
-        proxy_cache_use_stale error timeout invalid_header updating;
-    }
+      # Cache settings
+      proxy_cache                        images;
+      proxy_cache_valid 200              7d;
+      proxy_cache_valid 404              5m;
+      proxy_cache_valid 500 502 503 504  1m;
+      proxy_cache_key                    $uri$is_args$args;
+      proxy_cache_lock                   on;
+      proxy_cache_lock_timeout           5s;
+      proxy_cache_min_uses               1;
+      proxy_cache_use_stale              error timeout invalid_header updating;
 
-    # Everything else goes to web container
-    location / {
-        proxy_pass http://web_backend;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        limit_req zone=frontend burst=100 nodelay;
-    }
+      add_header X-Cache-Status          $upstream_cache_status;
+   }
+
+   # Frontend (web container)
+   location / {
+      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header Host              $host;
+      proxy_set_header X-Real-IP         $remote_addr;
+
+      proxy_pass                         http://web_backend;
+      limit_req                          zone=frontend burst=100 nodelay;
+   }
 }
