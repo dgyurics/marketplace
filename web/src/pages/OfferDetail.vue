@@ -14,7 +14,7 @@
       <div class="info-section">
         <div class="info-row">
           <label>Product:</label>
-          <span>{{ offer.product.name }}</span>
+          <span>{{ offer.product.id }}</span>
         </div>
         <div class="info-row">
           <label>Amount:</label>
@@ -37,39 +37,30 @@
           <span>{{ formatDate(offer.updated_at) }}</span>
         </div>
       </div>
-
-      <button type="button" class="btn-full-width btn-outline mt-30" @click="goBack">
-        Back to Offers
-      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
-import { getOfferById } from '@/services/api'
+import { getOfferOwner } from '@/services/api'
 import type { Offer } from '@/types'
 import { formatPrice } from '@/utilities/currency'
 import { formatDate } from '@/utilities/dateFormat'
 
 const route = useRoute()
-const router = useRouter()
 
 const offer = ref<Offer | null>(null)
 
 const fetchOffer = async () => {
   try {
     const id = route.params['id'] as string
-    offer.value = await getOfferById(id)
+    offer.value = await getOfferOwner(id)
   } catch {
     offer.value = null
   }
-}
-
-const goBack = () => {
-  router.back()
 }
 
 onMounted(() => {

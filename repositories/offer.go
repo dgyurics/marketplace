@@ -11,6 +11,7 @@ type OfferRepository interface {
 	CreateOffer(ctx context.Context, offer *types.Offer) error
 	UpdateOffer(ctx context.Context, offer *types.Offer) error
 	GetOfferByID(ctx context.Context, id string) (types.Offer, error)
+	GetOfferByIDAndUser(ctx context.Context, id, userID string) (types.Offer, error)
 	GetOffersByProductIDAndUser(ctx context.Context, productID, userID string) ([]types.Offer, error)
 	GetOffers(ctx context.Context) ([]types.Offer, error)
 }
@@ -127,7 +128,7 @@ func (r *offerRepository) UpdateOffer(ctx context.Context, offer *types.Offer) e
 	}
 
 	query := `
-		UPDATE offers SET status = $2
+		UPDATE offers SET status = $2, updated_at = NOW()
 		WHERE id = $1
 		RETURNING product_id, user_id
 	`
@@ -185,6 +186,37 @@ func (r *offerRepository) GetOffersByProductIDAndUser(ctx context.Context, produ
 	return offers, nil
 }
 
+func (r *offerRepository) GetOfferByIDAndUser(ctx context.Context, id, userID string) (types.Offer, error) {
+	query := `
+	SELECT
+		id,
+		user_id,
+		product_id,
+		amount,
+		status,
+		comment,
+		created_at,
+		updated_at
+	FROM offers
+	WHERE id = $1 AND user_id = $2
+	`
+	var pi types.Offer
+	err := r.db.QueryRowContext(ctx, query, id, userID).Scan(
+		&pi.ID,
+		&pi.UserID,
+		&pi.Product.ID,
+		&pi.Amount,
+		&pi.Status,
+		&pi.Comment,
+		&pi.CreatedAt,
+		&pi.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return pi, types.ErrNotFound
+	}
+	return pi, err
+}
+
 func (r *offerRepository) GetOfferByID(ctx context.Context, id string) (types.Offer, error) {
 	query := `
 	SELECT
@@ -199,21 +231,21 @@ func (r *offerRepository) GetOfferByID(ctx context.Context, id string) (types.Of
 	FROM offers
 	WHERE id = $1
 	`
-	var pi types.Offer
+	var offer types.Offer
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&pi.ID,
-		&pi.UserID,
-		&pi.Product.ID,
-		&pi.Amount,
-		&pi.Status,
-		&pi.Comment,
-		&pi.CreatedAt,
-		&pi.UpdatedAt,
+		&offer.ID,
+		&offer.UserID,
+		&offer.Product.ID,
+		&offer.Amount,
+		&offer.Status,
+		&offer.Comment,
+		&offer.CreatedAt,
+		&offer.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
-		return pi, types.ErrNotFound
+		return offer, types.ErrNotFound
 	}
-	return pi, err
+	return offer, err
 }
 
 func (r *offerRepository) GetOffers(ctx context.Context) ([]types.Offer, error) {

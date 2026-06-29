@@ -20,10 +20,6 @@
           <div class="message-body" v-html="message.body"></div>
         </div>
       </div>
-
-      <button type="button" class="btn-full-width btn-outline mt-30" @click="goBack">
-        Back to Inbox
-      </button>
     </div>
 
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
@@ -32,14 +28,13 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 import { getConversationById } from '@/services/api'
 import type { Conversation } from '@/types/conversation'
 import { formatDate } from '@/utilities'
 
 const route = useRoute()
-const router = useRouter()
 const conversation = ref<Conversation | null>(null)
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
@@ -63,10 +58,6 @@ const loadConversation = async (id: string) => {
   } finally {
     loading.value = false
   }
-}
-
-const goBack = () => {
-  router.push('/inbox')
 }
 
 watch(

@@ -46,25 +46,20 @@
           <span>{{ formatDate(offer.updated_at) }}</span>
         </div>
       </div>
-
-      <button type="button" class="btn-full-width btn-outline mt-30" @click="goBack">
-        Back to Offers
-      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
-import { getOfferById, updateOffer } from '@/services/api'
+import { getOfferAdmin, updateOffer } from '@/services/api'
 import type { Offer, OfferStatus } from '@/types'
 import { formatPrice } from '@/utilities/currency'
 import { formatDate } from '@/utilities/dateFormat'
 
 const route = useRoute()
-const router = useRouter()
 
 const offer = ref<Offer | null>(null)
 const currentStatus = ref<OfferStatus>('pending')
@@ -74,7 +69,7 @@ const statusOptions: OfferStatus[] = ['pending', 'accepted', 'rejected', 'cancel
 const fetchOffer = async () => {
   try {
     const id = route.params['id'] as string
-    const data = await getOfferById(id)
+    const data = await getOfferAdmin(id)
     offer.value = data
     currentStatus.value = data.status
   } catch (error) {
@@ -93,10 +88,6 @@ const handleStatusChange = async () => {
     console.error('Error updating offer:', error)
     currentStatus.value = offer.value.status
   }
-}
-
-const goBack = () => {
-  router.push('/admin/offers')
 }
 
 onMounted(() => {

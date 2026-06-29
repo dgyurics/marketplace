@@ -417,8 +417,13 @@ export const getOffers = async (): Promise<Offer[]> => {
   return response.data
 }
 
-export const getOfferById = async (id: string): Promise<Offer> => {
-  const response = await apiClient.get(`/offers/${id}`)
+export const getOfferOwner = async (id: string): Promise<Offer> => {
+  const response = await apiClient.get(`/offers/${id}/owner`)
+  return response.data
+}
+
+export const getOfferAdmin = async (id: string): Promise<Offer> => {
+  const response = await apiClient.get(`/offers/${id}/admin`)
   return response.data
 }
 

@@ -14,6 +14,7 @@ type OfferService interface {
 	CreateOffer(ctx context.Context, offer *types.Offer) error
 	UpdateOffer(ctx context.Context, offer *types.Offer) error
 	GetOfferByID(ctx context.Context, id string) (types.Offer, error)
+	GetOfferByIDAndUser(ctx context.Context, id string) (types.Offer, error)
 	GetOffersByProductID(ctx context.Context, id string) ([]types.Offer, error)
 	GetOffers(ctx context.Context) ([]types.Offer, error)
 }
@@ -80,6 +81,10 @@ func (ps *offerService) UpdateOffer(ctx context.Context, offer *types.Offer) err
 
 func (ps *offerService) GetOffersByProductID(ctx context.Context, id string) ([]types.Offer, error) {
 	return ps.repoOffer.GetOffersByProductIDAndUser(ctx, id, getUserID(ctx))
+}
+
+func (ps *offerService) GetOfferByIDAndUser(ctx context.Context, id string) (types.Offer, error) {
+	return ps.repoOffer.GetOfferByIDAndUser(ctx, id, getUserID(ctx))
 }
 
 func (ps *offerService) GetOfferByID(ctx context.Context, id string) (types.Offer, error) {

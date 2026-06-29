@@ -77,17 +77,13 @@
           <span>{{ formatPrice(order.total_amount) }}</span>
         </div>
       </div>
-
-      <button type="button" class="btn-full-width btn-outline mt-30" @click="goBack">
-        Back to Orders
-      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 import { getOrderAdmin } from '@/services/api'
 import type { Order } from '@/types'
@@ -95,7 +91,6 @@ import { formatPrice } from '@/utilities/currency'
 import { formatDate } from '@/utilities/dateFormat'
 
 const route = useRoute()
-const router = useRouter()
 
 const order = ref<Order | null>(null)
 
@@ -107,10 +102,6 @@ const fetchOrder = async () => {
   } catch {
     order.value = null
   }
-}
-
-const goBack = () => {
-  router.push('/admin/orders')
 }
 
 onMounted(() => {
