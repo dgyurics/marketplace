@@ -36,9 +36,15 @@
           </button>
 
           <router-link to="/cart" :tabindex="0">
-            <ShoppingBagIcon class="icon" />
+            <ShoppingBagSolid v-if="cartStore.hasItems" class="icon" />
+            <ShoppingBagIcon v-else class="icon" />
           </router-link>
-          <router-link v-if="authStore.hasMinimumRole('user')" to="/inbox" :tabindex="0">
+          <router-link
+            v-if="authStore.hasMinimumRole('user')"
+            to="/inbox"
+            :tabindex="0"
+            class="inbox-link"
+          >
             <EnvelopeIcon class="icon" />
           </router-link>
           <router-link to="/auth" :tabindex="0">
@@ -67,13 +73,16 @@
 
 <script setup lang="ts">
 import { Bars3Icon, EnvelopeIcon, ShoppingBagIcon, UserIcon } from '@heroicons/vue/24/outline'
+import { ShoppingBagIcon as ShoppingBagSolid } from '@heroicons/vue/24/solid'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { getCategories } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
+import { useCartStore } from '@/store/cart'
 import type { Category } from '@/types'
 
 const authStore = useAuthStore()
+const cartStore = useCartStore()
 const categories = ref<Category[]>([])
 const isMobileMenuOpen = ref(false)
 const mobileMenuBtn = ref<HTMLElement>()
@@ -222,6 +231,14 @@ nav {
   stroke-width: 1.5;
   cursor: pointer;
   transition: color 0.3s ease;
+}
+
+.cart-link {
+  position: relative;
+}
+
+.inbox-link .icon {
+  transform: translateY(1px);
 }
 
 /* Mobile Menu Button */

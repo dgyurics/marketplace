@@ -13,6 +13,8 @@ export const useCartStore = defineStore('cart', {
   }),
 
   getters: {
+    hasItems: (state) => state.items.length > 0,
+
     itemCountByProductId: (state) => {
       return (productId: string) =>
         state.items.find((item) => item.product.id === productId)?.quantity ?? 0
@@ -55,6 +57,10 @@ export const useCartStore = defineStore('cart', {
         console.error('Error removing item from cart:', err)
         throw err
       }
+    },
+
+    clearCart() {
+      this.items = []
     },
   },
 })

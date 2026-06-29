@@ -40,6 +40,7 @@ import { useRouter } from 'vue-router'
 import UserMenu from '@/components/UserMenu.vue'
 import { login as apiLogin, register as apiRegister } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
+import { useCartStore } from '@/store/cart'
 
 const authStore = useAuthStore()
 
@@ -74,6 +75,7 @@ const handleLogin = async () => {
   try {
     const authTokens = await apiLogin(email.value, password.value)
     authStore.setTokens(authTokens)
+    useCartStore().fetchCart()
 
     // Clear email + password field after successful login
     email.value = ''

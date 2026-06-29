@@ -18,6 +18,7 @@ import { useRouter } from 'vue-router'
 
 import { logout as apiLogout } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
+import { useCartStore } from '@/store/cart'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -34,6 +35,7 @@ const handleLogout = async () => {
   try {
     await apiLogout()
     authStore.clearTokens()
+    useCartStore().clearCart()
   } catch {
     // logout failed silently
   }
