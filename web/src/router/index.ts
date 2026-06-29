@@ -19,6 +19,7 @@ import Inbox from '@/pages/Inbox.vue'
 import InboxDetail from '@/pages/InboxDetail.vue'
 import LoginRegister from '@/pages/LoginRegister.vue'
 import NotFound from '@/pages/NotFound.vue'
+import Offer from '@/pages/Offer.vue'
 import OfferDetail from '@/pages/OfferDetail.vue'
 import OrderConfirmation from '@/pages/OrderConfirmation.vue'
 import OrderDetail from '@/pages/OrderDetail.vue'
@@ -39,6 +40,7 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/auth', component: LoginRegister },
     { path: '/auth/register-confirm', component: RegisterConfirmation },
     { path: '/cart', component: Cart },
+    { path: '/offer/:id', component: Offer, beforeEnter: requireMember },
     { path: '/offers/:id', component: OfferDetail, beforeEnter: requireMember },
     { path: '/error', component: Error },
     { path: '/not-found', component: NotFound },
