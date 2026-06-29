@@ -7,7 +7,7 @@
     <template v-else>
       <h2>Sign In or Create an Account</h2>
 
-      <form @submit.prevent>
+      <form @submit.prevent="handleLogin">
         <div class="form-group">
           <label for="email">Email</label>
           <input id="email" v-model="email" type="email" required :tabindex="0" />
@@ -21,7 +21,7 @@
         </div>
 
         <div class="button-group">
-          <button type="button" :tabindex="0" @click="handleLogin">Login</button>
+          <button type="submit" :tabindex="0">Login</button>
           <button type="button" :tabindex="0" class="btn-outline" @click="handleRegister">
             Register
           </button>
