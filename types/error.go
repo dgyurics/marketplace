@@ -1,3 +1,5 @@
+// Package-level sentinel errors for consistent error handling across services.
+// Use errors.Is(err, types.ErrXxx) to check without coupling to message strings.
 package types
 
 import "errors"
