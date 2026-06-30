@@ -8,16 +8,20 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// JWTService is an interface for generating and parsing access tokens
-// In this case, an access token is a JSON Web Token (JWT)
+// JWTService generates and validates access tokens using RS256 (RSA + SHA-256).
+//
+// RS256 is an asymmetric algorithm: the private key signs tokens and the public
+// key verifies them. This separation means verification can happen in services
+// that never hold the signing secret, unlike HMAC (HS256) where the same shared
+// secret both signs and verifies — any service that can verify can also forge.
 type JWTService interface {
 	GenerateToken(user types.User) (string, error)
 	ParseToken(token string) (*types.User, error)
 }
 
 type jwtService struct {
-	privateKey []byte
-	publicKey  []byte
+	privateKey []byte // PEM-encoded RSA private key used for signing
+	publicKey  []byte // PEM-encoded RSA public key used for verification
 	expiry     time.Duration
 }
 
@@ -30,7 +34,10 @@ func NewJWTService(config types.JWTConfig) JWTService {
 	}
 }
 
-// GenerateToken generates a JWT token for a user
+// GenerateToken creates a signed JWT containing the user's ID, email, and role.
+// The token is signed with the RSA private key so that any holder of the
+// corresponding public key can verify authenticity without being able to
+// mint new tokens.
 func (j *jwtService) GenerateToken(user types.User) (string, error) {
 	now := time.Now()
 	claims := jwt.MapClaims{
@@ -40,16 +47,16 @@ func (j *jwtService) GenerateToken(user types.User) (string, error) {
 		"exp":     now.Add(j.expiry).Unix(),
 		"iat":     now.Unix(),
 	}
-	tokenUnsigned := jwt.NewWithClaims(jwt.SigningMethodRS256, claims) // create unsigned jwt object
+	tokenUnsigned := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	signingKey, err := jwt.ParseRSAPrivateKeyFromPEM(j.privateKey)
 	if err != nil {
 		return "", err
 	}
-	return tokenUnsigned.SignedString(signingKey) // sign the token with private key
+	return tokenUnsigned.SignedString(signingKey)
 }
 
-// ParseToken parses a JWT token and returns the user it represents
-// If the token is invalid, an error is returned
+// ParseToken verifies the token signature using the RSA public key, checks
+// expiration, and extracts the embedded user claims.
 func (j *jwtService) ParseToken(token string) (*types.User, error) {
 	tokenParsed, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
