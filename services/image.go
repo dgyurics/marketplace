@@ -19,6 +19,9 @@ import (
 	"github.com/dgyurics/marketplace/utilities"
 )
 
+// ImageService handles image storage, transformation URL generation, and
+// background removal. Transformation is delegated to imgproxy; this service
+// produces signed URLs that imgproxy trusts.
 type ImageService interface {
 	StoreImage(productID string, file io.Reader, filename string) (string, error)
 	CreateImageURLs(productID, filename string, imgType ...types.ImageType) []string
@@ -30,8 +33,8 @@ type ImageService interface {
 type imageService struct {
 	HttpClient     utilities.HTTPClient
 	repo           repositories.ImageRepository
-	key            []byte
-	salt           []byte
+	key            []byte // HMAC-SHA256 key shared with imgproxy for URL signing
+	salt           []byte // Salt prepended to the message before signing
 	baseURLImgPrxy string
 	baseURLRemBg   string
 	imgDir         string
@@ -86,7 +89,6 @@ func (s *imageService) CreateImageRecord(ctx context.Context, image *types.Image
 	return s.repo.CreateImage(ctx, image)
 }
 
-// CreateImageURLs generates signed URLs for the specified image types
 func (s *imageService) CreateImageURLs(productID, filename string, imgType ...types.ImageType) []string {
 	urls := make([]string, len(imgType))
 	for i, t := range imgType {
@@ -108,8 +110,8 @@ const (
 	DefaultQuality   = "quality:85"
 )
 
-// RemoveBackground removes the background from the image specified by imagePath
-// It does so by sending a http multipart request to rembg service
+// RemoveBackground sends the image at filePath to the rembg service for
+// background removal, then overwrites the original file with the result.
 func (s *imageService) RemoveBackground(ctx context.Context, filePath, filename string) (string, error) {
 	// open source image
 	file, err := os.Open(filePath)
@@ -177,7 +179,15 @@ func (s *imageService) RemoveBackground(ctx context.Context, filePath, filename 
 	return filePath, nil
 }
 
-// GenerateImageURL generates a signed URL for use with imgproxy
+// GenerateImageURL produces a signed imgproxy URL for the given image variant.
+//
+// HMAC-SHA256 is used because both the signer (this service) and the verifier
+// (imgproxy) are internal infrastructure sharing a secret key. HMAC is simple,
+// fast, and appropriate when there is no need to separate signing authority
+// from verification.
+//
+// The signature prevents clients from crafting arbitrary transformation URLs,
+// which could otherwise be used to abuse imgproxy.
 func (s *imageService) GenerateImageURL(productID, filename string, imgType types.ImageType) string {
 	var path string
 	switch imgType {
@@ -191,6 +201,7 @@ func (s *imageService) GenerateImageURL(productID, filename string, imgType type
 		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", DefaultResolution, DefaultQuality, productID, filename)
 	}
 
+	// signature = HMAC-SHA256(key, salt + path)
 	mac := hmac.New(sha256.New, s.key)
 	mac.Write(s.salt)
 	mac.Write([]byte(path))
