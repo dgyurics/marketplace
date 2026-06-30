@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -59,7 +60,7 @@ func (a *authorizer) authenticateToken(r *http.Request) (types.User, error) {
 
 	user, err := a.jwtService.ParseToken(tokenString)
 	if err != nil {
-		return types.User{}, errors.New("invalid or expired token")
+		return types.User{}, fmt.Errorf("invalid or expired token: %w", err)
 	}
 	return *user, nil
 }

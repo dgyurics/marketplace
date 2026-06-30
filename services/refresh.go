@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/dgyurics/marketplace/repositories"
@@ -40,7 +41,7 @@ func NewRefreshService(repo repositories.RefreshRepository, config types.AuthCon
 func (s *refreshService) GenerateToken() (string, error) {
 	token := make([]byte, 32)
 	if _, err := rand.Read(token); err != nil {
-		return "", errors.New("failed to generate refresh token")
+		return "", fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 	return hex.EncodeToString(token), nil
 }
@@ -84,7 +85,7 @@ func (s *refreshService) VerifyToken(ctx context.Context, token string) (*types.
 	}
 
 	if err := s.repo.UpdateLastUsed(ctx, refreshToken.ID, now); err != nil {
-		return nil, errors.New("failed to update refresh token usage")
+		return nil, fmt.Errorf("failed to update refresh token usage: %w", err)
 	}
 
 	return refreshToken.User, nil

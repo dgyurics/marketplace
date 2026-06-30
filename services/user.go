@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"crypto/rand"
-	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/dgyurics/marketplace/repositories"
@@ -158,7 +158,7 @@ func generateCode() (string, error) {
 	for i := range code {
 		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
 		if err != nil {
-			return "", errors.New("failed to generate code")
+			return "", fmt.Errorf("failed to generate code: %w", err)
 		}
 		code[i] = charset[num.Int64()]
 	}

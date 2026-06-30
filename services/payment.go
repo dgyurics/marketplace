@@ -152,7 +152,7 @@ func (s *paymentService) SignatureVerifier(payload []byte, sigHeader string) err
 	ts, err := unixTimestampToTime(timestamp)
 	if err != nil {
 		slog.Warn("Error parsing timestamp", "timestamp", timestamp)
-		return errors.New("invalid timestamp")
+		return fmt.Errorf("invalid timestamp: %w", err)
 	} else if time.Since(ts) > tolerance {
 		slog.Warn("Timestamp is too old", "timestamp", timestamp)
 		return errors.New("timestamp is too old")

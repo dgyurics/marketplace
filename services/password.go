@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"crypto/rand"
-	"errors"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"time"
@@ -40,7 +40,7 @@ func (s *passwordService) GenerateResetCode(ctx context.Context) (string, error)
 	for i := range code {
 		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(resetCodeCharset))))
 		if err != nil {
-			return "", errors.New("failed to generate password reset code")
+			return "", fmt.Errorf("failed to generate password reset code: %w", err)
 		}
 		code[i] = resetCodeCharset[num.Int64()]
 	}
