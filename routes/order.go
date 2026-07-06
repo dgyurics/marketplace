@@ -97,8 +97,14 @@ func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
 // Payment completion is finalized asynchronously by /payment/events,
 // which marks the order as paid. Once paid, the order is ready for fulfillment.
 func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	shippingID := r.URL.Query().Get("shipping_id")
+	if shippingID == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "shipping_id is required")
+		return
+	}
+
 	// Fetch shipping address
-	addr, err := h.addressService.GetAddress(r.Context(), r.URL.Query().Get("shipping_id"))
+	addr, err := h.addressService.GetAddress(r.Context(), shippingID)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
