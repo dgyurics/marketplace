@@ -12,6 +12,7 @@ type NotificationService interface {
 	BaseURL() string
 	Notify(to, subject string, template HtmlTemplate, data interface{}) error
 	NotifyOffer(to, subject string, template HtmlTemplate, offer types.Offer) error
+	NotifyOrder(to, subject string, template HtmlTemplate, order types.Order) error
 	SendEmail(to, subject string, tempalte HtmlTemplate, data interface{}) error
 }
 
@@ -102,5 +103,21 @@ func (s *notificationService) NotifyOffer(to, subject string, template HtmlTempl
 }
 
 func (s *notificationService) NotifyOrder(to, subject string, template HtmlTemplate, order types.Order) error {
+	path := "orders"
+	if template == NotifyOrderRecv {
+		path = "admin/orders"
+	}
+	detailsLink := fmt.Sprintf("%s/%s/%s", s.baseURL, path, order.ID)
+	data := map[string]string{
+		"OrderID":     order.ID,
+		"DetailsLink": detailsLink,
+	}
+
+	// Send the actual notification out
+	if err := s.Notify(to, subject, template, data); err != nil {
+		slog.Error("Error sending order notification: ", "order_id", order.ID, "user_id", order.UserID, "error", err)
+		return err
+	}
+
 	return nil
 }
