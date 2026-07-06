@@ -7,8 +7,8 @@
   line-height: 1.5;
 
   color-scheme: light;
-  color: #000;
-  background-color: #fff;
+  color: #111;
+  background-color: #fafafa;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -28,8 +28,8 @@ body {
   width: 100%;
   min-height: 100vh;
   margin: 0;
-  background: #fff;
-  color: #000;
+  background: #fafafa;
+  color: #111;
   display: flex;
   flex-direction: column;
 }

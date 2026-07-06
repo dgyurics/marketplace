@@ -1,22 +1,28 @@
 <template>
-  <div class="home-container">
-    <div class="feature-container">
-      <div class="hero-content unselectable">
-        <h1 class="hero-title">essential living</h1>
-        <div class="hero-buttons">
-          <button class="btn-sm" :tabindex="0" @click="$router.push('/new')">shop new</button>
-          <button class="btn-sm" :tabindex="0" @click="$router.push('/popular')">
-            shop popular
-          </button>
+  <div class="home">
+    <!-- Hero -->
+    <section class="hero-wrapper">
+      <div class="hero unselectable">
+        <div class="hero-inner">
+          <p class="hero-eyebrow">curated goods for modern life</p>
+          <h1 class="hero-title">essential living</h1>
+          <div class="hero-actions">
+            <button class="hero-btn" @click="$router.push('/new')">shop new</button>
+            <button class="hero-btn hero-btn--outline" @click="$router.push('/popular')">
+              shop popular
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="product-section">
+    </section>
+
+    <!-- Products -->
+    <section class="products">
       <div class="product-grid">
         <ProductTile v-for="product in products" :key="product.id" :product="product" />
       </div>
       <IntersectionTrigger @intersect="fetchProducts" />
-    </div>
+    </section>
   </div>
 </template>
 
@@ -41,7 +47,7 @@ const fetchProducts = async () => {
     const filters: ProductFilters = {
       page: page.value,
       limit: 9,
-      featured: true, // Fetch only featured products for the homepage
+      featured: true,
     }
 
     const response = await getProducts(filters)
@@ -64,122 +70,169 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.home-container {
+/* ── Layout ── */
+.home {
   width: 100%;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 0;
+}
+
+/* ── Hero ── */
+.hero-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  margin: 10px auto 0 auto;
+  padding: 0 20px;
   box-sizing: border-box;
 }
 
-.feature-container {
-  width: calc(100% - 40px);
-  height: calc(40vh - 10px);
-  max-height: 400px;
-  overflow: hidden;
-  max-width: 1160px;
-  margin: 10px auto 0 auto;
+.hero {
+  width: 100%;
+  height: calc(50vh - 10px);
+  max-height: 480px;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  background-color: #000;
+  background: linear-gradient(160deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
   border-radius: 8px;
+  position: relative;
+  overflow: hidden;
 }
 
-.product-section {
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-inner {
+  position: relative;
+  text-align: center;
+  color: #fff;
+  padding: 0 24px;
+}
+
+.hero-eyebrow {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 1.5rem;
+}
+
+.hero-title {
+  font-family: 'Josefin Sans', sans-serif;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 100;
+  letter-spacing: 10px;
+  text-transform: uppercase;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 3rem;
+}
+
+.hero-btn {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 14px 32px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fff;
+  color: #0a0a0a;
+  min-width: auto;
+}
+
+.hero-btn:hover {
+  background: rgba(255, 255, 255, 0.85);
+  transform: translateY(-1px);
+}
+
+.hero-btn--outline {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.hero-btn--outline:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
+/* ── Products ── */
+.products {
   width: 100%;
-  min-height: 50vh;
-  background-color: #fff;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
-  text-align: center;
+  padding: 20px 20px 40px;
   box-sizing: border-box;
 }
 
 .product-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 24px;
   font-family: 'Open Sans', sans-serif;
   margin-top: 20px;
 }
 
-/* Tablet breakpoint */
+/* ── Responsive ── */
 @media (max-width: 768px) {
+  .hero-title {
+    letter-spacing: 6px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .hero-btn {
+    width: 200px;
+  }
+
   .product-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
+    gap: 16px;
   }
 }
 
-/* Mobile breakpoint */
 @media (max-width: 480px) {
+  .hero {
+    height: calc(45vh - 10px);
+  }
+
   .product-grid {
     grid-template-columns: 1fr;
     gap: 20px;
   }
 
-  .product-section {
-    padding: 15px;
+  .products {
+    padding: 15px 15px 30px;
+  }
+
+  .hero-wrapper {
+    padding: 0 15px;
   }
 }
 
-.hero-content {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  color: white;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.hero-title {
-  font-size: 3rem;
-  font-weight: 100;
-  margin: 0;
-  text-transform: uppercase;
-  font-family: 'Josefin Sans', sans-serif;
-  position: relative;
-}
-
-.hero-title::after {
-  content: '';
-  position: absolute;
-  bottom: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 2px;
-  background: white;
-  opacity: 0.7;
-}
-
-.hero-buttons {
-  display: flex;
-  gap: 1rem;
-  margin-top: 3rem;
-  justify-content: center;
-  align-items: center;
-}
-
-.hero-buttons button {
-  color: #fff;
-  background: transparent;
-  border: 1px solid #fff;
-  flex: none !important;
-  display: inline-block !important;
-}
-
-.hero-buttons button:hover {
-  background: #ffffff;
-  color: #000;
-}
-
-/* Landscape mode adjustments */
 @media (orientation: landscape) and (max-height: 600px) {
-  .feature-container {
+  .hero {
     height: calc(60vh - 10px);
     max-height: 500px;
   }
