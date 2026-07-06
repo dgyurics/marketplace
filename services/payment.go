@@ -36,7 +36,7 @@ type paymentService struct {
 	HttpClient          utilities.HTTPClient
 	config              types.PaymentConfig
 	notificationService NotificationService
-	serviceUser         UserService
+	userService         UserService
 	repo                repositories.OrderRepository
 }
 
@@ -44,13 +44,13 @@ func NewPaymentService(
 	httpClient utilities.HTTPClient,
 	config types.PaymentConfig,
 	notificationService NotificationService,
-	serviceUser UserService,
+	userService UserService,
 	repo repositories.OrderRepository) PaymentService {
 	return &paymentService{
 		HttpClient:          httpClient,
 		config:              config,
 		notificationService: notificationService,
-		serviceUser:         serviceUser,
+		userService:         userService,
 		repo:                repo,
 	}
 }
@@ -295,35 +295,14 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 
 	slog.Info("Order marked as paid", "order_id", order.ID, "payment_intent_id", pi.ID)
 
-	// Send payment success email to customer
-	go func(recEmail, orderID string) {
-		detailsLink := fmt.Sprintf("%s/orders/%s", s.notificationService.BaseURL(), orderID)
-		data := map[string]string{
-			"DetailsLink": detailsLink,
-		}
-		if err := s.notificationService.SendEmail(recEmail, SubjectOrderConf, EmailOrderConf, data); err != nil {
-			slog.Error("Error sending order confirmation email: ", "order_id", order.ID, "error", err)
-		}
-	}(order.Address.Email, order.ID)
+	// notify user that order payment has been received
+	go s.notificationService.NotifyOrder(order.UserID, SubjectOrderConf, NotifyOrderConf, order)
 
-	// Order received notification to admins
-	go func(order types.Order) {
-		admins, err := s.serviceUser.GetAllAdmins(context.Background())
-		if err != nil {
-			slog.Error("Error fetching admin users: ", "error", err)
-			return
-		}
-		detailsLink := fmt.Sprintf("%s/admin/orders/%s", s.notificationService.BaseURL(), orderID)
-		data := map[string]string{
-			"OrderID":     order.ID,
-			"DetailsLink": detailsLink,
-		}
-		for _, admin := range admins {
-			if err := s.notificationService.Notify(admin.ID, "order received", NotifyOrderRecv, data); err != nil {
-				slog.Error("Error sending order notification to admins: ", "order_id", orderID, "error", err)
-			}
-		}
-	}(order)
+	// notify admin(s) that an order has been received
+	admins, _ := s.userService.GetAllAdmins(context.Background())
+	for _, admin := range admins {
+		go s.notificationService.NotifyOrder(admin.ID, SubjectOrderRecv, NotifyOrderRecv, order)
+	}
 
 	return nil
 }
