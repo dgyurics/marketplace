@@ -127,7 +127,7 @@ onMounted(() => {
 
 .hero-title {
   font-family: 'Josefin Sans', sans-serif;
-  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-size: 2rem;
   font-weight: 100;
   letter-spacing: 10px;
   text-transform: uppercase;
