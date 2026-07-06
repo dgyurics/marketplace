@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/dgyurics/marketplace/types"
@@ -10,6 +11,7 @@ import (
 type NotificationService interface {
 	BaseURL() string
 	Notify(to, subject string, template HtmlTemplate, data interface{}) error
+	NotifyOffer(to, subject string, template HtmlTemplate, offer types.Offer) error
 	SendEmail(to, subject string, tempalte HtmlTemplate, data interface{}) error
 }
 
@@ -77,4 +79,28 @@ const systemUserID = "1"
 
 func systemContext() context.Context {
 	return context.WithValue(context.Background(), UserKey, &types.User{ID: systemUserID, Role: "system"})
+}
+
+func (s *notificationService) NotifyOffer(to, subject string, template HtmlTemplate, offer types.Offer) error {
+	path := "offers"
+	if template == NotifyOfferRecv {
+		path = "admin/offers"
+	}
+	detailsLink := fmt.Sprintf("%s/%s/%s", s.baseURL, path, offer.ID)
+	data := map[string]string{
+		"Status":      string(offer.Status),
+		"DetailsLink": detailsLink,
+	}
+
+	// Send the actual notification out
+	if err := s.Notify(to, subject, template, data); err != nil {
+		slog.Error("Error sending offer notification: ", "offer_id", offer.ID, "user_id", offer.UserID, "error", err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *notificationService) NotifyOrder(to, subject string, template HtmlTemplate, order types.Order) error {
+	return nil
 }
