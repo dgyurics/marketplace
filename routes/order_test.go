@@ -16,6 +16,11 @@ func (m *MockOrderService) CreateOrder(ctx context.Context, order *types.Order) 
 	return args.Error(0)
 }
 
+func (m *MockOrderService) UpdateOrder(ctx context.Context, order *types.Order) error {
+	args := m.Called(ctx, order)
+	return args.Error(0)
+}
+
 func (m *MockOrderService) GetOrders(ctx context.Context, page, limit int) ([]types.Order, error) {
 	args := m.Called(ctx, page, limit)
 	if args.Get(0) == nil {

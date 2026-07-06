@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -85,6 +86,26 @@ func (h *OrderRoutes) GetOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u.RespondWithJSON(w, http.StatusOK, orders)
+}
+
+func (h *OrderRoutes) UpdateOrder(w http.ResponseWriter, r *http.Request) {
+	var order types.Order
+	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
+		return
+	}
+
+	if order.ID == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "missing order ID")
+		return
+	}
+
+	if err := h.orderService.UpdateOrder(r.Context(), &order); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	u.RespondWithJSON(w, http.StatusOK, order)
 }
 
 // CreateOrder creates an order by:
@@ -180,6 +201,7 @@ func calculateOrderFromCart(order *types.Order, cart []types.CartItem) {
 func (h *OrderRoutes) RegisterRoutes() {
 	// FIXME enable idompotency by accepting a client-generated id
 	h.muxRouter.Handle("/orders", h.secure(types.RoleGuest)(h.limit(h.CreateOrder, 5, time.Hour))).Methods(http.MethodPost)
+	h.muxRouter.Handle("/orders", h.secure(types.RoleAdmin)(h.UpdateOrder)).Methods(http.MethodPut)
 	h.muxRouter.HandleFunc("/orders/{id}/public", h.GetOrderPublic).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/owner", h.secure(types.RoleGuest)(h.GetOrderOwner)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders/{id}/admin", h.secure(types.RoleStaff)(h.GetOrderAdmin)).Methods(http.MethodPost)

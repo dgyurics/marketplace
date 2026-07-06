@@ -288,7 +288,8 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 	}
 
 	// mark order as paid
-	err = s.repo.ConfirmOrderPayment(ctx, order.ID)
+	order.Status = types.OrderPaid
+	err = s.repo.UpdateOrder(ctx, &order)
 	if err != nil {
 		return fmt.Errorf("failed to mark order as paid: order_id=%s, error=%w", order.ID, err)
 	}
@@ -362,7 +363,8 @@ func (s *paymentService) handleRefund(ctx context.Context, charge *stripe.Charge
 	}
 
 	// mark order as refunded
-	err = s.repo.RefundOrder(ctx, order.ID)
+	order.Status = types.OrderRefunded
+	err = s.repo.UpdateOrder(ctx, &order)
 	if err != nil {
 		return fmt.Errorf("failed to mark order as refunded: order_id=%s, error=%w", order.ID, err)
 	}

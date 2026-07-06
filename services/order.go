@@ -12,6 +12,7 @@ import (
 
 type OrderService interface {
 	CreateOrder(ctx context.Context, order *types.Order) error
+	UpdateOrder(ctx context.Context, order *types.Order) error
 	GetOrderByIDAndUser(ctx context.Context, orderID string) (types.Order, error)
 	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
 	GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error)
@@ -19,26 +20,29 @@ type OrderService interface {
 }
 
 type orderService struct {
-	orderRepo      repositories.OrderRepository
-	cartRepo       repositories.CartRepository
-	HttpClient     utilities.HTTPClient
-	paymentService PaymentService
+	orderRepo           repositories.OrderRepository
+	cartRepo            repositories.CartRepository
+	HttpClient          utilities.HTTPClient
+	paymentService      PaymentService
+	notificationService NotificationService
 }
 
 func NewOrderService(
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository,
 	paymentService PaymentService,
+	notificationService NotificationService,
 	httpClient utilities.HTTPClient,
 ) OrderService {
 	if httpClient == nil {
 		httpClient = utilities.NewDefaultHTTPClient(10 * time.Second)
 	}
 	return &orderService{
-		orderRepo:      orderRepo,
-		cartRepo:       cartRepo,
-		HttpClient:     httpClient,
-		paymentService: paymentService,
+		orderRepo:           orderRepo,
+		cartRepo:            cartRepo,
+		HttpClient:          httpClient,
+		paymentService:      paymentService,
+		notificationService: notificationService,
 	}
 }
 
@@ -63,6 +67,16 @@ func (os *orderService) CreateOrder(ctx context.Context, order *types.Order) (er
 	}
 
 	slog.Info("Order created", "order_id", order.ID, "user_id", order.UserID, "total_amount", order.TotalAmount)
+	return nil
+}
+
+func (os *orderService) UpdateOrder(ctx context.Context, order *types.Order) error {
+	if err := os.orderRepo.UpdateOrder(ctx, order); err != nil {
+		return err
+	}
+
+	go os.notificationService.NotifyOrder(order.UserID, SubjectOrderUpdate, NotifyOrderUpdate, *order)
+
 	return nil
 }
 

@@ -93,6 +93,11 @@ func (m *mockOrderRepo) RefundOrder(ctx context.Context, orderID string) error {
 	return args.Error(0)
 }
 
+func (m *mockOrderRepo) UpdateOrder(ctx context.Context, order *types.Order) error {
+	args := m.Called(ctx, order)
+	return args.Error(0)
+}
+
 func (m *mockOrderRepo) GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error) {
 	args := m.Called(ctx, orderID)
 	if v := args.Get(0); v != nil {
@@ -107,11 +112,6 @@ func (m *mockOrderRepo) GetOrderByIDAndUser(ctx context.Context, orderID, userID
 		return v.(types.Order), args.Error(1)
 	}
 	return types.Order{}, args.Error(1)
-}
-
-func (m *mockOrderRepo) ConfirmOrderPayment(ctx context.Context, orderID string) error {
-	args := m.Called(ctx, orderID)
-	return args.Error(0)
 }
 
 func TestGetOrder_NotFound(t *testing.T) {

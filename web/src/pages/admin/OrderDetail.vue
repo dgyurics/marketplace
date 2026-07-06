@@ -5,9 +5,11 @@
         <h1>Order Details</h1>
         <div class="order-meta">
           <span class="order-id">ID: {{ order.id }}</span>
-          <span class="order-status">
-            {{ order.status.toUpperCase() }}
-          </span>
+          <select v-model="currentStatus" class="status-select" @change="handleStatusChange">
+            <option v-for="status in statusOptions" :key="status" :value="status">
+              {{ status }}
+            </option>
+          </select>
         </div>
       </div>
 
@@ -85,22 +87,45 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { getOrderAdmin } from '@/services/api'
-import type { Order } from '@/types'
+import { getOrderAdmin, updateOrder } from '@/services/api'
+import type { Order, OrderStatus } from '@/types'
 import { formatPrice } from '@/utilities/currency'
 import { formatDate } from '@/utilities/dateFormat'
 
 const route = useRoute()
 
 const order = ref<Order | null>(null)
+const currentStatus = ref<OrderStatus>('pending')
+
+const statusOptions: OrderStatus[] = [
+  'pending',
+  'paid',
+  'shipped',
+  'delivered',
+  'refunded',
+  'canceled',
+]
 
 const fetchOrder = async () => {
   try {
     const orderId = route.params['id'] as string
     const data = await getOrderAdmin(orderId)
     order.value = data
+    currentStatus.value = data.status
   } catch {
     order.value = null
+  }
+}
+
+const handleStatusChange = async () => {
+  if (!order.value) return
+
+  try {
+    const updated = await updateOrder({ ...order.value, status: currentStatus.value })
+    order.value = updated
+    currentStatus.value = updated.status
+  } catch {
+    currentStatus.value = order.value.status
   }
 }
 
@@ -149,13 +174,31 @@ onMounted(() => {
 }
 
 .order-status {
-  padding: 4px 12px;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  border-width: 1px;
-  border-style: solid;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
+  font-size: 14px;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+
+.status-select {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+
+.status-select:hover {
+  border-color: #999;
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: #333;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
 }
 
 .order-info {

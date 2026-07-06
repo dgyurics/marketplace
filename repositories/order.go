@@ -9,11 +9,8 @@ import (
 )
 
 type OrderRepository interface {
-	/* Modify order(s) */
 	CreateOrder(ctx context.Context, order *types.Order) error
-	ConfirmOrderPayment(ctx context.Context, orderID string) error
-	RefundOrder(ctx context.Context, orderID string) error
-	/* GET order(s) */
+	UpdateOrder(ctx context.Context, order *types.Order) error
 	GetOrderByIDAndUser(ctx context.Context, orderID, userID string) (types.Order, error)
 	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
 	GetOrderByIDPublic(ctx context.Context, orderID string) (types.Order, error)
@@ -334,48 +331,48 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 	return order, nil
 }
 
-// RefundOrder marks an order as refunded. It does NOT restock/update inventory.
-// Updating/Restocking inventory must be done manually
-func (r *orderRepository) RefundOrder(ctx context.Context, orderID string) error {
-	res, err := r.db.ExecContext(ctx, `
-		UPDATE orders
-		SET status = 'refunded', updated_at = NOW()
-		WHERE id = $1
-	`, orderID)
-	if err != nil {
-		return err
-	}
-	// lib/pq always returns nil error for RowsAffected()
-	rows, _ := res.RowsAffected()
-	if rows == 0 {
-		return types.ErrNotFound
-	}
-	return nil
-}
-
-func (r *orderRepository) ConfirmOrderPayment(ctx context.Context, orderID string) error {
+func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) error {
+	// Begin a transaction
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	// Update order status and get user_id
-	var userID string
-	updateQuery := `
-        UPDATE orders
-        SET status = 'paid', updated_at = NOW()
-        WHERE id = $1
-        RETURNING user_id`
-
-	if err := tx.QueryRowContext(ctx, updateQuery, orderID).Scan(&userID); err != nil {
+	query := `
+		UPDATE orders SET status = $1, updated_at = NOW()
+		WHERE id = $2
+		RETURNING user_id
+	`
+	if err := tx.QueryRowContext(ctx, query, order.Status, order.ID).Scan(&order.UserID); err != nil {
 		return err
 	}
 
-	// Clear cart for that user
-	deleteQuery := `DELETE FROM cart_items WHERE user_id = $1`
-	if _, err := tx.ExecContext(ctx, deleteQuery, userID); err != nil {
-		return err
+	// restock inventory
+	if order.Status == types.OrderRefunded ||
+		order.Status == types.OrderCanceled {
+		query = `
+			WITH deleted_items AS (
+				DELETE FROM order_items oi
+				WHERE oi.order_id = $1
+				RETURNING oi.product_id, oi.quantity
+			)
+			UPDATE products
+			SET inventory = inventory + di.quantity
+			FROM deleted_items di
+			WHERE products.id = di.product_id
+		`
+		if _, err := tx.ExecContext(ctx, query, order.ID); err != nil {
+			return err
+		}
+	}
+
+	// clear cart
+	if order.Status == types.OrderPaid {
+		deleteQuery := `DELETE FROM cart_items WHERE user_id = $1`
+		if _, err := tx.ExecContext(ctx, deleteQuery, order.UserID); err != nil {
+			return err
+		}
 	}
 
 	return tx.Commit()

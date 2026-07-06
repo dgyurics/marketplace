@@ -259,6 +259,11 @@ export const removeItemFromCart = async (productId: string) => {
   return response.data
 }
 
+export const updateOrder = async (order: Order): Promise<Order> => {
+  const response = await apiClient.put('/orders', order)
+  return response.data
+}
+
 // FIXME enable idompotency by sending a client-generated id
 export const createOrder = async (shippingID: string): Promise<CreateOrderResponse> => {
   const params = new URLSearchParams()
