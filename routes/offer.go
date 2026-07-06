@@ -55,13 +55,13 @@ func (h *OfferRoutes) CreateOffer(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OfferRoutes) UpdateOffer(w http.ResponseWriter, r *http.Request) {
-	action := mux.Vars(r)["action"]
+	status := mux.Vars(r)["status"]
 	offer := types.Offer{
 		ID: mux.Vars(r)["id"],
 	}
 
-	// Update offer status based on action
-	switch action {
+	// Update offer status
+	switch status {
 	case "pending":
 		offer.Status = types.OfferPending
 	case "accepted":
@@ -135,7 +135,7 @@ func (h *OfferRoutes) GetOffers(w http.ResponseWriter, r *http.Request) {
 
 func (h *OfferRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/offers/items/{id}", h.secure(types.RoleMember)(h.limit(h.CreateOffer, 5, time.Hour))).Methods(http.MethodPost)
-	h.muxRouter.Handle("/offers/{id}/{action}", h.secure(types.RoleAdmin)(h.UpdateOffer)).Methods(http.MethodPut)
+	h.muxRouter.Handle("/offers/{id}/{status}", h.secure(types.RoleAdmin)(h.UpdateOffer)).Methods(http.MethodPut)
 	h.muxRouter.Handle("/offers/{id}/owner", h.secure(types.RoleGuest)(h.GetOfferOwner)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/offers/{id}/admin", h.secure(types.RoleAdmin)(h.GetOfferAdmin)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/offers/items/{id}", h.secure(types.RoleMember)(h.GetOfferByProductID)).Methods(http.MethodGet)
