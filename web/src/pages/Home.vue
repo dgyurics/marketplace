@@ -89,23 +89,15 @@ onMounted(() => {
 
 .hero {
   width: 100%;
-  height: calc(50vh - 10px);
-  max-height: 480px;
+  height: calc(40vh - 10px);
+  max-height: 400px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(160deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+  background-color: #000;
   border-radius: 8px;
   position: relative;
   overflow: hidden;
-}
-
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 30% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
-  pointer-events: none;
 }
 
 .hero-inner {
@@ -143,17 +135,16 @@ onMounted(() => {
 }
 
 .hero-btn {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 2px;
   text-transform: uppercase;
-  padding: 14px 32px;
+  padding: 8px 16px;
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
   background: #fff;
   color: #0a0a0a;
-  min-width: auto;
 }
 
 .hero-btn:hover {
@@ -200,10 +191,6 @@ onMounted(() => {
     flex-direction: column;
     align-items: center;
     gap: 0.75rem;
-  }
-
-  .hero-btn {
-    width: 200px;
   }
 
   .product-grid {
