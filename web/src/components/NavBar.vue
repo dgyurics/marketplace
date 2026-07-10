@@ -35,9 +35,9 @@
             <Bars3Icon class="icon" />
           </button>
 
-          <router-link to="/cart" :tabindex="0">
-            <ShoppingBagSolid v-if="cartStore.hasItems" class="icon" />
-            <ShoppingBagIcon v-else class="icon" />
+          <router-link to="/cart" :tabindex="0" class="cart-link">
+            <ShoppingBagIcon class="icon" />
+            <span v-if="cartStore.hasItems" class="cart-count">{{ cartStore.items.length }}</span>
           </router-link>
           <router-link
             v-if="authStore.hasMinimumRole('user') || inboxStore.conversations.length > 0"
@@ -73,7 +73,6 @@
 
 <script setup lang="ts">
 import { Bars3Icon, EnvelopeIcon, ShoppingBagIcon, UserIcon } from '@heroicons/vue/24/outline'
-import { ShoppingBagIcon as ShoppingBagSolid } from '@heroicons/vue/24/solid'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { getCategories } from '@/services/api'
@@ -237,6 +236,23 @@ nav {
 
 .cart-link {
   position: relative;
+}
+
+.cart-count {
+  position: absolute;
+  bottom: -5px;
+  right: -7px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #000;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .inbox-link .icon {
