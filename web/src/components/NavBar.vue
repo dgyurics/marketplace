@@ -46,6 +46,9 @@
             class="inbox-link"
           >
             <EnvelopeIcon class="icon" />
+            <span v-if="inboxStore.unreadCount > 0" class="inbox-count">{{
+              inboxStore.unreadCount
+            }}</span>
           </router-link>
           <router-link to="/auth" :tabindex="0">
             <UserIcon class="icon" />
@@ -234,11 +237,13 @@ nav {
   transition: color 0.3s ease;
 }
 
-.cart-link {
+.cart-link,
+.inbox-link {
   position: relative;
 }
 
-.cart-count {
+.cart-count,
+.inbox-count {
   position: absolute;
   bottom: -5px;
   right: -7px;
