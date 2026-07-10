@@ -29,6 +29,7 @@
               <button
                 class="delete-btn"
                 title="Delete conversation"
+                :tabindex="0"
                 @click.stop="removeConversation(conversation.id)"
               >
                 <TrashIcon class="delete-icon" />
