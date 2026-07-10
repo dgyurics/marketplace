@@ -24,8 +24,15 @@
                 {{ conversation.subject }}
               </span>
             </div>
-            <div class="date-time">
+            <div class="conversation-actions">
               <div class="date">{{ formatDate(conversation.updated_at) }}</div>
+              <button
+                class="delete-btn"
+                title="Delete conversation"
+                @click.stop="removeConversation(conversation.id)"
+              >
+                <TrashIcon class="delete-icon" />
+              </button>
             </div>
           </div>
         </div>
@@ -37,6 +44,7 @@
 </template>
 
 <script setup lang="ts">
+import { TrashIcon } from '@heroicons/vue/24/outline'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -71,6 +79,14 @@ const loadConversations = async () => {
 
 const openConversation = (id: string) => {
   router.push(`/inbox/${id}`)
+}
+
+const removeConversation = async (id: string) => {
+  try {
+    await inboxStore.removeConversation(id)
+  } catch {
+    errorMessage.value = 'Failed to delete conversation'
+  }
 }
 
 const isUnread = inboxStore.isUnread
@@ -195,9 +211,32 @@ onMounted(loadConversations)
   color: #3d3d3d;
 }
 
-.date-time {
-  text-align: right;
+.conversation-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 12px;
+  color: #666;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+
+.delete-btn:hover {
+  opacity: 1;
+}
+
+.delete-icon {
+  width: 16px;
+  height: 16px;
   color: #666;
 }
 

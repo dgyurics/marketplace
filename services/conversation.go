@@ -14,6 +14,7 @@ type ConversationService interface {
 	GetConversationByID(ctx context.Context, conversationID string) (types.Conversation, error)
 	GetConversationByIDAndUser(ctx context.Context, conversationID string) (types.Conversation, error)
 	GetConversations(ctx context.Context) ([]types.Conversation, error)
+	RemoveConversation(ctx context.Context, conversationID string) error
 }
 
 type conversationService struct {
@@ -41,6 +42,10 @@ func (s *conversationService) CreateMessage(ctx context.Context, message *types.
 	}
 	message.ID = messageID
 	return s.repo.CreateMessage(ctx, message)
+}
+
+func (s *conversationService) RemoveConversation(ctx context.Context, conversationID string) error {
+	return s.repo.RemoveConversation(ctx, conversationID, getUserID(ctx))
 }
 
 func (s *conversationService) GetConversationByID(ctx context.Context, conversationID string) (types.Conversation, error) {

@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import {
   getConversations as apiGetConversations,
   getConversationById as apiGetConversationById,
+  removeConversation as apiRemoveConversation,
 } from '@/services/api'
 import type { Conversation } from '@/types/conversation'
 
@@ -44,6 +45,16 @@ export const useInboxStore = defineStore('inbox', {
         return await apiGetConversationById(id)
       } catch (err) {
         console.error('Error fetching conversation:', err)
+        throw err
+      }
+    },
+
+    async removeConversation(id: string) {
+      try {
+        await apiRemoveConversation(id)
+        await this.fetchConversations()
+      } catch (err) {
+        console.error('Error removing conversation:', err)
         throw err
       }
     },

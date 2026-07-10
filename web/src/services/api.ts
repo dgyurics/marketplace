@@ -447,3 +447,7 @@ export const getConversationById = async (id: string): Promise<Conversation> => 
   const response = await apiClient.get(`/conversations/${id}`)
   return response.data
 }
+
+export const removeConversation = async (id: string): Promise<void> => {
+  await apiClient.delete(`/conversations/${id}`)
+}

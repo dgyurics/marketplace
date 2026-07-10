@@ -72,6 +72,21 @@ func (h *ConversationRoutes) GetConversationAdmin(w http.ResponseWriter, r *http
 	u.RespondWithJSON(w, http.StatusOK, conversation)
 }
 
+func (h *ConversationRoutes) RemoveConversation(w http.ResponseWriter, r *http.Request) {
+	conversationID := mux.Vars(r)["id"]
+	err := h.service.RemoveConversation(r.Context(), conversationID)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	u.RespondSuccess(w)
+}
+
 func (h *ConversationRoutes) GetConversation(w http.ResponseWriter, r *http.Request) {
 	conversation, err := h.service.GetConversationByIDAndUser(r.Context(), mux.Vars(r)["id"])
 	if err == types.ErrNotFound {
@@ -108,6 +123,7 @@ func (h *ConversationRoutes) CreateMessage(w http.ResponseWriter, r *http.Reques
 func (h *ConversationRoutes) RegisterRoutes() {
 	h.muxRouter.Handle("/conversations", h.secure(types.RoleStaff)(h.CreateConversation)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/conversations/{id}", h.secure(types.RoleGuest)(h.GetConversation)).Methods(http.MethodGet)
+	h.muxRouter.Handle("/conversations/{id}", h.secure(types.RoleGuest)(h.RemoveConversation)).Methods(http.MethodDelete)
 	h.muxRouter.Handle("/conversations/{id}/admin", h.secure(types.RoleStaff)(h.GetConversationAdmin)).Methods(http.MethodGet)
 	h.muxRouter.Handle("/conversations/{id}/message", h.secure(types.RoleStaff)(h.CreateMessage)).Methods(http.MethodPost)
 	h.muxRouter.Handle("/conversations", h.secure(types.RoleGuest)(h.GetConversations)).Methods(http.MethodGet)

@@ -14,6 +14,7 @@ type ConversationRepository interface {
 	GetConversationByID(ctx context.Context, ID string) (types.Conversation, error)
 	GetConversationByIDAndUser(ctx context.Context, ID string, userID string) (types.Conversation, error)
 	GetConversations(ctx context.Context, userID string) ([]types.Conversation, error)
+	RemoveConversation(ctx context.Context, id, userID string) error
 }
 
 type conversationRepository struct {
@@ -192,4 +193,18 @@ func (r *conversationRepository) GetConversations(ctx context.Context, userID st
 	}
 
 	return conversations, nil
+}
+
+func (r *conversationRepository) RemoveConversation(ctx context.Context, id, userID string) error {
+	query := `DELETE FROM conversations WHERE id = $1 AND recipient_id = $2`
+	res, err := r.db.ExecContext(ctx, query, id, userID)
+	if err != nil {
+		return err
+	}
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return types.ErrNotFound
+	}
+	return nil
 }
