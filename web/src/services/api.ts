@@ -296,17 +296,17 @@ export const getOrders = async (page: number = 1, limit: number = 50): Promise<O
 }
 
 export const getOrderPublic = async (orderId: string): Promise<Order> => {
-  const response = await apiClient.post(`/orders/${orderId}/public`)
+  const response = await apiClient.get(`/orders/${orderId}/public`)
   return response.data
 }
 
 export const getOrderOwner = async (orderId: string): Promise<Order> => {
-  const response = await apiClient.post(`/orders/${orderId}/owner`)
+  const response = await apiClient.get(`/orders/${orderId}/owner`)
   return response.data
 }
 
 export const getOrderAdmin = async (orderId: string): Promise<Order> => {
-  const response = await apiClient.post(`/orders/${orderId}/admin`)
+  const response = await apiClient.get(`/orders/${orderId}/admin`)
   return response.data
 }
 
