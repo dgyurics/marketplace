@@ -40,7 +40,7 @@
             <ShoppingBagIcon v-else class="icon" />
           </router-link>
           <router-link
-            v-if="authStore.hasMinimumRole('user')"
+            v-if="authStore.hasMinimumRole('user') || inboxStore.conversations.length > 0"
             to="/inbox"
             :tabindex="0"
             class="inbox-link"
@@ -79,10 +79,12 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { getCategories } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
+import { useInboxStore } from '@/store/inbox'
 import type { Category } from '@/types'
 
 const authStore = useAuthStore()
 const cartStore = useCartStore()
+const inboxStore = useInboxStore()
 const categories = ref<Category[]>([])
 const isMobileMenuOpen = ref(false)
 const mobileMenuBtn = ref<HTMLElement>()

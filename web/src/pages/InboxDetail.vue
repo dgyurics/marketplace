@@ -144,6 +144,7 @@ watch(
   border-radius: 4px;
   padding: 15px;
   margin-bottom: 15px;
+  background-color: #fff;
 }
 
 .message-header {

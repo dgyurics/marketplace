@@ -33,6 +33,7 @@ import RegisterConfirmation from '@/pages/RegisterConfirmation.vue'
 import ShippingAddress from '@/pages/ShippingAddress.vue'
 import { getCategories, registerConfirm } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
+import { useInboxStore } from '@/store/inbox'
 
 async function initRoutes(): Promise<RouteRecordRaw[]> {
   const baseRoutes: RouteRecordRaw[] = [
@@ -56,8 +57,8 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/checkout/confirmation', component: OrderConfirmation },
     { path: '/orders/:id', component: OrderDetail },
     { path: '/profile', component: Profile, beforeEnter: requireUser },
-    { path: '/inbox', component: Inbox, beforeEnter: requireUser },
-    { path: '/inbox/:id', component: InboxDetail, beforeEnter: requireUser, props: true },
+    { path: '/inbox', component: Inbox, beforeEnter: requireGuest },
+    { path: '/inbox/:id', component: InboxDetail, beforeEnter: requireGuest, props: true },
     { path: '/admin/products', component: AdminProducts, beforeEnter: requireAdmin },
     { path: '/admin/products/:id', component: AdminProductEdit, beforeEnter: requireAdmin },
     { path: '/admin/categories', component: AdminCategories, beforeEnter: requireAdmin },
@@ -133,6 +134,15 @@ function requireMember(
   useAuthStore().hasMinimumRole('member') ? next() : next('/')
 }
 
+// User route guard
+function requireGuest(
+  _to: RouteLocationNormalized,
+  _from: RouteLocationNormalized,
+  next: NavigationGuardNext
+) {
+  useAuthStore().hasMinimumRole('guest') ? next() : next('/')
+}
+
 // Export function to create router (to be called after Pinia is initialized)
 export async function createAppRouter() {
   const routes = await initRoutes()
@@ -148,6 +158,11 @@ export async function createAppRouter() {
       return
     }
     next()
+  })
+
+  // fetch inbox on every navigation
+  router.afterEach(() => {
+    useInboxStore().fetchConversations()
   })
 
   return router

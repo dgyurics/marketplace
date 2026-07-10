@@ -37,23 +37,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { getConversations } from '@/services/api'
-import type { Conversation } from '@/types/conversation'
+import { useInboxStore } from '@/store/inbox'
 import { formatDate } from '@/utilities'
 
-const conversations = ref<Conversation[]>([])
+const inboxStore = useInboxStore()
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
 const router = useRouter()
+
+const conversations = computed(() => inboxStore.conversations)
 
 const loadConversations = async () => {
   loading.value = true
   errorMessage.value = null
   try {
-    conversations.value = await getConversations()
+    await inboxStore.fetchConversations()
   } catch (error: unknown) {
     const status = (error as { response?: { status?: number } })?.response?.status
     if (status === 401) {
@@ -72,12 +73,7 @@ const openConversation = (id: string) => {
   router.push(`/inbox/${id}`)
 }
 
-const isUnread = (conversation: Conversation): boolean => {
-  const tolerance = 50 // ms
-  const lastRead = new Date(conversation.recipient_last_read_at).getTime()
-  const updatedAt = new Date(conversation.updated_at).getTime()
-  return updatedAt + tolerance > lastRead
-}
+const isUnread = inboxStore.isUnread
 
 onMounted(loadConversations)
 </script>
@@ -141,6 +137,7 @@ onMounted(loadConversations)
   cursor: pointer;
   transition: background-color 0.2s;
   text-align: left;
+  background-color: #fff;
 }
 
 .conversation-item:hover {
