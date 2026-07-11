@@ -20,7 +20,6 @@ A self-hosted e-commerce framework designed for local businesses and community c
 ## Planned Enhancements
 
 * Documentation for production setup and configuration
-* Demo mode for the admin dashboard with anonymized data
 * Pay on delivery for approved buyers
 * Product variants (size, color, material, etc.)
 * Support email-free auth and account recovery
