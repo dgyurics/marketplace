@@ -369,8 +369,25 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 
 	// clear cart
 	if order.Status == types.OrderPaid {
-		deleteQuery := `DELETE FROM cart_items WHERE user_id = $1`
-		if _, err := tx.ExecContext(ctx, deleteQuery, order.UserID); err != nil {
+		query = `
+			WITH ordered AS (
+				SELECT product_id, quantity
+				FROM order_items
+				WHERE order_id = $2
+			)
+			UPDATE cart_items ci
+			SET quantity = ci.quantity - o.quantity
+			FROM ordered o
+			WHERE ci.user_id = $1
+			AND ci.product_id = o.product_id
+		`
+		if _, err := tx.ExecContext(ctx, query, order.UserID, order.ID); err != nil {
+			return err
+		}
+
+		// remove cart items with zero or negative quantity
+		query = `DELETE FROM cart_items WHERE user_id = $1 AND quantity <= 0`
+		if _, err := tx.ExecContext(ctx, query, order.UserID); err != nil {
 			return err
 		}
 	}
