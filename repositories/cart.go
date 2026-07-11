@@ -99,9 +99,9 @@ func (r *cartRepository) AddItem(ctx context.Context, userID string, item *types
 		return err
 	}
 
-	// If not enough inventory, return an error
-	if availableQuantity == 0 {
-		slog.Info("Product is no longer available", "product_id", item.Product.ID)
+	// If out of stock, return an error
+	if availableQuantity <= existingQuantity {
+		slog.Info("Product out of stock", "product_id", item.Product.ID)
 		return types.ErrConstraintViolation
 	}
 
@@ -111,18 +111,9 @@ func (r *cartRepository) AddItem(ctx context.Context, userID string, item *types
 		return types.ErrConstraintViolation
 	}
 
-	// decrement product.inventory by 1
-	// increment cart.quantity by 1
-	// update price in cart to reflect latest price in products table
 	query := `
-		WITH update_inventory AS (
-			UPDATE products
-			SET inventory = inventory - 1
-			WHERE id = $2
-			RETURNING price
-		)
 		INSERT INTO cart_items (user_id, product_id, quantity, unit_price)
-		SELECT $1, $2, $3, price FROM update_inventory
+		SELECT $1, $2, $3, price FROM products WHERE id = $2
 		ON CONFLICT (user_id, product_id) DO UPDATE
 		SET quantity = cart_items.quantity + 1,
 				unit_price = EXCLUDED.unit_price`
@@ -152,15 +143,6 @@ func (r *cartRepository) RemoveItem(ctx context.Context, userID string, productI
 		return types.ErrNotFound
 	}
 	if err != nil {
-		return err
-	}
-
-	// Restock inventory
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE products
-		SET inventory = inventory + $1
-		WHERE id = $2`,
-		existingQuantity, productID); err != nil {
 		return err
 	}
 
