@@ -36,7 +36,7 @@ const (
 // Notification templates (rendered in the user inbox)
 const (
 	NotifyOrderConf   HtmlTemplate = "notify_order_confirmation.html"
-	NotifyOrderUpdate HtmlTemplate = "notify_order_update.html" // Not yet implemented
+	NotifyOrderUpdate HtmlTemplate = "notify_order_update.html"
 	NotifyOrderRecv   HtmlTemplate = "notify_order_received.html"
 	NotifyOfferUpdate HtmlTemplate = "notify_offer_update.html"
 	NotifyOfferConf   HtmlTemplate = "notify_offer_confirmation.html"

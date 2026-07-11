@@ -109,7 +109,7 @@ func (s *notificationService) NotifyOrder(to, subject string, template HtmlTempl
 	}
 	detailsLink := fmt.Sprintf("%s/%s/%s", s.baseURL, path, order.ID)
 	data := map[string]string{
-		"OrderID":     order.ID,
+		"Status":      string(order.Status),
 		"DetailsLink": detailsLink,
 	}
 
