@@ -174,6 +174,10 @@ CREATE TABLE orders (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE CASCADE
 );
+CREATE UNIQUE INDEX idx_orders_user_id_unique
+ON orders (user_id)
+WHERE status = 'pending';
+
 
 CREATE TABLE order_items (
     order_id BIGINT NOT NULL,
