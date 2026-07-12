@@ -32,6 +32,45 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	}
 	defer tx.Rollback()
 
+	// Cancel any existing pending order and restore its inventory
+	_, err = tx.ExecContext(ctx, `
+		WITH canceled AS (
+			UPDATE orders SET status = 'canceled', updated_at = NOW()
+			WHERE user_id = $1 AND status = 'pending'
+			RETURNING id
+		), restored AS (
+			DELETE FROM order_items
+			WHERE order_id IN (SELECT id FROM canceled)
+			RETURNING product_id, quantity
+		)
+		UPDATE products
+		SET inventory = inventory + restored.quantity
+		FROM restored
+		WHERE products.id = restored.product_id`,
+		order.UserID)
+	if err != nil {
+		return err
+	}
+
+	// Reserve inventory (decrement stock, fail if insufficient)
+	for _, item := range order.Items {
+		res, err := tx.ExecContext(ctx, `
+			UPDATE products
+			SET inventory = inventory - $1
+			WHERE id = $2 AND inventory >= $1`,
+			item.Quantity, item.Product.ID)
+		if err != nil {
+			return err
+		}
+		rows, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rows == 0 {
+			return types.ErrConstraintViolation
+		}
+	}
+
 	// Insert order
 	query := `
 		INSERT INTO orders (id, user_id, address_id, amount, tax_amount, shipping_amount, total_amount, status)

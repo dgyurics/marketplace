@@ -108,15 +108,6 @@ func (h *OrderRoutes) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, order)
 }
 
-// CreateOrder creates an order by:
-// 1) loading the shipping address and cart items,
-// 2) calculating tax via Stripe's /tax/calculations endpoint,
-// 3) computing order totals,
-// 4) persisting the order, and
-// 5) creating a Stripe PaymentIntent.
-//
-// Payment completion is finalized asynchronously by /payment/events,
-// which marks the order as paid. Once paid, the order is ready for fulfillment.
 func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	shippingID := r.URL.Query().Get("shipping_id")
 	if shippingID == "" {
@@ -180,7 +171,6 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Respond with client secret and order ID for payment processing
 	u.RespondWithJSON(w, http.StatusOK, stripe.CreateOrderResponse{ClientSecret: pi.ClientSecret, OrderID: order.ID})
 }
 
@@ -199,7 +189,8 @@ func calculateOrderFromCart(order *types.Order, cart []types.CartItem) {
 }
 
 func (h *OrderRoutes) RegisterRoutes() {
-	// FIXME enable idompotency by accepting a client-generated id
+	// FIXME enable idempotency by accepting a client-generated id
+	// FIXME return detailed error message + quantities when order creation fails due to inventory shortage
 	h.muxRouter.Handle("/orders", h.secure(types.RoleGuest)(h.limit(h.CreateOrder, 5, time.Hour))).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secure(types.RoleAdmin)(h.UpdateOrder)).Methods(http.MethodPut)
 	h.muxRouter.HandleFunc("/orders/{id}/public", h.GetOrderPublic).Methods(http.MethodGet)

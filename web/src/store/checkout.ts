@@ -43,9 +43,6 @@ export const useCheckoutStore = defineStore('checkout', {
     },
 
     async preparePayment(): Promise<CreateOrderResponse> {
-      if (this.stripe_client_secret) {
-        return { client_secret: this.stripe_client_secret, order_id: this.order_id }
-      }
       if (!this.shippingAddress.id) {
         throw new Error('Shipping address not found')
       }
