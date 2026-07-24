@@ -53,6 +53,8 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	}
 
 	// Reserve inventory (decrement stock, fail if insufficient)
+	// TODO build an error object/response
+	// containing requested quantity vs available quantity
 	for _, item := range order.Items {
 		res, err := tx.ExecContext(ctx, `
 			UPDATE products
