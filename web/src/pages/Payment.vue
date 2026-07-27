@@ -32,6 +32,7 @@ import { useRouter } from 'vue-router'
 
 import { Payment as PaymentForm } from '@/components/forms'
 import OrderSummary from '@/components/OrderSummary.vue'
+import { useCountdown } from '@/composables/useCountdown'
 import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
 
@@ -46,6 +47,10 @@ const taxAmount = ref(0)
 const clientSecret = ref('')
 const orderId = ref('')
 const paymentFormRef = ref()
+
+const { start: startTimer } = useCountdown(14 * 60, () => {
+  router.push('/cart')
+})
 
 onMounted(async () => {
   try {
@@ -77,6 +82,7 @@ async function initializePayment() {
   }
   clientSecret.value = res.client_secret
   orderId.value = res.order_id
+  startTimer()
 }
 
 function handleInitError(error: any) {
