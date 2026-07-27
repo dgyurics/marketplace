@@ -277,7 +277,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 		return err
 	}
 	if order.Status != types.OrderPending {
-		slog.Debug("Payment intent succeeded for non-pending order", "order_id", order.ID, "status", order.Status)
+		slog.Error("Payment intent succeeded for non-pending order", "order_id", order.ID, "status", order.Status)
 		return nil
 	}
 	if order.TotalAmount != pi.Amount {
