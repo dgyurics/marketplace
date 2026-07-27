@@ -27,7 +27,7 @@ func NewScheduleService(db *sql.DB) ScheduleService {
 // Start starts the scheduling service.
 // Pass it root context to allow for clean shutdown.
 func (s *scheduleService) Start(ctx context.Context) {
-	ticker := time.NewTicker(10 * time.Minute) // TODO make this configurable
+	ticker := time.NewTicker(10 * time.Minute)
 	defer ticker.Stop()
 
 	slog.Info("Scheduling service started")
@@ -37,7 +37,7 @@ func (s *scheduleService) Start(ctx context.Context) {
 			slog.Info("Scheduling service stopped")
 			return
 		case <-ticker.C:
-			if s.shouldRunJob(ctx, types.StaleOrders, 24*time.Hour) {
+			if s.shouldRunJob(ctx, types.StaleOrders, 15*time.Minute) {
 				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
 				s.removeStaleOrders(ctxTimeout)
 				cancel()
@@ -68,26 +68,28 @@ func (s *scheduleService) Start(ctx context.Context) {
 }
 
 func (s *scheduleService) removeStaleOrders(ctx context.Context) {
-	// TODO remove unassociated addresses too
-	// DELETE FROM addresses
-	// WHERE id NOT IN (SELECT DISTINCT address_id FROM orders);
 	_, err := s.db.ExecContext(ctx, `
-			WITH canceled_orders AS (
-				UPDATE orders 
-				SET status = 'canceled'
-				WHERE status = 'pending' AND updated_at < NOW() - INTERVAL '24 hours'
-				RETURNING id
-			),
-			deleted_items AS (
-				DELETE FROM order_items oi
-				USING canceled_orders co
-				WHERE oi.order_id = co.id
-				RETURNING oi.product_id, oi.quantity
-			)
+		WITH canceled_orders AS (
+			UPDATE orders
+			SET status = 'canceled', updated_at = NOW()
+			WHERE status = 'pending' AND updated_at < NOW() - INTERVAL '15 minutes'
+			RETURNING id, address_id
+		),
+		deleted_items AS (
+			DELETE FROM order_items oi
+			USING canceled_orders co
+			WHERE oi.order_id = co.id
+			RETURNING oi.product_id, oi.quantity
+		),
+		restored AS (
 			UPDATE products
 			SET inventory = inventory + di.quantity
 			FROM deleted_items di
-			WHERE products.id = di.product_id`)
+			WHERE products.id = di.product_id
+		)
+		DELETE FROM addresses
+		WHERE id IN (SELECT address_id FROM canceled_orders)
+		AND id NOT IN (SELECT DISTINCT address_id FROM orders WHERE status != 'canceled')`)
 	if err != nil {
 		slog.ErrorContext(ctx, "Error canceling stale orders", "error", err)
 	}
