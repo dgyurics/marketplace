@@ -37,7 +37,7 @@
 
           <router-link to="/cart" :tabindex="0" class="cart-link">
             <ShoppingBagIcon class="icon" />
-            <span v-if="cartStore.hasItems" class="cart-count">{{ cartStore.items.length }}</span>
+            <span v-if="cartStore.hasItems" class="cart-count">{{ cartStore.totalQuantity }}</span>
           </router-link>
           <router-link
             v-if="authStore.hasMinimumRole('user') || inboxStore.conversations.length > 0"
