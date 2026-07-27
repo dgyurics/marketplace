@@ -48,20 +48,18 @@ export const useCheckoutStore = defineStore('checkout', {
         throw new Error('Shipping address not found')
       }
 
-      const resBody = await apiCreateOrder(this.shippingAddress.id)
+      const result = await apiCreateOrder(this.shippingAddress.id)
 
-      // Insufficient stock — store items and signal caller
-      if (Array.isArray(resBody)) {
-        this.insufficientStock = resBody
+      if (!result.success) {
+        this.insufficientStock = result.items
         return null
       }
 
-      const orderResponse = resBody
-      this.stripe_client_secret = orderResponse.client_secret
-      this.order_id = orderResponse.order_id
+      this.stripe_client_secret = result.data.client_secret
+      this.order_id = result.data.order_id
       this.insufficientStock = []
 
-      return orderResponse
+      return result.data
     },
 
     resetCheckout() {

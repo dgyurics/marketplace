@@ -1,11 +1,6 @@
 import type { Address } from './address'
 import type { Product } from './product'
 
-export interface CreateOrderResponse {
-  client_secret: string
-  order_id: string
-}
-
 export interface OrderItem {
   product: Product
   thumbnail: string
@@ -34,4 +29,19 @@ export interface InsufficientStockItem {
   product: Product
   quantity: number
   inventory: number
+}
+
+export interface CreateOrderResult {
+  success: true
+  data: CreateOrderResponse
+}
+
+export interface CreateOrderConflict {
+  success: false
+  items: InsufficientStockItem[]
+}
+
+export interface CreateOrderResponse {
+  client_secret: string
+  order_id: string
 }
