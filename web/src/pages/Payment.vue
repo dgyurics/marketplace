@@ -70,6 +70,11 @@ async function initializePayment() {
 
   // get client secret for payment
   const res = await checkoutStore.preparePayment()
+  if (!res) {
+    await cartStore.fetchCart()
+    router.push('/cart')
+    return
+  }
   clientSecret.value = res.client_secret
   orderId.value = res.order_id
 }

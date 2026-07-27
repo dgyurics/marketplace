@@ -2,8 +2,20 @@
   <div class="container">
     <h2>Shopping Cart</h2>
 
+    <!-- Insufficient stock warning -->
+    <div v-if="insufficientStock.length">
+      <p v-for="item in insufficientStock" :key="item.product.id" class="error">
+        <template v-if="item.inventory === 0">
+          {{ item.product.name }} is no longer in stock</template
+        >
+        <template v-else>
+          Only {{ item.inventory }} of {{ item.product.name }} left; your cart has been updated
+        </template>
+      </p>
+    </div>
+
     <!-- Display a message if the cart is empty -->
-    <div v-if="items.length === 0" class="empty-cart">Your cart is empty.</div>
+    <div v-if="items.length === 0" class="empty-cart">Your cart is empty</div>
 
     <!-- Display the cart items -->
     <ul v-else>
@@ -46,13 +58,14 @@
 <script setup lang="ts">
 import { TrashIcon } from '@heroicons/vue/24/outline'
 import { storeToRefs } from 'pinia'
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import ThumbnailImage from '@/components/ThumbnailImage.vue'
 import { createGuestUser as apiCreateGuestUser } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
+import { useCheckoutStore } from '@/store/checkout'
 import type { AuthTokens } from '@/types'
 import { formatPrice } from '@/utilities/currency'
 
@@ -61,10 +74,12 @@ const { isAuthenticated } = storeToRefs(authStore)
 const { setTokens } = authStore
 
 const cartStore = useCartStore()
+const checkoutStore = useCheckoutStore()
 const router = useRouter()
 
 const { items, subtotal } = storeToRefs(cartStore)
 const { removeFromCart } = cartStore
+const { insufficientStock } = storeToRefs(checkoutStore)
 
 onMounted(async () => {
   // If the user is not authenticated, create a guest user
@@ -80,7 +95,12 @@ onMounted(async () => {
   await cartStore.fetchCart()
 })
 
+onUnmounted(() => {
+  checkoutStore.insufficientStock = []
+})
+
 const goToCheckout = () => {
+  checkoutStore.insufficientStock = []
   router.push('/checkout/shipping')
 }
 </script>

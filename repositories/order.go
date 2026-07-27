@@ -53,8 +53,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	}
 
 	// Reserve inventory (decrement stock, fail if insufficient)
-	// TODO build an error object/response
-	// containing requested quantity vs available quantity
+	var insufStockErr types.InsufficientStockError
 	for _, item := range order.Items {
 		res, err := tx.ExecContext(ctx, `
 			UPDATE products
@@ -69,8 +68,36 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 			return err
 		}
 		if rows == 0 {
-			return types.ErrConstraintViolation
+			var inventory int
+			_ = tx.QueryRowContext(ctx,
+				`SELECT inventory FROM products WHERE id = $1`,
+				item.Product.ID).Scan(&inventory)
+			insufStockErr.Items = append(insufStockErr.Items, types.InsufficientStockItem{
+				Product:   item.Product,
+				Quantity:  item.Quantity,
+				Inventory: inventory,
+			})
 		}
+	}
+
+	if len(insufStockErr.Items) > 0 {
+		// Adjust cart to reflect available inventory
+		for _, item := range insufStockErr.Items {
+			if item.Inventory <= 0 {
+				tx.ExecContext(ctx, `
+                    DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2`,
+					order.UserID, item.Product.ID)
+			} else {
+				tx.ExecContext(ctx, `
+                    UPDATE cart_items SET quantity = $1
+                    WHERE user_id = $2 AND product_id = $3`,
+					item.Inventory, order.UserID, item.Product.ID)
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+		return &insufStockErr
 	}
 
 	// Insert order
@@ -92,6 +119,10 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		}
 	}
 	return tx.Commit()
+}
+
+func (r *orderRepository) populateInsufficientStockError(ctx context.Context, item *types.InsufficientStockItem) error {
+	return nil
 }
 
 // GetOrders retrieves all orders in descending order

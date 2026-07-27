@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -155,6 +156,12 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	calculateOrderFromCart(order, cart)
 	err = h.orderService.CreateOrder(r.Context(), order)
+
+	var stockErr *types.InsufficientStockError
+	if errors.As(err, &stockErr) {
+		u.RespondWithJSON(w, http.StatusConflict, stockErr.Items)
+		return
+	}
 	if err == types.ErrConstraintViolation {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return

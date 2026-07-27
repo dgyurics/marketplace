@@ -29,3 +29,9 @@ export interface Order {
   created_at: string
   updated_at: string
 }
+
+export interface InsufficientStockItem {
+  product: Product
+  quantity: number
+  inventory: number
+}

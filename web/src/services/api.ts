@@ -24,6 +24,7 @@ import type {
   ShippingZone,
   ExcludedShippingZone,
   RegistrationCode,
+  InsufficientStockItem,
 } from '@/types'
 import type { Conversation } from '@/types/conversation'
 
@@ -265,12 +266,21 @@ export const updateOrder = async (order: Order): Promise<Order> => {
 }
 
 // FIXME enable idompotency by sending a client-generated id
-export const createOrder = async (shippingID: string): Promise<CreateOrderResponse> => {
+export const createOrder = async (
+  shippingID: string
+): Promise<CreateOrderResponse | InsufficientStockItem[]> => {
   const params = new URLSearchParams()
   params.append('shipping_id', shippingID)
 
-  const response = await apiClient.post(`/orders?${params}`)
-  return response.data
+  try {
+    const response = await apiClient.post(`/orders?${params}`)
+    return response.data
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.status === 409) {
+      return error.response.data
+    }
+    throw error
+  }
 }
 
 export const getUsers = async (page: number = 1, limit: number = 50): Promise<UserRecord[]> => {

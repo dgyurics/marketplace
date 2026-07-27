@@ -6,7 +6,7 @@ import {
   createOrder as apiCreateOrder,
   getTaxEstimate as apiGetTaxEstimate,
 } from '@/services/api'
-import type { Address, CreateOrderResponse } from '@/types'
+import type { Address, CreateOrderResponse, InsufficientStockItem } from '@/types'
 
 export const useCheckoutStore = defineStore('checkout', {
   state: () => ({
@@ -15,6 +15,7 @@ export const useCheckoutStore = defineStore('checkout', {
     order_id: '',
     shippingError: null as string | null,
     paymentError: null as string | null,
+    insufficientStock: [] as InsufficientStockItem[],
   }),
 
   getters: {
@@ -42,16 +43,25 @@ export const useCheckoutStore = defineStore('checkout', {
       return apiGetTaxEstimate(this.shippingAddress.country, this.shippingAddress.state)
     },
 
-    async preparePayment(): Promise<CreateOrderResponse> {
+    async preparePayment(): Promise<CreateOrderResponse | null> {
       if (!this.shippingAddress.id) {
         throw new Error('Shipping address not found')
       }
 
-      const resBody: CreateOrderResponse = await apiCreateOrder(this.shippingAddress.id)
-      this.stripe_client_secret = resBody.client_secret
-      this.order_id = resBody.order_id
+      const resBody = await apiCreateOrder(this.shippingAddress.id)
 
-      return resBody
+      // Insufficient stock — store items and signal caller
+      if (Array.isArray(resBody)) {
+        this.insufficientStock = resBody
+        return null
+      }
+
+      const orderResponse = resBody
+      this.stripe_client_secret = orderResponse.client_secret
+      this.order_id = orderResponse.order_id
+      this.insufficientStock = []
+
+      return orderResponse
     },
 
     resetCheckout() {
@@ -60,6 +70,7 @@ export const useCheckoutStore = defineStore('checkout', {
       this.order_id = ''
       this.shippingError = null
       this.paymentError = null
+      this.insufficientStock = []
     },
   },
 })
