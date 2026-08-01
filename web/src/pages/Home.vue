@@ -189,8 +189,11 @@ onMounted(() => {
 
   .hero-actions {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     gap: 0.75rem;
+    max-width: 220px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .product-grid {
