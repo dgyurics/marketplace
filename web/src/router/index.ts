@@ -1,4 +1,4 @@
-import type { NavigationGuardNext, RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
+import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
 import AdminCategories from '@/pages/admin/Category.vue'
@@ -108,39 +108,23 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
 }
 
 // Admin route guard
-function requireAdmin(
-  _to: RouteLocationNormalized,
-  _from: RouteLocationNormalized,
-  next: NavigationGuardNext
-) {
-  useAuthStore().hasMinimumRole('staff') ? next() : next('/')
+function requireAdmin() {
+  if (!useAuthStore().hasMinimumRole('staff')) return '/'
 }
 
 // User route guard
-function requireUser(
-  _to: RouteLocationNormalized,
-  _from: RouteLocationNormalized,
-  next: NavigationGuardNext
-) {
-  useAuthStore().hasMinimumRole('user') ? next() : next('/')
+function requireUser() {
+  if (!useAuthStore().hasMinimumRole('user')) return '/'
 }
 
 // Member route guard
-function requireMember(
-  _to: RouteLocationNormalized,
-  _from: RouteLocationNormalized,
-  next: NavigationGuardNext
-) {
-  useAuthStore().hasMinimumRole('member') ? next() : next('/')
+function requireMember() {
+  if (!useAuthStore().hasMinimumRole('member')) return '/'
 }
 
 // User route guard
-function requireGuest(
-  _to: RouteLocationNormalized,
-  _from: RouteLocationNormalized,
-  next: NavigationGuardNext
-) {
-  useAuthStore().hasMinimumRole('guest') ? next() : next('/')
+function requireGuest() {
+  if (!useAuthStore().hasMinimumRole('guest')) return '/'
 }
 
 // Export function to create router (to be called after Pinia is initialized)
@@ -152,12 +136,10 @@ export async function createAppRouter() {
   })
 
   // global query parameter check
-  router.beforeEach(async (to, _from, next) => {
+  router.beforeEach(async (to) => {
     if (to.query['registration-code']) {
-      await handleRegistrationCode(to, next)
-      return
+      return handleRegistrationCode(to)
     }
-    next()
   })
 
   // fetch inbox on every navigation
@@ -169,7 +151,7 @@ export async function createAppRouter() {
 }
 
 // Handle registration code confirmation
-async function handleRegistrationCode(to: RouteLocationNormalized, next: NavigationGuardNext) {
+async function handleRegistrationCode(to: RouteLocationNormalized) {
   try {
     const authTokens = await registerConfirm(to.query['registration-code'] as string)
     const authStore = useAuthStore()
@@ -180,5 +162,5 @@ async function handleRegistrationCode(to: RouteLocationNormalized, next: Navigat
 
   // Remove registration-code from query params
   const { 'registration-code': _, ...cleanQuery } = to.query
-  next({ ...to, query: cleanQuery, replace: true })
+  return { ...to, query: cleanQuery, replace: true }
 }
