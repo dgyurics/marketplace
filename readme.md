@@ -14,16 +14,18 @@ A self-hosted e-commerce framework designed for local businesses and community c
 | Admin dashboard | ✅ | Product + Order management |
 | Geographic shipping | ✅ | Configure coverage and exclusions |
 | Image processing | ✅ | imgproxy + rembg (AI) background removal |
+| In-app notifications | ✅ | Real-time messaging and order updates |
 | Email delivery | ❌ | External SMTP (3rd party) |
 | Payment processing | ❌ | Stripe (3rd party) |
 
 ## Planned Enhancements
 
+* Username-based auth with admin-assisted account recovery
+* One-click buy with pay-on-delivery
+* Pay-on-delivery option at checkout
+* Remove gorilla/mux dependency
 * Documentation for production setup and configuration
-* Pay on delivery for approved buyers
 * Product variants (size, color, material, etc.)
-* Support email-free auth and account recovery
-* Support email-free operation with in-app notifications
 * Geographic access control via Nginx and GeoIP2
 * Product full-text search
 * Simplify deployment and configuration to the max
