@@ -13,7 +13,7 @@ type NotificationService interface {
 	Notify(to, subject string, template HtmlTemplate, data interface{}) error
 	NotifyOffer(to, subject string, template HtmlTemplate, offer types.Offer) error
 	NotifyOrder(to, subject string, template HtmlTemplate, order types.Order) error
-	SendEmail(to, subject string, tempalte HtmlTemplate, data interface{}) error
+	SendEmail(to, subject string, template HtmlTemplate, data interface{}) error
 }
 
 type notificationService struct {
