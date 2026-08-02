@@ -33,8 +33,7 @@ export const useInboxStore = defineStore('inbox', {
         this.conversations = await apiGetConversations()
         console.log('Fetched conversations:', this.conversations)
         return this.conversations
-      } catch (err) {
-        console.error('Error fetching conversations:', err)
+      } catch {
         this.conversations = []
         return []
       }
