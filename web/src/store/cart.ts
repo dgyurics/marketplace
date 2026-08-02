@@ -20,8 +20,7 @@ export const useCartStore = defineStore('cart', {
         state.items.find((item) => item.product.id === productId)?.quantity ?? 0
     },
 
-    totalQuantity: (state) =>
-      state.items.reduce((total, item) => total + item.quantity, 0),
+    totalQuantity: (state) => state.items.reduce((total, item) => total + item.quantity, 0),
 
     subtotal: (state) =>
       state.items.reduce((total, item) => total + item.unit_price * item.quantity, 0),
@@ -34,8 +33,7 @@ export const useCartStore = defineStore('cart', {
         this.items = cartItems
 
         return this.items
-      } catch (err) {
-        console.error('Error fetching cart:', err)
+      } catch {
         this.items = []
         return []
       }
