@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@heroicons/vue": "^2.2.0",
-    "@stripe/stripe-js": "^7.2.0",
+    "@stripe/stripe-js": "^9.12.1",
     "axios": "^1.19.0",
     "jwt-decode": "^4.0.0",
     "pinia": "^4.0.2",
