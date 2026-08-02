@@ -110,6 +110,12 @@ func (h *OrderRoutes) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	idempotencyKey := r.Header.Get("Idempotency-Key")
+	if idempotencyKey == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "Idempotency-Key header is required")
+		return
+	}
+
 	shippingID := r.URL.Query().Get("shipping_id")
 	if shippingID == "" {
 		u.RespondWithError(w, r, http.StatusBadRequest, "shipping_id is required")
@@ -151,8 +157,9 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Create order
 	order := &types.Order{
-		Address:   addr,
-		TaxAmount: tax,
+		IdempotencyKey: &idempotencyKey,
+		Address:        addr,
+		TaxAmount:      tax,
 	}
 	calculateOrderFromCart(order, cart)
 	err = h.orderService.CreateOrder(r.Context(), order)
@@ -196,8 +203,6 @@ func calculateOrderFromCart(order *types.Order, cart []types.CartItem) {
 }
 
 func (h *OrderRoutes) RegisterRoutes() {
-	// FIXME enable idempotency by accepting a client-generated id
-	// FIXME return detailed error message + quantities when order creation fails due to inventory shortage
 	h.muxRouter.Handle("/orders", h.secure(types.RoleGuest)(h.limit(h.CreateOrder, 5, time.Hour))).Methods(http.MethodPost)
 	h.muxRouter.Handle("/orders", h.secure(types.RoleAdmin)(h.UpdateOrder)).Methods(http.MethodPut)
 	h.muxRouter.HandleFunc("/orders/{id}/public", h.GetOrderPublic).Methods(http.MethodGet)

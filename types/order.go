@@ -18,6 +18,7 @@ const (
 type Order struct {
 	ID             string      `json:"id"`
 	UserID         string      `json:"-"`
+	IdempotencyKey *string     `json:"-"`
 	Address        Address     `json:"address"`
 	Amount         int64       `json:"amount"`
 	TaxAmount      int64       `json:"tax_amount"`

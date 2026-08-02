@@ -26,6 +26,21 @@ func NewOrderRepository(db *sql.DB) OrderRepository {
 }
 
 func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) error {
+	// Check for existing order with same idempotency key
+	if order.IdempotencyKey != nil {
+		var existingID string
+		err := r.db.QueryRowContext(ctx,
+			`SELECT id FROM orders WHERE idempotency_key = $1`,
+			*order.IdempotencyKey).Scan(&existingID)
+		if err == nil {
+			order.ID = existingID
+			return nil
+		}
+		if err != sql.ErrNoRows {
+			return err
+		}
+	}
+
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -102,10 +117,10 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 
 	// Insert order
 	query := `
-		INSERT INTO orders (id, user_id, address_id, amount, tax_amount, shipping_amount, total_amount, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`
+		INSERT INTO orders (id, user_id, address_id, amount, tax_amount, shipping_amount, total_amount, status, idempotency_key)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)`
 	if _, err := tx.ExecContext(ctx, query, order.ID, order.UserID, order.Address.ID, order.Amount,
-		order.TaxAmount, order.ShippingAmount, order.TotalAmount); err != nil {
+		order.TaxAmount, order.ShippingAmount, order.TotalAmount, order.IdempotencyKey); err != nil {
 		return err
 	}
 

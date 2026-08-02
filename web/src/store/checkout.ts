@@ -48,7 +48,8 @@ export const useCheckoutStore = defineStore('checkout', {
         throw new Error('Shipping address not found')
       }
 
-      const result = await apiCreateOrder(this.shippingAddress.id)
+      const idempotencyKey = window.crypto.randomUUID()
+      const result = await apiCreateOrder(this.shippingAddress.id, idempotencyKey)
 
       if (!result.success) {
         this.insufficientStock = result.items

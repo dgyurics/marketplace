@@ -265,14 +265,15 @@ export const updateOrder = async (order: Order): Promise<Order> => {
   return response.data
 }
 
-// FIXME enable idempotency by sending a client-generated id
 export const createOrder = async (
-  shippingID: string
+  shippingID: string,
+  idempotencyKey: string
 ): Promise<CreateOrderResult | CreateOrderConflict> => {
   const params = new URLSearchParams()
   params.append('shipping_id', shippingID)
 
   const response = await apiClient.post(`/orders?${params}`, null, {
+    headers: { 'Idempotency-Key': idempotencyKey },
     validateStatus: (status) => status === 200 || status === 409,
   })
 
