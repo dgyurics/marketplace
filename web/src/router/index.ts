@@ -108,23 +108,27 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
 }
 
 // Admin route guard
-function requireAdmin() {
+function requireAdmin(): string | undefined {
   if (!useAuthStore().hasMinimumRole('staff')) return '/'
+  return undefined
 }
 
 // User route guard
-function requireUser() {
+function requireUser(): string | undefined {
   if (!useAuthStore().hasMinimumRole('user')) return '/'
+  return undefined
 }
 
 // Member route guard
-function requireMember() {
+function requireMember(): string | undefined {
   if (!useAuthStore().hasMinimumRole('member')) return '/'
+  return undefined
 }
 
-// User route guard
-function requireGuest() {
+// Guest route guard
+function requireGuest(): string | undefined {
   if (!useAuthStore().hasMinimumRole('guest')) return '/'
+  return undefined
 }
 
 // Export function to create router (to be called after Pinia is initialized)
@@ -140,6 +144,7 @@ export async function createAppRouter() {
     if (to.query['registration-code']) {
       return handleRegistrationCode(to)
     }
+    return undefined
   })
 
   // fetch inbox on every navigation
