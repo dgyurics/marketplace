@@ -18,10 +18,14 @@ import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
 
 import { getOrderOwner } from '@/services/api'
+import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
 
 const route = useRoute()
+
 const checkoutStore = useCheckoutStore()
+const cartStore = useCartStore()
+
 const email = ref('')
 
 // Sample redirect URL
@@ -33,6 +37,8 @@ const email = ref('')
 // order_id=115...&payment_intent=pi_3SXv...&payment_intent_client_secret=pi_3SX...&redirect_status=failed
 
 onMounted(async () => {
+  clearCart()
+
   if (checkoutStore.shippingAddress.email) {
     email.value = checkoutStore.shippingAddress.email
     checkoutStore.resetCheckout()
@@ -55,6 +61,19 @@ onMounted(async () => {
     router.push('/checkout/payment')
   }
 })
+
+// Poll until backend has cleared the cart (webhook processed)
+const clearCart = () => {
+  const poll = window.setInterval(async () => {
+    await cartStore.fetchCart()
+    if (!cartStore.hasItems) {
+      window.clearInterval(poll)
+    }
+  }, 1500)
+
+  // Stop polling after 10s regardless
+  window.setTimeout(() => window.clearInterval(poll), 10000)
+}
 </script>
 
 <style scoped>
