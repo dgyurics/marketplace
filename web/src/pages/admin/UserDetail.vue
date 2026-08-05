@@ -33,6 +33,7 @@
         <div class="code-section">
           <span v-if="generatedCode" class="registration-link">
             {{ registrationUrl }}
+            <ClipboardDocumentIcon class="copy-icon" @click="copyUrl" />
           </span>
           <span
             v-else-if="!generatedCode"
@@ -63,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+import { ClipboardDocumentIcon } from '@heroicons/vue/24/outline'
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -112,6 +114,10 @@ const handleGenerateCode = async () => {
   } catch {
     // Handle error silently
   }
+}
+
+const copyUrl = () => {
+  navigator.clipboard.writeText(registrationUrl.value)
 }
 
 const goBack = () => {
@@ -210,6 +216,9 @@ onMounted(() => {
 }
 
 .registration-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: 'Roboto Mono', monospace;
   font-size: 13px;
   color: #333;
@@ -220,7 +229,18 @@ onMounted(() => {
   border: 1px solid #e1e5e9;
   line-height: 1;
   word-break: break-all;
-  display: inline-block;
+}
+
+.copy-icon {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.copy-icon:hover {
+  color: #333;
 }
 
 .clickable-generate {
