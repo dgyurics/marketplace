@@ -9,20 +9,20 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// BaseRouter defines the common interface for all routers
 type BaseRouter interface {
 	RegisterRoutes()
 }
 
-// Common router structure
 type router struct {
 	muxRouter           *mux.Router
+	mux                 *http.ServeMux
 	authMiddleware      middleware.Authorizer
 	rateLimitMiddleware middleware.RateLimit
 }
 
-func NewRouter(muxRouter *mux.Router, authMiddleware middleware.Authorizer, rateLimitMiddleware middleware.RateLimit) router {
+func NewRouter(muxRouter *mux.Router, mux *http.ServeMux, authMiddleware middleware.Authorizer, rateLimitMiddleware middleware.RateLimit) router {
 	return router{
+		mux:                 mux,
 		muxRouter:           muxRouter,
 		authMiddleware:      authMiddleware,
 		rateLimitMiddleware: rateLimitMiddleware,
