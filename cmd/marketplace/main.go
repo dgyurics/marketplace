@@ -79,7 +79,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 
 	// create router
 	router := mux.NewRouter()
-	router.Use(middleware.RequestLoggerMiddleware) // nginx logs requests, this is used for debugging
+	router.Use(middleware.RequestLog)
 	baseRouter := routes.NewRouter(router, authorizer, rateLimit)
 
 	// create routes
