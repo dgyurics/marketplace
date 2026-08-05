@@ -9,7 +9,6 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 type AddressRoutes struct {
@@ -102,7 +101,7 @@ func (h *AddressRoutes) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AddressRoutes) RemoveAddress(w http.ResponseWriter, r *http.Request) {
-	addressID := mux.Vars(r)["id"]
+	addressID := r.PathValue("id")
 	if err := h.addressService.RemoveAddress(r.Context(), addressID); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -137,7 +136,7 @@ func validateAddress(address types.Address) error {
 }
 
 func (h *AddressRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/addresses", h.secure(types.RoleGuest)(h.limit(h.CreateAddress, 3, time.Hour))).Methods(http.MethodPost)
-	h.muxRouter.Handle("/addresses", h.secure(types.RoleGuest)(h.limit(h.UpdateAddress, 10, time.Hour))).Methods(http.MethodPut)
-	h.muxRouter.Handle("/addresses/{id}", h.secure(types.RoleGuest)(h.limit(h.RemoveAddress, 3, time.Hour))).Methods(http.MethodDelete)
+	h.mux.Handle("POST /addresses", h.secure(types.RoleGuest)(h.limit(h.CreateAddress, 3, time.Hour)))
+	h.mux.Handle("PUT /addresses", h.secure(types.RoleGuest)(h.limit(h.UpdateAddress, 10, time.Hour)))
+	h.mux.Handle("DELETE /addresses/{id}", h.secure(types.RoleGuest)(h.limit(h.RemoveAddress, 3, time.Hour)))
 }

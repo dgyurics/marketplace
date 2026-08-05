@@ -7,7 +7,6 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 type ProductRoutes struct {
@@ -64,12 +63,7 @@ func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductRoutes) GetProduct(w http.ResponseWriter, r *http.Request) {
-	productId, ok := mux.Vars(r)["id"]
-	if !ok {
-		u.RespondWithError(w, r, http.StatusBadRequest, "invalid product ID")
-		return
-	}
-	product, err := h.productService.GetProductByID(r.Context(), productId)
+	product, err := h.productService.GetProductByID(r.Context(), r.PathValue("id"))
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -101,8 +95,7 @@ func (h *ProductRoutes) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductRoutes) RemoveProduct(w http.ResponseWriter, r *http.Request) {
-	productID := mux.Vars(r)["id"]
-	err := h.productService.RemoveProduct(r.Context(), productID)
+	err := h.productService.RemoveProduct(r.Context(), r.PathValue("id"))
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
