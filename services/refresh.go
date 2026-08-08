@@ -19,8 +19,7 @@ import (
 type RefreshService interface {
 	GenerateToken() (string, error)
 	StoreToken(ctx context.Context, userID, token string) error
-	VerifyToken(ctx context.Context, token string) (*types.User, error)
-	// VerifyToken(ctx context.Context, userID, token string) (*types.User, error) // TODO replace with this
+	GetUserByToken(ctx context.Context, token string) (*types.User, error)
 	RevokeTokens(ctx context.Context) error
 }
 
@@ -61,9 +60,8 @@ func (s *refreshService) StoreToken(ctx context.Context, userID, token string) e
 	})
 }
 
-// ValidateToken verifies the refresh token and returns the associated user if valid.
-// FIXME rename GetUser
-func (s *refreshService) VerifyToken(ctx context.Context, token string) (*types.User, error) {
+// GetUserByToken verifies the refresh token and returns the associated user if valid.
+func (s *refreshService) GetUserByToken(ctx context.Context, token string) (*types.User, error) {
 	now := time.Now().UTC()
 	tokenHash := hashString(token, s.config.HMACSecret)
 	refreshToken, err := s.repo.GetToken(ctx, tokenHash)
