@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"time"
 
@@ -19,7 +18,7 @@ import (
 type RefreshService interface {
 	GenerateToken() (string, error)
 	StoreToken(ctx context.Context, userID, token string) error
-	GetUserByToken(ctx context.Context, token string) (*types.User, error)
+	GetToken(ctx context.Context, token string) (types.RefreshToken, error)
 	RevokeTokens(ctx context.Context) error
 }
 
@@ -60,33 +59,9 @@ func (s *refreshService) StoreToken(ctx context.Context, userID, token string) e
 	})
 }
 
-// GetUserByToken verifies the refresh token and returns the associated user if valid.
-func (s *refreshService) GetUserByToken(ctx context.Context, token string) (*types.User, error) {
-	now := time.Now().UTC()
+func (s *refreshService) GetToken(ctx context.Context, token string) (types.RefreshToken, error) {
 	tokenHash := hashString(token, s.config.HMACSecret)
-	refreshToken, err := s.repo.GetToken(ctx, tokenHash)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if refreshToken == nil {
-		return nil, errors.New("refresh token not found")
-	}
-
-	if refreshToken.Revoked {
-		return nil, errors.New("refresh token has been revoked")
-	}
-
-	if refreshToken.ExpiresAt.Before(now) {
-		return nil, errors.New("refresh token has expired")
-	}
-
-	if err := s.repo.UpdateLastUsed(ctx, refreshToken.ID, now); err != nil {
-		return nil, fmt.Errorf("failed to update refresh token usage: %w", err)
-	}
-
-	return refreshToken.User, nil
+	return s.repo.GetToken(ctx, tokenHash)
 }
 
 // RevokeTokens revokes all refresh tokens for the authenticated user.

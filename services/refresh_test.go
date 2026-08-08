@@ -29,9 +29,9 @@ func (m *MockRefreshRepository) StoreToken(ctx context.Context, refreshToken typ
 	return args.Error(0)
 }
 
-func (m *MockRefreshRepository) GetToken(ctx context.Context, tokenHash string) (*types.RefreshToken, error) {
+func (m *MockRefreshRepository) GetToken(ctx context.Context, tokenHash string) (types.RefreshToken, error) {
 	args := m.Called(ctx, tokenHash)
-	return args.Get(0).(*types.RefreshToken), args.Error(1)
+	return args.Get(0).(types.RefreshToken), args.Error(1)
 }
 
 func (m *MockRefreshRepository) RevokeTokens(ctx context.Context, tokenHash string) error {
@@ -39,10 +39,7 @@ func (m *MockRefreshRepository) RevokeTokens(ctx context.Context, tokenHash stri
 	return args.Error(0)
 }
 
-func (m *MockRefreshRepository) UpdateLastUsed(ctx context.Context, tokenID string, lastUsed time.Time) error {
-	args := m.Called(ctx, tokenID, lastUsed)
-	return args.Error(0)
-}
+
 
 // Helper function to create an AuthService with configuration
 func createRefreshService(repo *MockRefreshRepository) services.RefreshService {
@@ -71,7 +68,7 @@ func TestValidateRefreshToken(t *testing.T) {
 	expiresAt := now.Add(24 * time.Hour)
 
 	// Mock the repository to return a valid refresh token object
-	repo.On("GetToken", mock.Anything, mock.Anything).Return(&types.RefreshToken{
+	repo.On("GetToken", mock.Anything, mock.Anything).Return(types.RefreshToken{
 		User:      &types.User{ID: "user123"},
 		TokenHash: hashRefreshToken(refreshToken, []byte(hmacSecret)),
 		ExpiresAt: expiresAt,
@@ -79,12 +76,10 @@ func TestValidateRefreshToken(t *testing.T) {
 		LastUsed:  now.UTC(),
 		CreatedAt: now.UTC(),
 	}, nil)
-	// Mock the repository to return no error when updating the refresh token last used time
-	repo.On("UpdateLastUsed", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
-	valid, err := refreshService.GetUserByToken(context.Background(), refreshToken)
+	result, err := refreshService.GetToken(context.Background(), refreshToken)
 	assert.NoError(t, err, "expected no error in validating refresh token")
-	assert.NotNil(t, valid, "expected a valid user object")
+	assert.NotNil(t, result.User, "expected a valid user object")
 }
 
 func TestStoreRefreshToken(t *testing.T) {
