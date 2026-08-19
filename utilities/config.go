@@ -15,25 +15,24 @@ import (
 
 // LoadConfig loads the configuration from environment variables
 func LoadConfig() types.Config {
-	// Load shared configs once
-	baseURL := loadBaseURL()
 	environment := loadEnvironment()
 
 	return types.Config{
-		BaseURL:     baseURL,
-		Country:     loadCountry(),
-		Environment: environment,
-		Server:      loadServerConfig(),
-		Auth:        loadAuthConfig(),
-		Database:    loadDBConfig(),
-		Email:       loadEmailConfig(),
-		Logger:      loadLoggerConfig(),
-		MachineID:   loadMachineID(),
-		Payment:     loadPaymentConfig(environment),
-		JWT:         loadJWTConfig(),
-		Image:       loadImageConfig(),
-		RateLimit:   loadRateLimit(),
-		Tax:         loadTaxConfig(),
+		BaseURL:           loadBaseURL(),
+		Country:           loadCountry(),
+		Environment:       environment,
+		Server:            loadServerConfig(),
+		Auth:              loadAuthConfig(),
+		Database:          loadDBConfig(),
+		Email:             loadEmailConfig(),
+		Logger:            loadLoggerConfig(),
+		MachineID:         loadMachineID(),
+		Payment:           loadPaymentConfig(environment),
+		JWT:               loadJWTConfig(),
+		HTTPClientTimeout: loadHttpClientTimeout(),
+		Image:             loadImageConfig(),
+		RateLimit:         loadRateLimit(),
+		Tax:               loadTaxConfig(),
 	}
 }
 
@@ -173,6 +172,15 @@ func loadEnvironment() types.Environment {
 	default:
 		return types.Development
 	}
+}
+
+func loadHttpClientTimeout() time.Duration {
+	duration, err := time.ParseDuration(getEnvOrDefault("HTTP_CLIENT_TIMEOUT", "30s"))
+	if err != nil {
+		slog.Error("Error parsing duration", "duration", duration, "error", err)
+		os.Exit(1)
+	}
+	return duration
 }
 
 func loadBaseURL() string {
