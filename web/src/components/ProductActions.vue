@@ -1,7 +1,7 @@
 <template>
   <div class="product-action-buttons">
     <div class="top-row">
-      <button class="btn-lg" :tabindex="0" @click="() => {}">Make an Offer</button>
+      <button class="btn-lg" :tabindex="0" @click="goToOffer">Make an Offer</button>
       <button
         class="btn-lg"
         :disabled="isOutOfStock || hasReachedCartLimit"
@@ -26,6 +26,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { createGuestUser as apiCreateGuestUser } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
@@ -36,6 +37,7 @@ const props = defineProps<{
   product: Product
 }>()
 
+const router = useRouter()
 const authStore = useAuthStore()
 const { isAuthenticated } = storeToRefs(authStore)
 const { setTokens } = authStore
@@ -52,6 +54,10 @@ const hasReachedCartLimit = computed(
 )
 const isOutOfStock = computed(() => cartQuantity.value >= props.product.inventory)
 const addToCartLabel = computed(() => (isOutOfStock.value ? 'Out of Stock' : 'Add to Cart'))
+
+const goToOffer = () => {
+  router.push(`/offer/${props.product.id}`)
+}
 
 const handleAddToCart = async () => {
   try {
