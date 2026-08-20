@@ -77,10 +77,17 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 	authorizer := middleware.NewAccessControl(services.JWT)
 	rateLimit := middleware.NewRateLimit(services.RateLimit, config.RateLimit)
 
+	// REPLACING GORILLA MUX
+	// var handler http.Handler
+	handler := http.NewServeMux()
+	//handler = middleware.RequestLog(handler)
+	// how to replace this line with standard library http mux?
+	// 	baseRouter := routes.NewRouter(router, authorizer, rateLimit)
+
 	// create router
 	router := mux.NewRouter()
 	router.Use(middleware.RequestLog)
-	baseRouter := routes.NewRouter(router, authorizer, rateLimit)
+	baseRouter := routes.NewRouter(router, handler, authorizer, rateLimit)
 
 	// create routes
 	routes.RegisterAllRoutes(
@@ -106,7 +113,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 	srvCfg := config.Server
 	return &http.Server{
 		Addr:           srvCfg.Addr,
-		Handler:        router,
+		Handler:        handler,
 		ReadTimeout:    srvCfg.ReadTimeout,
 		WriteTimeout:   srvCfg.WriteTimeout,
 		IdleTimeout:    srvCfg.IdleTimeout,
