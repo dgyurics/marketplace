@@ -70,7 +70,6 @@ onMounted(async () => {
   try {
     const productId = route.params['id'] as string
     product.value = await getProductById(productId)
-    offerPriceValue.value = product.value.price
   } catch (error) {
     console.error('Error fetching product:', error)
   }
