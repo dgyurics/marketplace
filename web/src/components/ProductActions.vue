@@ -8,7 +8,9 @@
         :tabindex="0"
         @click="handleAddToCart"
       >
-        {{ addToCartLabel }}
+        <span v-if="!justAdded && !isOutOfStock">Add to Cart</span>
+        <span v-else-if="isOutOfStock">Out of Stock</span>
+        <span v-else class="checkmark-animation">&#10003;</span>
       </button>
     </div>
     <button class="btn-lg btn-full-width btn-outline" :tabindex="0" @click="() => {}">
@@ -25,7 +27,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { createGuestUser as apiCreateGuestUser } from '@/services/api'
@@ -53,7 +55,7 @@ const hasReachedCartLimit = computed(
   () => cartLimit.value > 0 && cartQuantity.value >= cartLimit.value
 )
 const isOutOfStock = computed(() => cartQuantity.value >= props.product.inventory)
-const addToCartLabel = computed(() => (isOutOfStock.value ? 'Out of Stock' : 'Add to Cart'))
+const justAdded = ref(false)
 
 const goToOffer = () => {
   router.push(`/offer/${props.product.id}`)
@@ -66,8 +68,9 @@ const handleAddToCart = async () => {
       setTokens(authTokens)
     }
 
-    // TODO: show toast notification when item is added to cart
     await cartStore.addToCart(props.product.id, 1)
+    justAdded.value = true
+    setTimeout(() => (justAdded.value = false), 1000)
   } catch (error: unknown) {
     const err = error as { response?: { status?: number } }
     if (err.response?.status === 409) {
@@ -105,5 +108,25 @@ const handleAddToCart = async () => {
   font-size: 12px;
   color: #c00;
   margin-top: 8px;
+}
+
+.checkmark-animation {
+  display: inline-block;
+  animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 </style>
