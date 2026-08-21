@@ -3,8 +3,9 @@
     <button
       type="button"
       class="method-btn"
-      :class="{ 'method-btn--active': modelValue === 'card' }"
-      @click="$emit('update:modelValue', 'card')"
+      :class="{ 'method-btn--active': modelValue === 'online' }"
+      :disabled="disabled.includes('online')"
+      @click="$emit('update:modelValue', 'online')"
     >
       pay now
     </button>
@@ -12,6 +13,7 @@
       type="button"
       class="method-btn"
       :class="{ 'method-btn--active': modelValue === 'delivery' }"
+      :disabled="disabled.includes('delivery')"
       @click="$emit('update:modelValue', 'delivery')"
     >
       pay on delivery
@@ -20,11 +22,15 @@
 </template>
 
 <script setup lang="ts">
-export type PaymentMethod = 'card' | 'delivery'
+import type { PaymentMethod } from '@/types'
 
-defineProps<{
-  modelValue: PaymentMethod
-}>()
+withDefaults(
+  defineProps<{
+    modelValue: PaymentMethod
+    disabled?: PaymentMethod[]
+  }>(),
+  { disabled: () => [] }
+)
 
 defineEmits<{
   'update:modelValue': [value: PaymentMethod]
@@ -52,7 +58,7 @@ defineEmits<{
   border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
-.method-btn:hover {
+.method-btn:hover:not(:disabled) {
   border-color: rgba(0, 0, 0, 0.4);
   color: #0a0a0a;
 }
@@ -63,9 +69,13 @@ defineEmits<{
   border-color: #0a0a0a;
 }
 
-.method-btn--active:hover {
+.method-btn--active:hover:not(:disabled) {
   background: #333;
   border-color: #333;
   color: #fff;
+}
+
+.method-btn:disabled {
+  opacity: 0.4;
 }
 </style>
