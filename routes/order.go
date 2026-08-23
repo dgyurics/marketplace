@@ -161,7 +161,7 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		Address:        addr,
 		TaxAmount:      tax,
 	}
-	calculateOrderFromCart(order, cart)
+	populateOrderFromCart(order, cart)
 	err = h.orderService.CreateOrder(r.Context(), order)
 
 	var stockErr *types.InsufficientStockError
@@ -188,7 +188,9 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, stripe.CreateOrderResponse{ClientSecret: pi.ClientSecret, OrderID: order.ID})
 }
 
-func calculateOrderFromCart(order *types.Order, cart []types.CartItem) {
+// populateOrderFromCart builds the order items from the cart and calculates
+// the subtotal (Amount) and TotalAmount (subtotal + tax + shipping).
+func populateOrderFromCart(order *types.Order, cart []types.CartItem) {
 	order.Items = make([]types.OrderItem, 0, len(cart))
 	for _, ci := range cart {
 		oi := types.OrderItem{
