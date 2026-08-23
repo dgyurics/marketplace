@@ -1,7 +1,7 @@
 <template>
   <div class="product-action-buttons">
     <div class="top-row">
-      <button v-if="product.negotiable" class="btn-lg" :tabindex="0" @click="goToOffer">
+      <button v-if="product.negotiable && isMember" class="btn-lg" :tabindex="0" @click="goToOffer">
         Make an Offer
       </button>
       <button
@@ -45,6 +45,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const { isAuthenticated } = storeToRefs(authStore)
 const { setTokens } = authStore
+const isMember = computed(() => isAuthenticated.value && authStore.hasMinimumRole('member'))
 const cartStore = useCartStore()
 
 const cartLimit = computed(() => props.product.cart_limit ?? 0)
