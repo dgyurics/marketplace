@@ -1,7 +1,9 @@
 <template>
   <div class="product-action-buttons">
     <div class="top-row">
-      <button class="btn-lg" :tabindex="0" @click="goToOffer">Make an Offer</button>
+      <button v-if="product.negotiable" class="btn-lg" :tabindex="0" @click="goToOffer">
+        Make an Offer
+      </button>
       <button
         class="btn-lg"
         :disabled="isOutOfStock || hasReachedCartLimit"
