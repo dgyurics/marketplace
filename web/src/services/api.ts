@@ -260,6 +260,11 @@ export const removeItemFromCart = async (productId: string) => {
   return response.data
 }
 
+export const removeItemsFromCart = async () => {
+  const response = await apiClient.delete('/carts')
+  return response.data
+}
+
 export const updateOrder = async (order: Order): Promise<Order> => {
   const response = await apiClient.put('/orders', order)
   return response.data

@@ -15,7 +15,7 @@
         <span v-else class="checkmark-animation">&#10003;</span>
       </button>
     </div>
-    <button class="btn-lg btn-full-width btn-outline" :tabindex="0" @click="() => {}">
+    <button class="btn-lg btn-full-width btn-outline" :tabindex="0" @click="handleBuyNow">
       Buy Now
     </button>
     <p v-if="showLowStockWarning" class="low-stock-warning">
@@ -74,6 +74,25 @@ const handleAddToCart = async () => {
     await cartStore.addToCart(props.product.id, 1)
     justAdded.value = true
     setTimeout(() => (justAdded.value = false), 1000)
+  } catch (error: unknown) {
+    const err = error as { response?: { status?: number } }
+    if (err.response?.status === 409) {
+      // eslint-disable-next-line vue/no-mutating-props
+      props.product.inventory = 0
+    }
+  }
+}
+
+// TODO: implement a /orders/express POST endpoint to avoid clearing the cart
+const handleBuyNow = async () => {
+  try {
+    if (!isAuthenticated.value) {
+      const authTokens: AuthTokens = await apiCreateGuestUser()
+      setTokens(authTokens)
+    }
+    await cartStore.clearCart()
+    await cartStore.addToCart(props.product.id, 1)
+    router.push('/checkout/shipping')
   } catch (error: unknown) {
     const err = error as { response?: { status?: number } }
     if (err.response?.status === 409) {
