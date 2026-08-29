@@ -13,6 +13,7 @@ type CartRepository interface {
 	AddItem(ctx context.Context, userID string, item *types.CartItem) error
 	GetItems(ctx context.Context, userID string) ([]types.CartItem, error)
 	RemoveItem(ctx context.Context, userID, productID string) error
+	RemoveItems(ctx context.Context, userID string) error
 }
 
 type cartRepository struct {
@@ -147,4 +148,12 @@ func (r *cartRepository) RemoveItem(ctx context.Context, userID string, productI
 	}
 
 	return tx.Commit()
+}
+
+func (r *cartRepository) RemoveItems(ctx context.Context, userID string) error {
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM cart_items
+		WHERE user_id = $1	
+	`, userID)
+	return err
 }

@@ -34,7 +34,7 @@ func (m *MockCartService) RemoveItem(ctx context.Context, productID string) erro
 	return args.Error(0)
 }
 
-func (m *MockCartService) Clear(ctx context.Context) error {
+func (m *MockCartService) RemoveItems(ctx context.Context) error {
 	args := m.Called(ctx)
 	return args.Error(0)
 }
@@ -171,5 +171,30 @@ func TestGet(t *testing.T) {
 	require.NoError(t, err)
 
 	// Assert that the mock's expectations were met
+	mockCartService.AssertExpectations(t)
+}
+
+func TestRemoveItems(t *testing.T) {
+	mockCartService := new(MockCartService)
+	mockOrderService := new(MockOrderService)
+	routes := &CartRoutes{
+		cartService:  mockCartService,
+		orderService: mockOrderService,
+		router: router{
+			muxRouter:      mux.NewRouter(),
+			authMiddleware: nil,
+		},
+	}
+
+	mockCartService.On("RemoveItems", mock.Anything).Return(nil)
+
+	req, err := http.NewRequest(http.MethodDelete, "/carts", nil)
+	require.NoError(t, err)
+
+	rr := httptest.NewRecorder()
+	routes.muxRouter.HandleFunc("/carts", routes.RemoveItems).Methods(http.MethodDelete)
+	routes.muxRouter.ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
 	mockCartService.AssertExpectations(t)
 }
