@@ -109,9 +109,9 @@ func (h *ProductRoutes) RemoveProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductRoutes) RegisterRoutes() {
-	h.muxRouter.HandleFunc("/products", h.GetProducts).Methods(http.MethodGet)
-	h.muxRouter.HandleFunc("/products/{id}", h.GetProduct).Methods(http.MethodGet)
-	h.muxRouter.Handle("/products", h.secure(types.RoleAdmin)(h.CreateProduct)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/products/{id}", h.secure(types.RoleAdmin)(h.RemoveProduct)).Methods(http.MethodDelete)
-	h.muxRouter.Handle("/products", h.secure(types.RoleAdmin)(h.UpdateProduct)).Methods(http.MethodPut)
+	h.mux.HandleFunc("GET /products", h.GetProducts)
+	h.mux.HandleFunc("GET /products/{id}", h.GetProduct)
+	h.mux.Handle("POST /products", h.secure(types.RoleAdmin)(h.CreateProduct))
+	h.mux.Handle("DELETE /products/{id}", h.secure(types.RoleAdmin)(h.RemoveProduct))
+	h.mux.Handle("PUT /products", h.secure(types.RoleAdmin)(h.UpdateProduct))
 }
