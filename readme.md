@@ -22,7 +22,6 @@ A self-hosted e-commerce framework designed for local businesses and community c
 
 * One click buy option
 * Implement pay on delivery
-* Remove gorilla/mux dependency
 * Username/password login — no email required
 * Documentation for production setup and configuration
 * Product variants (size, color, material, etc.)
