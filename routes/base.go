@@ -6,7 +6,6 @@ import (
 
 	"github.com/dgyurics/marketplace/middleware"
 	"github.com/dgyurics/marketplace/types"
-	"github.com/gorilla/mux"
 )
 
 type BaseRouter interface {
@@ -14,16 +13,14 @@ type BaseRouter interface {
 }
 
 type router struct {
-	muxRouter           *mux.Router
 	mux                 *http.ServeMux
 	authMiddleware      middleware.Authorizer
 	rateLimitMiddleware middleware.RateLimit
 }
 
-func NewRouter(muxRouter *mux.Router, mux *http.ServeMux, authMiddleware middleware.Authorizer, rateLimitMiddleware middleware.RateLimit) router {
+func NewRouter(mux *http.ServeMux, authMiddleware middleware.Authorizer, rateLimitMiddleware middleware.RateLimit) router {
 	return router{
 		mux:                 mux,
-		muxRouter:           muxRouter,
 		authMiddleware:      authMiddleware,
 		rateLimitMiddleware: rateLimitMiddleware,
 	}

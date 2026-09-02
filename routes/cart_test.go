@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/dgyurics/marketplace/types"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -46,7 +45,7 @@ func TestAddItem(t *testing.T) {
 		cartService:  mockCartService,
 		orderService: mockOrderService,
 		router: router{
-			muxRouter:      mux.NewRouter(),
+			mux:            http.NewServeMux(),
 			authMiddleware: nil,
 		},
 	}
@@ -76,10 +75,10 @@ func TestAddItem(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	routes.muxRouter.HandleFunc("/carts/items/{id}", routes.AddItem).Methods(http.MethodPost)
+	routes.mux.HandleFunc("POST /carts/items/{id}", routes.AddItem)
 
 	// Serve the request via the router
-	routes.muxRouter.ServeHTTP(rr, req)
+	routes.mux.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
@@ -95,7 +94,7 @@ func TestRemoveItem(t *testing.T) {
 		cartService:  mockCartService,
 		orderService: mockOrderService,
 		router: router{
-			muxRouter:      mux.NewRouter(),
+			mux:            http.NewServeMux(),
 			authMiddleware: nil,
 		},
 	}
@@ -115,10 +114,10 @@ func TestRemoveItem(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	routes.muxRouter.HandleFunc("/carts/items/{id}", routes.RemoveItem).Methods(http.MethodDelete)
+	routes.mux.HandleFunc("DELETE /carts/items/{id}", routes.RemoveItem)
 
 	// Serve the request via the router
-	routes.muxRouter.ServeHTTP(rr, req)
+	routes.mux.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
@@ -134,7 +133,7 @@ func TestGet(t *testing.T) {
 		cartService:  mockCartService,
 		orderService: mockOrderService,
 		router: router{
-			muxRouter:      mux.NewRouter(),
+			mux:            http.NewServeMux(),
 			authMiddleware: nil,
 		},
 	}
@@ -157,10 +156,10 @@ func TestGet(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	routes.muxRouter.HandleFunc("/carts", routes.GetItems).Methods(http.MethodGet)
+	routes.mux.HandleFunc("GET /carts", routes.GetItems)
 
 	// Serve the request via the router
-	routes.muxRouter.ServeHTTP(rr, req)
+	routes.mux.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)

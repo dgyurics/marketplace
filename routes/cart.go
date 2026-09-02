@@ -7,7 +7,6 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 type CartRoutes struct {
@@ -40,7 +39,7 @@ func (h *CartRoutes) AddItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Attempt to add item to cart
-	item.Product.ID = mux.Vars(r)["id"]
+	item.Product.ID = r.PathValue("id")
 	err := h.cartService.AddItem(r.Context(), &item)
 
 	// Error handling
@@ -57,8 +56,7 @@ func (h *CartRoutes) AddItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CartRoutes) RemoveItem(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	productID := vars["id"]
+	productID := r.PathValue("id")
 
 	if err := h.cartService.RemoveItem(r.Context(), productID); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
@@ -80,7 +78,7 @@ func (h *CartRoutes) GetItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CartRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/carts/items/{id}", h.secure(types.RoleGuest)(h.AddItem)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/carts/items/{id}", h.secure(types.RoleGuest)(h.RemoveItem)).Methods(http.MethodDelete)
-	h.muxRouter.Handle("/carts", h.secure(types.RoleGuest)(h.GetItems)).Methods(http.MethodGet)
+	h.mux.Handle("POST /carts/items/{id}", h.secure(types.RoleGuest)(h.AddItem))
+	h.mux.Handle("DELETE /carts/items/{id}", h.secure(types.RoleGuest)(h.RemoveItem))
+	h.mux.Handle("GET /carts", h.secure(types.RoleGuest)(h.GetItems))
 }

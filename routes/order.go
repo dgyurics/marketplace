@@ -10,7 +10,6 @@ import (
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/types/stripe"
 	u "github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 type OrderRoutes struct {
@@ -40,7 +39,7 @@ func NewOrderRoutes(
 }
 
 func (h *OrderRoutes) GetOrderOwner(w http.ResponseWriter, r *http.Request) {
-	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), mux.Vars(r)["id"])
+	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), r.PathValue("id"))
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -53,7 +52,7 @@ func (h *OrderRoutes) GetOrderOwner(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderRoutes) GetOrderPublic(w http.ResponseWriter, r *http.Request) {
-	order, err := h.orderService.GetOrderByIDPublic(r.Context(), mux.Vars(r)["id"])
+	order, err := h.orderService.GetOrderByIDPublic(r.Context(), r.PathValue("id"))
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -66,7 +65,7 @@ func (h *OrderRoutes) GetOrderPublic(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderRoutes) GetOrderAdmin(w http.ResponseWriter, r *http.Request) {
-	order, err := h.orderService.GetOrderByID(r.Context(), mux.Vars(r)["id"])
+	order, err := h.orderService.GetOrderByID(r.Context(), r.PathValue("id"))
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -203,10 +202,10 @@ func calculateOrderFromCart(order *types.Order, cart []types.CartItem) {
 }
 
 func (h *OrderRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/orders", h.secure(types.RoleGuest)(h.limit(h.CreateOrder, 5, time.Hour))).Methods(http.MethodPost)
-	h.muxRouter.Handle("/orders", h.secure(types.RoleAdmin)(h.UpdateOrder)).Methods(http.MethodPut)
-	h.muxRouter.HandleFunc("/orders/{id}/public", h.GetOrderPublic).Methods(http.MethodGet)
-	h.muxRouter.Handle("/orders/{id}/owner", h.secure(types.RoleGuest)(h.GetOrderOwner)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/orders/{id}/admin", h.secure(types.RoleStaff)(h.GetOrderAdmin)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/orders", h.secure(types.RoleStaff)(h.GetOrders)).Methods(http.MethodGet)
+	h.mux.Handle("POST /orders", h.secure(types.RoleGuest)(h.limit(h.CreateOrder, 5, time.Hour)))
+	h.mux.Handle("PUT /orders", h.secure(types.RoleAdmin)(h.UpdateOrder))
+	h.mux.Handle("GET /orders/{id}/public", http.HandlerFunc(h.GetOrderPublic))
+	h.mux.Handle("GET /orders/{id}/owner", h.secure(types.RoleGuest)(h.GetOrderOwner))
+	h.mux.Handle("GET /orders/{id}/admin", h.secure(types.RoleStaff)(h.GetOrderAdmin))
+	h.mux.Handle("GET /orders", h.secure(types.RoleStaff)(h.GetOrders))
 }

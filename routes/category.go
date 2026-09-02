@@ -7,7 +7,6 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 type CategoryRoutes struct {
@@ -50,8 +49,7 @@ func (h *CategoryRoutes) GetCategories(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CategoryRoutes) GetCategory(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	category, err := h.categoryService.GetCategoryByID(r.Context(), vars["id"])
+	category, err := h.categoryService.GetCategoryByID(r.Context(), r.PathValue("id"))
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -79,8 +77,7 @@ func (h *CategoryRoutes) UpdateCategory(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *CategoryRoutes) DeleteCategory(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	err := h.categoryService.RemoveCategory(r.Context(), vars["id"])
+	err := h.categoryService.RemoveCategory(r.Context(), r.PathValue("id"))
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -93,9 +90,9 @@ func (h *CategoryRoutes) DeleteCategory(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *CategoryRoutes) RegisterRoutes() {
-	h.muxRouter.HandleFunc("/categories", h.GetCategories).Methods(http.MethodGet)
-	h.muxRouter.HandleFunc("/categories/{id}", h.GetCategory).Methods(http.MethodGet)
-	h.muxRouter.Handle("/categories/{id}", h.secure(types.RoleAdmin)(h.DeleteCategory)).Methods(http.MethodDelete)
-	h.muxRouter.Handle("/categories", h.secure(types.RoleAdmin)(h.CreateCategory)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/categories", h.secure(types.RoleAdmin)(h.UpdateCategory)).Methods(http.MethodPut)
+	h.mux.Handle("GET /categories", http.HandlerFunc(h.GetCategories))
+	h.mux.Handle("GET /categories/{id}", http.HandlerFunc(h.GetCategory))
+	h.mux.Handle("DELETE /categories/{id}", h.secure(types.RoleAdmin)(h.DeleteCategory))
+	h.mux.Handle("POST /categories", h.secure(types.RoleAdmin)(h.CreateCategory))
+	h.mux.Handle("PUT /categories", h.secure(types.RoleAdmin)(h.UpdateCategory))
 }

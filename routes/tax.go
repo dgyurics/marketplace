@@ -57,5 +57,5 @@ func (h *TaxRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaxRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/tax/estimate", h.secure(types.RoleGuest)(h.EstimateTax)).Methods("GET")
+	h.mux.Handle("GET /tax/estimate", h.secure(types.RoleGuest)(h.EstimateTax))
 }

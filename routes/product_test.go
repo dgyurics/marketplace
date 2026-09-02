@@ -9,7 +9,6 @@ import (
 
 	"github.com/dgyurics/marketplace/types"
 	util "github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -67,7 +66,7 @@ func TestGetProductByID(t *testing.T) {
 	routes := &ProductRoutes{
 		productService: mockService,
 		router: router{
-			muxRouter:      mux.NewRouter(),
+			mux:            http.NewServeMux(),
 			authMiddleware: &dummyAuth{},
 		},
 	}
@@ -96,7 +95,7 @@ func TestGetProductByID(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Serve the request via the router
-	routes.muxRouter.ServeHTTP(rr, req)
+	routes.mux.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
@@ -124,7 +123,7 @@ func TestGetProducts(t *testing.T) {
 	routes := &ProductRoutes{
 		productService: mockService,
 		router: router{
-			muxRouter:      mux.NewRouter(),
+			mux:            http.NewServeMux(),
 			authMiddleware: nil,
 		},
 	}
@@ -158,10 +157,10 @@ func TestGetProducts(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Add the route to the mux router
-	routes.muxRouter.HandleFunc("/products", routes.GetProducts).Methods(http.MethodGet)
+	routes.mux.HandleFunc("GET /products", routes.GetProducts)
 
 	// Serve the request via the router
-	routes.muxRouter.ServeHTTP(rr, req)
+	routes.mux.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)

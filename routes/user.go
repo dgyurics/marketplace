@@ -11,7 +11,6 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 type UserRoutes struct {
@@ -413,7 +412,7 @@ func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserRoutes) GetUser(w http.ResponseWriter, r *http.Request) {
-	usr, err := h.userService.GetUserByID(r.Context(), mux.Vars(r)["id"])
+	usr, err := h.userService.GetUserByID(r.Context(), r.PathValue("id"))
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -427,7 +426,7 @@ func (h *UserRoutes) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserRoutes) RemoveUser(w http.ResponseWriter, r *http.Request) {
-	err := h.userService.RemoveUser(r.Context(), mux.Vars(r)["id"])
+	err := h.userService.RemoveUser(r.Context(), r.PathValue("id"))
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -441,15 +440,15 @@ func (h *UserRoutes) RemoveUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/users/login", h.guardLimit(h.Login, 5)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users/refresh-token", h.limit(h.RefreshToken, 5, time.Hour)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users/guest", h.limit(h.CreateGuestUser, 3, time.Hour)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users/change-password", h.secure(types.RoleUser)(h.limit(h.ChangePassword, 5, time.Hour))).Methods(http.MethodPut)
-	h.muxRouter.Handle("/users/set-password", h.secure(types.RoleUser)(h.limit(h.SetPassword, 5, time.Hour))).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users/change-email", h.secure(types.RoleAdmin)(h.limit(h.ChangeEmail, 5, time.Hour))).Methods(http.MethodPut)
-	h.muxRouter.Handle("/users/logout", h.secure(types.RoleGuest)(h.Logout)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users", h.secure(types.RoleStaff)(h.GetAllUsers)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/users", h.secure(types.RoleAdmin)(h.CreateUser)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users/{id}", h.secure(types.RoleAdmin)(h.GetUser)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/users/{id}", h.secure(types.RoleAdmin)(h.RemoveUser)).Methods(http.MethodDelete)
+	h.mux.Handle("POST /users/login", h.guardLimit(h.Login, 5))
+	h.mux.Handle("POST /users/refresh-token", h.limit(h.RefreshToken, 5, time.Hour))
+	h.mux.Handle("POST /users/guest", h.limit(h.CreateGuestUser, 3, time.Hour))
+	h.mux.Handle("PUT /users/change-password", h.secure(types.RoleUser)(h.limit(h.ChangePassword, 5, time.Hour)))
+	h.mux.Handle("POST /users/set-password", h.secure(types.RoleUser)(h.limit(h.SetPassword, 5, time.Hour)))
+	h.mux.Handle("PUT /users/change-email", h.secure(types.RoleAdmin)(h.limit(h.ChangeEmail, 5, time.Hour)))
+	h.mux.Handle("POST /users/logout", h.secure(types.RoleGuest)(h.Logout))
+	h.mux.Handle("GET /users", h.secure(types.RoleStaff)(h.GetAllUsers))
+	h.mux.Handle("POST /users", h.secure(types.RoleAdmin)(h.CreateUser))
+	h.mux.Handle("GET /users/{id}", h.secure(types.RoleAdmin)(h.GetUser))
+	h.mux.Handle("DELETE /users/{id}", h.secure(types.RoleAdmin)(h.RemoveUser))
 }

@@ -23,7 +23,6 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -85,9 +84,9 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 	// 	baseRouter := routes.NewRouter(router, authorizer, rateLimit)
 
 	// create router
-	router := mux.NewRouter()
-	router.Use(middleware.RequestLog)
-	baseRouter := routes.NewRouter(router, handler, authorizer, rateLimit)
+	// router := mux.NewRouter()
+	// router.Use(middleware.RequestLog)
+	baseRouter := routes.NewRouter(handler, authorizer, rateLimit)
 
 	// create routes
 	routes.RegisterAllRoutes(
