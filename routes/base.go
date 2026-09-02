@@ -6,24 +6,21 @@ import (
 
 	"github.com/dgyurics/marketplace/middleware"
 	"github.com/dgyurics/marketplace/types"
-	"github.com/gorilla/mux"
 )
 
-// BaseRouter defines the common interface for all routers
 type BaseRouter interface {
 	RegisterRoutes()
 }
 
-// Common router structure
 type router struct {
-	muxRouter           *mux.Router
+	mux                 *http.ServeMux
 	authMiddleware      middleware.Authorizer
 	rateLimitMiddleware middleware.RateLimit
 }
 
-func NewRouter(muxRouter *mux.Router, authMiddleware middleware.Authorizer, rateLimitMiddleware middleware.RateLimit) router {
+func NewRouter(mux *http.ServeMux, authMiddleware middleware.Authorizer, rateLimitMiddleware middleware.RateLimit) router {
 	return router{
-		muxRouter:           muxRouter,
+		mux:                 mux,
 		authMiddleware:      authMiddleware,
 		rateLimitMiddleware: rateLimitMiddleware,
 	}

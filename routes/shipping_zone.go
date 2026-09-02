@@ -8,7 +8,6 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 type ShippingZoneRoutes struct {
@@ -65,7 +64,7 @@ func (h *ShippingZoneRoutes) ListShippingZones(w http.ResponseWriter, r *http.Re
 }
 
 func (h *ShippingZoneRoutes) RemoveShippingZone(w http.ResponseWriter, r *http.Request) {
-	zoneID := mux.Vars(r)["id"]
+	zoneID := r.PathValue("id")
 	if err := h.shippingZoneService.RemoveShippingZone(r.Context(), zoneID); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -114,7 +113,7 @@ func (h *ShippingZoneRoutes) ListExcludedShippingZones(w http.ResponseWriter, r 
 }
 
 func (h *ShippingZoneRoutes) RemoveExcludedShippingZone(w http.ResponseWriter, r *http.Request) {
-	zoneID := mux.Vars(r)["id"]
+	zoneID := r.PathValue("id")
 	if err := h.shippingZoneService.RemoveExcludedShippingZone(r.Context(), zoneID); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -152,11 +151,11 @@ func validateExcludedShippingZone(zone types.ExcludedShippingZone) error {
 }
 
 func (h *ShippingZoneRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/shipping-zones", h.secure(types.RoleAdmin)(h.CreateShippingZone)).Methods("POST")
-	h.muxRouter.Handle("/shipping-zones", h.secure(types.RoleStaff)(h.ListShippingZones)).Methods("GET")
-	h.muxRouter.Handle("/shipping-zones/{id}", h.secure(types.RoleAdmin)(h.RemoveShippingZone)).Methods("DELETE")
+	h.mux.Handle("POST /shipping-zones", h.secure(types.RoleAdmin)(h.CreateShippingZone))
+	h.mux.Handle("GET /shipping-zones", h.secure(types.RoleStaff)(h.ListShippingZones))
+	h.mux.Handle("DELETE /shipping-zones/{id}", h.secure(types.RoleAdmin)(h.RemoveShippingZone))
 
-	h.muxRouter.Handle("/shipping-zones/excluded", h.secure(types.RoleAdmin)(h.CreateExcludedShippingZone)).Methods("POST")
-	h.muxRouter.Handle("/shipping-zones/excluded", h.secure(types.RoleStaff)(h.ListExcludedShippingZones)).Methods("GET")
-	h.muxRouter.Handle("/shipping-zones/excluded/{id}", h.secure(types.RoleAdmin)(h.RemoveExcludedShippingZone)).Methods("DELETE")
+	h.mux.Handle("POST /shipping-zones/excluded", h.secure(types.RoleAdmin)(h.CreateExcludedShippingZone))
+	h.mux.Handle("GET /shipping-zones/excluded", h.secure(types.RoleStaff)(h.ListExcludedShippingZones))
+	h.mux.Handle("DELETE /shipping-zones/excluded/{id}", h.secure(types.RoleAdmin)(h.RemoveExcludedShippingZone))
 }

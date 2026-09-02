@@ -260,6 +260,11 @@ export const removeItemFromCart = async (productId: string) => {
   return response.data
 }
 
+export const removeItemsFromCart = async () => {
+  const response = await apiClient.delete('/carts')
+  return response.data
+}
+
 export const updateOrder = async (order: Order): Promise<Order> => {
   const response = await apiClient.put('/orders', order)
   return response.data
@@ -415,7 +420,7 @@ export const createOffer = async (
   amount: number,
   comment?: string
 ): Promise<void> => {
-  const response = await apiClient.post(`/offers/items/${productId}`, {
+  const response = await apiClient.post(`/offers/${productId}/items`, {
     amount,
     ...(comment?.trim() && { comment }),
   })
@@ -443,7 +448,7 @@ export const getOfferAdmin = async (id: string): Promise<Offer> => {
 }
 
 export const getOffersByProductId = async (id: string): Promise<Offer[]> => {
-  const response = await apiClient.get(`/offers/items/${id}`)
+  const response = await apiClient.get(`/offers/${id}/items`)
   return response.data
 }
 

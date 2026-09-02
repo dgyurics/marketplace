@@ -23,7 +23,6 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -77,10 +76,9 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 	authorizer := middleware.NewAccessControl(services.JWT)
 	rateLimit := middleware.NewRateLimit(services.RateLimit, config.RateLimit)
 
-	// create router
-	router := mux.NewRouter()
-	router.Use(middleware.RequestLog)
-	baseRouter := routes.NewRouter(router, authorizer, rateLimit)
+	// create concrete ServeMux for route registration
+	mux := http.NewServeMux()
+	baseRouter := routes.NewRouter(mux, authorizer, rateLimit)
 
 	// create routes
 	routes.RegisterAllRoutes(
@@ -102,11 +100,14 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewLocaleRoutes(baseRouter),
 	)
 
+	// wrap mux with middleware after routes are registered
+	handler := middleware.RequestLog(mux)
+
 	// Create and return the server
 	srvCfg := config.Server
 	return &http.Server{
 		Addr:           srvCfg.Addr,
-		Handler:        router,
+		Handler:        handler,
 		ReadTimeout:    srvCfg.ReadTimeout,
 		WriteTimeout:   srvCfg.WriteTimeout,
 		IdleTimeout:    srvCfg.IdleTimeout,

@@ -133,6 +133,6 @@ func (h *PasswordRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *http.Req
 }
 
 func (h *PasswordRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/users/password-reset", h.limit(h.ResetPassword, 1, time.Hour*6)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/users/password-reset/confirm", h.limit(h.ResetPasswordConfirm, 1, time.Hour*6)).Methods(http.MethodPost)
+	h.mux.Handle("POST /users/password-reset", h.limit(h.ResetPassword, 1, time.Hour*6))
+	h.mux.Handle("POST /users/password-reset/confirm", h.limit(h.ResetPasswordConfirm, 1, time.Hour*6))
 }

@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/dgyurics/marketplace/types"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -51,7 +50,7 @@ func TestCreateCategory(t *testing.T) {
 	routes := &CategoryRoutes{
 		categoryService: mockService,
 		router: router{
-			muxRouter:      mux.NewRouter(),
+			mux:            http.NewServeMux(),
 			authMiddleware: nil,
 		},
 	}
@@ -96,7 +95,7 @@ func TestGetCategories(t *testing.T) {
 	routes := &CategoryRoutes{
 		categoryService: mockService,
 		router: router{
-			muxRouter:      mux.NewRouter(),
+			mux:            http.NewServeMux(),
 			authMiddleware: nil,
 		},
 	}
@@ -117,8 +116,8 @@ func TestGetCategories(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Call the routes GetCategories method via the router
-	routes.muxRouter.HandleFunc("/categories", routes.GetCategories).Methods(http.MethodGet)
-	routes.muxRouter.ServeHTTP(rr, req)
+	routes.mux.HandleFunc("GET /categories", routes.GetCategories)
+	routes.mux.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
@@ -144,7 +143,7 @@ func TestGetCategory(t *testing.T) {
 	routes := &CategoryRoutes{
 		categoryService: mockService,
 		router: router{
-			muxRouter:      mux.NewRouter(),
+			mux:            http.NewServeMux(),
 			authMiddleware: nil,
 		},
 	}
@@ -166,8 +165,8 @@ func TestGetCategory(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Call the routes GetCategory method via the router
-	routes.muxRouter.HandleFunc("/categories/{id}", routes.GetCategory).Methods(http.MethodGet)
-	routes.muxRouter.ServeHTTP(rr, req)
+	routes.mux.HandleFunc("GET /categories/{id}", routes.GetCategory)
+	routes.mux.ServeHTTP(rr, req)
 
 	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)

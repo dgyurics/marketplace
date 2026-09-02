@@ -16,7 +16,6 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 type ImageRoutes struct {
@@ -61,7 +60,7 @@ const (
 //
 // Response: 201 Created with image path
 func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
-	productID := mux.Vars(r)["id"]
+	productID := r.PathValue("id")
 	removeBg := r.URL.Query().Get("remove_bg") == "true"
 
 	// Parse and validate request
@@ -110,7 +109,7 @@ func (h *ImageRoutes) parseAndValidateRequest(w http.ResponseWriter, r *http.Req
 		return nil, nil, err
 	}
 
-	productID := mux.Vars(r)["id"]
+	productID := r.PathValue("id")
 	_, err := h.productService.GetProductByID(r.Context(), productID)
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, "product not found")
@@ -233,7 +232,7 @@ func altTextFromForm(r *http.Request) *string {
 }
 
 func (h *ImageRoutes) RemoveImage(w http.ResponseWriter, r *http.Request) {
-	err := h.imageService.RemoveImage(r.Context(), mux.Vars(r)["image"])
+	err := h.imageService.RemoveImage(r.Context(), r.PathValue("image"))
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -269,6 +268,6 @@ func isSupportedFormat(format string) bool {
 }
 
 func (h *ImageRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/images/products/{id}", h.secure(types.RoleAdmin)(h.UploadImage)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/images/{image}", h.secure(types.RoleAdmin)(h.RemoveImage)).Methods(http.MethodDelete)
+	h.mux.Handle("POST /images/products/{id}", h.secure(types.RoleAdmin)(h.UploadImage))
+	h.mux.Handle("DELETE /images/{image}", h.secure(types.RoleAdmin)(h.RemoveImage))
 }

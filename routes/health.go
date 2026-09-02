@@ -27,5 +27,5 @@ func (h *HealthRoutes) HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HealthRoutes) RegisterRoutes() {
-	h.muxRouter.HandleFunc("/health", h.HealthCheck).Methods(http.MethodGet)
+	h.mux.Handle("GET /health", http.HandlerFunc(h.HealthCheck))
 }

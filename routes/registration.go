@@ -12,7 +12,6 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 type RegistrationRoutes struct {
@@ -141,7 +140,7 @@ func (h *RegistrationRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *RegistrationRoutes) CreateCodeForUser(w http.ResponseWriter, r *http.Request) {
-	code, err := h.registrationService.CreateCode(r.Context(), mux.Vars(r)["id"], time.Now().UTC().Add(24*time.Hour))
+	code, err := h.registrationService.CreateCode(r.Context(), r.PathValue("id"), time.Now().UTC().Add(24*time.Hour))
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -153,7 +152,7 @@ func (h *RegistrationRoutes) CreateCodeForUser(w http.ResponseWriter, r *http.Re
 }
 
 func (h *RegistrationRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/register", h.limit(h.Register, 2, time.Hour*6)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/register/{id}/admin", h.secure(types.RoleAdmin)(h.CreateCodeForUser)).Methods(http.MethodPost)
-	h.muxRouter.Handle("/register/confirm", h.limit(h.RegisterConfirm, 2, time.Hour*6)).Methods(http.MethodPost)
+	h.mux.Handle("POST /register", h.limit(h.Register, 2, time.Hour*6))
+	h.mux.Handle("POST /register/{id}/admin", h.secure(types.RoleAdmin)(h.CreateCodeForUser))
+	h.mux.Handle("POST /register/confirm", h.limit(h.RegisterConfirm, 2, time.Hour*6))
 }

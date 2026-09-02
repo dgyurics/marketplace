@@ -62,5 +62,5 @@ func (h *PaymentRoutes) EventHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PaymentRoutes) RegisterRoutes() {
-	h.muxRouter.HandleFunc("/payment/events", h.EventHandler).Methods(http.MethodPost)
+	h.mux.Handle("POST /payment/events", http.HandlerFunc(h.EventHandler))
 }

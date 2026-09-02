@@ -30,5 +30,5 @@ func (h *LocaleRoutes) GetLocale(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *LocaleRoutes) RegisterRoutes() {
-	h.muxRouter.HandleFunc("/locale", h.GetLocale).Methods("GET")
+	h.mux.HandleFunc("GET /locale", h.GetLocale)
 }

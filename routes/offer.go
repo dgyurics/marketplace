@@ -8,7 +8,6 @@ import (
 	"github.com/dgyurics/marketplace/services"
 	"github.com/dgyurics/marketplace/types"
 	u "github.com/dgyurics/marketplace/utilities"
-	"github.com/gorilla/mux"
 )
 
 type OfferRoutes struct {
@@ -26,7 +25,7 @@ func NewOfferRoutes(
 }
 
 func (h *OfferRoutes) CreateOffer(w http.ResponseWriter, r *http.Request) {
-	productID := mux.Vars(r)["id"]
+	productID := r.PathValue("id")
 	var offer types.Offer
 	if err := json.NewDecoder(r.Body).Decode(&offer); err != nil {
 		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
@@ -55,9 +54,9 @@ func (h *OfferRoutes) CreateOffer(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OfferRoutes) UpdateOffer(w http.ResponseWriter, r *http.Request) {
-	status := mux.Vars(r)["status"]
+	status := r.PathValue("status")
 	offer := types.Offer{
-		ID: mux.Vars(r)["id"],
+		ID: r.PathValue("id"),
 	}
 
 	// Update offer status
@@ -90,7 +89,7 @@ func (h *OfferRoutes) UpdateOffer(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OfferRoutes) GetOfferOwner(w http.ResponseWriter, r *http.Request) {
-	offer, err := h.service.GetOfferByIDAndUser(r.Context(), mux.Vars(r)["id"])
+	offer, err := h.service.GetOfferByIDAndUser(r.Context(), r.PathValue("id"))
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -103,7 +102,7 @@ func (h *OfferRoutes) GetOfferOwner(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OfferRoutes) GetOfferAdmin(w http.ResponseWriter, r *http.Request) {
-	offer, err := h.service.GetOfferByID(r.Context(), mux.Vars(r)["id"])
+	offer, err := h.service.GetOfferByID(r.Context(), r.PathValue("id"))
 	if err == types.ErrNotFound {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -116,7 +115,7 @@ func (h *OfferRoutes) GetOfferAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OfferRoutes) GetOfferByProductID(w http.ResponseWriter, r *http.Request) {
-	offers, err := h.service.GetOffersByProductID(r.Context(), mux.Vars(r)["id"])
+	offers, err := h.service.GetOffersByProductID(r.Context(), r.PathValue("id"))
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -134,10 +133,10 @@ func (h *OfferRoutes) GetOffers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OfferRoutes) RegisterRoutes() {
-	h.muxRouter.Handle("/offers/items/{id}", h.secure(types.RoleMember)(h.limit(h.CreateOffer, 5, time.Hour))).Methods(http.MethodPost)
-	h.muxRouter.Handle("/offers/{id}/{status}", h.secure(types.RoleAdmin)(h.UpdateOffer)).Methods(http.MethodPut)
-	h.muxRouter.Handle("/offers/{id}/owner", h.secure(types.RoleGuest)(h.GetOfferOwner)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/offers/{id}/admin", h.secure(types.RoleAdmin)(h.GetOfferAdmin)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/offers/items/{id}", h.secure(types.RoleMember)(h.GetOfferByProductID)).Methods(http.MethodGet)
-	h.muxRouter.Handle("/offers", h.secure(types.RoleAdmin)(h.GetOffers)).Methods(http.MethodGet)
+	h.mux.Handle("POST /offers/{id}/items", h.secure(types.RoleMember)(h.limit(h.CreateOffer, 5, time.Hour)))
+	h.mux.Handle("PUT /offers/{id}/{status}", h.secure(types.RoleAdmin)(h.UpdateOffer))
+	h.mux.Handle("GET /offers/{id}/owner", h.secure(types.RoleGuest)(h.GetOfferOwner))
+	h.mux.Handle("GET /offers/{id}/admin", h.secure(types.RoleAdmin)(h.GetOfferAdmin))
+	h.mux.Handle("GET /offers/{id}/items", h.secure(types.RoleMember)(h.GetOfferByProductID))
+	h.mux.Handle("GET /offers", h.secure(types.RoleAdmin)(h.GetOffers))
 }
