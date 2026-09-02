@@ -420,7 +420,7 @@ export const createOffer = async (
   amount: number,
   comment?: string
 ): Promise<void> => {
-  const response = await apiClient.post(`/offers/items/${productId}`, {
+  const response = await apiClient.post(`/offers/${productId}/items`, {
     amount,
     ...(comment?.trim() && { comment }),
   })
@@ -448,7 +448,7 @@ export const getOfferAdmin = async (id: string): Promise<Offer> => {
 }
 
 export const getOffersByProductId = async (id: string): Promise<Offer[]> => {
-  const response = await apiClient.get(`/offers/items/${id}`)
+  const response = await apiClient.get(`/offers/${id}/items`)
   return response.data
 }
 

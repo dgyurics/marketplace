@@ -133,10 +133,10 @@ func (h *OfferRoutes) GetOffers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OfferRoutes) RegisterRoutes() {
-	h.mux.Handle("POST /offers/items/{id}", h.secure(types.RoleMember)(h.limit(h.CreateOffer, 5, time.Hour)))
+	h.mux.Handle("POST /offers/{id}/items", h.secure(types.RoleMember)(h.limit(h.CreateOffer, 5, time.Hour)))
 	h.mux.Handle("PUT /offers/{id}/{status}", h.secure(types.RoleAdmin)(h.UpdateOffer))
 	h.mux.Handle("GET /offers/{id}/owner", h.secure(types.RoleGuest)(h.GetOfferOwner))
 	h.mux.Handle("GET /offers/{id}/admin", h.secure(types.RoleAdmin)(h.GetOfferAdmin))
-	h.mux.Handle("GET /offers/items/{id}", h.secure(types.RoleMember)(h.GetOfferByProductID))
+	h.mux.Handle("GET /offers/{id}/items", h.secure(types.RoleMember)(h.GetOfferByProductID))
 	h.mux.Handle("GET /offers", h.secure(types.RoleAdmin)(h.GetOffers))
 }
