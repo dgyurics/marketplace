@@ -13,6 +13,7 @@ type CartRepository interface {
 	AddItem(ctx context.Context, userID string, item *types.CartItem) error
 	GetItems(ctx context.Context, userID string) ([]types.CartItem, error)
 	RemoveItem(ctx context.Context, userID, productID string) error
+	RemoveItems(ctx context.Context, userID string) error
 }
 
 type cartRepository struct {
@@ -125,26 +126,26 @@ func (r *cartRepository) AddItem(ctx context.Context, userID string, item *types
 }
 
 func (r *cartRepository) RemoveItem(ctx context.Context, userID string, productID string) error {
-	// Begin a transaction
-	tx, err := r.db.BeginTx(ctx, nil)
+	res, err := r.db.ExecContext(ctx, `
+		DELETE FROM cart_items
+		WHERE user_id = $1 AND product_id = $2`,
+		userID, productID)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
 
-	// Fetch the current quantity in the cart
-	var existingQuantity int
-	err = tx.QueryRowContext(ctx, `
-		DELETE FROM cart_items
-		WHERE user_id = $1 AND product_id = $2
-		RETURNING quantity`,
-		userID, productID).Scan(&existingQuantity)
-	if err == sql.ErrNoRows {
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
 		return types.ErrNotFound
 	}
-	if err != nil {
-		return err
-	}
+	return nil
+}
 
-	return tx.Commit()
+func (r *cartRepository) RemoveItems(ctx context.Context, userID string) error {
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM cart_items
+		WHERE user_id = $1	
+	`, userID)
+	return err
 }

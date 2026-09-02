@@ -77,8 +77,17 @@ func (h *CartRoutes) GetItems(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, cart)
 }
 
+func (h *CartRoutes) RemoveItems(w http.ResponseWriter, r *http.Request) {
+	if err := h.cartService.RemoveItems(r.Context()); err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u.RespondSuccess(w)
+}
+
 func (h *CartRoutes) RegisterRoutes() {
 	h.mux.Handle("POST /carts/items/{id}", h.secure(types.RoleGuest)(h.AddItem))
 	h.mux.Handle("DELETE /carts/items/{id}", h.secure(types.RoleGuest)(h.RemoveItem))
 	h.mux.Handle("GET /carts", h.secure(types.RoleGuest)(h.GetItems))
+	h.mux.Handle("DELETE /carts", h.secure(types.RoleGuest)(h.RemoveItems))
 }

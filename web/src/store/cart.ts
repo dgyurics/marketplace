@@ -4,6 +4,7 @@ import {
   getCart as apiGetCart,
   addItemToCart as apiAddItemToCart,
   removeItemFromCart as apiRemoveItemFromCart,
+  removeItemsFromCart as apiRemoveItemsFromCart,
 } from '@/services/api'
 import type { CartItem } from '@/types'
 
@@ -60,8 +61,14 @@ export const useCartStore = defineStore('cart', {
       }
     },
 
-    clearCart() {
-      this.items = []
+    async clearCart() {
+      try {
+        await apiRemoveItemsFromCart()
+        this.items = []
+      } catch (err) {
+        console.error('Error clearing cart:', err)
+        throw err
+      }
     },
   },
 })

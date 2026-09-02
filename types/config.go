@@ -7,20 +7,21 @@ import (
 )
 
 type Config struct {
-	Auth        AuthConfig
-	BaseURL     string
-	Country     string
-	Database    DBConfig
-	Email       EmailConfig
-	Environment Environment
-	Image       ImageConfig
-	JWT         JWTConfig
-	Logger      LoggerConfig
-	MachineID   uint8
-	Payment     PaymentConfig
-	RateLimit   bool
-	Server      ServerConfig
-	Tax         TaxConfig
+	Auth              AuthConfig
+	BaseURL           string
+	Country           string
+	Database          DBConfig
+	Email             EmailConfig
+	Environment       Environment
+	HTTPClientTimeout time.Duration
+	Image             ImageConfig
+	JWT               JWTConfig
+	Logger            LoggerConfig
+	MachineID         uint8
+	Payment           PaymentConfig
+	RateLimit         bool
+	Server            ServerConfig
+	Tax               TaxConfig
 }
 
 // ServerConfig is based on net/http.Server.

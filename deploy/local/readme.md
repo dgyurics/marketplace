@@ -5,7 +5,6 @@
 - [Go](https://go.dev/dl/)
 - [Node.js](https://nodejs.org/)
 - [Docker](https://docs.docker.com/get-docker/)
-- [Stripe CLI](https://docs.stripe.com/stripe-cli)
 
 ## Setup
 
@@ -42,7 +41,7 @@ Admin login: `admin@marketplace.com` / `admin`
 
 ## Stripe (Optional)
 
-To enable payment processing locally:
+To enable payment processing locally, you will want the [Stripe CLI](https://docs.stripe.com/stripe-cli). Afterwards, follow the below steps:
 
 1. Create a [Stripe account](https://stripe.com)
 2. Set the following in `deploy/local/.env`:

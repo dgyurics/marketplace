@@ -14,7 +14,9 @@ import (
 //   - 8  bits: machine ID (0-255)
 //   - 8  bits: sequence ID (0-254)
 //
-// The most significant bit is unused
+// The most significant bit is unused. The timestamp is limited to 47 bits to ensure
+// the resulting ID fits within a signed 64-bit integer (PostgreSQL BIGINT), avoiding
+// negative values. 47 bits of milliseconds is sufficient until ~year 6432.
 type IDGenerator struct {
 	machineID     uint8
 	seqID         uint8

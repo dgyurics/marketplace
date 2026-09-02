@@ -140,8 +140,8 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	conversationRepository := repositories.NewConversationRepository(db)
 	registrationRepository := repositories.NewRegistrationRepository(db)
 
-	// create http client required by certain services
-	httpClient := utilities.NewDefaultHTTPClient(30 * time.Second) // TODO make this configurable
+	// create HTTP client
+	httpClient := utilities.NewDefaultHTTPClient(config.HTTPClientTimeout)
 
 	// create services
 	templateService := services.NewTemplateService()

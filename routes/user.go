@@ -119,12 +119,13 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse the refresh token
-	// FIXME better error handling
-	// does not distinguish between bad input and system errors
-	usr, err := h.refreshService.VerifyToken(r.Context(), requestBody.RefreshToken)
+	token, err := h.refreshService.GetToken(r.Context(), requestBody.RefreshToken)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusUnauthorized, "invalid refresh token")
+		return
+	}
 	if err != nil {
-		u.RespondWithError(w, r, http.StatusUnauthorized, "invalid or expired refresh token")
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -132,7 +133,7 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	// revoke the just validated refresh token and generate a new one
 
 	// Generate a new access token
-	accessToken, err := h.jwtService.GenerateToken(*usr)
+	accessToken, err := h.jwtService.GenerateToken(*token.User)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return

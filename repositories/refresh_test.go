@@ -158,58 +158,18 @@ func TestRevokeTokens(t *testing.T) {
 	err = repo.RevokeTokens(ctx, user.ID)
 	assert.NoError(t, err, "Expected no error on revoking all refresh tokens")
 
-	// Verify that both tokens are revoked
-	retrievedToken1, err := repo.GetToken(ctx, refreshToken1.TokenHash)
+	// Verify that both tokens are revoked (GetToken filters out revoked tokens, so query directly)
+	var revoked1, revoked2 bool
+	err = dbPool.QueryRowContext(ctx, "SELECT revoked FROM refresh_tokens WHERE token_hash = $1", refreshToken1.TokenHash).Scan(&revoked1)
 	assert.NoError(t, err, "Expected no error on getting first refresh token")
-	assert.True(t, retrievedToken1.Revoked, "Expected first token to be revoked")
+	assert.True(t, revoked1, "Expected first token to be revoked")
 
-	retrievedToken2, err := repo.GetToken(ctx, refreshToken2.TokenHash)
+	err = dbPool.QueryRowContext(ctx, "SELECT revoked FROM refresh_tokens WHERE token_hash = $1", refreshToken2.TokenHash).Scan(&revoked2)
 	assert.NoError(t, err, "Expected no error on getting second refresh token")
-	assert.True(t, retrievedToken2.Revoked, "Expected second token to be revoked")
+	assert.True(t, revoked2, "Expected second token to be revoked")
 
 	// Clean up
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM refresh_tokens WHERE user_id = $1", refreshToken1.User.ID)
-	assert.NoError(t, err, "Expected no error on refresh token deletion")
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
-	assert.NoError(t, err, "Expected no error on user deletion")
-}
-
-func TestUpdateLastUsed(t *testing.T) {
-	repo := NewRefreshRepository(dbPool)
-	ctx := context.Background()
-	now := time.Now()
-
-	// Create a unique test user
-	user := createUniqueTestUser(t, NewUserRepository(dbPool))
-	tokenID := utilities.MustGenerateIDString()
-
-	// Create a refresh token
-	refreshToken := types.RefreshToken{
-		ID:        tokenID,
-		User:      user,
-		TokenHash: "testupdatelastusedtokenhash",
-		ExpiresAt: now.Add(24 * time.Hour),
-		CreatedAt: now,
-		Revoked:   false,
-		LastUsed:  now,
-	}
-
-	// Store the refresh token
-	err := repo.StoreToken(ctx, refreshToken)
-	assert.NoError(t, err, "Expected no error on storing refresh token")
-
-	// Wait a bit and update LastUsed
-	newLastUsed := now.Add(1 * time.Minute).UTC()
-	err = repo.UpdateLastUsed(ctx, refreshToken.ID, newLastUsed)
-	assert.NoError(t, err, "Expected no error on updating last used timestamp")
-
-	// Retrieve and verify LastUsed
-	retrievedToken, err := repo.GetToken(ctx, refreshToken.TokenHash)
-	assert.NoError(t, err, "Expected no error on getting refresh token")
-	assert.WithinDuration(t, newLastUsed, retrievedToken.LastUsed, time.Second, "Expected last used timestamp to be updated")
-
-	// Clean up
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM refresh_tokens WHERE user_id = $1", refreshToken.User.ID)
 	assert.NoError(t, err, "Expected no error on refresh token deletion")
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
 	assert.NoError(t, err, "Expected no error on user deletion")

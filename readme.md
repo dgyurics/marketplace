@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/dgyurics/marketplace/blob/main/logo.webp?raw=true" alt="marketplace">
+  <img src="https://github.com/dgyurics/marketplace/blob/main/logo.png?raw=true" alt="marketplace" width="200">
 </p>
 
 A self-hosted e-commerce framework designed for local businesses and community commerce. Minimal external dependencies and maximum self-reliance. See [https://marketly.sh](https://marketly.sh)
@@ -20,10 +20,10 @@ A self-hosted e-commerce framework designed for local businesses and community c
 
 ## Planned Enhancements
 
-* Username-based auth with admin-assisted account recovery
-* One-click buy with pay-on-delivery
-* Pay-on-delivery option at checkout
+* One click buy option
+* Implement pay on delivery
 * Remove gorilla/mux dependency
+* Username/password login — no email required
 * Documentation for production setup and configuration
 * Product variants (size, color, material, etc.)
 * Geographic access control via Nginx and GeoIP2

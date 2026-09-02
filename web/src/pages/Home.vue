@@ -7,8 +7,12 @@
           <p class="hero-eyebrow">curated goods for modern life</p>
           <h1 class="hero-title">essential living</h1>
           <div class="hero-actions">
-            <button class="hero-btn" @click="$router.push('/new')">shop new</button>
-            <button class="hero-btn hero-btn--outline" @click="$router.push('/popular')">
+            <button class="hero-btn" :tabindex="0" @click="$router.push('/new')">shop new</button>
+            <button
+              class="hero-btn hero-btn--outline"
+              :tabindex="0"
+              @click="$router.push('/popular')"
+            >
               shop popular
             </button>
           </div>

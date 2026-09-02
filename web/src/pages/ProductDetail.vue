@@ -125,8 +125,8 @@ const currentQuantityInCart = computed(() => cartStore.itemCountByProductId(prod
 const hasReachedCartLimit = computed(() =>
   Boolean(
     product.cart_limit &&
-      product.cart_limit > 0 &&
-      currentQuantityInCart.value >= product.cart_limit
+    product.cart_limit > 0 &&
+    currentQuantityInCart.value >= product.cart_limit
   )
 )
 const isOutOfStock = computed(() => currentQuantityInCart.value >= product.inventory)

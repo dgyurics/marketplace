@@ -3,9 +3,12 @@
     <h2>Checkout</h2>
     <OrderSummary :tax-amount="taxAmount" />
 
-    <h3>Payment Details</h3>
+    <h3>Payment Method</h3>
+    <PaymentMethodSelector v-model="paymentMethod" :disabled="['delivery']" />
+
     <form @submit.prevent="submitPayment">
       <PaymentForm
+        v-if="paymentMethod === 'online'"
         ref="paymentFormRef"
         :address="checkoutStore.shippingAddress"
         :client-secret="clientSecret"
@@ -13,10 +16,14 @@
         @error="onPaymentError"
       />
 
+      <p v-if="paymentMethod === 'delivery'" class="delivery-note">
+        Payment will be collected upon delivery
+      </p>
+
       <button
         type="submit"
         class="btn-full-width mt-30"
-        :disabled="isSubmitting || !isPaymentReady"
+        :disabled="isSubmitting || (paymentMethod === 'online' && !isPaymentReady)"
         :tabindex="0"
       >
         Place Order
@@ -30,16 +37,18 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { Payment as PaymentForm } from '@/components/forms'
+import { Payment as PaymentForm, PaymentMethodSelector } from '@/components/forms'
 import OrderSummary from '@/components/OrderSummary.vue'
 import { useCountdown } from '@/composables/useCountdown'
 import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
+import type { PaymentMethod } from '@/types'
 
 const checkoutStore = useCheckoutStore()
 const cartStore = useCartStore()
 const router = useRouter()
 
+const paymentMethod = ref<PaymentMethod>('online')
 const isSubmitting = ref(false)
 const isInitializing = ref(true)
 const isPaymentReady = ref(false)
@@ -102,12 +111,19 @@ function onPaymentError(error: string) {
 }
 
 async function submitPayment() {
-  if (!paymentFormRef.value || isSubmitting.value || !orderId.value) return
+  if (isSubmitting.value || !orderId.value) return
 
   isSubmitting.value = true
   checkoutStore.paymentError = null
 
   try {
+    if (paymentMethod.value === 'delivery') {
+      // TODO: call API to mark order as pay-on-delivery
+      router.push('/checkout/confirmation')
+      return
+    }
+
+    if (!paymentFormRef.value) return
     await paymentFormRef.value.confirmPayment(orderId.value)
     router.push('/checkout/confirmation')
   } catch (error) {
@@ -132,5 +148,11 @@ h3 {
 
 .form-group {
   margin-bottom: 20px;
+}
+
+.delivery-note {
+  text-align: center;
+  color: #555;
+  padding: 20px 0;
 }
 </style>
