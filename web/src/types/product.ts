@@ -11,7 +11,6 @@ export interface Product {
   category?: Category
   description?: string
   featured: boolean
-  pickup_only: boolean
   negotiable: boolean
   sort_order?: number
   tax_code?: string

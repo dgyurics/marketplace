@@ -46,7 +46,7 @@ help:
 # Development
 # ============================================================================
 
-dev: install
+dev:
 	@echo "Starting development environment..."
 	@echo "Backend: http://localhost:8000"
 	@echo "Frontend: http://localhost:5173"

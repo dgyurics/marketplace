@@ -113,7 +113,6 @@ const product = reactive<Product>({
   inventory: 0,
   cart_limit: 0,
   featured: false,
-  pickup_only: false,
   negotiable: false,
 })
 

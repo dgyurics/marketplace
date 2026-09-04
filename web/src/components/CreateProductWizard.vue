@@ -77,10 +77,6 @@
               <input v-model="newProduct.featured" type="checkbox" :tabindex="0" />
               <span>Featured</span>
             </label>
-            <label class="checkbox-label">
-              <input v-model="newProduct.pickup_only" type="checkbox" :tabindex="0" />
-              <span>Pickup Only</span>
-            </label>
           </div>
 
           <div class="form-actions">
@@ -203,7 +199,6 @@ const newProduct = ref({
   cart_limit: '',
   category: '',
   featured: true,
-  pickup_only: false,
   sort_order: 0,
 })
 
@@ -252,7 +247,6 @@ const createProduct = async () => {
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit || undefined,
       featured: newProduct.value.featured,
-      pickup_only: newProduct.value.pickup_only,
       sort_order: newProduct.value.sort_order,
       ...(categoryId && { category: { id: categoryId } }),
     }
@@ -279,7 +273,6 @@ const updateProduct = async () => {
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit || undefined,
       featured: newProduct.value.featured,
-      pickup_only: newProduct.value.pickup_only,
       sort_order: newProduct.value.sort_order,
       ...(categoryId && { category: { id: categoryId } }),
     }
@@ -311,7 +304,6 @@ const handleSubmit = async () => {
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit || undefined,
       featured: newProduct.value.featured,
-      pickup_only: newProduct.value.pickup_only,
       sort_order: newProduct.value.sort_order,
       ...(categoryId && { category: { id: categoryId } }),
     }
@@ -344,7 +336,6 @@ const resetAndStart = () => {
     cart_limit: '',
     category: '',
     featured: true,
-    pickup_only: false,
     sort_order: 0,
   }
   tempProductId.value = null
