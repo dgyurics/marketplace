@@ -1,18 +1,15 @@
 <template>
   <div class="container">
     <h2>Order Confirmed</h2>
-    <div class="confirmation-message">
+    <div class="confirmation-message mt-45">
       <h3>Your order has been placed!</h3>
-      <p class="confirmation-note">
-        A confirmation email has been sent to <strong>{{ email }}</strong
-        >.
-      </p>
+      <p class="confirmation-note">A notification has been sent to your account</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -26,8 +23,6 @@ const route = useRoute()
 const checkoutStore = useCheckoutStore()
 const cartStore = useCartStore()
 
-const email = ref('')
-
 // Sample redirect URL
 // https://selfco.io/checkout/payment/checkout/confirmation?
 // order_id=115...&payment_intent=pi_3SXv...&payment_intent_client_secret=pi_3SX...&redirect_status=succeeded
@@ -38,19 +33,13 @@ const email = ref('')
 
 onMounted(async () => {
   clearCart()
-
-  if (checkoutStore.shippingAddress.email) {
-    email.value = checkoutStore.shippingAddress.email
-    checkoutStore.resetCheckout()
-    return
-  }
+  checkoutStore.resetCheckout()
 
   // Handle redirects from Stripe Payment
   const { redirect_status, order_id, payment_intent_client_secret } = route.query
   if (!order_id) return
 
   const order = await getOrderOwner(order_id as string)
-  email.value = order.address.email
 
   if (redirect_status === 'failed') {
     // Restore state for retry
