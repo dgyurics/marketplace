@@ -16,9 +16,16 @@
         @error="onPaymentError"
       />
 
-      <p v-if="paymentMethod === 'delivery'" class="delivery-note">
-        Payment will be collected upon delivery
-      </p>
+      <section v-if="paymentMethod === 'delivery'" class="delivery-info">
+        <p class="delivery-info-title">Pay on Delivery</p>
+        <p class="delivery-info-description">
+          No prepayment needed. You pay when your order is delivered.
+        </p>
+        <p class="delivery-info-meta">
+          <span>Accepted at delivery</span>
+          <strong>Card or cash</strong>
+        </p>
+      </section>
 
       <button
         type="submit"
@@ -64,7 +71,7 @@ const { start: startTimer } = useCountdown(14 * 60, () => {
 onMounted(async () => {
   try {
     await initializePayment()
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleInitError(error)
   } finally {
     isInitializing.value = false
@@ -94,8 +101,9 @@ async function initializePayment() {
   startTimer()
 }
 
-function handleInitError(error: any) {
-  if (error.response?.status === 400) {
+function handleInitError(error: unknown) {
+  const status = (error as { response?: { status?: number } })?.response?.status
+  if (status === 400) {
     checkoutStore.shippingError = 'Invalid shipping address'
     router.push('/checkout/shipping')
   }
@@ -107,7 +115,6 @@ function onPaymentReady() {
 
 function onPaymentError(error: string) {
   checkoutStore.paymentError = error
-  console.error('Payment form error:', error)
 }
 
 async function submitPayment() {
@@ -150,9 +157,42 @@ h3 {
   margin-bottom: 20px;
 }
 
-.delivery-note {
-  text-align: center;
-  color: #555;
-  padding: 20px 0;
+.delivery-info {
+  margin-top: 20px;
+  margin-bottom: 12px;
+  border: 1px solid #e9e9e9;
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 16px 18px;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.delivery-info-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.delivery-info-description {
+  margin: 0;
+  color: #444;
+  line-height: 1.45;
+}
+
+.delivery-info-meta {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.delivery-info-meta strong {
+  color: #333;
+  font-weight: 600;
 }
 </style>
