@@ -211,3 +211,25 @@ func (h *OrderRoutes) RegisterRoutes() {
 	h.mux.Handle("GET /orders/{id}/admin", h.secure(types.RoleStaff)(h.GetOrderAdmin))
 	h.mux.Handle("GET /orders", h.secure(types.RoleStaff)(h.GetOrders))
 }
+
+// TODO
+// implement separate endpoints for creating order via CC vs POD
+// implement endpoint for retrieving supported payment methods for a given order
+//
+
+// Payment rules (CC = Credit Card, POD = Pay On Delivery)
+//
+// Inputs: ccEnabled, podEnabled, isMember, hasFreeItem
+//
+// 1) If !ccEnabled && !podEnabled => BLOCK
+// 2) If hasFreeItem:
+//    - require isMember && podEnabled
+//    - method = POD only
+//    - shipping_amount = 0
+// 3) If no free items:
+//    - CC allowed if ccEnabled
+//    - POD allowed if podEnabled && isMember
+//    - if both allowed: user chooses
+//    - if neither allowed: BLOCK
+//
+// POD orders: decrement inventory immediately.
