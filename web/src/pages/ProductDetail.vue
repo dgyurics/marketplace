@@ -31,38 +31,7 @@
           </div>
         </div>
         <div>
-          <button v-if="hasPendingOffer" class="btn-lg btn-pending" disabled>
-            <span>Offer Pending</span>
-          </button>
-          <button
-            v-else-if="showOfferButton"
-            class="btn-lg"
-            :disabled="isOutOfStock || !canOffer"
-            :tabindex="0"
-            @click="goToOffer"
-          >
-            <span v-if="!canOffer">Member Item</span>
-            <span v-else-if="!isOutOfStock">Make an Offer</span>
-            <span v-else>Out of Stock</span>
-          </button>
-          <template v-else>
-            <button
-              class="btn-lg"
-              :disabled="isOutOfStock || hasReachedCartLimit"
-              :tabindex="0"
-              @click="addToCart"
-            >
-              <span v-if="!addedToCart && !isOutOfStock">Add to Cart</span>
-              <span v-else-if="isOutOfStock">Out of Stock</span>
-              <span v-else class="checkmark-animation">&#10003;</span>
-            </button>
-            <p v-if="showLowStockWarning" class="low-stock-warning">
-              Only {{ product.inventory }} left in stock
-            </p>
-            <p v-else-if="hasReachedCartLimit" class="limit-reached-warning">
-              Limit {{ product.cart_limit }} per customer
-            </p>
-          </template>
+          <ProductActions :product="product" />
         </div>
       </div>
     </div>
@@ -73,17 +42,13 @@
 import { storeToRefs } from 'pinia'
 import { Navigation, Pagination } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/vue'
-import { ref, onMounted, computed, reactive } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, reactive } from 'vue'
+import { useRoute } from 'vue-router'
 
-import {
-  getProductById,
-  createGuestUser as apiCreateGuestUser,
-  getOffersByProductId,
-} from '@/services/api'
+import ProductActions from '@/components/ProductActions.vue'
+import { getProductById, getOffersByProductId } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
-import { useCartStore } from '@/store/cart'
-import type { AuthTokens, Product, Offer } from '@/types'
+import type { Offer, Product } from '@/types'
 import { displayPrice } from '@/utilities/currency'
 
 // @ts-ignore
@@ -94,13 +59,9 @@ import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 
 const route = useRoute()
-const router = useRouter()
 
 const authStore = useAuthStore()
 const { isAuthenticated } = storeToRefs(authStore)
-const { setTokens } = authStore
-
-const cartStore = useCartStore()
 
 const product = reactive<Product>({
   id: '',
@@ -116,26 +77,7 @@ const product = reactive<Product>({
   negotiable: false,
 })
 
-const addedToCart = ref(false)
 const offers = ref<Offer[]>([])
-
-const isLowStock = computed(() => product.inventory > 0 && product.inventory <= 20)
-const currentQuantityInCart = computed(() => cartStore.itemCountByProductId(product.id))
-const hasReachedCartLimit = computed(() =>
-  Boolean(
-    product.cart_limit &&
-    product.cart_limit > 0 &&
-    currentQuantityInCart.value >= product.cart_limit
-  )
-)
-const isOutOfStock = computed(() => currentQuantityInCart.value >= product.inventory)
-const showLowStockWarning = computed(
-  () => isLowStock.value && !isOutOfStock.value && !hasReachedCartLimit.value
-)
-
-const canOffer = computed(() => isAuthenticated.value && authStore.hasMinimumRole('member'))
-const showOfferButton = computed(() => product.negotiable)
-const hasPendingOffer = computed(() => offers.value.some((pi) => pi.status === 'pending'))
 
 onMounted(async () => {
   try {
@@ -155,31 +97,6 @@ onMounted(async () => {
     console.error('Error fetching product:', error)
   }
 })
-
-const addToCart = async () => {
-  try {
-    // If the user is not authenticated, create a guest user
-    if (!isAuthenticated.value) {
-      const authTokens: AuthTokens = await apiCreateGuestUser()
-      setTokens(authTokens)
-    }
-
-    await cartStore.addToCart(product.id, 1)
-    addedToCart.value = true
-    setTimeout(() => {
-      addedToCart.value = false
-    }, 1000)
-  } catch (error: any) {
-    const status = error.response?.status
-    if (status === 409) {
-      product.inventory = 0 // Mark as out of stock
-    }
-  }
-}
-
-const goToOffer = () => {
-  router.push(`/offer/${product.id}`)
-}
 </script>
 
 <style scoped>
@@ -353,37 +270,7 @@ const goToOffer = () => {
   color: #222;
 }
 
-.checkmark-animation {
-  display: inline-block;
-  animation: scaleIn 0.4s ease-in-out;
-}
-
-.limit-reached-warning,
-.low-stock-warning {
-  text-align: center;
-  font-size: 12px;
-  color: #c00;
-  margin-top: 8px;
-}
-
-.btn-pending {
-  background-color: #ccc;
-  color: #666;
-  cursor: not-allowed;
-}
-
 .detail-item {
   text-transform: capitalize;
-}
-
-@keyframes scaleIn {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
 }
 </style>
