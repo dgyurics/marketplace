@@ -15,19 +15,36 @@ const (
 	OrderCanceled  OrderStatus = "canceled"
 )
 
+type PaymentMethod string
+
+const (
+	PaymentMethodStripe     PaymentMethod = "stripe"
+	PaymentMethodOnDelivery PaymentMethod = "on_delivery"
+)
+
+type PaymentStatus string
+
+const (
+	PaymentStatusUnpaid   PaymentStatus = "unpaid"
+	PaymentStatusPaid     PaymentStatus = "paid"
+	PaymentStatusRefunded PaymentStatus = "refunded"
+)
+
 type Order struct {
-	ID             string      `json:"id"`
-	UserID         string      `json:"-"`
-	IdempotencyKey *string     `json:"-"`
-	Address        Address     `json:"address"`
-	Amount         int64       `json:"amount"`
-	TaxAmount      int64       `json:"tax_amount"`
-	ShippingAmount int64       `json:"shipping_amount"`
-	TotalAmount    int64       `json:"total_amount"`
-	Status         OrderStatus `json:"status"`
-	Items          []OrderItem `json:"items"`
-	CreatedAt      time.Time   `json:"created_at"`
-	UpdatedAt      time.Time   `json:"updated_at"`
+	ID             string         `json:"id"`
+	UserID         string         `json:"-"`
+	IdempotencyKey *string        `json:"-"`
+	Address        Address        `json:"address"`
+	Amount         int64          `json:"amount"`
+	TaxAmount      int64          `json:"tax_amount"`
+	ShippingAmount int64          `json:"shipping_amount"`
+	TotalAmount    int64          `json:"total_amount"`
+	Status         *OrderStatus   `json:"status"`
+	PaymentMethod  *PaymentMethod `json:"payment_method"`
+	PaymentStatus  *PaymentStatus `json:"payment_status"`
+	Items          []OrderItem    `json:"items"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
 }
 
 type OrderItem struct {

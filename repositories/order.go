@@ -36,7 +36,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	_, err = tx.ExecContext(ctx, `
 		WITH canceled AS (
 			UPDATE orders SET status = 'canceled', updated_at = NOW()
-			WHERE user_id = $1 AND status = 'pending'
+			WHERE user_id = $1 AND status = 'pending' AND payment_status = 'unpaid'
 			RETURNING id
 		), restored AS (
 			DELETE FROM order_items
@@ -102,12 +102,33 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 
 	// Insert order with idempotency check
 	query := `
-		INSERT INTO orders (id, user_id, address_id, amount, tax_amount, shipping_amount, total_amount, status, idempotency_key)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)
+		INSERT INTO orders (
+			id,
+			user_id,
+			address_id,
+			amount,
+			tax_amount,
+			shipping_amount,
+			total_amount,
+			payment_method,
+			idempotency_key,
+			status,
+			payment_status
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', 'unpaid')
 		ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL
 		DO NOTHING`
-	res, err := tx.ExecContext(ctx, query, order.ID, order.UserID, order.Address.ID, order.Amount,
-		order.TaxAmount, order.ShippingAmount, order.TotalAmount, order.IdempotencyKey)
+	res, err := tx.ExecContext(ctx, query,
+		order.ID,
+		order.UserID,
+		order.Address.ID,
+		order.Amount,
+		order.TaxAmount,
+		order.ShippingAmount,
+		order.TotalAmount,
+		order.PaymentMethod,
+		order.IdempotencyKey,
+	)
 	if err != nil {
 		return err
 	}
@@ -146,6 +167,8 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			o.tax_amount,
 			o.total_amount,
 			o.status,
+			o.payment_method,
+			o.payment_status,
 			a.id AS address_id,
 			a.name,
 			a.line1,
@@ -181,6 +204,8 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			&order.TaxAmount,
 			&order.TotalAmount,
 			&order.Status,
+			&order.PaymentMethod,
+			&order.PaymentStatus,
 			&order.Address.ID,
 			&order.Address.Name,
 			&order.Address.Line1,
@@ -264,6 +289,8 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 			o.tax_amount,
 			o.total_amount,
 			o.status,
+			o.payment_method,
+			o.payment_status,
 			o.address_id,
 			a.name,
 			a.line1,
@@ -289,6 +316,8 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 		&order.TaxAmount,
 		&order.TotalAmount,
 		&order.Status,
+		&order.PaymentMethod,
+		&order.PaymentStatus,
 		&order.Address.ID,
 		&order.Address.Name,
 		&order.Address.Line1,
@@ -365,6 +394,8 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 			o.tax_amount,
 			o.total_amount,
 			o.status,
+			o.payment_method,
+			o.payment_status,
 			o.address_id,
 			a.name,
 			a.line1,
@@ -387,6 +418,8 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 		&order.TaxAmount,
 		&order.TotalAmount,
 		&order.Status,
+		&order.PaymentMethod,
+		&order.PaymentStatus,
 		&order.Address.ID,
 		&order.Address.Name,
 		&order.Address.Line1,
@@ -423,17 +456,31 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	defer tx.Rollback()
 
 	query := `
-		UPDATE orders SET status = $1, updated_at = NOW()
-		WHERE id = $2
+		UPDATE orders SET 
+			status = COALESCE($1, status),
+			payment_method = COALESCE($2, payment_method),
+			payment_status = COALESCE($3, payment_status),
+			updated_at = NOW()
+		WHERE id = $4
 		RETURNING user_id
 	`
-	if err := tx.QueryRowContext(ctx, query, order.Status, order.ID).Scan(&order.UserID); err != nil {
+	if err := tx.QueryRowContext(
+		ctx,
+		query,
+		order.Status,
+		order.PaymentMethod,
+		order.PaymentStatus,
+		order.ID,
+	).Scan(&order.UserID); err != nil {
 		return err
 	}
 
+	if order.Status == nil {
+		return tx.Commit()
+	}
+
 	// restock inventory
-	if order.Status == types.OrderRefunded ||
-		order.Status == types.OrderCanceled {
+	if *order.Status == types.OrderRefunded || *order.Status == types.OrderCanceled {
 		query = `
 			WITH deleted_items AS (
 				DELETE FROM order_items oi
@@ -451,7 +498,7 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	}
 
 	// clear cart
-	if order.Status == types.OrderPaid {
+	if *order.Status == types.OrderPaid {
 		query = `
 			WITH ordered AS (
 				SELECT product_id, quantity

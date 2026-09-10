@@ -57,10 +57,6 @@ func (os *orderService) CreateOrder(ctx context.Context, order *types.Order) (er
 		return err
 	}
 
-	if order.TotalAmount == 0 {
-		return types.ErrConstraintViolation
-	}
-
 	if err = os.orderRepo.CreateOrder(ctx, order); err != nil {
 		slog.Debug("Error creating order", "user_id", order.UserID, "error", err)
 		return err

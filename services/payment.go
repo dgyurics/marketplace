@@ -78,11 +78,11 @@ func (s *paymentService) EventHandler(ctx context.Context, event stripe.Event) e
 	}
 
 	if err != nil {
-		slog.Error("Handler failed", "type", event.Type, "error", err)
+		slog.ErrorContext(ctx, "Stripe event handler failed", "event_id", event.ID, "event_type", event.Type, "error", err)
 		return err
 	}
 
-	slog.Debug("Processed event", "type", event.Type, "id", event.ID)
+	slog.DebugContext(ctx, "Processed Stripe event", "event_type", event.Type, "event_id", event.ID)
 	return nil
 }
 
@@ -153,9 +153,15 @@ func (s *paymentService) SignatureVerifier(payload []byte, sigHeader string) err
 	if err != nil {
 		slog.Warn("Error parsing timestamp", "timestamp", timestamp)
 		return fmt.Errorf("invalid timestamp: %w", err)
-	} else if time.Since(ts) > tolerance {
-		slog.Warn("Timestamp is too old", "timestamp", timestamp)
-		return errors.New("timestamp is too old")
+	}
+
+	skew := time.Since(ts)
+	if skew < 0 {
+		skew = -skew
+	}
+	if skew > tolerance {
+		slog.Warn("Timestamp is outside tolerance window", "timestamp", timestamp, "skew", skew)
+		return errors.New("timestamp is outside tolerance window")
 	}
 
 	// Compare expected signature with provided signatures
@@ -234,29 +240,52 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 }
 
 // handlePaymentIntentCreated processes the PaymentIntentCreated event.
-// It verifies the payment intent against the order details stored in database.
-// If the order is pending and the amounts match, it returns nil.
-// If the order is not pending or the amounts do not match, it returns an error.
-// This function is called when a PaymentIntentCreated event is received.
 func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, pi *stripe.PaymentIntent) error {
 	orderID := pi.Metadata["order_id"]
 	if orderID == "" {
-		return fmt.Errorf("order_id not found in payment intent metadata")
+		// deterministic payload issue: retry won't fix
+		slog.WarnContext(ctx, "payment_intent.created missing order_id", "pi_id", pi.ID)
+		return nil
 	}
 
 	order, err := s.repo.GetOrderByID(ctx, orderID)
 	if err != nil {
+		// transient: let caller return error so Stripe retries
 		return err
 	}
-	if order.Status != types.OrderPending {
+
+	// Idempotent/out-of-order no-op cases
+	if *order.Status == types.OrderPaid && *order.PaymentStatus == types.PaymentStatusPaid {
+		slog.DebugContext(ctx, "payment_intent.created no-op: order already paid", "order_id", order.ID, "pi_id", pi.ID)
+		return nil
+	}
+	if *order.Status == types.OrderRefunded && *order.PaymentStatus == types.PaymentStatusRefunded {
+		slog.DebugContext(ctx, "payment_intent.created no-op: order already refunded", "order_id", order.ID, "pi_id", pi.ID)
+		return nil
+	}
+
+	// Deterministic validation mismatches: log and ack (no retry storm)
+	if *order.Status != types.OrderPending {
+		slog.WarnContext(ctx, "payment_intent.created state mismatch", "order_id", order.ID, "expected_status", types.OrderPending, "actual_status", *order.Status)
+		return nil
+	}
+	if *order.PaymentMethod != types.PaymentMethodStripe {
+		slog.WarnContext(ctx, "payment_intent.created payment method mismatch", "order_id", order.ID, "expected_payment_method", types.PaymentMethodStripe, "actual_payment_method", *order.PaymentMethod)
+		return nil
+	}
+	if *order.PaymentStatus != types.PaymentStatusUnpaid {
+		slog.WarnContext(ctx, "payment_intent.created payment status mismatch", "order_id", order.ID, "expected_payment_status", types.PaymentStatusUnpaid, "actual_payment_status", *order.PaymentStatus)
+		return nil
+	}
+	if !strings.EqualFold(utilities.Locale.Currency, pi.Currency) {
+		slog.WarnContext(ctx, "payment_intent.created currency mismatch", "order_id", order.ID, "expected_currency", utilities.Locale.Currency, "actual_currency", pi.Currency)
 		return nil
 	}
 	if order.TotalAmount != pi.Amount {
-		return fmt.Errorf("amount mismatch: expected %d, got %d, order_id=%s", order.TotalAmount, pi.Amount, order.ID)
+		slog.WarnContext(ctx, "payment_intent.created amount mismatch", "order_id", order.ID, "expected_amount", order.TotalAmount, "actual_amount", pi.Amount)
+		return nil
 	}
-	if !strings.EqualFold(utilities.Locale.Currency, pi.Currency) {
-		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", utilities.Locale.Currency, pi.Currency, order.ID)
-	}
+
 	return nil
 }
 
@@ -268,39 +297,66 @@ func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, pi *str
 func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *stripe.PaymentIntent) error {
 	orderID := pi.Metadata["order_id"]
 	if orderID == "" {
-		return fmt.Errorf("order_id not found in payment intent metadata")
+		// deterministic payload issue: retry won't fix
+		slog.WarnContext(ctx, "payment_intent.succeeded missing order_id", "pi_id", pi.ID)
+		return nil
 	}
 
-	// do some basic validation
 	order, err := s.repo.GetOrderByID(ctx, orderID)
 	if err != nil {
+		// transient: allow retry
 		return err
 	}
-	if order.Status != types.OrderPending {
-		slog.Error("Payment intent succeeded for non-pending order", "order_id", order.ID, "status", order.Status)
+
+	// Idempotent/out-of-order no-op cases
+	if *order.Status == types.OrderPaid && *order.PaymentStatus == types.PaymentStatusPaid {
+		slog.DebugContext(ctx, "payment_intent.succeeded no-op: order already paid", "order_id", order.ID, "pi_id", pi.ID)
+		return nil
+	}
+	if *order.Status == types.OrderRefunded && *order.PaymentStatus == types.PaymentStatusRefunded {
+		slog.DebugContext(ctx, "payment_intent.succeeded no-op: order already refunded", "order_id", order.ID, "pi_id", pi.ID)
+		return nil
+	}
+
+	// Deterministic validation mismatches: log and ack (no retry storm)
+	if *order.Status != types.OrderPending {
+		slog.WarnContext(ctx, "payment_intent.succeeded state mismatch", "order_id", order.ID, "expected_status", types.OrderPending, "actual_status", *order.Status)
+		return nil
+	}
+	if *order.PaymentMethod != types.PaymentMethodStripe {
+		slog.WarnContext(ctx, "payment_intent.succeeded payment method mismatch", "order_id", order.ID, "expected_payment_method", types.PaymentMethodStripe, "actual_payment_method", *order.PaymentMethod)
+		return nil
+	}
+	if *order.PaymentStatus != types.PaymentStatusUnpaid {
+		slog.WarnContext(ctx, "payment_intent.succeeded payment status mismatch", "order_id", order.ID, "expected_payment_status", types.PaymentStatusUnpaid, "actual_payment_status", *order.PaymentStatus)
 		return nil
 	}
 	if order.TotalAmount != pi.Amount {
-		return fmt.Errorf("amount mismatch: expected %d, got %d, order_id=%s", order.TotalAmount, pi.Amount, order.ID)
+		slog.WarnContext(ctx, "payment_intent.succeeded amount mismatch", "order_id", order.ID, "expected_amount", order.TotalAmount, "actual_amount", pi.Amount)
+		return nil
 	}
 	if !strings.EqualFold(utilities.Locale.Currency, pi.Currency) {
-		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", utilities.Locale.Currency, pi.Currency, order.ID)
+		slog.WarnContext(ctx, "payment_intent.succeeded currency mismatch", "order_id", order.ID, "expected_currency", utilities.Locale.Currency, "actual_currency", pi.Currency)
+		return nil
 	}
 
 	// mark order as paid
-	order.Status = types.OrderPaid
-	err = s.repo.UpdateOrder(ctx, &order)
-	if err != nil {
+	*order.Status = types.OrderPaid
+	*order.PaymentStatus = types.PaymentStatusPaid
+
+	if err = s.repo.UpdateOrder(ctx, &order); err != nil {
 		return fmt.Errorf("failed to mark order as paid: order_id=%s, error=%w", order.ID, err)
 	}
 
-	slog.Info("Order marked as paid", "order_id", order.ID, "payment_intent_id", pi.ID)
+	slog.InfoContext(ctx, "Order marked as paid", "order_id", order.ID, "payment_intent_id", pi.ID)
 
-	// notify user that order payment has been received
 	go s.notificationService.NotifyOrder(order.UserID, SubjectOrderConf, NotifyOrderConf, order)
 
-	// notify admin(s) that an order has been received
-	admins, _ := s.userService.GetAllAdmins(context.Background())
+	admins, err := s.userService.GetAllAdmins(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to load admins for order notification", "order_id", order.ID, "error", err)
+		return nil
+	}
 	for _, admin := range admins {
 		go s.notificationService.NotifyOrder(admin.ID, SubjectOrderRecv, NotifyOrderRecv, order)
 	}
@@ -308,21 +364,25 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 	return nil
 }
 
-func (s *paymentService) handlePaymentIntentCanceled(_ context.Context, pi *stripe.PaymentIntent) error {
+func (s *paymentService) handlePaymentIntentCanceled(ctx context.Context, pi *stripe.PaymentIntent) error {
 	orderID := pi.Metadata["order_id"]
 	if orderID == "" {
-		return fmt.Errorf("order_id not found in payment intent metadata")
+		// deterministic payload issue: retry won't fix
+		slog.WarnContext(ctx, "payment_intent.canceled missing order_id", "pi_id", pi.ID)
+		return nil
 	}
-	slog.Debug("Payment intent canceled", "id", pi.ID, "order_id", orderID)
+	slog.DebugContext(ctx, "Payment intent canceled", "id", pi.ID, "order_id", orderID)
 	return nil
 }
 
-func (s *paymentService) handlePaymentIntentFailed(_ context.Context, pi *stripe.PaymentIntent) error {
+func (s *paymentService) handlePaymentIntentFailed(ctx context.Context, pi *stripe.PaymentIntent) error {
 	orderID := pi.Metadata["order_id"]
 	if orderID == "" {
-		return fmt.Errorf("order_id not found in payment intent metadata")
+		// deterministic payload issue: retry won't fix
+		slog.WarnContext(ctx, "payment_intent.payment_failed missing order_id", "pi_id", pi.ID)
+		return nil
 	}
-	slog.Debug("Payment intent payment failed", "id", pi.ID, "order_id", orderID)
+	slog.DebugContext(ctx, "Payment intent payment failed", "id", pi.ID, "order_id", orderID)
 	return nil
 }
 
@@ -331,45 +391,57 @@ func (s *paymentService) handlePaymentIntentFailed(_ context.Context, pi *stripe
 func (s *paymentService) handleRefund(ctx context.Context, charge *stripe.Charge) error {
 	orderID := charge.Metadata["order_id"]
 	if orderID == "" {
-		return fmt.Errorf("order_id not found in charge metadata")
+		// deterministic payload issue: retry won't fix
+		slog.WarnContext(ctx, "charge.refunded missing order_id", "charge_id", charge.ID)
+		return nil
 	}
 
 	// do some basic validation
 	order, err := s.repo.GetOrderByID(ctx, orderID)
 	if err != nil {
+		// transient: allow retry
 		return err
 	}
 	// Handle idempotency
-	if order.Status == types.OrderRefunded {
-		slog.Debug("Order already marked as refunded", "order_id", orderID)
+	if *order.Status == types.OrderRefunded {
+		slog.DebugContext(ctx, "charge.refunded no-op: order already refunded", "order_id", orderID, "charge_id", charge.ID)
 		return nil
 	}
 
 	// Check if the order is eligible for a refund
-	isEligible := order.Status == types.OrderPaid ||
-		order.Status == types.OrderShipped ||
-		order.Status == types.OrderDelivered
+	isEligible := *order.PaymentStatus == types.PaymentStatusPaid && *order.PaymentMethod == types.PaymentMethodStripe
 
 	if !isEligible {
-		return fmt.Errorf("refund received for non-eligible order: %s, status=%s", order.ID, order.Status)
+		slog.WarnContext(ctx,
+			"charge.refunded refund eligibility mismatch",
+			"order_id", order.ID,
+			"expected_payment_status", types.PaymentStatusPaid,
+			"actual_payment_status", *order.PaymentStatus,
+			"expected_payment_method", types.PaymentMethodStripe,
+			"actual_payment_method", *order.PaymentMethod,
+		)
+		return nil
 	}
 
 	if !strings.EqualFold(utilities.Locale.Currency, charge.Currency) {
-		return fmt.Errorf("currency mismatch: expected %s, got %s, order_id=%s", utilities.Locale.Currency, charge.Currency, order.ID)
+		slog.WarnContext(ctx, "charge.refunded currency mismatch", "order_id", order.ID, "expected_currency", utilities.Locale.Currency, "actual_currency", charge.Currency)
+		return nil
 	}
 
 	if order.TotalAmount != charge.AmountRefunded {
-		slog.Warn("partial refund received", "order_id", order.ID, "order_amount", order.TotalAmount, "refund_amount", charge.AmountRefunded)
+		slog.WarnContext(ctx, "charge.refunded partial refund not supported", "order_id", order.ID, "order_amount", order.TotalAmount, "refund_amount", charge.AmountRefunded)
+		return nil
 	}
 
 	// mark order as refunded
-	order.Status = types.OrderRefunded
+	*order.Status = types.OrderRefunded
+	*order.PaymentStatus = types.PaymentStatusRefunded
 	err = s.repo.UpdateOrder(ctx, &order)
 	if err != nil {
 		return fmt.Errorf("failed to mark order as refunded: order_id=%s, error=%w", order.ID, err)
 	}
 
-	slog.Debug("Charge refunded", "id", charge.ID, "order_id", orderID, "payment_intent_id", charge.PaymentIntent)
+	slog.DebugContext(ctx, "Charge refunded", "id", charge.ID, "order_id", orderID, "payment_intent_id", charge.PaymentIntent)
 
 	return nil
 }

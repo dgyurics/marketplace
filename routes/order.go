@@ -155,12 +155,21 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create order
+	paymentMethod := types.PaymentMethodStripe
 	order := &types.Order{
 		IdempotencyKey: &idempotencyKey,
 		Address:        addr,
 		TaxAmount:      tax,
+		PaymentMethod:  &paymentMethod,
 	}
 	populateOrderFromCart(order, cart)
+
+	// FIXME minimum amount must exceed stripe transaction fee
+	if order.TotalAmount == 0 {
+		u.RespondWithError(w, r, http.StatusBadRequest, "total amount must be greater than zero")
+		return
+	}
+
 	err = h.orderService.CreateOrder(r.Context(), order)
 
 	var stockErr *types.InsufficientStockError

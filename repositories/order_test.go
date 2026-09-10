@@ -35,9 +35,11 @@ func TestOrderRepository_GetOrder_Success(t *testing.T) {
 	addressID := createTestAddress(t, dbPool, user.ID)
 
 	// Create empty order with address
+	paymentMethod := types.PaymentMethodStripe
 	order := &types.Order{
-		ID:     utilities.MustGenerateIDString(),
-		UserID: user.ID,
+		ID:            utilities.MustGenerateIDString(),
+		UserID:        user.ID,
+		PaymentMethod: &paymentMethod,
 		Address: types.Address{
 			ID: addressID,
 		},
@@ -50,7 +52,9 @@ func TestOrderRepository_GetOrder_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, order.ID, fetchedOrder.ID)
 	assert.Equal(t, user.ID, fetchedOrder.UserID)
-	assert.Equal(t, types.OrderPending, fetchedOrder.Status)
+	if assert.NotNil(t, fetchedOrder.Status) {
+		assert.Equal(t, types.OrderPending, *fetchedOrder.Status)
+	}
 	assert.Empty(t, fetchedOrder.Items) // No items in newly created order
 	assert.NotNil(t, fetchedOrder.Address)
 	assert.Equal(t, addressID, fetchedOrder.Address.ID)

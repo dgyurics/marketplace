@@ -67,12 +67,16 @@ func (s *scheduleService) Start(ctx context.Context) {
 	}
 }
 
+// Users have 15 minutes to fill out payment information upon reaching the payments page
 func (s *scheduleService) removeStaleOrders(ctx context.Context) {
 	_, err := s.db.ExecContext(ctx, `
 		WITH canceled_orders AS (
 			UPDATE orders
 			SET status = 'canceled', updated_at = NOW()
-			WHERE status = 'pending' AND updated_at < NOW() - INTERVAL '15 minutes'
+			WHERE
+				status = 'pending'
+				AND payment_method = 'stripe'
+				AND updated_at < NOW() - INTERVAL '15 minutes'
 			RETURNING id, address_id
 		),
 		deleted_items AS (
