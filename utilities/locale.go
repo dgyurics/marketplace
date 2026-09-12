@@ -3,6 +3,7 @@ package utilities
 import (
 	"errors"
 	"regexp"
+	"strings"
 
 	"github.com/dgyurics/marketplace/types"
 )
@@ -155,12 +156,20 @@ var PostalCodePatterns = map[string]string{
 	"ZA": `^\d{4}$`,                               // South Africa 2000
 }
 
+var compiledPostalPatterns = func() map[string]*regexp.Regexp {
+	out := make(map[string]*regexp.Regexp, len(PostalCodePatterns))
+	for k, v := range PostalCodePatterns {
+		out[k] = regexp.MustCompile(v)
+	}
+	return out
+}()
+
 func ValidatePostalCode(country, postalCode string) error {
-	regex, ok := PostalCodePatterns[country]
+	regex, ok := compiledPostalPatterns[country]
 	if !ok {
 		return nil
 	}
-	if regexp.MustCompile(regex).MatchString(postalCode) {
+	if regex.MatchString(strings.ToUpper(postalCode)) {
 		return nil
 	}
 	return errors.New("invalid postal code format")

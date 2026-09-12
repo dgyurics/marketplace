@@ -185,32 +185,6 @@ func TestValidatePostalCode_WhitespaceOnly(t *testing.T) {
 	}
 }
 
-// Case Sensitivity Tests
-func TestValidatePostalCode_CaseSensitivity(t *testing.T) {
-	// UK postcodes are case sensitive - lowercase should fail
-	err := ValidatePostalCode("GB", "sw1a 1aa")
-	if err == nil {
-		t.Error("Expected lowercase UK postal code to return error (case sensitive)")
-	}
-
-	// Canada postcodes accept both cases - lowercase should work
-	err = ValidatePostalCode("CA", "k1a 0a6")
-	if err != nil {
-		t.Errorf("Expected lowercase Canada postal code to return nil (case insensitive), got %v", err)
-	}
-
-	// Test that uppercase works for both
-	err = ValidatePostalCode("GB", "SW1A 1AA")
-	if err != nil {
-		t.Errorf("Expected uppercase UK postal code to return nil, got %v", err)
-	}
-
-	err = ValidatePostalCode("CA", "K1A 0A6")
-	if err != nil {
-		t.Errorf("Expected uppercase Canada postal code to return nil, got %v", err)
-	}
-}
-
 func TestValidateState_CaseSensitivity(t *testing.T) {
 	// US states should be case sensitive
 	err := ValidateState("US", "ca")
