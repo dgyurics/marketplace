@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import type { StripePaymentElement, StripeElements } from '@stripe/stripe-js'
+import type { StripePaymentElement, StripeElements, Stripe } from '@stripe/stripe-js'
 import { onMounted, onBeforeUnmount } from 'vue'
 
 import { getStripe } from '@/services/stripe'
@@ -39,7 +39,7 @@ onBeforeUnmount(() => {
   paymentElement?.unmount()
 })
 
-async function initializePaymentElement(stripe: any) {
+async function initializePaymentElement(stripe: Stripe) {
   elements = stripe.elements({
     clientSecret: props.clientSecret,
     appearance: {
