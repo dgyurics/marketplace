@@ -17,11 +17,13 @@ const router = useRouter()
 import { getOrderOwner } from '@/services/api'
 import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
+import { useInboxStore } from '@/store/inbox'
 
 const route = useRoute()
 
 const checkoutStore = useCheckoutStore()
 const cartStore = useCartStore()
+const inboxStore = useInboxStore()
 
 // Sample redirect URL
 // https://selfco.io/checkout/payment/checkout/confirmation?
@@ -51,11 +53,12 @@ onMounted(async () => {
   }
 })
 
-// Poll until backend has cleared the cart (webhook processed)
+// Poll until the webhook has been processed: the cart is cleared and the
+// order notification has landed in the inbox.
 const clearCart = () => {
   const poll = window.setInterval(async () => {
-    await cartStore.fetchCart()
-    if (!cartStore.hasItems) {
+    await Promise.all([cartStore.fetchCart(), inboxStore.fetchConversations()])
+    if (!cartStore.hasItems && inboxStore.conversations.length > 0) {
       window.clearInterval(poll)
     }
   }, 1500)
