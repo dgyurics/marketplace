@@ -17,15 +17,17 @@ const hierarchy: Record<Role, number> = {
   admin: 4,
 }
 
+const createGuestUser = (): JwtUser => ({
+  user_id: '',
+  email: '',
+  role: 'guest',
+  exp: 0,
+  iat: 0,
+})
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: {
-      user_id: '',
-      email: '',
-      role: 'guest',
-      exp: 0,
-      iat: 0,
-    } as JwtUser,
+    user: createGuestUser(),
     accessToken: '',
     refreshToken: getRefreshToken(),
     error: '',
