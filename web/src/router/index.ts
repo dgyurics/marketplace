@@ -149,7 +149,9 @@ export async function createAppRouter() {
 
   // fetch inbox on every navigation
   router.afterEach(() => {
-    useInboxStore().fetchConversations()
+    if (useAuthStore().isAuthenticated) {
+      useInboxStore().fetchConversations()
+    }
   })
 
   return router
