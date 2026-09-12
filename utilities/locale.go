@@ -89,7 +89,7 @@ type Currency struct {
 
 var PostalCodePatterns = map[string]string{
 	"AE": `.*`,                                    // UAE: Not mandatory
-	"AR": `^([A-Z]\d{4}[A-Z]{3})|(\d{4})$`,        // Argentina C1425ABC or 1425
+	"AR": `^([A-Z]\d{4}[A-Z]{3}|\d{4})$`,          // Argentina C1425ABC or 1425
 	"AT": `^\d{4}$`,                               // Austria 1234
 	"AU": `^\d{4}$`,                               // Australia 4000
 	"BE": `^\d{4}$`,                               // Belgium 1234
