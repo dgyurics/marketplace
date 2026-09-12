@@ -20,7 +20,6 @@ A self-hosted e-commerce framework designed for local businesses and community c
 
 ## Planned Enhancements
 
-* One click buy option
 * Implement pay on delivery
 * Username/password login — no email required
 * Documentation for production setup and configuration
