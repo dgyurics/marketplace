@@ -1,4 +1,4 @@
-import { getLocale } from './locale'
+import { getLocale } from './config'
 
 /**
  * Get currency configuration (lazy-loaded)

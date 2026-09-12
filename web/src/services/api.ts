@@ -19,7 +19,7 @@ import type {
   UserRecord,
   UpdateCategoryRequest,
   UpdateAddress,
-  Locale,
+  AppConfig,
   ShippingZone,
   ExcludedShippingZone,
   RegistrationCode,
@@ -378,8 +378,8 @@ export const updateProduct = async (product: UpdateProductRequest): Promise<Prod
   return response.data
 }
 
-export const getLocale = async (): Promise<Locale> => {
-  const response = await apiClient.get('/locale')
+export const getConfig = async (): Promise<AppConfig> => {
+  const response = await apiClient.get('/config')
   return response.data
 }
 

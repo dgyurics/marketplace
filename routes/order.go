@@ -212,6 +212,7 @@ func populateOrderFromCart(order *types.Order, cart []types.CartItem) {
 	order.TotalAmount = order.Amount + order.TaxAmount + order.ShippingAmount
 }
 
+// TODO implement pay-on-delivery + disable stripe payments when config says to
 func (h *OrderRoutes) RegisterRoutes() {
 	h.mux.Handle("POST /orders", h.secure(types.RoleGuest)(h.limit(h.CreateOrder, 5, time.Hour)))
 	h.mux.Handle("PUT /orders", h.secure(types.RoleAdmin)(h.UpdateOrder))

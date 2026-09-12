@@ -1,4 +1,4 @@
-import { getLocale } from './locale'
+import { getLocale } from './config'
 
 const DEFAULT_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',

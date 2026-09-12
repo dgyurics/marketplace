@@ -39,9 +39,6 @@ func main() {
 	// Initialize logger
 	utilities.InitLogger(config.Logger)
 
-	// Initialize Locale
-	utilities.InitLocale(config.Country)
-
 	// Initialize unique ID generator
 	utilities.InitIDGenerator(config.MachineID)
 
@@ -97,7 +94,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewTaxRoutes(services.Cart, services.Tax, baseRouter),
 		routes.NewUserRoutes(services.User, services.JWT, services.Refresh, baseRouter),
 		routes.NewOfferRoutes(services.Offer, baseRouter),
-		routes.NewLocaleRoutes(baseRouter),
+		routes.NewConfigRoutes(config.AppMetadata, baseRouter),
 	)
 
 	// wrap mux with middleware after routes are registered

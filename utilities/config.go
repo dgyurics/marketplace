@@ -16,10 +16,15 @@ import (
 // LoadConfig loads the configuration from environment variables
 func LoadConfig() types.Config {
 	environment := loadEnvironment()
+	payment := loadPaymentConfig(environment)
+	baseURL := loadBaseURL()
+
+	// resolve the active locale before anything reads utilities.Locale
+	loadLocale()
 
 	return types.Config{
-		BaseURL:           loadBaseURL(),
-		Country:           loadCountry(),
+		AppMetadata:       loadAppMetadata(payment),
+		BaseURL:           baseURL,
 		Environment:       environment,
 		Server:            loadServerConfig(),
 		Auth:              loadAuthConfig(),
@@ -27,12 +32,22 @@ func LoadConfig() types.Config {
 		Email:             loadEmailConfig(),
 		Logger:            loadLoggerConfig(),
 		MachineID:         loadMachineID(),
-		Payment:           loadPaymentConfig(environment),
+		Payment:           payment,
 		JWT:               loadJWTConfig(),
 		HTTPClientTimeout: loadHttpClientTimeout(),
-		Image:             loadImageConfig(),
+		Image:             loadImageConfig(baseURL),
 		RateLimit:         loadRateLimit(),
-		Tax:               loadTaxConfig(),
+	}
+}
+
+// loadAppMetadata builds the metadata exposed to clients via GET /config.
+func loadAppMetadata(payment types.PaymentConfig) types.AppMetadata {
+	return types.AppMetadata{
+		Locale: Locale,
+		PaymentOptions: types.PaymentOptions{
+			Stripe:        payment.Stripe.Enabled,
+			PayOnDelivery: payment.OnDelivery,
+		},
 	}
 }
 
@@ -117,7 +132,7 @@ func loadMachineID() uint8 {
 	return uint8(key)
 }
 
-func loadImageConfig() types.ImageConfig {
+func loadImageConfig(baseURL string) types.ImageConfig {
 	keyHex := mustLookupEnv("IMGPROXY_KEY")
 	key, err := hex.DecodeString(keyHex)
 	if err != nil {
@@ -132,7 +147,7 @@ func loadImageConfig() types.ImageConfig {
 		os.Exit(1)
 	}
 
-	urlImgproxy := fmt.Sprintf("%s/images", loadBaseURL())
+	urlImgproxy := fmt.Sprintf("%s/images", baseURL)
 
 	return types.ImageConfig{
 		Key:              key,
@@ -148,18 +163,36 @@ func loadImageConfig() types.ImageConfig {
 func loadPaymentConfig(env types.Environment) types.PaymentConfig {
 	return types.PaymentConfig{
 		Stripe:      loadStripeConfig(),
+		OnDelivery:  isFeatureEnabled("PAYMENT_ON_DELIVERY_ENABLED"),
 		Tax:         loadTaxConfig(),
 		Environment: env,
 	}
 }
 
 func loadStripeConfig() types.StripeConfig {
+	if !isFeatureEnabled("STRIPE_ENABLED") {
+		return types.StripeConfig{Enabled: false}
+	}
 	return types.StripeConfig{
+		Enabled:              true,
 		BaseURL:              mustLookupEnv("STRIPE_BASE_URL"),
 		SecretKey:            mustLookupEnv("STRIPE_SECRET_KEY"),
 		WebhookSigningSecret: mustLookupEnv("STRIPE_WEBHOOK_SIGNING_SECRET"),
 		Version:              mustLookupEnv("STRIPE_VERSION"),
 	}
+}
+
+// loadLocale resolves the active locale from the COUNTRY environment variable
+// and assigns it to the package-level Locale.
+// LocaleData is the source of truth for which countries are supported.
+func loadLocale() {
+	country := strings.ToUpper(mustLookupEnv("COUNTRY"))
+	locale, ok := LocaleData[country]
+	if !ok {
+		slog.Error("country not supported", "country", country)
+		os.Exit(1)
+	}
+	Locale = locale
 }
 
 func loadEnvironment() types.Environment {
@@ -185,15 +218,6 @@ func loadHttpClientTimeout() time.Duration {
 
 func loadBaseURL() string {
 	return mustLookupEnv("BASE_URL")
-}
-
-func loadCountry() string {
-	country := mustLookupEnv("COUNTRY")
-	if _, ok := SupportedCountries[country]; !ok {
-		slog.Error("country not supported", "country", country)
-		os.Exit(1)
-	}
-	return country
 }
 
 func loadRateLimit() bool {

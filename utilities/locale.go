@@ -3,36 +3,15 @@ package utilities
 import (
 	"errors"
 	"regexp"
-	"sync"
+
+	"github.com/dgyurics/marketplace/types"
 )
 
-var (
-	Locale     *locale
-	initLocale sync.Once
-)
+// Locale holds the active locale for the running application.
+// It is populated once, on startup, by LoadConfig.
+var Locale types.LocaleConfig
 
-func InitLocale(countryCode string) {
-	initLocale.Do(func() {
-		Locale = LocaleData[countryCode]
-	})
-}
-
-type locale struct {
-	CountryCode       string            `json:"country_code"`        // ISO 3166-1 alpha-2, e.g., "US", "CA", "DE"
-	Country           string            `json:"country"`             // e.g., "United States", "Canada", "Germany"
-	PostalCodeLabel   string            `json:"postal_code_label"`   // e.g., "Postal Code", "Postcode"
-	PostalCodePattern string            `json:"postal_code_pattern"` // regex pattern, e.g., "^\d{5}(-\d{4})?$"
-	StateLabel        string            `json:"state_label"`         // e.g., "State", "Province"
-	StateRequired     bool              `json:"state_required"`      // whether state is required addresses
-	StateCodes        map[string]string `json:"state_codes"`         // e.g., "CA": "California", "NY": "New York"
-	Currency          string            `json:"currency"`            // e.g., "USD", "CAD", "EUR"
-	MinorUnits        int               `json:"minor_units"`         // e.g., 2 for USD, 0 for JPY
-	Language          string            `json:"language"`            // e.g., "en-US", "fr-CA", "de-DE"
-	Line2Label        string            `json:"line2_label"`         // e.g., "Apt, suite, etc.", "Flat, unit, etc."
-	// TODO InclusiveTax bool
-}
-
-var LocaleData = map[string]*locale{
+var LocaleData = map[string]types.LocaleConfig{
 	"US": {
 		CountryCode:       "US",
 		Country:           "United States",
@@ -98,78 +77,8 @@ var LocaleData = map[string]*locale{
 		MinorUnits:        0,
 		Language:          "ja-JP", // another option is "en-JP"
 	},
-	// TODO additional countries within SupportedCountries
-}
-
-// Supported ISO 3166-1 alpha-2 countries
-// Uncomment once entry added to localeData map
-var SupportedCountries = map[string]bool{
-	"CA": true,
-	"DE": true,
-	"GB": true,
-	"JP": true,
-	"US": true,
-	// "AE": true,
-	// "AR": true,
-	// "AT": true,
-	// "AU": true,
-	// "BE": true,
-	// "BR": true,
-	// "CH": true,
-	// "CI": true,
-	// "CL": true,
-	// "CO": true,
-	// "CY": true,
-	// "CZ": true,
-	// "DK": true,
-	// "EE": true,
-	// "EG": true,
-	// "ES": true,
-	// "FI": true,
-	// "FR": true,
-	// "GH": true,
-	// "GI": true,
-	// "GR": true,
-	// "HK": true,
-	// "HR": true,
-	// "HU": true,
-	// "ID": true,
-	// "IE": true,
-	// "IL": true,
-	// "IN": true,
-	// "IS": true,
-	// "IT": true,
-	// "KE": true,
-	// "KR": true,
-	// "LI": true,
-	// "LK": true,
-	// "LT": true,
-	// "LU": true,
-	// "LV": true,
-	// "MA": true,
-	// "MT": true,
-	// "MX": true,
-	// "MY": true,
-	// "NG": true,
-	// "NL": true,
-	// "NO": true,
-	// "NZ": true,
-	// "PA": true,
-	// "PE": true,
-	// "PH": true,
-	// "PL": true,
-	// "PT": true,
-	// "RO": true,
-	// "SA": true,
-	// "SE": true,
-	// "SG": true,
-	// "SI": true,
-	// "SK": true,
-	// "TH": true,
-	// "TW": true,
-	// "UY": true,
-	// "VN": true,
-	// "ZA": true,
+	// TODO additional countries; candidate ISO 3166-1 alpha-2 codes are
+	// enumerated in PostalCodePatterns below.
 }
 
 type Currency struct {

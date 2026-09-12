@@ -6,7 +6,7 @@ import { createAppRouter } from './router'
 
 import authDirective from '@/directives/auth'
 import { useCartStore } from '@/store/cart'
-import { initializeLocale } from '@/utilities/locale'
+import { initializeConfig } from '@/utilities/config'
 
 import './assets/style.css'
 
@@ -27,8 +27,8 @@ async function initApp() {
   const router = await createAppRouter()
   app.use(router)
 
-  // Initialize locale before creating the app
-  await initializeLocale()
+  // Initialize app config before creating the app
+  await initializeConfig()
 
   app.mount('#app')
 }
