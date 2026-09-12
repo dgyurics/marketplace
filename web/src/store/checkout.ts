@@ -24,6 +24,8 @@ export const useCheckoutStore = defineStore('checkout', {
 
   actions: {
     async saveShippingAddress(addressData: Address): Promise<Address> {
+      this.shippingError = null // Clear any previous error before saving
+
       // Normalize country and state to uppercase
       addressData.country = addressData.country.toUpperCase()
       if (addressData.state) {

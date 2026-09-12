@@ -247,7 +247,7 @@ export const removeUser = async (userId: string): Promise<void> => {
 
 export const getCart = async (): Promise<CartItem[]> => {
   const response = await apiClient.get('/carts')
-  return response.data // Updated to return the array directly
+  return response.data
 }
 
 export const addItemToCart = async (productId: string, quantity: number) => {

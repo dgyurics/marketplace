@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { Address as AddressForm } from '@/components/forms'
@@ -40,6 +40,10 @@ onMounted(async () => {
   if (cartStore.items.length === 0) {
     router.push('/cart')
   }
+})
+
+onUnmounted(() => {
+  checkoutStore.shippingError = null
 })
 
 async function handleShippingSubmit() {
