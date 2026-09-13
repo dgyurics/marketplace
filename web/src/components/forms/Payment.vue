@@ -75,23 +75,27 @@ async function initializePaymentElement(stripe: Stripe) {
   paymentElement.on('ready', () => emit('ready'))
 }
 
-async function confirmPayment(refId: string) {
-  if (!elements || !refId) {
+async function confirmPayment(orderId: string) {
+  if (!elements || !orderId) {
     throw new Error('Payment form not initialized or missing order ID')
   }
 
   const stripe = await getStripe()
   if (!stripe) throw new Error('Stripe not available')
 
-  const { error } = await stripe.confirmPayment({
+  const { error, paymentIntent } = await stripe.confirmPayment({
     elements,
     confirmParams: {
-      return_url: `${window.location.origin}/checkout/confirmation?order_id=${refId}`,
+      return_url: `${window.location.origin}/checkout/confirmation?order_id=${orderId}`,
     },
     redirect: 'if_required',
   })
 
   if (error) throw new Error(error.message)
+
+  if (paymentIntent?.status !== 'succeeded' && paymentIntent?.status !== 'processing') {
+    throw new Error('Payment was not completed. Please try again.')
+  }
 }
 
 defineExpose({ confirmPayment })
