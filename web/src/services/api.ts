@@ -277,7 +277,7 @@ export const createOrder = async (
   const params = new URLSearchParams()
   params.append('shipping_id', shippingID)
 
-  const response = await apiClient.post(`/orders?${params}`, null, {
+  const response = await apiClient.post(`/orders/stripe?${params}`, null, {
     headers: { 'Idempotency-Key': idempotencyKey },
     validateStatus: (status) => status === 200 || status === 409,
   })

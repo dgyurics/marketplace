@@ -108,7 +108,7 @@ func (h *OrderRoutes) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, order)
 }
 
-func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
+func (h *OrderRoutes) CreateOrderStripe(w http.ResponseWriter, r *http.Request) {
 	idempotencyKey := r.Header.Get("Idempotency-Key")
 	if idempotencyKey == "" {
 		u.RespondWithError(w, r, http.StatusBadRequest, "Idempotency-Key header is required")
@@ -196,6 +196,11 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusOK, stripe.CreateOrderResponse{ClientSecret: pi.ClientSecret, OrderID: order.ID})
 }
 
+// TODO: implement
+func (h *OrderRoutes) CreateOrderPayOnDelivery(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // populateOrderFromCart builds the order items from the cart and calculates
 // the subtotal (Amount) and TotalAmount (subtotal + tax + shipping).
 func populateOrderFromCart(order *types.Order, cart []types.CartItem) {
@@ -214,7 +219,8 @@ func populateOrderFromCart(order *types.Order, cart []types.CartItem) {
 
 // TODO implement pay-on-delivery + disable stripe payments when config says to
 func (h *OrderRoutes) RegisterRoutes() {
-	h.mux.Handle("POST /orders", h.secure(types.RoleGuest)(h.limit(h.CreateOrder, 5, time.Hour)))
+	h.mux.Handle("POST /orders/stripe", h.secure(types.RoleGuest)(h.limit(h.CreateOrderStripe, 5, time.Hour)))
+	h.mux.Handle("POST /orders/pay-on-delivery", h.secure(types.RoleMember)(h.limit(h.CreateOrderPayOnDelivery, 5, time.Hour)))
 	h.mux.Handle("PUT /orders", h.secure(types.RoleAdmin)(h.UpdateOrder))
 	h.mux.Handle("GET /orders/{id}/public", http.HandlerFunc(h.GetOrderPublic))
 	h.mux.Handle("GET /orders/{id}/owner", h.secure(types.RoleGuest)(h.GetOrderOwner))
