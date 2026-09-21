@@ -25,6 +25,7 @@ import type {
   RegistrationCode,
   CreateOrderConflict,
   CreateOrderResult,
+  PayOnDeliveryResult,
 } from '@/types'
 import type { Conversation } from '@/types/conversation'
 
@@ -270,7 +271,7 @@ export const updateOrder = async (order: Order): Promise<Order> => {
   return response.data
 }
 
-export const createOrder = async (
+export const createOrderStripe = async (
   shippingID: string,
   idempotencyKey: string
 ): Promise<CreateOrderResult | CreateOrderConflict> => {
@@ -278,6 +279,24 @@ export const createOrder = async (
   params.append('shipping_id', shippingID)
 
   const response = await apiClient.post(`/orders/stripe?${params}`, null, {
+    headers: { 'Idempotency-Key': idempotencyKey },
+    validateStatus: (status) => status === 200 || status === 409,
+  })
+
+  if (response.status === 409) {
+    return { success: false, items: response.data }
+  }
+  return { success: true, data: response.data }
+}
+
+export const createOrderPayOnDelivery = async (
+  shippingID: string,
+  idempotencyKey: string
+): Promise<PayOnDeliveryResult | CreateOrderConflict> => {
+  const params = new URLSearchParams()
+  params.append('shipping_id', shippingID)
+
+  const response = await apiClient.post(`/orders/pay-on-delivery?${params}`, null, {
     headers: { 'Idempotency-Key': idempotencyKey },
     validateStatus: (status) => status === 200 || status === 409,
   })

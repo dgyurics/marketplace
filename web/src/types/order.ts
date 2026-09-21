@@ -47,3 +47,12 @@ export interface CreateOrderResponse {
   client_secret: string
   order_id: string
 }
+
+export interface PayOnDeliveryResult {
+  success: true
+  data: PayOnDeliveryResponse
+}
+
+export interface PayOnDeliveryResponse {
+  order_id: string
+}

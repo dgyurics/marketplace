@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import {
   createAddress as apiCreateAddress,
   updateAddress as apiUpdateAddress,
-  createOrder as apiCreateOrder,
+  createOrderStripe as apiCreateOrderStripe,
   getTaxEstimate as apiGetTaxEstimate,
 } from '@/services/api'
 import type { Address, CreateOrderResponse, InsufficientStockItem } from '@/types'
@@ -51,7 +51,7 @@ export const useCheckoutStore = defineStore('checkout', {
       }
 
       const idempotencyKey = window.crypto.randomUUID()
-      const result = await apiCreateOrder(this.shippingAddress.id, idempotencyKey)
+      const result = await apiCreateOrderStripe(this.shippingAddress.id, idempotencyKey)
 
       if (!result.success) {
         this.insufficientStock = result.items
