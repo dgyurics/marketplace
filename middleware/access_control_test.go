@@ -197,3 +197,77 @@ func TestAuthenticateUser_GuestUser(t *testing.T) {
 	// Verify the response status code
 	assert.Equal(t, http.StatusOK, rr.Code)
 }
+
+func TestOptionalAuth_ValidToken(t *testing.T) {
+	mockJWTService := &MockJWTService{
+		ParseTokenFunc: func(token string) (*types.User, error) {
+			return &types.User{ID: "123", Role: "member"}, nil
+		},
+	}
+	auth := NewAccessControl(mockJWTService)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer valid-token")
+	rr := httptest.NewRecorder()
+
+	calls := 0
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		user, ok := r.Context().Value(services.UserKey).(*types.User)
+		assert.True(t, ok, "expected user to be stored in context")
+		assert.Equal(t, "123", user.ID)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	auth.OptionalAuth(nextHandler).ServeHTTP(rr, req)
+
+	assert.Equal(t, 1, calls, "next handler should be called exactly once")
+	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestOptionalAuth_NoToken(t *testing.T) {
+	auth := NewAccessControl(&MockJWTService{})
+
+	// No Authorization header
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr := httptest.NewRecorder()
+
+	calls := 0
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		_, ok := r.Context().Value(services.UserKey).(*types.User)
+		assert.False(t, ok, "context should not contain a user")
+		w.WriteHeader(http.StatusOK)
+	})
+
+	auth.OptionalAuth(nextHandler).ServeHTTP(rr, req)
+
+	assert.Equal(t, 1, calls, "next handler should be called exactly once")
+	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestOptionalAuth_InvalidToken(t *testing.T) {
+	mockJWTService := &MockJWTService{
+		ParseTokenFunc: func(token string) (*types.User, error) {
+			return nil, errors.New("invalid token")
+		},
+	}
+	auth := NewAccessControl(mockJWTService)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer invalid-token")
+	rr := httptest.NewRecorder()
+
+	calls := 0
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		_, ok := r.Context().Value(services.UserKey).(*types.User)
+		assert.False(t, ok, "context should not contain a user for an invalid token")
+		w.WriteHeader(http.StatusOK)
+	})
+
+	auth.OptionalAuth(nextHandler).ServeHTTP(rr, req)
+
+	assert.Equal(t, 1, calls, "next handler should be called exactly once")
+	assert.Equal(t, http.StatusOK, rr.Code)
+}

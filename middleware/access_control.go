@@ -13,13 +13,14 @@ import (
 
 type Authorizer interface {
 	RequireRole(role types.Role) func(next http.HandlerFunc) http.HandlerFunc
+	OptionalAuth(next http.HandlerFunc) http.HandlerFunc
 }
 
 type authorizer struct {
 	jwtService services.JWTService
 }
 
-func NewAccessControl(jwtService services.JWTService) *authorizer {
+func NewAccessControl(jwtService services.JWTService) Authorizer {
 	return &authorizer{jwtService}
 }
 
@@ -28,19 +29,33 @@ func NewAccessControl(jwtService services.JWTService) *authorizer {
 // The role hierarchy is defined in types.Role, where higher roles have more privileges.
 func (a *authorizer) RequireRole(role types.Role) func(next http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			user, err := a.authenticateToken(r)
+		return func(w http.ResponseWriter, r *http.Request) {
+			usr, err := a.authenticateToken(r)
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
-			if !user.HasMinimumRole(role) {
+			if !usr.HasMinimumRole(role) {
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
-			ctx := context.WithValue(r.Context(), services.UserKey, &user)
+			ctx := context.WithValue(r.Context(), services.UserKey, &usr)
 			next.ServeHTTP(w, r.WithContext(ctx))
-		})
+		}
+	}
+}
+
+// OptionalAuth attaches the user to the context when a valid token is present.
+// Requests without a token, or with an invalid one, proceed unauthenticated.
+func (a *authorizer) OptionalAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		usr, err := a.authenticateToken(r)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		ctx := context.WithValue(r.Context(), services.UserKey, &usr)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
 
@@ -58,9 +73,9 @@ func (a *authorizer) authenticateToken(r *http.Request) (types.User, error) {
 		return types.User{}, errors.New("invalid token format")
 	}
 
-	user, err := a.jwtService.ParseToken(tokenString)
+	usr, err := a.jwtService.ParseToken(tokenString)
 	if err != nil {
 		return types.User{}, fmt.Errorf("invalid or expired token: %w", err)
 	}
-	return *user, nil
+	return *usr, nil
 }
