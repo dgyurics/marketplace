@@ -13,14 +13,17 @@ import (
 
 type PaymentRoutes struct {
 	router
+	config         types.AppMetadata
 	paymentService services.PaymentService
 }
 
 func NewPaymentRoutes(
 	paymentService services.PaymentService,
+	config types.AppMetadata,
 	router router) *PaymentRoutes {
 	return &PaymentRoutes{
 		router:         router,
+		config:         config,
 		paymentService: paymentService,
 	}
 }
@@ -61,6 +64,17 @@ func (h *PaymentRoutes) EventHandler(w http.ResponseWriter, r *http.Request) {
 	u.RespondSuccess(w)
 }
 
+func (h *PaymentRoutes) PaymentMethods(w http.ResponseWriter, r *http.Request) {
+	payOpts := h.config.PaymentOptions
+	usr, ok := r.Context().Value(services.UserKey).(*types.User)
+	if !ok || !usr.HasMinimumRole(types.RoleMember) {
+		payOpts.PayOnDelivery = false
+	}
+
+	u.RespondWithJSON(w, 200, payOpts)
+}
+
 func (h *PaymentRoutes) RegisterRoutes() {
 	h.mux.Handle("POST /payment/events", http.HandlerFunc(h.EventHandler))
+	h.mux.Handle("GET /payment/methods", h.authMiddleware.OptionalAuth(http.HandlerFunc(h.PaymentMethods)))
 }

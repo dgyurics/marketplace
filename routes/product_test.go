@@ -28,6 +28,10 @@ func (d dummyAuth) RequireRole(role types.Role) func(next http.HandlerFunc) http
 	}
 }
 
+func (d dummyAuth) OptionalAuth(next http.HandlerFunc) http.HandlerFunc {
+	return next
+}
+
 // Mocking the ProductService
 type MockProductService struct {
 	mock.Mock
