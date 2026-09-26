@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <form @submit.prevent="submit">
     <section class="delivery-info">
       <p class="delivery-info-description">
         Nothing is charged now. Payment is collected when the order arrives.
@@ -20,16 +20,21 @@
       </label>
     </section>
 
-    <button type="button" class="btn-full-width mt-30" :disabled="!acknowledged" :tabindex="0">
+    <button
+      type="submit"
+      class="btn-full-width mt-30"
+      :disabled="isSubmitting || !acknowledged"
+      :tabindex="0"
+    >
       Place Order
     </button>
-  </div>
+  </form>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { useDeliveryCheckout } from '@/composables/useDeliveryCheckout'
 
-const acknowledged = ref(false)
+const { acknowledged, isSubmitting, submit } = useDeliveryCheckout()
 </script>
 
 <style scoped>

@@ -4,9 +4,15 @@ import {
   createAddress as apiCreateAddress,
   updateAddress as apiUpdateAddress,
   createOrderStripe as apiCreateOrderStripe,
+  createOrderPayOnDelivery as apiCreateOrderPayOnDelivery,
   getTaxEstimate as apiGetTaxEstimate,
 } from '@/services/api'
-import type { Address, CreateOrderResponse, InsufficientStockItem } from '@/types'
+import type {
+  Address,
+  CreateOrderResponse,
+  InsufficientStockItem,
+  PayOnDeliveryResponse,
+} from '@/types'
 
 export const useCheckoutStore = defineStore('checkout', {
   state: () => ({
@@ -59,6 +65,25 @@ export const useCheckoutStore = defineStore('checkout', {
       }
 
       this.stripe_client_secret = result.data.client_secret
+      this.order_id = result.data.order_id
+      this.insufficientStock = []
+
+      return result.data
+    },
+
+    async placePayOnDeliveryOrder(): Promise<PayOnDeliveryResponse | null> {
+      if (!this.shippingAddress.id) {
+        throw new Error('Shipping address not found')
+      }
+
+      const idempotencyKey = window.crypto.randomUUID()
+      const result = await apiCreateOrderPayOnDelivery(this.shippingAddress.id, idempotencyKey)
+
+      if (!result.success) {
+        this.insufficientStock = result.items
+        return null
+      }
+
       this.order_id = result.data.order_id
       this.insufficientStock = []
 
