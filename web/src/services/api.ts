@@ -26,6 +26,7 @@ import type {
   CreateOrderConflict,
   CreateOrderResult,
   PayOnDeliveryResult,
+  PaymentOptions,
 } from '@/types'
 import type { Conversation } from '@/types/conversation'
 
@@ -305,6 +306,11 @@ export const createOrderPayOnDelivery = async (
     return { success: false, items: response.data }
   }
   return { success: true, data: response.data }
+}
+
+export const getPaymentMethods = async (): Promise<PaymentOptions> => {
+  const response = await apiClient.get('/payment/methods')
+  return response.data
 }
 
 export const getUsers = async (page: number = 1, limit: number = 50): Promise<UserRecord[]> => {
