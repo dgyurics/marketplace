@@ -175,6 +175,7 @@ func (h *OrderRoutes) CreateOrderStripe(w http.ResponseWriter, r *http.Request) 
 	populateOrderFromCart(order, cart)
 
 	// FIXME minimum amount must exceed stripe transaction fee
+	// FIXME disallow orders containing free items
 	if order.TotalAmount == 0 {
 		u.RespondWithError(w, r, http.StatusBadRequest, "total amount must be greater than zero")
 		return
@@ -203,7 +204,7 @@ func (h *OrderRoutes) CreateOrderStripe(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusOK, stripe.CreateOrderResponse{ClientSecret: pi.ClientSecret, OrderID: order.ID})
+	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{ClientSecret: pi.ClientSecret, OrderID: order.ID})
 }
 
 func (h *OrderRoutes) CreateOrderPayOnDelivery(w http.ResponseWriter, r *http.Request) {
@@ -211,8 +212,71 @@ func (h *OrderRoutes) CreateOrderPayOnDelivery(w http.ResponseWriter, r *http.Re
 		u.RespondWithError(w, r, http.StatusNotFound, "on delivery payments disabled")
 		return
 	}
-	// TODO: implement
-	w.WriteHeader(http.StatusNotImplemented)
+
+	idempotencyKey := r.Header.Get("Idempotency-Key")
+	if idempotencyKey == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "Idempotency-Key header is required")
+		return
+	}
+
+	shippingID := r.URL.Query().Get("shipping_id")
+	if shippingID == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "shipping_id is required")
+		return
+	}
+
+	// Fetch shipping address
+	addr, err := h.addressService.GetAddress(r.Context(), shippingID)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Fetch user cart
+	cart, err := h.cartService.GetItems(r.Context())
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if len(cart) == 0 {
+		u.RespondWithError(w, r, http.StatusBadRequest, "cart is empty")
+		return
+	}
+
+	// Create order
+	paymentMethod := types.PaymentMethodOnDelivery
+	status := types.OrderPending
+	order := &types.Order{
+		IdempotencyKey: &idempotencyKey,
+		Address:        addr,
+		PaymentMethod:  &paymentMethod,
+		Status:         &status,
+	}
+	populateOrderFromCart(order, cart)
+
+	err = h.orderService.CreateOrder(r.Context(), order)
+
+	var stockErr *types.InsufficientStockError
+	if errors.As(err, &stockErr) {
+		u.RespondWithJSON(w, http.StatusConflict, stockErr.Items)
+		return
+	}
+	if err == types.ErrConstraintViolation {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// TODO send notification order-created
+
+	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{OrderID: order.ID})
 }
 
 // populateOrderFromCart builds the order items from the cart and calculates
@@ -231,7 +295,6 @@ func populateOrderFromCart(order *types.Order, cart []types.CartItem) {
 	order.TotalAmount = order.Amount + order.TaxAmount + order.ShippingAmount
 }
 
-// TODO implement pay-on-delivery + disable stripe payments when config says to
 func (h *OrderRoutes) RegisterRoutes() {
 	h.mux.Handle("POST /orders/stripe", h.secure(types.RoleGuest)(h.limit(h.CreateOrderStripe, 5, time.Hour)))
 	h.mux.Handle("POST /orders/pay-on-delivery", h.secure(types.RoleMember)(h.limit(h.CreateOrderPayOnDelivery, 5, time.Hour)))
@@ -241,25 +304,3 @@ func (h *OrderRoutes) RegisterRoutes() {
 	h.mux.Handle("GET /orders/{id}/admin", h.secure(types.RoleStaff)(h.GetOrderAdmin))
 	h.mux.Handle("GET /orders", h.secure(types.RoleStaff)(h.GetOrders))
 }
-
-// TODO
-// implement separate endpoints for creating order via CC vs POD
-// implement endpoint for retrieving supported payment methods for a given order
-//
-
-// Payment rules (CC = Credit Card, POD = Pay On Delivery)
-//
-// Inputs: ccEnabled, podEnabled, isMember, hasFreeItem
-//
-// 1) If !ccEnabled && !podEnabled => BLOCK
-// 2) If hasFreeItem:
-//    - require isMember && podEnabled
-//    - method = POD only
-//    - shipping_amount = 0
-// 3) If no free items:
-//    - CC allowed if ccEnabled
-//    - POD allowed if podEnabled && isMember
-//    - if both allowed: user chooses
-//    - if neither allowed: BLOCK
-//
-// POD orders: decrement inventory immediately.

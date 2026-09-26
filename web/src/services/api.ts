@@ -281,7 +281,7 @@ export const createOrderStripe = async (
 
   const response = await apiClient.post(`/orders/stripe?${params}`, null, {
     headers: { 'Idempotency-Key': idempotencyKey },
-    validateStatus: (status) => status === 200 || status === 409,
+    validateStatus: (status) => status === 201 || status === 409,
   })
 
   if (response.status === 409) {
@@ -299,7 +299,7 @@ export const createOrderPayOnDelivery = async (
 
   const response = await apiClient.post(`/orders/pay-on-delivery?${params}`, null, {
     headers: { 'Idempotency-Key': idempotencyKey },
-    validateStatus: (status) => status === 200 || status === 409,
+    validateStatus: (status) => status === 201 || status === 409,
   })
 
   if (response.status === 409) {

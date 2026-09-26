@@ -86,7 +86,7 @@ type Charge struct {
 
 type CreateOrderResponse struct {
 	OrderID      string `json:"order_id"`
-	ClientSecret string `json:"client_secret"`
+	ClientSecret string `json:"client_secret,omitempty"`
 }
 
 type TaxCalculationResponse struct {
