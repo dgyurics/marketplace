@@ -1,9 +1,11 @@
 package repositories
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 
 	"github.com/dgyurics/marketplace/types"
 )
@@ -102,7 +104,15 @@ func cancelPendingOrders(ctx context.Context, tx *sql.Tx, userID string) error {
 // currently available.
 func reserveInventory(ctx context.Context, tx *sql.Tx, items []types.OrderItem) ([]types.InsufficientStockItem, error) {
 	var shortages []types.InsufficientStockItem
-	for _, item := range items {
+
+	// Lock product rows in a consistent order so concurrent orders containing
+	// the same products cannot deadlock against each other.
+	sorted := slices.Clone(items)
+	slices.SortFunc(sorted, func(a, b types.OrderItem) int {
+		return cmp.Compare(a.Product.ID, b.Product.ID)
+	})
+
+	for _, item := range sorted {
 		res, err := tx.ExecContext(ctx, `
 			UPDATE products
 			SET inventory = inventory - $1
