@@ -32,23 +32,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	}
 	defer tx.Rollback()
 
-	// Cancel any existing pending order and restore its inventory
-	_, err = tx.ExecContext(ctx, `
-		WITH canceled AS (
-			UPDATE orders SET status = 'canceled', updated_at = NOW()
-			WHERE user_id = $1 AND status = 'pending' AND payment_status = 'unpaid'
-			RETURNING id
-		), restored AS (
-			DELETE FROM order_items
-			WHERE order_id IN (SELECT id FROM canceled)
-			RETURNING product_id, quantity
-		)
-		UPDATE products
-		SET inventory = inventory + restored.quantity
-		FROM restored
-		WHERE products.id = restored.product_id`,
-		order.UserID)
-	if err != nil {
+	if err := cancelPendingOrders(ctx, tx, order.UserID); err != nil {
 		return err
 	}
 
@@ -168,6 +152,27 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		}
 	}
 	return tx.Commit()
+}
+
+// cancelPendingOrders cancels the user's outstanding unpaid order, if any, and
+// returns its reserved inventory to stock.
+func cancelPendingOrders(ctx context.Context, tx *sql.Tx, userID string) error {
+	_, err := tx.ExecContext(ctx, `
+		WITH canceled AS (
+			UPDATE orders SET status = 'canceled', updated_at = NOW()
+			WHERE user_id = $1 AND status = 'pending' AND payment_status = 'unpaid'
+			RETURNING id
+		), restored AS (
+			DELETE FROM order_items
+			WHERE order_id IN (SELECT id FROM canceled)
+			RETURNING product_id, quantity
+		)
+		UPDATE products
+		SET inventory = inventory + restored.quantity
+		FROM restored
+		WHERE products.id = restored.product_id`,
+		userID)
+	return err
 }
 
 // GetOrders retrieves all orders in descending order
