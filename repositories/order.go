@@ -36,42 +36,15 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		return err
 	}
 
-	// Reserve inventory (decrement stock, fail if insufficient)
-	var insufStockErr types.InsufficientStockError
-	for _, item := range order.Items {
-		res, err := tx.ExecContext(ctx, `
-			UPDATE products
-			SET inventory = inventory - $1
-			WHERE id = $2 AND inventory >= $1`,
-			item.Quantity, item.Product.ID)
-		if err != nil {
-			return err
-		}
-		rows, err := res.RowsAffected()
-		if err != nil {
-			return err
-		}
-		if rows == 0 {
-			var inventory int
-			if err := tx.QueryRowContext(ctx,
-				`SELECT inventory FROM products WHERE id = $1`,
-				item.Product.ID).Scan(&inventory); err != nil {
-				if err == sql.ErrNoRows {
-					return fmt.Errorf("product %s not found", item.Product.ID)
-				}
-				return err
-			}
-			insufStockErr.Items = append(insufStockErr.Items, types.InsufficientStockItem{
-				Product:   item.Product,
-				Quantity:  item.Quantity,
-				Inventory: inventory,
-			})
-		}
+	// Reserve inventory (decrement stock, collect shortages)
+	shortages, err := reserveInventory(ctx, tx, order.Items)
+	if err != nil {
+		return err
 	}
 
-	if len(insufStockErr.Items) > 0 {
+	if len(shortages) > 0 {
 		// Adjust cart to reflect available inventory
-		for _, item := range insufStockErr.Items {
+		for _, item := range shortages {
 			if item.Inventory <= 0 {
 				if _, err := tx.ExecContext(ctx, `
                     DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2`,
@@ -90,7 +63,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		if err := tx.Commit(); err != nil {
 			return err
 		}
-		return &insufStockErr
+		return &types.InsufficientStockError{Items: shortages}
 	}
 
 	// Insert order with idempotency check
@@ -173,6 +146,46 @@ func cancelPendingOrders(ctx context.Context, tx *sql.Tx, userID string) error {
 		WHERE products.id = restored.product_id`,
 		userID)
 	return err
+}
+
+// reserveInventory decrements stock for each item. Items without sufficient
+// stock are left untouched and returned as shortages, along with the quantity
+// currently available.
+func reserveInventory(ctx context.Context, tx *sql.Tx, items []types.OrderItem) ([]types.InsufficientStockItem, error) {
+	var shortages []types.InsufficientStockItem
+	for _, item := range items {
+		res, err := tx.ExecContext(ctx, `
+			UPDATE products
+			SET inventory = inventory - $1
+			WHERE id = $2 AND inventory >= $1`,
+			item.Quantity, item.Product.ID)
+		if err != nil {
+			return nil, err
+		}
+		rows, err := res.RowsAffected()
+		if err != nil {
+			return nil, err
+		}
+		if rows > 0 {
+			continue
+		}
+
+		var inventory int
+		if err := tx.QueryRowContext(ctx,
+			`SELECT inventory FROM products WHERE id = $1`,
+			item.Product.ID).Scan(&inventory); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, fmt.Errorf("product %s not found", item.Product.ID)
+			}
+			return nil, err
+		}
+		shortages = append(shortages, types.InsufficientStockItem{
+			Product:   item.Product,
+			Quantity:  item.Quantity,
+			Inventory: inventory,
+		})
+	}
+	return shortages, nil
 }
 
 // GetOrders retrieves all orders in descending order

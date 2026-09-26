@@ -160,3 +160,107 @@ func TestCancelPendingOrders_NoPendingOrder(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 5, inventory)
 }
+
+// createTestProduct inserts a product with the given inventory and registers cleanup.
+func createTestProduct(t *testing.T, inventory int) string {
+	t.Helper()
+	ctx := context.Background()
+	productID := utilities.MustGenerateIDString()
+
+	_, err := dbPool.ExecContext(ctx, `
+		INSERT INTO products (id, name, price, summary, inventory)
+		VALUES ($1, 'Test Product', 1000, 'Test product summary', $2)`,
+		productID, inventory)
+	assert.NoError(t, err)
+
+	t.Cleanup(func() {
+		dbPool.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, productID)
+	})
+
+	return productID
+}
+
+func productInventory(t *testing.T, productID string) int {
+	t.Helper()
+	var inventory int
+	err := dbPool.QueryRowContext(context.Background(),
+		`SELECT inventory FROM products WHERE id = $1`, productID).Scan(&inventory)
+	assert.NoError(t, err)
+	return inventory
+}
+
+func TestReserveInventory_Success(t *testing.T) {
+	ctx := context.Background()
+
+	productA := createTestProduct(t, 10)
+	productB := createTestProduct(t, 5)
+
+	items := []types.OrderItem{
+		{Product: types.Product{ID: productA}, Quantity: 3},
+		{Product: types.Product{ID: productB}, Quantity: 5}, // exactly all remaining stock
+	}
+
+	tx, err := dbPool.BeginTx(ctx, nil)
+	assert.NoError(t, err)
+	defer tx.Rollback()
+
+	shortages, err := reserveInventory(ctx, tx, items)
+	assert.NoError(t, err)
+	assert.Empty(t, shortages)
+	assert.NoError(t, tx.Commit())
+
+	assert.Equal(t, 7, productInventory(t, productA))
+	assert.Equal(t, 0, productInventory(t, productB))
+}
+
+func TestReserveInventory_InsufficientStock(t *testing.T) {
+	ctx := context.Background()
+
+	productA := createTestProduct(t, 10)
+	productB := createTestProduct(t, 2)
+	productC := createTestProduct(t, 0)
+
+	items := []types.OrderItem{
+		{Product: types.Product{ID: productA}, Quantity: 4}, // succeeds
+		{Product: types.Product{ID: productB}, Quantity: 5}, // short: only 2 available
+		{Product: types.Product{ID: productC}, Quantity: 1}, // short: out of stock
+	}
+
+	tx, err := dbPool.BeginTx(ctx, nil)
+	assert.NoError(t, err)
+	defer tx.Rollback()
+
+	shortages, err := reserveInventory(ctx, tx, items)
+	assert.NoError(t, err)
+	assert.NoError(t, tx.Commit())
+
+	// Shortages report the requested quantity and what is actually available
+	assert.Len(t, shortages, 2)
+	assert.Equal(t, productB, shortages[0].Product.ID)
+	assert.Equal(t, 5, shortages[0].Quantity)
+	assert.Equal(t, 2, shortages[0].Inventory)
+	assert.Equal(t, productC, shortages[1].Product.ID)
+	assert.Equal(t, 0, shortages[1].Inventory)
+
+	// Available items are still reserved; short items are left untouched
+	assert.Equal(t, 6, productInventory(t, productA))
+	assert.Equal(t, 2, productInventory(t, productB))
+	assert.Equal(t, 0, productInventory(t, productC))
+}
+
+func TestReserveInventory_ProductNotFound(t *testing.T) {
+	ctx := context.Background()
+
+	items := []types.OrderItem{
+		{Product: types.Product{ID: utilities.MustGenerateIDString()}, Quantity: 1},
+	}
+
+	tx, err := dbPool.BeginTx(ctx, nil)
+	assert.NoError(t, err)
+	defer tx.Rollback()
+
+	shortages, err := reserveInventory(ctx, tx, items)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
+	assert.Nil(t, shortages)
+}
