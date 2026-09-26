@@ -192,6 +192,7 @@ func insertOrder(ctx context.Context, tx *sql.Tx, order *types.Order) (bool, err
 // insertOrderItems writes the line items belonging to an order.
 func insertOrderItems(ctx context.Context, tx *sql.Tx, orderID string, items []types.OrderItem) error {
 	for _, item := range items {
+		// FIXME convert to multi-row insert
 		if _, err := tx.ExecContext(ctx, `
 			INSERT INTO order_items (order_id, product_id, quantity, unit_price)
 			VALUES ($1, $2, $3, $4)`,
