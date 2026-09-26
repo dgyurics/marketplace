@@ -92,7 +92,7 @@ func cancelPendingOrders(ctx context.Context, tx *sql.Tx, userID string) error {
 			RETURNING product_id, quantity
 		)
 		UPDATE products
-		SET inventory = inventory + restored.quantity
+		SET inventory = inventory + restored.quantity, updated_at = NOW()
 		FROM restored
 		WHERE products.id = restored.product_id`,
 		userID)
@@ -115,7 +115,7 @@ func reserveInventory(ctx context.Context, tx *sql.Tx, items []types.OrderItem) 
 	for _, item := range sorted {
 		res, err := tx.ExecContext(ctx, `
 			UPDATE products
-			SET inventory = inventory - $1
+			SET inventory = inventory - $1, updated_at = NOW()
 			WHERE id = $2 AND inventory >= $1`,
 			item.Quantity, item.Product.ID)
 		if err != nil {
@@ -561,7 +561,7 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 				RETURNING oi.product_id, oi.quantity
 			)
 			UPDATE products
-			SET inventory = inventory + di.quantity
+			SET inventory = inventory + di.quantity, updated_at = NOW()
 			FROM deleted_items di
 			WHERE products.id = di.product_id
 		`
