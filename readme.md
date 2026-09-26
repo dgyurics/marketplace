@@ -21,8 +21,8 @@ A self-hosted e-commerce framework designed for local businesses and community c
 ## Planned Enhancements
 
 * Implement pay on delivery
-* Username/password login — no email required
-* Documentation for production setup and configuration
+* Remove email requirement for login/registration
+* Documentation for production setup
 * Product variants (size, color, material, etc.)
 * Geographic access control via Nginx and GeoIP2
 * Product full-text search
