@@ -36,10 +36,12 @@ func TestOrderRepository_GetOrder_Success(t *testing.T) {
 
 	// Create empty order with address
 	paymentMethod := types.PaymentMethodStripe
+	status := types.OrderPending
 	order := &types.Order{
 		ID:            utilities.MustGenerateIDString(),
 		UserID:        user.ID,
 		PaymentMethod: &paymentMethod,
+		Status:        &status,
 		Address: types.Address{
 			ID: addressID,
 		},

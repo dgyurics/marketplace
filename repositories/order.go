@@ -69,9 +69,14 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		}
 		if rows == 0 {
 			var inventory int
-			_ = tx.QueryRowContext(ctx,
+			if err := tx.QueryRowContext(ctx,
 				`SELECT inventory FROM products WHERE id = $1`,
-				item.Product.ID).Scan(&inventory)
+				item.Product.ID).Scan(&inventory); err != nil {
+				if err == sql.ErrNoRows {
+					return fmt.Errorf("product %s not found", item.Product.ID)
+				}
+				return err
+			}
 			insufStockErr.Items = append(insufStockErr.Items, types.InsufficientStockItem{
 				Product:   item.Product,
 				Quantity:  item.Quantity,
@@ -84,14 +89,18 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		// Adjust cart to reflect available inventory
 		for _, item := range insufStockErr.Items {
 			if item.Inventory <= 0 {
-				tx.ExecContext(ctx, `
+				if _, err := tx.ExecContext(ctx, `
                     DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2`,
-					order.UserID, item.Product.ID)
+					order.UserID, item.Product.ID); err != nil {
+					return err
+				}
 			} else {
-				tx.ExecContext(ctx, `
+				if _, err := tx.ExecContext(ctx, `
                     UPDATE cart_items SET quantity = $1
                     WHERE user_id = $2 AND product_id = $3`,
-					item.Inventory, order.UserID, item.Product.ID)
+					item.Inventory, order.UserID, item.Product.ID); err != nil {
+					return err
+				}
 			}
 		}
 		if err := tx.Commit(); err != nil {
@@ -115,7 +124,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 			status,
 			payment_status
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', 'unpaid')
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'unpaid')
 		ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL
 		DO NOTHING`
 	res, err := tx.ExecContext(ctx, query,
@@ -128,6 +137,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		order.TotalAmount,
 		order.PaymentMethod,
 		order.IdempotencyKey,
+		order.Status,
 	)
 	if err != nil {
 		return err
@@ -140,6 +150,9 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 
 	// Duplicate idempotency key — return existing order ID
 	if rows == 0 {
+		if order.IdempotencyKey == nil {
+			return fmt.Errorf("order insert affected no rows without idempotency key")
+		}
 		return tx.QueryRowContext(ctx,
 			`SELECT id FROM orders WHERE idempotency_key = $1`,
 			*order.IdempotencyKey).Scan(&order.ID)

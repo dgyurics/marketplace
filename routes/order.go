@@ -164,11 +164,13 @@ func (h *OrderRoutes) CreateOrderStripe(w http.ResponseWriter, r *http.Request) 
 
 	// Create order
 	paymentMethod := types.PaymentMethodStripe
+	status := types.OrderPending
 	order := &types.Order{
 		IdempotencyKey: &idempotencyKey,
 		Address:        addr,
 		TaxAmount:      tax,
 		PaymentMethod:  &paymentMethod,
+		Status:         &status,
 	}
 	populateOrderFromCart(order, cart)
 
