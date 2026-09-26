@@ -86,7 +86,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewConversationRoutes(services.Conversation, baseRouter),
 		routes.NewHealthRoutes(baseRouter),
 		routes.NewImageRoutes(services.Image, services.Product, config.Image, baseRouter),
-		routes.NewOrderRoutes(services.Order, services.Tax, services.Payment, services.Cart, services.Address, baseRouter),
+		routes.NewOrderRoutes(config.AppMetadata.PaymentOptions, services.Order, services.Tax, services.Payment, services.Cart, services.Address, baseRouter),
 		routes.NewPasswordRoutes(services.Password, services.User, services.Notification, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, config.AppMetadata, baseRouter),
 		routes.NewProductRoutes(services.Product, baseRouter),

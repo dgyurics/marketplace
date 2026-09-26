@@ -14,6 +14,7 @@ import (
 
 type OrderRoutes struct {
 	router
+	config         types.PaymentOptions
 	orderService   services.OrderService
 	taxService     services.TaxService
 	paymentService services.PaymentService
@@ -22,6 +23,7 @@ type OrderRoutes struct {
 }
 
 func NewOrderRoutes(
+	config types.PaymentOptions,
 	orderService services.OrderService,
 	taxService services.TaxService,
 	paymentService services.PaymentService,
@@ -30,6 +32,7 @@ func NewOrderRoutes(
 	router router) *OrderRoutes {
 	return &OrderRoutes{
 		router:         router,
+		config:         config,
 		orderService:   orderService,
 		taxService:     taxService,
 		paymentService: paymentService,
@@ -109,6 +112,11 @@ func (h *OrderRoutes) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderRoutes) CreateOrderStripe(w http.ResponseWriter, r *http.Request) {
+	if !h.config.Stripe {
+		u.RespondWithError(w, r, http.StatusNotFound, "stripe payments disabled")
+		return
+	}
+
 	idempotencyKey := r.Header.Get("Idempotency-Key")
 	if idempotencyKey == "" {
 		u.RespondWithError(w, r, http.StatusBadRequest, "Idempotency-Key header is required")
@@ -196,8 +204,12 @@ func (h *OrderRoutes) CreateOrderStripe(w http.ResponseWriter, r *http.Request) 
 	u.RespondWithJSON(w, http.StatusOK, stripe.CreateOrderResponse{ClientSecret: pi.ClientSecret, OrderID: order.ID})
 }
 
-// TODO: implement
 func (h *OrderRoutes) CreateOrderPayOnDelivery(w http.ResponseWriter, r *http.Request) {
+	if !h.config.PayOnDelivery {
+		u.RespondWithError(w, r, http.StatusNotFound, "on delivery payments disabled")
+		return
+	}
+	// TODO: implement
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
