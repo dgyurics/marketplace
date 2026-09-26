@@ -12,7 +12,7 @@
       </ul>
 
       <label class="delivery-ack">
-        <input type="checkbox" />
+        <input v-model="acknowledged" type="checkbox" />
         <span>
           I understand payment is collected on delivery and that refusing the package may limit
           future pay-on-delivery orders.
@@ -20,9 +20,17 @@
       </label>
     </section>
 
-    <button type="button" class="btn-full-width mt-30" disabled :tabindex="0">Place Order</button>
+    <button type="button" class="btn-full-width mt-30" :disabled="!acknowledged" :tabindex="0">
+      Place Order
+    </button>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const acknowledged = ref(false)
+</script>
 
 <style scoped>
 .delivery-info {

@@ -3,18 +3,18 @@
     <button
       type="button"
       class="method-btn"
-      :class="{ 'method-btn--active': modelValue === 'online' }"
-      :disabled="!enabled.includes('online')"
-      @click="$emit('update:modelValue', 'online')"
+      :class="{ 'method-btn--active': modelValue === 'stripe' }"
+      :disabled="!enabled.includes('stripe')"
+      @click="$emit('update:modelValue', 'stripe')"
     >
       pay now
     </button>
     <button
       type="button"
       class="method-btn"
-      :class="{ 'method-btn--active': modelValue === 'delivery' }"
-      :disabled="!enabled.includes('delivery')"
-      @click="$emit('update:modelValue', 'delivery')"
+      :class="{ 'method-btn--active': modelValue === 'pay_on_delivery' }"
+      :disabled="!enabled.includes('pay_on_delivery')"
+      @click="$emit('update:modelValue', 'pay_on_delivery')"
     >
       pay on delivery
     </button>
@@ -26,10 +26,10 @@ import type { PaymentMethod } from '@/types'
 
 withDefaults(
   defineProps<{
-    modelValue: PaymentMethod
+    modelValue: PaymentMethod | null
     enabled?: PaymentMethod[]
   }>(),
-  { enabled: () => ['online', 'delivery'] }
+  { enabled: () => ['stripe', 'pay_on_delivery'] }
 )
 
 defineEmits<{

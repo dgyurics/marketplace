@@ -11,8 +11,6 @@ export interface OrderItem {
 
 export type OrderStatus = 'pending' | 'paid' | 'refunded' | 'shipped' | 'delivered' | 'canceled'
 
-export type PaymentMethod = 'online' | 'delivery'
-
 export interface Order {
   id: string
   user_id: string

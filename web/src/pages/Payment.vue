@@ -4,11 +4,13 @@
     <OrderSummary :tax-amount="taxAmount" />
 
     <h3>Payment Method</h3>
-    <PaymentMethodSelector v-model="paymentMethod" :enabled="['online']" />
+    <PaymentMethodSelector v-model="paymentMethod" :enabled="enabledMethods" />
 
-    <StripeCheckout v-show="paymentMethod === 'online'" />
+    <StripeCheckout v-if="paymentMethod === 'stripe'" />
 
-    <DeliveryCheckout v-if="paymentMethod === 'delivery'" />
+    <DeliveryCheckout v-else-if="paymentMethod === 'pay_on_delivery'" />
+
+    <NoPaymentMethods v-else />
 
     <p v-if="checkoutStore.paymentError" class="error">{{ checkoutStore.paymentError }}</p>
   </div>
@@ -20,8 +22,10 @@ import { useRouter } from 'vue-router'
 
 import DeliveryCheckout from '@/components/DeliveryCheckout.vue'
 import { PaymentMethodSelector } from '@/components/forms'
+import NoPaymentMethods from '@/components/NoPaymentMethods.vue'
 import OrderSummary from '@/components/OrderSummary.vue'
 import StripeCheckout from '@/components/StripeCheckout.vue'
+import { getPaymentMethods } from '@/services/api'
 import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
 import type { PaymentMethod } from '@/types'
@@ -30,7 +34,8 @@ const checkoutStore = useCheckoutStore()
 const cartStore = useCartStore()
 const router = useRouter()
 
-const paymentMethod = ref<PaymentMethod>('online')
+const paymentMethod = ref<PaymentMethod | null>(null)
+const enabledMethods = ref<PaymentMethod[]>([])
 const isInitializing = ref(true)
 const taxAmount = ref(0)
 
@@ -59,6 +64,11 @@ async function initializePayment() {
   await cartStore.fetchCart()
   const { tax_amount } = await checkoutStore.estimateTax()
   taxAmount.value = tax_amount
+
+  // server decides which payment methods are available
+  const options = await getPaymentMethods()
+  enabledMethods.value = (Object.keys(options) as PaymentMethod[]).filter((m) => options[m])
+  paymentMethod.value = enabledMethods.value[0] ?? null
 }
 
 function handleInitError(error: unknown) {

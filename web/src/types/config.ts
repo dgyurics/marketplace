@@ -5,6 +5,8 @@ export type PaymentOptions = {
   pay_on_delivery: boolean
 }
 
+export type PaymentMethod = keyof PaymentOptions
+
 /**
  * Application metadata served by GET /config
  */
