@@ -54,47 +54,13 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 		return &types.InsufficientStockError{Items: shortages}
 	}
 
-	// Insert order with idempotency check
-	query := `
-		INSERT INTO orders (
-			id,
-			user_id,
-			address_id,
-			amount,
-			tax_amount,
-			shipping_amount,
-			total_amount,
-			payment_method,
-			idempotency_key,
-			status,
-			payment_status
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'unpaid')
-		ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL
-		DO NOTHING`
-	res, err := tx.ExecContext(ctx, query,
-		order.ID,
-		order.UserID,
-		order.Address.ID,
-		order.Amount,
-		order.TaxAmount,
-		order.ShippingAmount,
-		order.TotalAmount,
-		order.PaymentMethod,
-		order.IdempotencyKey,
-		order.Status,
-	)
+	// Insert order, skipping if this idempotency key was already used
+	inserted, err := insertOrder(ctx, tx, order)
 	if err != nil {
 		return err
 	}
-
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	// Duplicate idempotency key — return existing order ID
-	if rows == 0 {
+	if !inserted {
+		// Duplicate request: return the original order's ID
 		if order.IdempotencyKey == nil {
 			return fmt.Errorf("order insert affected no rows without idempotency key")
 		}
@@ -104,13 +70,8 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	}
 
 	// Insert order items
-	for _, item := range order.Items {
-		itemQuery := `
-			INSERT INTO order_items (order_id, product_id, quantity, unit_price)
-			VALUES ($1, $2, $3, $4)`
-		if _, err := tx.ExecContext(ctx, itemQuery, order.ID, item.Product.ID, item.Quantity, item.UnitPrice); err != nil {
-			return err
-		}
+	if err := insertOrderItems(ctx, tx, order.ID, order.Items); err != nil {
+		return err
 	}
 	return tx.Commit()
 }
@@ -174,6 +135,61 @@ func reserveInventory(ctx context.Context, tx *sql.Tx, items []types.OrderItem) 
 		})
 	}
 	return shortages, nil
+}
+
+// insertOrder writes the order row. It reports false without error when the
+// idempotency key has already been used, meaning this is a duplicate request.
+func insertOrder(ctx context.Context, tx *sql.Tx, order *types.Order) (bool, error) {
+	res, err := tx.ExecContext(ctx, `
+		INSERT INTO orders (
+			id,
+			user_id,
+			address_id,
+			amount,
+			tax_amount,
+			shipping_amount,
+			total_amount,
+			payment_method,
+			idempotency_key,
+			status,
+			payment_status
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'unpaid')
+		ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL
+		DO NOTHING`,
+		order.ID,
+		order.UserID,
+		order.Address.ID,
+		order.Amount,
+		order.TaxAmount,
+		order.ShippingAmount,
+		order.TotalAmount,
+		order.PaymentMethod,
+		order.IdempotencyKey,
+		order.Status,
+	)
+	if err != nil {
+		return false, err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return rows > 0, nil
+}
+
+// insertOrderItems writes the line items belonging to an order.
+func insertOrderItems(ctx context.Context, tx *sql.Tx, orderID string, items []types.OrderItem) error {
+	for _, item := range items {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+			VALUES ($1, $2, $3, $4)`,
+			orderID, item.Product.ID, item.Quantity, item.UnitPrice); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // syncCartToInventory trims the user's cart to the quantities actually in

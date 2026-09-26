@@ -394,3 +394,115 @@ func TestCreateOrder_InsufficientStock_RepeatedAttempts(t *testing.T) {
 			"inventory should be unchanged after attempt %d", attempt)
 	}
 }
+
+// Replaying a request with the same idempotency key must return the original
+// order rather than creating a second one.
+func TestCreateOrder_DuplicateIdempotencyKey(t *testing.T) {
+	ctx := context.Background()
+
+	orderRepo := NewOrderRepository(dbPool)
+	userRepo := NewUserRepository(dbPool)
+
+	user := createUniqueTestUser(t, userRepo)
+	addressID := createTestAddress(t, dbPool, user.ID)
+	productID := createTestProduct(t, 10)
+	idempotencyKey := utilities.MustGenerateIDString()
+
+	t.Cleanup(func() {
+		dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id IN
+			(SELECT id FROM orders WHERE user_id = $1)`, user.ID)
+		dbPool.ExecContext(ctx, `DELETE FROM orders WHERE user_id = $1`, user.ID)
+		dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
+		dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
+	})
+
+	paymentMethod := types.PaymentMethodStripe
+	status := types.OrderPending
+	newOrder := func() *types.Order {
+		return &types.Order{
+			ID:             utilities.MustGenerateIDString(),
+			UserID:         user.ID,
+			PaymentMethod:  &paymentMethod,
+			Status:         &status,
+			IdempotencyKey: &idempotencyKey,
+			Address:        types.Address{ID: addressID},
+			Items: []types.OrderItem{
+				{Product: types.Product{ID: productID}, Quantity: 2, UnitPrice: 1000},
+			},
+		}
+	}
+
+	first := newOrder()
+	assert.NoError(t, orderRepo.CreateOrder(ctx, first))
+	assert.Equal(t, 8, productInventory(t, productID))
+
+	// Replay with the same key but a different generated ID
+	second := newOrder()
+	generatedID := second.ID
+	assert.NoError(t, orderRepo.CreateOrder(ctx, second))
+
+	// The caller receives the original order's ID, not the one it generated
+	assert.Equal(t, first.ID, second.ID)
+	assert.NotEqual(t, generatedID, second.ID)
+
+	// Inventory is not reserved twice
+	assert.Equal(t, 8, productInventory(t, productID))
+
+	// Only one order exists for this key
+	var orderCount int
+	assert.NoError(t, dbPool.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM orders WHERE idempotency_key = $1`, idempotencyKey).Scan(&orderCount))
+	assert.Equal(t, 1, orderCount)
+}
+
+// Orders without an idempotency key are independent and must not collide,
+// since NULL keys do not conflict in the partial unique index.
+func TestCreateOrder_NilIdempotencyKey(t *testing.T) {
+	ctx := context.Background()
+
+	orderRepo := NewOrderRepository(dbPool)
+	userRepo := NewUserRepository(dbPool)
+
+	user := createUniqueTestUser(t, userRepo)
+	addressID := createTestAddress(t, dbPool, user.ID)
+	productID := createTestProduct(t, 10)
+
+	t.Cleanup(func() {
+		dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id IN
+			(SELECT id FROM orders WHERE user_id = $1)`, user.ID)
+		dbPool.ExecContext(ctx, `DELETE FROM orders WHERE user_id = $1`, user.ID)
+		dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
+		dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
+	})
+
+	paymentMethod := types.PaymentMethodStripe
+	status := types.OrderPending
+	newOrder := func() *types.Order {
+		return &types.Order{
+			ID:            utilities.MustGenerateIDString(),
+			UserID:        user.ID,
+			PaymentMethod: &paymentMethod,
+			Status:        &status,
+			Address:       types.Address{ID: addressID},
+			Items: []types.OrderItem{
+				{Product: types.Product{ID: productID}, Quantity: 2, UnitPrice: 1000},
+			},
+		}
+	}
+
+	first := newOrder()
+	assert.NoError(t, orderRepo.CreateOrder(ctx, first))
+
+	// The second order cancels the first (still pending and unpaid), which
+	// restores its inventory before reserving again.
+	second := newOrder()
+	assert.NoError(t, orderRepo.CreateOrder(ctx, second))
+
+	assert.NotEqual(t, first.ID, second.ID, "each order should keep its own ID")
+	assert.Equal(t, 8, productInventory(t, productID))
+
+	var status1 string
+	assert.NoError(t, dbPool.QueryRowContext(ctx,
+		`SELECT status FROM orders WHERE id = $1`, first.ID).Scan(&status1))
+	assert.Equal(t, "canceled", status1)
+}
