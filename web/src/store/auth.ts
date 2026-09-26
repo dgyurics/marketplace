@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 
+import { useCheckoutStore } from '@/store/checkout'
 import type { AuthTokens, JwtUser, Role } from '@/types'
 import {
   decodeJWT,
@@ -44,11 +45,16 @@ export const useAuthStore = defineStore('auth', {
 
     setTokens({ token, refresh_token: refreshToken }: AuthTokens) {
       try {
+        const previousUserId = this.user.user_id
         this.accessToken = token
         this.refreshToken = refreshToken
         const decoded = decodeJWT(token)
         Object.assign(this.user, decoded)
         storeRefreshToken(refreshToken)
+
+        if (previousUserId !== this.user.user_id) {
+          useCheckoutStore().resetCheckout()
+        }
       } catch {
         this.clearTokens()
         throw new Error('Invalid access token')
@@ -58,14 +64,9 @@ export const useAuthStore = defineStore('auth', {
     clearTokens() {
       this.accessToken = ''
       this.refreshToken = null
-      this.user = {
-        user_id: '',
-        email: '',
-        role: 'guest',
-        exp: 0,
-        iat: 0,
-      }
+      this.user = createGuestUser()
       removeRefreshToken()
+      useCheckoutStore().resetCheckout()
     },
 
     hasMinimumRole(requiredRole: Role): boolean {
