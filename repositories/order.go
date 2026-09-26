@@ -43,24 +43,12 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	}
 
 	if len(shortages) > 0 {
-		// Adjust cart to reflect available inventory
-		for _, item := range shortages {
-			if item.Inventory <= 0 {
-				if _, err := tx.ExecContext(ctx, `
-                    DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2`,
-					order.UserID, item.Product.ID); err != nil {
-					return err
-				}
-			} else {
-				if _, err := tx.ExecContext(ctx, `
-                    UPDATE cart_items SET quantity = $1
-                    WHERE user_id = $2 AND product_id = $3`,
-					item.Inventory, order.UserID, item.Product.ID); err != nil {
-					return err
-				}
-			}
+		// Release/Restore inventory which was reserved
+		if err := tx.Rollback(); err != nil {
+			return err
 		}
-		if err := tx.Commit(); err != nil {
+		// Update/Sync cart to reflect what is actually available
+		if err := r.syncCartToInventory(ctx, order.UserID, shortages); err != nil {
 			return err
 		}
 		return &types.InsufficientStockError{Items: shortages}
@@ -186,6 +174,34 @@ func reserveInventory(ctx context.Context, tx *sql.Tx, items []types.OrderItem) 
 		})
 	}
 	return shortages, nil
+}
+
+// syncCartToInventory trims the user's cart to the quantities actually in
+// stock, removing items which are unavailable
+func (r *orderRepository) syncCartToInventory(ctx context.Context, userID string, shortages []types.InsufficientStockItem) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, item := range shortages {
+		if item.Inventory <= 0 {
+			_, err = tx.ExecContext(ctx, `
+				DELETE FROM cart_items
+				WHERE user_id = $1 AND product_id = $2`,
+				userID, item.Product.ID)
+		} else {
+			_, err = tx.ExecContext(ctx, `
+				UPDATE cart_items SET quantity = $1
+				WHERE user_id = $2 AND product_id = $3`,
+				item.Inventory, userID, item.Product.ID)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 // GetOrders retrieves all orders in descending order

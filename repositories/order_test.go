@@ -264,3 +264,133 @@ func TestReserveInventory_ProductNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "not found")
 	assert.Nil(t, shortages)
 }
+
+// A failed order must not leave inventory reserved. Items that could be
+// satisfied are decremented during the attempt and must be released when the
+// order is abandoned, otherwise stock leaks on every retry.
+func TestCreateOrder_InsufficientStock_ReleasesReservedInventory(t *testing.T) {
+	ctx := context.Background()
+
+	orderRepo := NewOrderRepository(dbPool)
+	cartRepo := NewCartRepository(dbPool)
+	userRepo := NewUserRepository(dbPool)
+
+	user := createUniqueTestUser(t, userRepo)
+	addressID := createTestAddress(t, dbPool, user.ID)
+	orderID := utilities.MustGenerateIDString()
+
+	t.Cleanup(func() {
+		dbPool.ExecContext(ctx, `DELETE FROM order_items WHERE order_id = $1`, orderID)
+		dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, orderID)
+		dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
+		dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
+		dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
+	})
+
+	inStock := createTestProduct(t, 10) // plenty available
+	shortStock := createTestProduct(t, 2)
+	outOfStock := createTestProduct(t, 0)
+
+	// Cart holds more than is available for two of the three products.
+	// Inserted directly since AddItem rejects out-of-stock products.
+	for _, it := range []struct {
+		productID string
+		quantity  int
+	}{
+		{inStock, 4},
+		{shortStock, 5},
+		{outOfStock, 1},
+	} {
+		_, err := dbPool.ExecContext(ctx, `
+			INSERT INTO cart_items (user_id, product_id, quantity, unit_price)
+			VALUES ($1, $2, $3, 1000)`,
+			user.ID, it.productID, it.quantity)
+		assert.NoError(t, err)
+	}
+
+	paymentMethod := types.PaymentMethodStripe
+	status := types.OrderPending
+	order := &types.Order{
+		ID:            orderID,
+		UserID:        user.ID,
+		PaymentMethod: &paymentMethod,
+		Status:        &status,
+		Address:       types.Address{ID: addressID},
+		Items: []types.OrderItem{
+			{Product: types.Product{ID: inStock}, Quantity: 4, UnitPrice: 1000},
+			{Product: types.Product{ID: shortStock}, Quantity: 5, UnitPrice: 1000},
+			{Product: types.Product{ID: outOfStock}, Quantity: 1, UnitPrice: 1000},
+		},
+	}
+
+	err := orderRepo.CreateOrder(ctx, order)
+
+	var stockErr *types.InsufficientStockError
+	assert.ErrorAs(t, err, &stockErr)
+	assert.Len(t, stockErr.Items, 2)
+
+	// Inventory is fully restored — including the item that was satisfiable
+	assert.Equal(t, 10, productInventory(t, inStock))
+	assert.Equal(t, 2, productInventory(t, shortStock))
+	assert.Equal(t, 0, productInventory(t, outOfStock))
+
+	// No order row was created
+	var orderCount int
+	assert.NoError(t, dbPool.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM orders WHERE id = $1`, orderID).Scan(&orderCount))
+	assert.Zero(t, orderCount)
+
+	// Cart correction survived the rollback
+	cart, err := cartRepo.GetItems(ctx, user.ID)
+	assert.NoError(t, err)
+
+	quantities := make(map[string]int, len(cart))
+	for _, item := range cart {
+		quantities[item.Product.ID] = item.Quantity
+	}
+	assert.Equal(t, 4, quantities[inStock], "available item should be unchanged")
+	assert.Equal(t, 2, quantities[shortStock], "short item should be trimmed to available stock")
+	assert.NotContains(t, quantities, outOfStock, "out of stock item should be removed")
+}
+
+// Retrying a failed order must not compound the inventory loss.
+func TestCreateOrder_InsufficientStock_RepeatedAttempts(t *testing.T) {
+	ctx := context.Background()
+
+	orderRepo := NewOrderRepository(dbPool)
+	userRepo := NewUserRepository(dbPool)
+
+	user := createUniqueTestUser(t, userRepo)
+	addressID := createTestAddress(t, dbPool, user.ID)
+
+	t.Cleanup(func() {
+		dbPool.ExecContext(ctx, `DELETE FROM cart_items WHERE user_id = $1`, user.ID)
+		dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
+		dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
+	})
+
+	inStock := createTestProduct(t, 10)
+	outOfStock := createTestProduct(t, 0)
+
+	paymentMethod := types.PaymentMethodStripe
+	status := types.OrderPending
+
+	for attempt := 1; attempt <= 3; attempt++ {
+		order := &types.Order{
+			ID:            utilities.MustGenerateIDString(),
+			UserID:        user.ID,
+			PaymentMethod: &paymentMethod,
+			Status:        &status,
+			Address:       types.Address{ID: addressID},
+			Items: []types.OrderItem{
+				{Product: types.Product{ID: inStock}, Quantity: 4, UnitPrice: 1000},
+				{Product: types.Product{ID: outOfStock}, Quantity: 1, UnitPrice: 1000},
+			},
+		}
+
+		var stockErr *types.InsufficientStockError
+		assert.ErrorAs(t, orderRepo.CreateOrder(ctx, order), &stockErr)
+		assert.Equal(t, 10, productInventory(t, inStock),
+			"inventory should be unchanged after attempt %d", attempt)
+	}
+}
