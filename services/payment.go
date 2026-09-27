@@ -33,25 +33,22 @@ type PaymentService interface {
 }
 
 type paymentService struct {
-	HttpClient          utilities.HTTPClient
-	config              types.PaymentConfig
-	notificationService NotificationService
-	userService         UserService
-	repo                repositories.OrderRepository
+	HttpClient  utilities.HTTPClient
+	config      types.PaymentConfig
+	userService UserService
+	repo        repositories.OrderRepository
 }
 
 func NewPaymentService(
 	httpClient utilities.HTTPClient,
 	config types.PaymentConfig,
-	notificationService NotificationService,
 	userService UserService,
 	repo repositories.OrderRepository) PaymentService {
 	return &paymentService{
-		HttpClient:          httpClient,
-		config:              config,
-		notificationService: notificationService,
-		userService:         userService,
-		repo:                repo,
+		HttpClient:  httpClient,
+		config:      config,
+		userService: userService,
+		repo:        repo,
 	}
 }
 
@@ -349,17 +346,6 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 	}
 
 	slog.InfoContext(ctx, "Order marked as paid", "order_id", order.ID, "payment_intent_id", pi.ID)
-
-	go s.notificationService.NotifyOrder(order.UserID, SubjectOrderConf, NotifyOrderConf, order)
-
-	admins, err := s.userService.GetAllAdmins(ctx)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to load admins for order notification", "order_id", order.ID, "error", err)
-		return nil
-	}
-	for _, admin := range admins {
-		go s.notificationService.NotifyOrder(admin.ID, SubjectOrderRecv, NotifyOrderRecv, order)
-	}
 
 	return nil
 }

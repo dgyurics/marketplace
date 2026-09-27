@@ -86,7 +86,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewConversationRoutes(services.Conversation, baseRouter),
 		routes.NewHealthRoutes(baseRouter),
 		routes.NewImageRoutes(services.Image, services.Product, config.Image, baseRouter),
-		routes.NewOrderRoutes(config.AppMetadata.PaymentOptions, services.Order, services.Tax, services.Payment, services.Cart, services.Address, baseRouter),
+		routes.NewOrderRoutes(config.AppMetadata.PaymentOptions, services.Order, services.Tax, services.Payment, services.Cart, services.Address, services.User, services.Notification, baseRouter),
 		routes.NewPasswordRoutes(services.Password, services.User, services.Notification, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, config.AppMetadata, baseRouter),
 		routes.NewProductRoutes(services.Product, baseRouter),
@@ -147,7 +147,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	categoryService := services.NewCategoryService(categoryRepository)
 	productService := services.NewProductService(productRepository)
 	cartService := services.NewCartService(cartRepository)
-	paymentService := services.NewPaymentService(httpClient, config.Payment, notificationService, userService, orderRepository)
+	paymentService := services.NewPaymentService(httpClient, config.Payment, userService, orderRepository)
 	orderService := services.NewOrderService(orderRepository, cartRepository, paymentService, notificationService, httpClient)
 	imageService := services.NewImageService(httpClient, imageRepository, config.Image)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)

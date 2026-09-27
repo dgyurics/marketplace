@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -14,12 +16,14 @@ import (
 
 type OrderRoutes struct {
 	router
-	config         types.PaymentOptions
-	orderService   services.OrderService
-	taxService     services.TaxService
-	paymentService services.PaymentService
-	cartService    services.CartService
-	addressService services.AddressService
+	config              types.PaymentOptions
+	orderService        services.OrderService
+	taxService          services.TaxService
+	paymentService      services.PaymentService
+	cartService         services.CartService
+	addressService      services.AddressService
+	userService         services.UserService
+	notificationService services.NotificationService
 }
 
 func NewOrderRoutes(
@@ -29,15 +33,19 @@ func NewOrderRoutes(
 	paymentService services.PaymentService,
 	cartService services.CartService,
 	addressService services.AddressService,
+	userService services.UserService,
+	notificationService services.NotificationService,
 	router router) *OrderRoutes {
 	return &OrderRoutes{
-		router:         router,
-		config:         config,
-		orderService:   orderService,
-		taxService:     taxService,
-		paymentService: paymentService,
-		cartService:    cartService,
-		addressService: addressService,
+		router:              router,
+		config:              config,
+		orderService:        orderService,
+		taxService:          taxService,
+		paymentService:      paymentService,
+		cartService:         cartService,
+		addressService:      addressService,
+		userService:         userService,
+		notificationService: notificationService,
 	}
 }
 
@@ -109,6 +117,19 @@ func (h *OrderRoutes) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u.RespondWithJSON(w, http.StatusOK, order)
+}
+
+func (h *OrderRoutes) notifyOrderCreated(ctx context.Context, order types.Order) {
+	go h.notificationService.NotifyOrder(order.UserID, services.SubjectOrderConf, services.NotifyOrderConf, order)
+
+	admins, err := h.userService.GetAllAdmins(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to load admins for order notification", "order_id", order.ID, "error", err)
+		return
+	}
+	for _, admin := range admins {
+		go h.notificationService.NotifyOrder(admin.ID, services.SubjectOrderRecv, services.NotifyOrderRecv, order)
+	}
 }
 
 func (h *OrderRoutes) CreateOrderStripe(w http.ResponseWriter, r *http.Request) {
@@ -204,6 +225,9 @@ func (h *OrderRoutes) CreateOrderStripe(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Notify user + admins order created
+	h.notifyOrderCreated(r.Context(), *order)
+
 	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{ClientSecret: pi.ClientSecret, OrderID: order.ID})
 }
 
@@ -274,7 +298,8 @@ func (h *OrderRoutes) CreateOrderPayOnDelivery(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// TODO send notification order-created
+	// Notify user + admins order created
+	h.notifyOrderCreated(r.Context(), *order)
 
 	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{OrderID: order.ID})
 }
