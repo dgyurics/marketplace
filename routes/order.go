@@ -225,9 +225,6 @@ func (h *OrderRoutes) CreateOrderStripe(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Notify user + admins order created
-	h.notifyOrderCreated(r.Context(), *order)
-
 	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{ClientSecret: pi.ClientSecret, OrderID: order.ID})
 }
 
