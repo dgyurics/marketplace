@@ -36,19 +36,22 @@ type paymentService struct {
 	HttpClient  utilities.HTTPClient
 	config      types.PaymentConfig
 	userService UserService
-	repo        repositories.OrderRepository
+	orderRepo   repositories.OrderRepository
+	cartRepo    repositories.CartRepository
 }
 
 func NewPaymentService(
 	httpClient utilities.HTTPClient,
 	config types.PaymentConfig,
 	userService UserService,
-	repo repositories.OrderRepository) PaymentService {
+	orderRepo repositories.OrderRepository,
+	cartRepo repositories.CartRepository) PaymentService {
 	return &paymentService{
 		HttpClient:  httpClient,
 		config:      config,
 		userService: userService,
-		repo:        repo,
+		orderRepo:   orderRepo,
+		cartRepo:    cartRepo,
 	}
 }
 
@@ -245,7 +248,7 @@ func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, pi *str
 		return nil
 	}
 
-	order, err := s.repo.GetOrderByID(ctx, orderID)
+	order, err := s.orderRepo.GetOrderByID(ctx, orderID)
 	if err != nil {
 		// transient: let caller return error so Stripe retries
 		return err
@@ -299,7 +302,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 		return nil
 	}
 
-	order, err := s.repo.GetOrderByID(ctx, orderID)
+	order, err := s.orderRepo.GetOrderByID(ctx, orderID)
 	if err != nil {
 		// transient: allow retry
 		return err
@@ -341,11 +344,15 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 	*order.Status = types.OrderPaid
 	*order.PaymentStatus = types.PaymentStatusPaid
 
-	if err = s.repo.UpdateOrder(ctx, &order); err != nil {
+	if err = s.orderRepo.UpdateOrder(ctx, &order); err != nil {
 		return fmt.Errorf("failed to mark order as paid: order_id=%s, error=%w", order.ID, err)
 	}
 
 	slog.InfoContext(ctx, "Order marked as paid", "order_id", order.ID, "payment_intent_id", pi.ID)
+
+	if err := s.cartRepo.RemoveItems(ctx, order.UserID); err != nil {
+		slog.WarnContext(ctx, "Error clearing cart", "user_id", order.UserID)
+	}
 
 	return nil
 }
@@ -383,7 +390,7 @@ func (s *paymentService) handleRefund(ctx context.Context, charge *stripe.Charge
 	}
 
 	// do some basic validation
-	order, err := s.repo.GetOrderByID(ctx, orderID)
+	order, err := s.orderRepo.GetOrderByID(ctx, orderID)
 	if err != nil {
 		// transient: allow retry
 		return err
@@ -422,7 +429,7 @@ func (s *paymentService) handleRefund(ctx context.Context, charge *stripe.Charge
 	// mark order as refunded
 	*order.Status = types.OrderRefunded
 	*order.PaymentStatus = types.PaymentStatusRefunded
-	err = s.repo.UpdateOrder(ctx, &order)
+	err = s.orderRepo.UpdateOrder(ctx, &order)
 	if err != nil {
 		return fmt.Errorf("failed to mark order as refunded: order_id=%s, error=%w", order.ID, err)
 	}

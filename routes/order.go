@@ -301,6 +301,10 @@ func (h *OrderRoutes) CreateOrderPayOnDelivery(w http.ResponseWriter, r *http.Re
 	// Notify user + admins order created
 	h.notifyOrderCreated(r.Context(), *order)
 
+	if err := h.cartService.RemoveItems(r.Context()); err != nil {
+		slog.WarnContext(r.Context(), "Error clearing cart", "user_id", order.UserID)
+	}
+
 	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{OrderID: order.ID})
 }
 
