@@ -84,7 +84,11 @@ func cancelPendingOrders(ctx context.Context, tx *sql.Tx, userID string) error {
 	_, err := tx.ExecContext(ctx, `
 		WITH canceled AS (
 			UPDATE orders SET status = 'canceled', updated_at = NOW()
-			WHERE user_id = $1 AND status = 'pending' AND payment_status = 'unpaid'
+			WHERE
+				user_id = $1 AND
+				status = 'pending' AND
+				payment_status = 'unpaid' AND
+				payment_method = 'stripe'
 			RETURNING id
 		), restored AS (
 			DELETE FROM order_items
