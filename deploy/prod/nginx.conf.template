@@ -20,14 +20,17 @@ proxy_cache_path /var/cache/nginx/images
 
 upstream api_backend {
    server api:8000;
+   keepalive 32;
 }
 
 upstream web_backend {
    server web:80;
+   keepalive 16;
 }
 
 upstream imgproxy_backend {
    server imgproxy:80;
+   keepalive 32;
 }
 
 # HTTP → HTTPS redirect
@@ -80,6 +83,9 @@ server {
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
 
+      proxy_http_version                 1.1;
+      proxy_set_header Connection        "";
+
       proxy_pass                         http://api_backend/users$1$is_args$args;
       limit_req                          zone=users burst=10 nodelay;
    }
@@ -90,6 +96,9 @@ server {
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
+
+      proxy_http_version                 1.1;
+      proxy_set_header Connection        "";
 
       proxy_pass                         http://api_backend/orders$1$is_args$args;
       limit_req                          zone=orders burst=5 nodelay;
@@ -102,6 +111,9 @@ server {
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
 
+      proxy_http_version                 1.1;
+      proxy_set_header Connection        "";
+
       proxy_pass                         http://api_backend/payment/events;
       limit_req                          zone=webhooks burst=100 nodelay;
    }
@@ -112,6 +124,9 @@ server {
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
+
+      proxy_http_version                 1.1;
+      proxy_set_header Connection        "";
 
       proxy_pass                         http://api_backend/images/products/;
       client_max_body_size               30M;
@@ -124,6 +139,9 @@ server {
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
 
+      proxy_http_version                 1.1;
+      proxy_set_header Connection        "";
+
       proxy_pass                         http://api_backend/;
       client_max_body_size               512k;
       limit_req                          zone=api_general burst=20 nodelay;
@@ -135,6 +153,9 @@ server {
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
+
+      proxy_http_version                 1.1;
+      proxy_set_header Connection        "";
 
       proxy_pass                         http://imgproxy_backend/;
       limit_req                          zone=img_proxy burst=100 nodelay;
@@ -159,6 +180,9 @@ server {
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
+
+      proxy_http_version                 1.1;
+      proxy_set_header Connection        "";
 
       proxy_pass                         http://web_backend;
       limit_req                          zone=frontend burst=100 nodelay;
