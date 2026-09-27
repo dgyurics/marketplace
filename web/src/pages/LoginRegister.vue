@@ -41,6 +41,7 @@ import UserMenu from '@/components/UserMenu.vue'
 import { login as apiLogin, register as apiRegister } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
+import { useInboxStore } from '@/store/inbox'
 
 const authStore = useAuthStore()
 
@@ -76,6 +77,7 @@ const handleLogin = async () => {
     const authTokens = await apiLogin(email.value, password.value)
     authStore.setTokens(authTokens)
     useCartStore().fetchCart()
+    useInboxStore().fetchConversations()
 
     // Clear email + password field after successful login
     email.value = ''
