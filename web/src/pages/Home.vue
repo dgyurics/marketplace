@@ -94,7 +94,7 @@ onMounted(() => {
 .hero {
   width: 100%;
   height: calc(40vh - 10px);
-  max-height: 400px;
+  max-height: 350px;
   display: flex;
   align-items: center;
   justify-content: center;
