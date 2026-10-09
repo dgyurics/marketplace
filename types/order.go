@@ -7,7 +7,7 @@ import (
 type OrderStatus string
 
 const (
-	OrderCreated   OrderStatus = "created"
+	OrderDraft     OrderStatus = "draft"
 	OrderPending   OrderStatus = "pending"
 	OrderPaid      OrderStatus = "paid"
 	OrderShipped   OrderStatus = "shipped"

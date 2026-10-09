@@ -75,7 +75,7 @@ func (s *scheduleService) removeStaleOrders(ctx context.Context) {
 			SET status = 'canceled', updated_at = NOW()
 			WHERE
 				updated_at < NOW() - INTERVAL '15 minutes' AND (
-					status = 'created' OR
+					status = 'draft' OR
 					(status = 'pending' AND payment_method = 'stripe')
 				)
 			RETURNING id, address_id

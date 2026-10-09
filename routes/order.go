@@ -155,7 +155,7 @@ func populateOrderFromCart(order *types.Order, cart []types.CartItem) {
 	order.TotalAmount = u.Ptr(*order.Amount + *order.TaxAmount + *order.ShippingAmount)
 }
 
-func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
+func (h *OrderRoutes) CreateDraftOrder(w http.ResponseWriter, r *http.Request) {
 	idempotencyKey := r.Header.Get("Idempotency-Key")
 	if idempotencyKey == "" {
 		u.RespondWithError(w, r, http.StatusBadRequest, "Idempotency-Key header is required")
@@ -194,7 +194,7 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	order := &types.Order{
 		IdempotencyKey: &idempotencyKey,
 		Address:        addr,
-		Status:         u.Ptr(types.OrderCreated),
+		Status:         u.Ptr(types.OrderDraft),
 		PaymentStatus:  u.Ptr(types.PaymentStatusUnpaid),
 		Amount:         u.Ptr(int64(0)),
 		TaxAmount:      u.Ptr(int64(0)),
@@ -222,7 +222,7 @@ func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{OrderID: order.ID})
 }
 
-func (h *OrderRoutes) CreateStripeIntent(w http.ResponseWriter, r *http.Request) {
+func (h *OrderRoutes) CheckoutWithStripe(w http.ResponseWriter, r *http.Request) {
 	if !h.config.Stripe {
 		u.RespondWithError(w, r, http.StatusNotFound, "stripe payments disabled")
 		return
@@ -238,7 +238,7 @@ func (h *OrderRoutes) CreateStripeIntent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if *order.Status != types.OrderCreated {
+	if *order.Status != types.OrderDraft {
 		u.RespondWithError(w, r, http.StatusConflict, "order is not open")
 		return
 	}
@@ -283,7 +283,7 @@ func (h *OrderRoutes) CreateStripeIntent(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-func (h *OrderRoutes) ConfirmPayOnDelivery(w http.ResponseWriter, r *http.Request) {
+func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request) {
 	if !h.config.OnDelivery {
 		u.RespondWithError(w, r, http.StatusNotFound, "on delivery payments disabled")
 		return
@@ -299,7 +299,7 @@ func (h *OrderRoutes) ConfirmPayOnDelivery(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if *order.Status != types.OrderCreated {
+	if *order.Status != types.OrderDraft {
 		u.RespondWithError(w, r, http.StatusConflict, "order is not open")
 		return
 	}
@@ -328,9 +328,9 @@ func (h *OrderRoutes) ConfirmPayOnDelivery(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *OrderRoutes) RegisterRoutes() {
-	h.mux.Handle("POST /orders", h.secure(types.RoleGuest)(h.limit(h.CreateOrder, 20, time.Hour)))
-	h.mux.Handle("POST /orders/{id}/stripe/intent", h.secure(types.RoleGuest)(h.limit(h.CreateStripeIntent, 10, time.Hour)))
-	h.mux.Handle("POST /orders/{id}/pay-on-delivery", h.secure(types.RoleMember)(h.ConfirmPayOnDelivery))
+	h.mux.Handle("POST /orders", h.secure(types.RoleGuest)(h.limit(h.CreateDraftOrder, 20, time.Hour)))
+	h.mux.Handle("POST /orders/{id}/stripe/intent", h.secure(types.RoleGuest)(h.limit(h.CheckoutWithStripe, 10, time.Hour)))
+	h.mux.Handle("POST /orders/{id}/pay-on-delivery", h.secure(types.RoleMember)(h.CheckoutOnDelivery))
 	h.mux.Handle("PUT /orders", h.secure(types.RoleAdmin)(h.UpdateOrder))
 	h.mux.Handle("GET /orders/{id}/public", http.HandlerFunc(h.GetOrderPublic))
 	h.mux.Handle("GET /orders/{id}/owner", h.secure(types.RoleGuest)(h.GetOrderOwner))

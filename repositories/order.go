@@ -86,7 +86,7 @@ func cancelPendingOrders(ctx context.Context, tx *sql.Tx, userID string) error {
 			UPDATE orders SET status = 'canceled', updated_at = NOW()
 			WHERE
 				user_id = $1 AND (
-					status = 'created' OR
+					status = 'draft' OR
 					(status = 'pending' AND payment_method = 'stripe')
 				)
 			RETURNING id

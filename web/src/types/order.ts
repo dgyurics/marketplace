@@ -10,7 +10,7 @@ export interface OrderItem {
 }
 
 export type OrderStatus =
-  'created' | 'pending' | 'paid' | 'refunded' | 'shipped' | 'delivered' | 'canceled'
+  'draft' | 'pending' | 'paid' | 'refunded' | 'shipped' | 'delivered' | 'canceled'
 
 export type PaymentMethod = 'stripe' | 'on_delivery'
 
