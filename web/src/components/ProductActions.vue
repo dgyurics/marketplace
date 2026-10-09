@@ -15,7 +15,12 @@
         <span v-else class="checkmark-animation">&#10003;</span>
       </button>
     </div>
-    <button class="btn-lg btn-full-width btn-outline" :tabindex="0" @click="handleBuyNow">
+    <button
+      v-if="!isOutOfStock"
+      class="btn-lg btn-full-width btn-outline"
+      :tabindex="0"
+      @click="handleBuyNow"
+    >
       Buy Now
     </button>
     <p v-if="showLowStockWarning" class="low-stock-warning">
