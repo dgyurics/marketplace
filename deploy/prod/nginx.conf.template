@@ -63,7 +63,10 @@ server {
    add_header X-Frame-Options            "SAMEORIGIN" always;
    add_header Referrer-Policy            "strict-origin-when-cross-origin" always;
 
+   # Proxy
    proxy_connect_timeout 5s;
+   proxy_read_timeout    60s;
+   proxy_send_timeout    60s;
 
    # Gzip
    gzip            on;
