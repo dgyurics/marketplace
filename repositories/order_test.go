@@ -35,13 +35,16 @@ func TestOrderRepository_GetOrder_Success(t *testing.T) {
 	addressID := createTestAddress(t, dbPool, user.ID)
 
 	// Create empty order with address
-	paymentMethod := types.PaymentMethodStripe
-	status := types.OrderPending
 	order := &types.Order{
-		ID:            utilities.MustGenerateIDString(),
-		UserID:        user.ID,
-		PaymentMethod: &paymentMethod,
-		Status:        &status,
+		ID:             utilities.MustGenerateIDString(),
+		UserID:         user.ID,
+		PaymentMethod:  utilities.Ptr(types.PaymentMethodStripe),
+		Status:         utilities.Ptr(types.OrderPending),
+		Amount:         utilities.Ptr(int64(0)),
+		TaxAmount:      utilities.Ptr(int64(0)),
+		ShippingAmount: utilities.Ptr(int64(0)),
+		TotalAmount:    utilities.Ptr(int64(0)),
+		PaymentStatus:  utilities.Ptr(types.PaymentStatusUnpaid),
 		Address: types.Address{
 			ID: addressID,
 		},
@@ -92,8 +95,8 @@ func TestCancelPendingOrders(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, err = dbPool.ExecContext(ctx, `
-		INSERT INTO orders (id, user_id, address_id, status, payment_status)
-		VALUES ($1, $2, $3, 'pending', 'unpaid')`,
+		INSERT INTO orders (id, user_id, address_id, status, payment_method, payment_status)
+		VALUES ($1, $2, $3, 'pending', 'stripe', 'unpaid')`,
 		orderID, user.ID, addressID)
 	assert.NoError(t, err)
 
@@ -308,14 +311,17 @@ func TestCreateOrder_InsufficientStock_ReleasesReservedInventory(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	paymentMethod := types.PaymentMethodStripe
-	status := types.OrderPending
 	order := &types.Order{
-		ID:            orderID,
-		UserID:        user.ID,
-		PaymentMethod: &paymentMethod,
-		Status:        &status,
-		Address:       types.Address{ID: addressID},
+		ID:             orderID,
+		UserID:         user.ID,
+		PaymentMethod:  utilities.Ptr(types.PaymentMethodStripe),
+		Status:         utilities.Ptr(types.OrderPending),
+		Amount:         utilities.Ptr(int64(0)),
+		TaxAmount:      utilities.Ptr(int64(0)),
+		ShippingAmount: utilities.Ptr(int64(0)),
+		TotalAmount:    utilities.Ptr(int64(0)),
+		PaymentStatus:  utilities.Ptr(types.PaymentStatusUnpaid),
+		Address:        types.Address{ID: addressID},
 		Items: []types.OrderItem{
 			{Product: types.Product{ID: inStock}, Quantity: 4, UnitPrice: 1000},
 			{Product: types.Product{ID: shortStock}, Quantity: 5, UnitPrice: 1000},
@@ -372,16 +378,18 @@ func TestCreateOrder_InsufficientStock_RepeatedAttempts(t *testing.T) {
 	inStock := createTestProduct(t, 10)
 	outOfStock := createTestProduct(t, 0)
 
-	paymentMethod := types.PaymentMethodStripe
-	status := types.OrderPending
-
 	for attempt := 1; attempt <= 3; attempt++ {
 		order := &types.Order{
-			ID:            utilities.MustGenerateIDString(),
-			UserID:        user.ID,
-			PaymentMethod: &paymentMethod,
-			Status:        &status,
-			Address:       types.Address{ID: addressID},
+			ID:             utilities.MustGenerateIDString(),
+			UserID:         user.ID,
+			PaymentMethod:  utilities.Ptr(types.PaymentMethodStripe),
+			Status:         utilities.Ptr(types.OrderPending),
+			Amount:         utilities.Ptr(int64(0)),
+			TaxAmount:      utilities.Ptr(int64(0)),
+			ShippingAmount: utilities.Ptr(int64(0)),
+			TotalAmount:    utilities.Ptr(int64(0)),
+			PaymentStatus:  utilities.Ptr(types.PaymentStatusUnpaid),
+			Address:        types.Address{ID: addressID},
 			Items: []types.OrderItem{
 				{Product: types.Product{ID: inStock}, Quantity: 4, UnitPrice: 1000},
 				{Product: types.Product{ID: outOfStock}, Quantity: 1, UnitPrice: 1000},
@@ -416,14 +424,17 @@ func TestCreateOrder_DuplicateIdempotencyKey(t *testing.T) {
 		dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
 	})
 
-	paymentMethod := types.PaymentMethodStripe
-	status := types.OrderPending
 	newOrder := func() *types.Order {
 		return &types.Order{
 			ID:             utilities.MustGenerateIDString(),
 			UserID:         user.ID,
-			PaymentMethod:  &paymentMethod,
-			Status:         &status,
+			PaymentMethod:  utilities.Ptr(types.PaymentMethodStripe),
+			Status:         utilities.Ptr(types.OrderPending),
+			Amount:         utilities.Ptr(int64(0)),
+			TaxAmount:      utilities.Ptr(int64(0)),
+			ShippingAmount: utilities.Ptr(int64(0)),
+			TotalAmount:    utilities.Ptr(int64(0)),
+			PaymentStatus:  utilities.Ptr(types.PaymentStatusUnpaid),
 			IdempotencyKey: &idempotencyKey,
 			Address:        types.Address{ID: addressID},
 			Items: []types.OrderItem{
@@ -475,15 +486,17 @@ func TestCreateOrder_NilIdempotencyKey(t *testing.T) {
 		dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
 	})
 
-	paymentMethod := types.PaymentMethodStripe
-	status := types.OrderPending
 	newOrder := func() *types.Order {
 		return &types.Order{
-			ID:            utilities.MustGenerateIDString(),
-			UserID:        user.ID,
-			PaymentMethod: &paymentMethod,
-			Status:        &status,
-			Address:       types.Address{ID: addressID},
+			ID:             utilities.MustGenerateIDString(),
+			UserID:         user.ID,
+			Status:         utilities.Ptr(types.OrderDraft),
+			Amount:         utilities.Ptr(int64(0)),
+			TaxAmount:      utilities.Ptr(int64(0)),
+			ShippingAmount: utilities.Ptr(int64(0)),
+			TotalAmount:    utilities.Ptr(int64(0)),
+			PaymentStatus:  utilities.Ptr(types.PaymentStatusUnpaid),
+			Address:        types.Address{ID: addressID},
 			Items: []types.OrderItem{
 				{Product: types.Product{ID: productID}, Quantity: 2, UnitPrice: 1000},
 			},
@@ -493,8 +506,8 @@ func TestCreateOrder_NilIdempotencyKey(t *testing.T) {
 	first := newOrder()
 	assert.NoError(t, orderRepo.CreateOrder(ctx, first))
 
-	// The second order cancels the first (still pending and unpaid), which
-	// restores its inventory before reserving again.
+	// The second order cancels the first (still a draft), which restores its
+	// inventory before reserving again.
 	second := newOrder()
 	assert.NoError(t, orderRepo.CreateOrder(ctx, second))
 
