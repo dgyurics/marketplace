@@ -3,21 +3,24 @@ import { defineStore } from 'pinia'
 import {
   createAddress as apiCreateAddress,
   updateAddress as apiUpdateAddress,
-  createOrderStripe as apiCreateOrderStripe,
-  createOrderPayOnDelivery as apiCreateOrderPayOnDelivery,
+  createOrder as apiCreateOrder,
+  createStripeIntent as apiCreateStripeIntent,
+  confirmPayOnDelivery as apiConfirmPayOnDelivery,
   getTaxEstimate as apiGetTaxEstimate,
 } from '@/services/api'
 import type {
   Address,
-  CreateOrderResponse,
   InsufficientStockItem,
   PayOnDeliveryResponse,
+  PendingOrderResponse,
+  StripeIntentResponse,
 } from '@/types'
 
 export const useCheckoutStore = defineStore('checkout', {
   state: () => ({
     shippingAddress: {} as Address,
     stripe_client_secret: '',
+    stripe_total_amount: 0,
     order_id: '',
     shippingError: null as string | null,
     paymentError: null as string | null,
@@ -51,48 +54,64 @@ export const useCheckoutStore = defineStore('checkout', {
       return apiGetTaxEstimate(this.shippingAddress.country, this.shippingAddress.state)
     },
 
-    async preparePayment(): Promise<CreateOrderResponse | null> {
+    async createPendingOrder(): Promise<PendingOrderResponse | null> {
       if (!this.shippingAddress.id) {
         throw new Error('Shipping address not found')
       }
 
-      const idempotencyKey = window.crypto.randomUUID()
-      const result = await apiCreateOrderStripe(this.shippingAddress.id, idempotencyKey)
+      const result = await apiCreateOrder(this.shippingAddress.id, window.crypto.randomUUID())
 
       if (!result.success) {
         this.insufficientStock = result.items
         return null
       }
 
-      this.stripe_client_secret = result.data.client_secret
       this.order_id = result.data.order_id
       this.insufficientStock = []
+      this.stripe_client_secret = ''
+      this.stripe_total_amount = 0
 
       return result.data
     },
 
-    async placePayOnDeliveryOrder(): Promise<PayOnDeliveryResponse | null> {
-      if (!this.shippingAddress.id) {
-        throw new Error('Shipping address not found')
+    /**
+     * Creates the PaymentIntent. Called only once the user submits the Stripe
+     * form. The result is cached so a retry after a declined card reuses the
+     * same intent
+     */
+    async fetchStripeIntent(): Promise<StripeIntentResponse> {
+      if (!this.order_id) {
+        throw new Error('Order not found')
       }
 
-      const idempotencyKey = window.crypto.randomUUID()
-      const result = await apiCreateOrderPayOnDelivery(this.shippingAddress.id, idempotencyKey)
-
-      if (!result.success) {
-        this.insufficientStock = result.items
-        return null
+      if (this.stripe_client_secret) {
+        return {
+          client_secret: this.stripe_client_secret,
+          order_id: this.order_id,
+          total_amount: this.stripe_total_amount,
+        }
       }
 
-      this.order_id = result.data.order_id
-      this.insufficientStock = []
+      const res = await apiCreateStripeIntent(this.order_id, this.order_id)
+      this.stripe_client_secret = res.client_secret
+      this.stripe_total_amount = res.total_amount
 
-      return result.data
+      return res
+    },
+
+    /** Set order payment type NULL -> ON_DELIVERY */
+    async confirmPayOnDelivery(): Promise<PayOnDeliveryResponse> {
+      if (!this.order_id) {
+        throw new Error('Order not found')
+      }
+
+      return apiConfirmPayOnDelivery(this.order_id)
     },
 
     resetCheckout() {
       this.shippingAddress = {} as Address
       this.stripe_client_secret = ''
+      this.stripe_total_amount = 0
       this.order_id = ''
       this.shippingError = null
       this.paymentError = null

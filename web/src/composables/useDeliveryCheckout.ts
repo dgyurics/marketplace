@@ -1,16 +1,14 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
 
 /**
  * Owns the pay-on-delivery side of checkout: acknowledging the terms and
- * placing the order. There is no payment step, so the order is final.
+ * confirming the pending order. No payment is collected, so the order is final.
  */
 export function useDeliveryCheckout() {
   const router = useRouter()
-  const cartStore = useCartStore()
   const checkoutStore = useCheckoutStore()
 
   const acknowledged = ref(false)
@@ -23,12 +21,7 @@ export function useDeliveryCheckout() {
     checkoutStore.paymentError = null
 
     try {
-      const res = await checkoutStore.placePayOnDeliveryOrder()
-      if (!res) {
-        await cartStore.fetchCart()
-        router.push('/cart')
-        return
-      }
+      await checkoutStore.confirmPayOnDelivery()
       router.push('/checkout/confirmation')
     } catch (error: unknown) {
       const status = (error as { response?: { status?: number } }).response?.status

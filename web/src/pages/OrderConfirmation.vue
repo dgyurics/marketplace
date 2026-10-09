@@ -44,7 +44,8 @@ onMounted(async () => {
   const order = await getOrderOwner(order_id as string)
 
   if (redirect_status === 'failed') {
-    // Restore state for retry
+    // Restore state so the retry reuses this order and its PaymentIntent
+    // rather than creating a second one.
     checkoutStore.shippingAddress = order.address
     checkoutStore.order_id = order.id
     checkoutStore.stripe_client_secret = payment_intent_client_secret as string

@@ -7,6 +7,7 @@ import (
 type OrderStatus string
 
 const (
+	OrderCreated   OrderStatus = "created"
 	OrderPending   OrderStatus = "pending"
 	OrderPaid      OrderStatus = "paid"
 	OrderShipped   OrderStatus = "shipped"
@@ -35,10 +36,10 @@ type Order struct {
 	UserID         string         `json:"-"`
 	IdempotencyKey *string        `json:"-"`
 	Address        Address        `json:"address"`
-	Amount         int64          `json:"amount"`
-	TaxAmount      int64          `json:"tax_amount"`
-	ShippingAmount int64          `json:"shipping_amount"`
-	TotalAmount    int64          `json:"total_amount"`
+	Amount         *int64         `json:"amount"`
+	TaxAmount      *int64         `json:"tax_amount"`
+	ShippingAmount *int64         `json:"shipping_amount"`
+	TotalAmount    *int64         `json:"total_amount"`
 	Status         *OrderStatus   `json:"status"`
 	PaymentMethod  *PaymentMethod `json:"payment_method"`
 	PaymentStatus  *PaymentStatus `json:"payment_status"`

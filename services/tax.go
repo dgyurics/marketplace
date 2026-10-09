@@ -18,7 +18,7 @@ import (
 )
 
 type TaxService interface {
-	CalculateTax(ctx context.Context, refID string, shippingAddress types.Address, items []types.CartItem) (int64, error)
+	CalculateTax(ctx context.Context, refID string, shippingAddress types.Address, items []types.OrderItem) (int64, error)
 	EstimateTax(ctx context.Context, shippingAddress types.Address, items []types.CartItem) (int64, error)
 }
 
@@ -40,7 +40,7 @@ func NewTaxService(
 	}
 }
 
-func (s *taxService) CalculateTax(ctx context.Context, refID string, address types.Address, items []types.CartItem) (int64, error) {
+func (s *taxService) CalculateTax(ctx context.Context, refID string, address types.Address, items []types.OrderItem) (int64, error) {
 	form := url.Values{}
 	form.Set("currency", utilities.Locale.Currency)
 

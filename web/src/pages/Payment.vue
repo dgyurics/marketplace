@@ -6,9 +6,9 @@
     <h3>Payment Method</h3>
     <PaymentMethodSelector v-model="paymentMethod" :enabled="enabledMethods" />
 
-    <StripeCheckout v-if="paymentMethod === 'stripe'" />
+    <StripeCheckout v-if="paymentMethod === 'stripe'" :amount="cartStore.subtotal + taxAmount" />
 
-    <DeliveryCheckout v-else-if="paymentMethod === 'pay_on_delivery'" />
+    <DeliveryCheckout v-else-if="paymentMethod === 'on_delivery'" />
 
     <NoPaymentMethods v-else />
 
@@ -69,6 +69,18 @@ async function initializePayment() {
   const options = await getPaymentMethods()
   enabledMethods.value = (Object.keys(options) as PaymentMethod[]).filter((m) => options[m])
   paymentMethod.value = enabledMethods.value[0] ?? null
+
+  if (!paymentMethod.value) return
+
+  // Retrying a failed payment: keep the existing order and its PaymentIntent.
+  if (checkoutStore.order_id && checkoutStore.stripe_client_secret) return
+
+  // One pending order serves both flows, so switching methods costs nothing.
+  const order = await checkoutStore.createPendingOrder()
+  if (!order) {
+    await cartStore.fetchCart()
+    router.push('/cart')
+  }
 }
 
 function handleInitError(error: unknown) {

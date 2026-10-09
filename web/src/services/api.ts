@@ -24,8 +24,9 @@ import type {
   ExcludedShippingZone,
   RegistrationCode,
   CreateOrderConflict,
-  CreateOrderResult,
-  PayOnDeliveryResult,
+  PayOnDeliveryResponse,
+  PendingOrderResult,
+  StripeIntentResponse,
   PaymentOptions,
 } from '@/types'
 import type { Conversation } from '@/types/conversation'
@@ -272,40 +273,36 @@ export const updateOrder = async (order: Order): Promise<Order> => {
   return response.data
 }
 
-export const createOrderStripe = async (
+export const createOrder = async (
   shippingID: string,
   idempotencyKey: string
-): Promise<CreateOrderResult | CreateOrderConflict> => {
+): Promise<PendingOrderResult | CreateOrderConflict> => {
   const params = new URLSearchParams()
   params.append('shipping_id', shippingID)
 
-  const response = await apiClient.post(`/orders/stripe?${params}`, null, {
+  const response = await apiClient.post(`/orders?${params}`, null, {
     headers: { 'Idempotency-Key': idempotencyKey },
     validateStatus: (status) => status === 201 || status === 409,
   })
 
-  if (response.status === 409) {
-    return { success: false, items: response.data }
-  }
-  return { success: true, data: response.data }
+  return response.status === 409
+    ? { success: false, items: response.data }
+    : { success: true, data: response.data }
 }
 
-export const createOrderPayOnDelivery = async (
-  shippingID: string,
+export const createStripeIntent = async (
+  orderId: string,
   idempotencyKey: string
-): Promise<PayOnDeliveryResult | CreateOrderConflict> => {
-  const params = new URLSearchParams()
-  params.append('shipping_id', shippingID)
-
-  const response = await apiClient.post(`/orders/pay-on-delivery?${params}`, null, {
+): Promise<StripeIntentResponse> => {
+  const response = await apiClient.post(`/orders/${orderId}/stripe/intent`, null, {
     headers: { 'Idempotency-Key': idempotencyKey },
-    validateStatus: (status) => status === 201 || status === 409,
   })
+  return response.data
+}
 
-  if (response.status === 409) {
-    return { success: false, items: response.data }
-  }
-  return { success: true, data: response.data }
+export const confirmPayOnDelivery = async (orderId: string): Promise<PayOnDeliveryResponse> => {
+  const response = await apiClient.post(`/orders/${orderId}/pay-on-delivery`)
+  return response.data
 }
 
 export const getPaymentMethods = async (): Promise<PaymentOptions> => {
@@ -315,8 +312,6 @@ export const getPaymentMethods = async (): Promise<PaymentOptions> => {
 
 export const getUsers = async (page: number = 1, limit: number = 50): Promise<UserRecord[]> => {
   const params = new URLSearchParams()
-
-  // Add pagination
   params.append('page', page.toString())
   params.append('limit', limit.toString())
 
@@ -326,8 +321,6 @@ export const getUsers = async (page: number = 1, limit: number = 50): Promise<Us
 
 export const getOrders = async (page: number = 1, limit: number = 50): Promise<Order[]> => {
   const params = new URLSearchParams()
-
-  // Add pagination
   params.append('page', page.toString())
   params.append('limit', limit.toString())
 

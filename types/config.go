@@ -120,8 +120,8 @@ type PaymentConfig struct {
 }
 
 type PaymentOptions struct {
-	Stripe        bool `json:"stripe"`
-	PayOnDelivery bool `json:"pay_on_delivery"`
+	Stripe     bool `json:"stripe"`
+	OnDelivery bool `json:"on_delivery"`
 }
 
 // struct exposed to UI in GET /config

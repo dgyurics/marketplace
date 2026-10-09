@@ -2,10 +2,8 @@ import type { Locale } from './locale'
 
 export type PaymentOptions = {
   stripe: boolean
-  pay_on_delivery: boolean
+  on_delivery: boolean
 }
-
-export type PaymentMethod = keyof PaymentOptions
 
 /**
  * Application metadata served by GET /config

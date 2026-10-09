@@ -45,8 +45,8 @@ func loadAppMetadata(payment types.PaymentConfig) types.AppMetadata {
 	return types.AppMetadata{
 		Locale: Locale,
 		PaymentOptions: types.PaymentOptions{
-			Stripe:        payment.Stripe.Enabled,
-			PayOnDelivery: payment.OnDelivery,
+			Stripe:     payment.Stripe.Enabled,
+			OnDelivery: payment.OnDelivery,
 		},
 	}
 }

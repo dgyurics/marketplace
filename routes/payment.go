@@ -68,7 +68,7 @@ func (h *PaymentRoutes) PaymentMethods(w http.ResponseWriter, r *http.Request) {
 	payOpts := h.config.PaymentOptions
 	usr, ok := r.Context().Value(services.UserKey).(*types.User)
 	if !ok || !usr.HasMinimumRole(types.RoleMember) {
-		payOpts.PayOnDelivery = false
+		payOpts.OnDelivery = false
 	}
 
 	u.RespondWithJSON(w, 200, payOpts)

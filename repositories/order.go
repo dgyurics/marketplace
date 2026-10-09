@@ -85,10 +85,10 @@ func cancelPendingOrders(ctx context.Context, tx *sql.Tx, userID string) error {
 		WITH canceled AS (
 			UPDATE orders SET status = 'canceled', updated_at = NOW()
 			WHERE
-				user_id = $1 AND
-				status = 'pending' AND
-				payment_status = 'unpaid' AND
-				payment_method = 'stripe'
+				user_id = $1 AND (
+					status = 'created' OR
+					(status = 'pending' AND payment_method = 'stripe')
+				)
 			RETURNING id
 		), restored AS (
 			DELETE FROM order_items
@@ -163,12 +163,11 @@ func insertOrder(ctx context.Context, tx *sql.Tx, order *types.Order) (bool, err
 			tax_amount,
 			shipping_amount,
 			total_amount,
-			payment_method,
 			idempotency_key,
 			status,
 			payment_status
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'unpaid')
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL
 		DO NOTHING`,
 		order.ID,
@@ -178,9 +177,9 @@ func insertOrder(ctx context.Context, tx *sql.Tx, order *types.Order) (bool, err
 		order.TaxAmount,
 		order.ShippingAmount,
 		order.TotalAmount,
-		order.PaymentMethod,
 		order.IdempotencyKey,
 		order.Status,
+		order.PaymentStatus,
 	)
 	if err != nil {
 		return false, err
@@ -365,6 +364,7 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 			o.user_id,
 			o.amount,
 			o.tax_amount,
+			o.shipping_amount,
 			o.total_amount,
 			o.status,
 			o.payment_method,
@@ -392,6 +392,7 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 		&order.UserID,
 		&order.Amount,
 		&order.TaxAmount,
+		&order.ShippingAmount,
 		&order.TotalAmount,
 		&order.Status,
 		&order.PaymentMethod,
@@ -538,18 +539,30 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 			status = COALESCE($1, status),
 			payment_method = COALESCE($2, payment_method),
 			payment_status = COALESCE($3, payment_status),
+			amount = COALESCE($4, amount),
+			tax_amount = COALESCE($5, tax_amount),
+			shipping_amount = COALESCE($6, shipping_amount),
+			total_amount = COALESCE($7, total_amount),
 			updated_at = NOW()
-		WHERE id = $4
+		WHERE id = $8
 		RETURNING user_id
 	`
-	if err := tx.QueryRowContext(
+	err = tx.QueryRowContext(
 		ctx,
 		query,
 		order.Status,
 		order.PaymentMethod,
 		order.PaymentStatus,
+		order.Amount,
+		order.TaxAmount,
+		order.ShippingAmount,
+		order.TotalAmount,
 		order.ID,
-	).Scan(&order.UserID); err != nil {
+	).Scan(&order.UserID)
+	if err == sql.ErrNoRows {
+		return types.ErrNotFound
+	}
+	if err != nil {
 		return err
 	}
 

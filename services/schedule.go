@@ -74,9 +74,10 @@ func (s *scheduleService) removeStaleOrders(ctx context.Context) {
 			UPDATE orders
 			SET status = 'canceled', updated_at = NOW()
 			WHERE
-				status = 'pending'
-				AND payment_method = 'stripe'
-				AND updated_at < NOW() - INTERVAL '15 minutes'
+				updated_at < NOW() - INTERVAL '15 minutes' AND (
+					status = 'created' OR
+					(status = 'pending' AND payment_method = 'stripe')
+				)
 			RETURNING id, address_id
 		),
 		deleted_items AS (

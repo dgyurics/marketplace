@@ -284,7 +284,7 @@ func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, pi *str
 		slog.WarnContext(ctx, "payment_intent.created currency mismatch", "order_id", order.ID, "expected_currency", utilities.Locale.Currency, "actual_currency", pi.Currency)
 		return nil
 	}
-	if order.TotalAmount != pi.Amount {
+	if *order.TotalAmount != pi.Amount {
 		slog.WarnContext(ctx, "payment_intent.created amount mismatch", "order_id", order.ID, "expected_amount", order.TotalAmount, "actual_amount", pi.Amount)
 		return nil
 	}
@@ -334,7 +334,7 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 		slog.WarnContext(ctx, "payment_intent.succeeded payment status mismatch", "order_id", order.ID, "expected_payment_status", types.PaymentStatusUnpaid, "actual_payment_status", *order.PaymentStatus)
 		return nil
 	}
-	if order.TotalAmount != pi.Amount {
+	if *order.TotalAmount != pi.Amount {
 		slog.WarnContext(ctx, "payment_intent.succeeded amount mismatch", "order_id", order.ID, "expected_amount", order.TotalAmount, "actual_amount", pi.Amount)
 		return nil
 	}
@@ -435,7 +435,7 @@ func (s *paymentService) handleRefund(ctx context.Context, charge *stripe.Charge
 		return nil
 	}
 
-	if order.TotalAmount != charge.AmountRefunded {
+	if *order.TotalAmount != charge.AmountRefunded {
 		slog.WarnContext(ctx, "charge.refunded partial refund not supported", "order_id", order.ID, "order_amount", order.TotalAmount, "refund_amount", charge.AmountRefunded)
 		return nil
 	}

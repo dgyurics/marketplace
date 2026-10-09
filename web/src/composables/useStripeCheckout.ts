@@ -2,24 +2,23 @@ import { ref, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useCountdown } from '@/composables/useCountdown'
-import { useCartStore } from '@/store/cart'
 import { useCheckoutStore } from '@/store/checkout'
 
 export interface PaymentFormRef {
-  confirmPayment: (orderId: string) => Promise<void>
+  confirmPayment: (
+    orderId: string,
+    fetchClientSecret: () => Promise<{ client_secret: string; total_amount: number }>
+  ) => Promise<void>
 }
 
 /**
- * Owns the Stripe side of checkout: creating the order + PaymentIntent,
- * tracking readiness of the Payment Element, and confirming the payment.
+ * Owns the Stripe side of checkout: tracking readiness of the Payment Element,
+ * and creating + confirming the PaymentIntent only once the user submits.
  */
 export function useStripeCheckout(paymentFormRef: Ref<PaymentFormRef | null>) {
   const router = useRouter()
-  const cartStore = useCartStore()
   const checkoutStore = useCheckoutStore()
 
-  const clientSecret = ref('')
-  const orderId = ref('')
   const isReady = ref(false)
   const isSubmitting = ref(false)
 
@@ -28,31 +27,9 @@ export function useStripeCheckout(paymentFormRef: Ref<PaymentFormRef | null>) {
     router.push('/cart')
   })
 
-  /** Creates the order and fetches the client secret for the Payment Element. */
-  async function prepare() {
-    try {
-      const res = await checkoutStore.preparePayment()
-      if (!res) {
-        await cartStore.fetchCart()
-        router.push('/cart')
-        return
-      }
-      clientSecret.value = res.client_secret
-      orderId.value = res.order_id
-      startTimer()
-    } catch (error: unknown) {
-      const status = (error as { response?: { status?: number } }).response?.status
-      if (status === 400) {
-        checkoutStore.shippingError = 'Invalid shipping address'
-        router.push('/checkout/shipping')
-        return
-      }
-      checkoutStore.paymentError = 'Unable to start payment. Please try again.'
-    }
-  }
-
   function onReady() {
     isReady.value = true
+    startTimer()
   }
 
   function onError(message: string) {
@@ -60,14 +37,16 @@ export function useStripeCheckout(paymentFormRef: Ref<PaymentFormRef | null>) {
   }
 
   async function submit() {
-    if (isSubmitting.value || !orderId.value) return
+    if (isSubmitting.value || !checkoutStore.order_id) return
 
     isSubmitting.value = true
     checkoutStore.paymentError = null
 
     try {
       if (!paymentFormRef.value) return
-      await paymentFormRef.value.confirmPayment(orderId.value)
+      await paymentFormRef.value.confirmPayment(checkoutStore.order_id, () =>
+        checkoutStore.fetchStripeIntent()
+      )
       router.push('/checkout/confirmation')
     } catch (error) {
       const message =
@@ -81,10 +60,8 @@ export function useStripeCheckout(paymentFormRef: Ref<PaymentFormRef | null>) {
   }
 
   return {
-    clientSecret,
     isReady,
     isSubmitting,
-    prepare,
     onReady,
     onError,
     submit,

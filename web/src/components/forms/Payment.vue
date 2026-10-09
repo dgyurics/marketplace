@@ -10,9 +10,10 @@ import { onMounted, onBeforeUnmount } from 'vue'
 
 import { getStripe } from '@/services/stripe'
 import type { Address } from '@/types'
+import { getCurrency } from '@/utilities/config'
 
 const props = defineProps<{
-  clientSecret: string
+  amount: number // estimate - charged/actual amount comes from payment intent
   address: Address
 }>()
 
@@ -27,7 +28,7 @@ let paymentElement: StripePaymentElement | null = null
 onMounted(async () => {
   try {
     const stripe = await getStripe()
-    if (!stripe || !props.clientSecret) return
+    if (!stripe) return
 
     await initializePaymentElement(stripe)
   } catch (error) {
@@ -41,7 +42,9 @@ onBeforeUnmount(() => {
 
 async function initializePaymentElement(stripe: Stripe) {
   elements = stripe.elements({
-    clientSecret: props.clientSecret,
+    mode: 'payment',
+    amount: props.amount,
+    currency: getCurrency().toLowerCase(),
     appearance: {
       theme: 'stripe',
       variables: {
@@ -75,7 +78,15 @@ async function initializePaymentElement(stripe: Stripe) {
   paymentElement.on('ready', () => emit('ready'))
 }
 
-async function confirmPayment(orderId: string) {
+/**
+ * Backend calculates final total with a respective payment-intent
+ * Order goes from DRAFT -> PENDING
+ * Payment type goes from UNDEFINED -> STRIPE
+ */
+async function confirmPayment(
+  orderId: string,
+  fetchClientSecret: () => Promise<{ client_secret: string; total_amount: number }>
+) {
   if (!elements || !orderId) {
     throw new Error('Payment form not initialized or missing order ID')
   }
@@ -83,8 +94,19 @@ async function confirmPayment(orderId: string) {
   const stripe = await getStripe()
   if (!stripe) throw new Error('Stripe not available')
 
+  const { error: submitError } = await elements.submit()
+  if (submitError) throw new Error(submitError.message)
+
+  const { client_secret, total_amount } = await fetchClientSecret()
+
+  // Keep wallets (Apple/Google Pay) in sync with the authoritative taxed total.
+  if (total_amount && total_amount !== props.amount) {
+    elements.update({ amount: total_amount })
+  }
+
   const { error, paymentIntent } = await stripe.confirmPayment({
     elements,
+    clientSecret: client_secret,
     confirmParams: {
       return_url: `${window.location.origin}/checkout/confirmation?order_id=${orderId}`,
     },

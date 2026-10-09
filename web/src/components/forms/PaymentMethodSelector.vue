@@ -12,9 +12,9 @@
     <button
       type="button"
       class="method-btn"
-      :class="{ 'method-btn--active': modelValue === 'pay_on_delivery' }"
-      :disabled="!enabled.includes('pay_on_delivery')"
-      @click="$emit('update:modelValue', 'pay_on_delivery')"
+      :class="{ 'method-btn--active': modelValue === 'on_delivery' }"
+      :disabled="!enabled.includes('on_delivery')"
+      @click="$emit('update:modelValue', 'on_delivery')"
     >
       pay on delivery
     </button>
@@ -29,7 +29,7 @@ withDefaults(
     modelValue: PaymentMethod | null
     enabled?: PaymentMethod[]
   }>(),
-  { enabled: () => ['stripe', 'pay_on_delivery'] }
+  { enabled: () => ['stripe', 'on_delivery'] }
 )
 
 defineEmits<{

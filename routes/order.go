@@ -111,10 +111,17 @@ func (h *OrderRoutes) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.orderService.UpdateOrder(r.Context(), &order); err != nil {
+	err := h.orderService.UpdateOrder(r.Context(), &order)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	go h.notificationService.NotifyOrder(order.UserID, services.SubjectOrderUpdate, services.NotifyOrderUpdate, order)
 
 	u.RespondWithJSON(w, http.StatusOK, order)
 }
@@ -132,179 +139,6 @@ func (h *OrderRoutes) notifyOrderCreated(ctx context.Context, order types.Order)
 	}
 }
 
-func (h *OrderRoutes) CreateOrderStripe(w http.ResponseWriter, r *http.Request) {
-	if !h.config.Stripe {
-		u.RespondWithError(w, r, http.StatusNotFound, "stripe payments disabled")
-		return
-	}
-
-	idempotencyKey := r.Header.Get("Idempotency-Key")
-	if idempotencyKey == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Idempotency-Key header is required")
-		return
-	}
-
-	shippingID := r.URL.Query().Get("shipping_id")
-	if shippingID == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "shipping_id is required")
-		return
-	}
-
-	// Fetch shipping address
-	addr, err := h.addressService.GetAddress(r.Context(), shippingID)
-	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
-		return
-	}
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Fetch user cart
-	cart, err := h.cartService.GetItems(r.Context())
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if len(cart) == 0 {
-		u.RespondWithError(w, r, http.StatusBadRequest, "cart is empty")
-		return
-	}
-
-	// Calculate tax
-	tax, err := h.taxService.CalculateTax(r.Context(), "", addr, cart)
-	if err == types.ErrInvalidInput {
-		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
-		return
-	}
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Create order
-	paymentMethod := types.PaymentMethodStripe
-	status := types.OrderPending
-	order := &types.Order{
-		IdempotencyKey: &idempotencyKey,
-		Address:        addr,
-		TaxAmount:      tax,
-		PaymentMethod:  &paymentMethod,
-		Status:         &status,
-	}
-	populateOrderFromCart(order, cart)
-
-	// FIXME minimum amount must exceed stripe transaction fee
-	// FIXME disallow orders containing free items
-	if order.TotalAmount == 0 {
-		u.RespondWithError(w, r, http.StatusBadRequest, "total amount must be greater than zero")
-		return
-	}
-
-	err = h.orderService.CreateOrder(r.Context(), order)
-
-	var stockErr *types.InsufficientStockError
-	if errors.As(err, &stockErr) {
-		u.RespondWithJSON(w, http.StatusConflict, stockErr.Items)
-		return
-	}
-	if err == types.ErrConstraintViolation {
-		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
-		return
-	}
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Create payment intent
-	pi, err := h.paymentService.CreatePaymentIntent(r.Context(), order.ID, order.TotalAmount, order.Address.Email)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{ClientSecret: pi.ClientSecret, OrderID: order.ID})
-}
-
-func (h *OrderRoutes) CreateOrderPayOnDelivery(w http.ResponseWriter, r *http.Request) {
-	if !h.config.PayOnDelivery {
-		u.RespondWithError(w, r, http.StatusNotFound, "on delivery payments disabled")
-		return
-	}
-
-	idempotencyKey := r.Header.Get("Idempotency-Key")
-	if idempotencyKey == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "Idempotency-Key header is required")
-		return
-	}
-
-	shippingID := r.URL.Query().Get("shipping_id")
-	if shippingID == "" {
-		u.RespondWithError(w, r, http.StatusBadRequest, "shipping_id is required")
-		return
-	}
-
-	// Fetch shipping address
-	addr, err := h.addressService.GetAddress(r.Context(), shippingID)
-	if err == types.ErrNotFound {
-		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
-		return
-	}
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Fetch user cart
-	cart, err := h.cartService.GetItems(r.Context())
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if len(cart) == 0 {
-		u.RespondWithError(w, r, http.StatusBadRequest, "cart is empty")
-		return
-	}
-
-	// Create order
-	paymentMethod := types.PaymentMethodOnDelivery
-	status := types.OrderPending
-	order := &types.Order{
-		IdempotencyKey: &idempotencyKey,
-		Address:        addr,
-		PaymentMethod:  &paymentMethod,
-		Status:         &status,
-	}
-	populateOrderFromCart(order, cart)
-
-	err = h.orderService.CreateOrder(r.Context(), order)
-
-	var stockErr *types.InsufficientStockError
-	if errors.As(err, &stockErr) {
-		u.RespondWithJSON(w, http.StatusConflict, stockErr.Items)
-		return
-	}
-	if err == types.ErrConstraintViolation {
-		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
-		return
-	}
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Notify user + admins order created
-	h.notifyOrderCreated(r.Context(), *order)
-
-	if err := h.cartService.RemoveItems(r.Context()); err != nil {
-		slog.WarnContext(r.Context(), "Error clearing cart", "user_id", order.UserID)
-	}
-
-	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{OrderID: order.ID})
-}
-
 // populateOrderFromCart builds the order items from the cart and calculates
 // the subtotal (Amount) and TotalAmount (subtotal + tax + shipping).
 func populateOrderFromCart(order *types.Order, cart []types.CartItem) {
@@ -316,14 +150,187 @@ func populateOrderFromCart(order *types.Order, cart []types.CartItem) {
 			UnitPrice: ci.UnitPrice,
 		}
 		order.Items = append(order.Items, oi)
-		order.Amount = order.Amount + ci.UnitPrice*int64(ci.Quantity)
+		order.Amount = u.Ptr(*order.Amount + ci.UnitPrice*int64(ci.Quantity))
 	}
-	order.TotalAmount = order.Amount + order.TaxAmount + order.ShippingAmount
+	order.TotalAmount = u.Ptr(*order.Amount + *order.TaxAmount + *order.ShippingAmount)
+}
+
+func (h *OrderRoutes) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	idempotencyKey := r.Header.Get("Idempotency-Key")
+	if idempotencyKey == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "Idempotency-Key header is required")
+		return
+	}
+
+	shippingID := r.URL.Query().Get("shipping_id")
+	if shippingID == "" {
+		u.RespondWithError(w, r, http.StatusBadRequest, "shipping_id is required")
+		return
+	}
+
+	// Fetch shipping address
+	addr, err := h.addressService.GetAddress(r.Context(), shippingID)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Fetch user cart
+	cart, err := h.cartService.GetItems(r.Context())
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if len(cart) == 0 {
+		u.RespondWithError(w, r, http.StatusBadRequest, "cart is empty")
+		return
+	}
+
+	// Create order
+	order := &types.Order{
+		IdempotencyKey: &idempotencyKey,
+		Address:        addr,
+		Status:         u.Ptr(types.OrderCreated),
+		PaymentStatus:  u.Ptr(types.PaymentStatusUnpaid),
+		Amount:         u.Ptr(int64(0)),
+		TaxAmount:      u.Ptr(int64(0)),
+		ShippingAmount: u.Ptr(int64(0)),
+		TotalAmount:    u.Ptr(int64(0)),
+	}
+	populateOrderFromCart(order, cart)
+
+	err = h.orderService.CreateOrder(r.Context(), order)
+
+	var stockErr *types.InsufficientStockError
+	if errors.As(err, &stockErr) {
+		u.RespondWithJSON(w, http.StatusConflict, stockErr.Items)
+		return
+	}
+	if err == types.ErrConstraintViolation {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{OrderID: order.ID})
+}
+
+func (h *OrderRoutes) CreateStripeIntent(w http.ResponseWriter, r *http.Request) {
+	if !h.config.Stripe {
+		u.RespondWithError(w, r, http.StatusNotFound, "stripe payments disabled")
+		return
+	}
+
+	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), r.PathValue("id"))
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if *order.Status != types.OrderCreated {
+		u.RespondWithError(w, r, http.StatusConflict, "order is not open")
+		return
+	}
+
+	// calculate tax
+	tax, err := h.taxService.CalculateTax(r.Context(), "", order.Address, order.Items)
+	if err == types.ErrInvalidInput {
+		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// update amounts + order
+	order.TaxAmount = u.Ptr(tax)
+	order.TotalAmount = u.Ptr(*order.Amount + tax + *order.ShippingAmount)
+	order.PaymentMethod = u.Ptr(types.PaymentMethodStripe)
+	order.Status = u.Ptr(types.OrderPending)
+
+	err = h.orderService.UpdateOrder(r.Context(), &order)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// create payment intent
+	pi, err := h.paymentService.CreatePaymentIntent(r.Context(), order.ID, *order.TotalAmount, order.Address.Email)
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{
+		ClientSecret: pi.ClientSecret,
+		OrderID:      order.ID,
+		TotalAmount:  *order.TotalAmount,
+	})
+}
+
+func (h *OrderRoutes) ConfirmPayOnDelivery(w http.ResponseWriter, r *http.Request) {
+	if !h.config.OnDelivery {
+		u.RespondWithError(w, r, http.StatusNotFound, "on delivery payments disabled")
+		return
+	}
+
+	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), r.PathValue("id"))
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if *order.Status != types.OrderCreated {
+		u.RespondWithError(w, r, http.StatusConflict, "order is not open")
+		return
+	}
+
+	// update order
+	order.PaymentMethod = u.Ptr(types.PaymentMethodOnDelivery)
+	order.Status = u.Ptr(types.OrderPending)
+	err = h.orderService.UpdateOrder(r.Context(), &order)
+	if err == types.ErrNotFound {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
+		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// No payment webhook will fire for this flow, so confirm and clear here.
+	h.notifyOrderCreated(r.Context(), order)
+
+	if err := h.cartService.RemoveItems(r.Context()); err != nil {
+		slog.WarnContext(r.Context(), "Error clearing cart", "user_id", order.UserID)
+	}
+
+	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{OrderID: order.ID})
 }
 
 func (h *OrderRoutes) RegisterRoutes() {
-	h.mux.Handle("POST /orders/stripe", h.secure(types.RoleGuest)(h.limit(h.CreateOrderStripe, 5, time.Hour)))
-	h.mux.Handle("POST /orders/pay-on-delivery", h.secure(types.RoleMember)(h.limit(h.CreateOrderPayOnDelivery, 5, time.Hour)))
+	h.mux.Handle("POST /orders", h.secure(types.RoleGuest)(h.limit(h.CreateOrder, 20, time.Hour)))
+	h.mux.Handle("POST /orders/{id}/stripe/intent", h.secure(types.RoleGuest)(h.limit(h.CreateStripeIntent, 10, time.Hour)))
+	h.mux.Handle("POST /orders/{id}/pay-on-delivery", h.secure(types.RoleMember)(h.ConfirmPayOnDelivery))
 	h.mux.Handle("PUT /orders", h.secure(types.RoleAdmin)(h.UpdateOrder))
 	h.mux.Handle("GET /orders/{id}/public", http.HandlerFunc(h.GetOrderPublic))
 	h.mux.Handle("GET /orders/{id}/owner", h.secure(types.RoleGuest)(h.GetOrderOwner))

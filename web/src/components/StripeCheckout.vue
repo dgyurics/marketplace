@@ -1,10 +1,9 @@
 <template>
   <form @submit.prevent="submit">
     <PaymentForm
-      v-if="clientSecret"
       ref="paymentFormRef"
       :address="checkoutStore.shippingAddress"
-      :client-secret="clientSecret"
+      :amount="amount"
       @ready="onReady"
       @error="onError"
     />
@@ -21,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 
 import { Payment as PaymentForm } from '@/components/forms'
 import { useStripeCheckout, type PaymentFormRef } from '@/composables/useStripeCheckout'
@@ -30,8 +29,7 @@ import { useCheckoutStore } from '@/store/checkout'
 const checkoutStore = useCheckoutStore()
 const paymentFormRef = ref<PaymentFormRef | null>(null)
 
-const { clientSecret, isReady, isSubmitting, prepare, onReady, onError, submit } =
-  useStripeCheckout(paymentFormRef)
+defineProps<{ amount: number }>()
 
-onMounted(prepare)
+const { isReady, isSubmitting, onReady, onError, submit } = useStripeCheckout(paymentFormRef)
 </script>

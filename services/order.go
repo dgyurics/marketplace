@@ -20,29 +20,26 @@ type OrderService interface {
 }
 
 type orderService struct {
-	orderRepo           repositories.OrderRepository
-	cartRepo            repositories.CartRepository
-	HttpClient          utilities.HTTPClient
-	paymentService      PaymentService
-	notificationService NotificationService
+	orderRepo      repositories.OrderRepository
+	cartRepo       repositories.CartRepository
+	HttpClient     utilities.HTTPClient
+	paymentService PaymentService
 }
 
 func NewOrderService(
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository,
 	paymentService PaymentService,
-	notificationService NotificationService,
 	httpClient utilities.HTTPClient,
 ) OrderService {
 	if httpClient == nil {
 		httpClient = utilities.NewDefaultHTTPClient(10 * time.Second)
 	}
 	return &orderService{
-		orderRepo:           orderRepo,
-		cartRepo:            cartRepo,
-		HttpClient:          httpClient,
-		paymentService:      paymentService,
-		notificationService: notificationService,
+		orderRepo:      orderRepo,
+		cartRepo:       cartRepo,
+		HttpClient:     httpClient,
+		paymentService: paymentService,
 	}
 }
 
@@ -67,13 +64,7 @@ func (os *orderService) CreateOrder(ctx context.Context, order *types.Order) (er
 }
 
 func (os *orderService) UpdateOrder(ctx context.Context, order *types.Order) error {
-	if err := os.orderRepo.UpdateOrder(ctx, order); err != nil {
-		return err
-	}
-
-	go os.notificationService.NotifyOrder(order.UserID, SubjectOrderUpdate, NotifyOrderUpdate, *order)
-
-	return nil
+	return os.orderRepo.UpdateOrder(ctx, order)
 }
 
 func (os *orderService) GetOrderByID(ctx context.Context, orderID string) (types.Order, error) {

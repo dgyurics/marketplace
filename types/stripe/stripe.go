@@ -87,6 +87,7 @@ type Charge struct {
 type CreateOrderResponse struct {
 	OrderID      string `json:"order_id"`
 	ClientSecret string `json:"client_secret,omitempty"`
+	TotalAmount  int64  `json:"total_amount,omitempty"`
 }
 
 type TaxCalculationResponse struct {
