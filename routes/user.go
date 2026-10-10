@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/mail"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/dgyurics/marketplace/services"
@@ -37,16 +36,14 @@ func NewUserRoutes(
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$`)
 
 func isValidEmail(email string) bool {
-	if email == "" || strings.Contains(email, " ") || len(email) > 254 {
+	if email == "" || len(email) > 254 {
 		return false
 	}
 
-	// Use a simple regex for a quick check
 	if !emailRegex.MatchString(email) {
 		return false
 	}
 
-	// Use Go's built-in parser for more strict validation
 	_, err := mail.ParseAddress(email)
 	return err == nil
 }
