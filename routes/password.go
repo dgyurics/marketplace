@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -49,7 +50,7 @@ func (h *PasswordRoutes) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	// Check if the user exists
 	usr, err := h.userService.GetUserByEmail(r.Context(), reqBody.Email)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -109,7 +110,7 @@ func (h *PasswordRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *http.Req
 
 	// Validate the reset code
 	err := h.passwordService.ValidateResetCode(r.Context(), credentials.ResetCode, credentials.Email)
-	if err == types.ErrConstraintViolation {
+	if errors.Is(err, types.ErrConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusBadRequest, "invalid or expired reset code")
 		return
 	}
@@ -120,7 +121,7 @@ func (h *PasswordRoutes) ResetPasswordConfirm(w http.ResponseWriter, r *http.Req
 
 	// Reset the password
 	err = h.passwordService.ResetPassword(r.Context(), credentials.ResetCode, credentials.Email, credentials.Password)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}

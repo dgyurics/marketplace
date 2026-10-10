@@ -2,6 +2,7 @@ package routes
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	_ "image/jpeg"
@@ -111,7 +112,7 @@ func (h *ImageRoutes) parseAndValidateRequest(w http.ResponseWriter, r *http.Req
 
 	productID := r.PathValue("id")
 	_, err := h.productService.GetProductByID(r.Context(), productID)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, "product not found")
 		return nil, nil, err
 	}
@@ -233,7 +234,7 @@ func altTextFromForm(r *http.Request) *string {
 
 func (h *ImageRoutes) RemoveImage(w http.ResponseWriter, r *http.Request) {
 	err := h.imageService.RemoveImage(r.Context(), r.PathValue("image"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}

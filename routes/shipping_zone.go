@@ -37,11 +37,11 @@ func (h *ShippingZoneRoutes) CreateShippingZone(w http.ResponseWriter, r *http.R
 	}
 
 	err := h.shippingZoneService.AddShippingZone(r.Context(), &zone)
-	if err == types.ErrUniqueConstraintViolation {
+	if errors.Is(err, types.ErrUniqueConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusConflict, err.Error())
 		return
 	}
-	if err == types.ErrConstraintViolation {
+	if errors.Is(err, types.ErrConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
@@ -86,11 +86,11 @@ func (h *ShippingZoneRoutes) CreateExcludedShippingZone(w http.ResponseWriter, r
 	}
 
 	err := h.shippingZoneService.AddExcludedShippingZone(r.Context(), &zone)
-	if err == types.ErrUniqueConstraintViolation {
+	if errors.Is(err, types.ErrUniqueConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusConflict, err.Error())
 		return
 	}
-	if err == types.ErrConstraintViolation {
+	if errors.Is(err, types.ErrConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusUnprocessableEntity, err.Error())
 		return
 	}

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -63,7 +64,7 @@ func (h *RegistrationRoutes) Register(w http.ResponseWriter, r *http.Request) {
 		Verified: false,
 	}
 	err := h.userService.CreateUser(r.Context(), &usr)
-	if err == types.ErrUniqueConstraintViolation {
+	if errors.Is(err, types.ErrUniqueConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusConflict, err.Error())
 		return
 	}
@@ -104,7 +105,7 @@ func (h *RegistrationRoutes) RegisterConfirm(w http.ResponseWriter, r *http.Requ
 
 	// verify registration code
 	usr, err := h.registrationService.VerifyCode(r.Context(), reqBody.RegistrationCode)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}

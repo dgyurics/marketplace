@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/dgyurics/marketplace/services"
@@ -65,7 +66,7 @@ func (h *CategoryRoutes) UpdateCategory(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	err := h.categoryService.UpdateCategory(r.Context(), category)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -78,7 +79,7 @@ func (h *CategoryRoutes) UpdateCategory(w http.ResponseWriter, r *http.Request) 
 
 func (h *CategoryRoutes) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	err := h.categoryService.RemoveCategory(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}

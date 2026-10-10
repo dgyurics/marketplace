@@ -51,7 +51,7 @@ func NewOrderRoutes(
 
 func (h *OrderRoutes) GetOrderOwner(w http.ResponseWriter, r *http.Request) {
 	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -64,7 +64,7 @@ func (h *OrderRoutes) GetOrderOwner(w http.ResponseWriter, r *http.Request) {
 
 func (h *OrderRoutes) GetOrderPublic(w http.ResponseWriter, r *http.Request) {
 	order, err := h.orderService.GetOrderByIDPublic(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -77,7 +77,7 @@ func (h *OrderRoutes) GetOrderPublic(w http.ResponseWriter, r *http.Request) {
 
 func (h *OrderRoutes) GetOrderAdmin(w http.ResponseWriter, r *http.Request) {
 	order, err := h.orderService.GetOrderByID(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -112,7 +112,7 @@ func (h *OrderRoutes) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := h.orderService.UpdateOrder(r.Context(), &order)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -170,7 +170,7 @@ func (h *OrderRoutes) CreateDraftOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch shipping address
 	addr, err := h.addressService.GetAddress(r.Context(), shippingID)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -210,7 +210,7 @@ func (h *OrderRoutes) CreateDraftOrder(w http.ResponseWriter, r *http.Request) {
 		u.RespondWithJSON(w, http.StatusConflict, stockErr.Items)
 		return
 	}
-	if err == types.ErrConstraintViolation {
+	if errors.Is(err, types.ErrConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -229,7 +229,7 @@ func (h *OrderRoutes) CheckoutWithStripe(w http.ResponseWriter, r *http.Request)
 	}
 
 	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -245,7 +245,7 @@ func (h *OrderRoutes) CheckoutWithStripe(w http.ResponseWriter, r *http.Request)
 
 	// calculate tax
 	tax, err := h.taxService.CalculateTax(r.Context(), "", order.Address, order.Items)
-	if err == types.ErrInvalidInput {
+	if errors.Is(err, types.ErrInvalidInput) {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -261,7 +261,7 @@ func (h *OrderRoutes) CheckoutWithStripe(w http.ResponseWriter, r *http.Request)
 	order.Status = u.Ptr(types.OrderPending)
 
 	err = h.orderService.UpdateOrder(r.Context(), &order)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -290,7 +290,7 @@ func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request)
 	}
 
 	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -308,7 +308,7 @@ func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request)
 	order.PaymentMethod = u.Ptr(types.PaymentMethodOnDelivery)
 	order.Status = u.Ptr(types.OrderPending)
 	err = h.orderService.UpdateOrder(r.Context(), &order)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}

@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/dgyurics/marketplace/services"
@@ -44,7 +45,7 @@ func (h *TaxRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
 	}
 
 	taxEstimate, err := h.taxService.EstimateTax(r.Context(), addr, items)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}

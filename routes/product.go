@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/dgyurics/marketplace/services"
@@ -64,7 +65,7 @@ func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProductRoutes) GetProduct(w http.ResponseWriter, r *http.Request) {
 	product, err := h.productService.GetProductByID(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -83,7 +84,7 @@ func (h *ProductRoutes) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err := h.productService.UpdateProduct(r.Context(), product)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -96,7 +97,7 @@ func (h *ProductRoutes) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProductRoutes) RemoveProduct(w http.ResponseWriter, r *http.Request) {
 	err := h.productService.RemoveProduct(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/mail"
 	"regexp"
@@ -69,7 +70,7 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Verify user credentials
 	usr, err := h.userService.Login(r.Context(), &credentials)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		h.recordHit(r, time.Hour*6) // record failed login attempt for rate limiting
 		u.RespondWithError(w, r, http.StatusUnauthorized, "invalid credentials")
 		return
@@ -120,7 +121,7 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token, err := h.refreshService.GetToken(r.Context(), requestBody.RefreshToken)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusUnauthorized, "invalid refresh token")
 		return
 	}
@@ -157,7 +158,7 @@ func (h *UserRoutes) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := h.userService.CreateUser(r.Context(), &usr)
-	if err == types.ErrUniqueConstraintViolation {
+	if errors.Is(err, types.ErrUniqueConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusConflict, err.Error())
 		return
 	}
@@ -238,7 +239,7 @@ func (h *UserRoutes) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	// Update password
 	usr, err := h.userService.UpdatePassword(r.Context(), reqBody.CurrentPassword, reqBody.NewPassword)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -294,11 +295,11 @@ func (h *UserRoutes) SetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	usr, err := h.userService.SetPassword(r.Context(), reqBody.NewPassword)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err == types.ErrConstraintViolation {
+	if errors.Is(err, types.ErrConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusConflict, err.Error())
 		return
 	}
@@ -356,11 +357,11 @@ func (h *UserRoutes) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 
 	// Update password
 	usr, err := h.userService.UpdateEmail(r.Context(), reqBody.Email)
-	if err == types.ErrUniqueConstraintViolation {
+	if errors.Is(err, types.ErrUniqueConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusConflict, err.Error())
 		return
 	}
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -414,7 +415,7 @@ func (h *UserRoutes) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserRoutes) GetUser(w http.ResponseWriter, r *http.Request) {
 	usr, err := h.userService.GetUserByID(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -428,7 +429,7 @@ func (h *UserRoutes) GetUser(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserRoutes) RemoveUser(w http.ResponseWriter, r *http.Request) {
 	err := h.userService.RemoveUser(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}

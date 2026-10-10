@@ -88,7 +88,7 @@ func (h *AddressRoutes) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.addressService.UpdateAddress(r.Context(), &address)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}

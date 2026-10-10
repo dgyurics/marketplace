@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -37,11 +38,11 @@ func (h *OfferRoutes) CreateOffer(w http.ResponseWriter, r *http.Request) {
 
 	// Create offer
 	err := h.service.CreateOffer(r.Context(), &offer)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
-	if err == types.ErrConstraintViolation {
+	if errors.Is(err, types.ErrConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -78,7 +79,7 @@ func (h *OfferRoutes) UpdateOffer(w http.ResponseWriter, r *http.Request) {
 
 	// Update offer status
 	err := h.service.UpdateOffer(r.Context(), &offer)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -90,7 +91,7 @@ func (h *OfferRoutes) UpdateOffer(w http.ResponseWriter, r *http.Request) {
 
 func (h *OfferRoutes) GetOfferOwner(w http.ResponseWriter, r *http.Request) {
 	offer, err := h.service.GetOfferByIDAndUser(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -103,7 +104,7 @@ func (h *OfferRoutes) GetOfferOwner(w http.ResponseWriter, r *http.Request) {
 
 func (h *OfferRoutes) GetOfferAdmin(w http.ResponseWriter, r *http.Request) {
 	offer, err := h.service.GetOfferByID(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}

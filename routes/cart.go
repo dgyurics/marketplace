@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/dgyurics/marketplace/services"
@@ -43,7 +44,7 @@ func (h *CartRoutes) AddItem(w http.ResponseWriter, r *http.Request) {
 	err := h.cartService.AddItem(r.Context(), &item)
 
 	// Error handling
-	if err == types.ErrConstraintViolation {
+	if errors.Is(err, types.ErrConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusConflict, err.Error())
 		return
 	}

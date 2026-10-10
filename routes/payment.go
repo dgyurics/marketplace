@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
@@ -52,7 +53,7 @@ func (h *PaymentRoutes) EventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.paymentService.EventHandler(r.Context(), event)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/dgyurics/marketplace/services"
@@ -60,7 +61,7 @@ func (h *ConversationRoutes) GetConversations(w http.ResponseWriter, r *http.Req
 
 func (h *ConversationRoutes) GetConversationAdmin(w http.ResponseWriter, r *http.Request) {
 	conversation, err := h.service.GetConversationByID(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -74,7 +75,7 @@ func (h *ConversationRoutes) GetConversationAdmin(w http.ResponseWriter, r *http
 func (h *ConversationRoutes) RemoveConversation(w http.ResponseWriter, r *http.Request) {
 	conversationID := r.PathValue("id")
 	err := h.service.RemoveConversation(r.Context(), conversationID)
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
@@ -88,7 +89,7 @@ func (h *ConversationRoutes) RemoveConversation(w http.ResponseWriter, r *http.R
 
 func (h *ConversationRoutes) GetConversation(w http.ResponseWriter, r *http.Request) {
 	conversation, err := h.service.GetConversationByIDAndUser(r.Context(), r.PathValue("id"))
-	if err == types.ErrNotFound {
+	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
