@@ -80,7 +80,18 @@ export function formatCurrency(
  * @returns "free" if amount is zero, otherwise formatted price (e.g., "$1,234.56")
  */
 export function displayPrice(amount: number): string {
-  return amount === 0 ? 'free' : formatPrice(amount)
+  if (amount === 0) return 'free'
+
+  const minorUnits = getCurrencyConfig().minorUnits
+  const factor = Math.pow(10, minorUnits)
+  const hasNoMinorPart = amount % factor === 0
+
+  return formatCurrency(
+    amount,
+    hasNoMinorPart
+      ? { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+      : { minimumFractionDigits: minorUnits, maximumFractionDigits: minorUnits }
+  )
 }
 
 /**
