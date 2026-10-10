@@ -47,11 +47,11 @@ async function ensureAccessToken(): Promise<string | null> {
   const authStore = useAuthStore()
   const { accessToken, setTokens, refreshToken, clearTokens, isTokenExpired } = authStore
 
-  if (!refreshToken) return null
-
   if (accessToken && !isTokenExpired()) {
-    return accessToken // Token is still valid
+    return accessToken
   }
+
+  if (!refreshToken) return null
 
   try {
     const authTokens: AuthTokens = await getNewAccessToken(refreshToken)
