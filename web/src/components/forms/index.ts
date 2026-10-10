@@ -1,5 +1,6 @@
 export { default as Address } from './Address.vue'
 export { default as InputNumber } from './InputNumber.vue'
+export { default as InputNumberV2 } from './InputNumberV2.vue'
 export { default as InputText } from './InputText.vue'
 export { default as KeyValueEditor } from './KeyValueEditor.vue'
 export { default as Payment } from './Payment.vue'

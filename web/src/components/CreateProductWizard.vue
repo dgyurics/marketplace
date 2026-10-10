@@ -28,7 +28,7 @@
 
           <div class="form-row-2col">
             <div class="form-group">
-              <InputNumber v-model="displayPrice" label="Price" step="0.01" required />
+              <InputNumberV2 v-model="displayPrice" label="Price" prefix="$" :step="1" required />
             </div>
             <div class="form-group">
               <InputNumber v-model="newProduct.inventory" label="Inventory" required />
@@ -156,7 +156,14 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-import { InputNumber, InputText, KeyValueEditor, SelectInput, TextArea } from '@/components/forms'
+import {
+  InputNumber,
+  InputNumberV2,
+  InputText,
+  KeyValueEditor,
+  SelectInput,
+  TextArea,
+} from '@/components/forms'
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import * as authAPI from '@/services/api'
@@ -175,8 +182,11 @@ const props = defineProps({
 
 const currentStep = ref(1)
 const displayPrice = computed({
-  get: () => toMajorUnits(newProduct.value.price),
-  set: (value) => (newProduct.value.price = toMinorUnits(value)),
+  get: () => String(Math.trunc(toMajorUnits(newProduct.value.price))),
+  set: (value) => {
+    const parsed = Number.parseInt(String(value), 10)
+    newProduct.value.price = Number.isFinite(parsed) ? toMinorUnits(parsed) : 0
+  },
 })
 
 const categoryOptions = computed(() =>
