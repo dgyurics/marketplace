@@ -276,7 +276,7 @@ func (h *OrderRoutes) CheckoutWithStripe(w http.ResponseWriter, r *http.Request)
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{
+	u.RespondWithJSON(w, http.StatusOK, stripe.CreateOrderResponse{
 		ClientSecret: pi.ClientSecret,
 		OrderID:      order.ID,
 		TotalAmount:  *order.TotalAmount,
@@ -324,7 +324,7 @@ func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request)
 		slog.WarnContext(r.Context(), "Error clearing cart", "user_id", order.UserID)
 	}
 
-	u.RespondWithJSON(w, http.StatusCreated, stripe.CreateOrderResponse{OrderID: order.ID})
+	u.RespondWithJSON(w, http.StatusOK, stripe.CreateOrderResponse{OrderID: order.ID})
 }
 
 func (h *OrderRoutes) RegisterRoutes() {

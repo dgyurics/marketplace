@@ -57,8 +57,7 @@ async function ensureAccessToken(): Promise<string | null> {
     const authTokens: AuthTokens = await getNewAccessToken(refreshToken)
     setTokens(authTokens)
     return authTokens.token
-  } catch (error) {
-    console.debug('Token refresh failed:', error)
+  } catch {
     clearTokens()
     return null
   }

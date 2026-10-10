@@ -97,7 +97,7 @@ func (h *UserRoutes) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusCreated, types.TokenResponse{
+	u.RespondWithJSON(w, http.StatusOK, types.TokenResponse{
 		Token:        accessToken,
 		RefreshToken: refreshToken,
 	})
@@ -137,7 +137,7 @@ func (h *UserRoutes) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusCreated, types.TokenResponse{
+	u.RespondWithJSON(w, http.StatusOK, types.TokenResponse{
 		Token:        accessToken,
 		RefreshToken: requestBody.RefreshToken,
 	})
@@ -208,7 +208,7 @@ func (h *UserRoutes) CreateGuestUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusCreated, types.TokenResponse{
+	u.RespondWithJSON(w, http.StatusOK, types.TokenResponse{
 		Token:        accessToken,
 		RefreshToken: refreshToken,
 	})
@@ -271,7 +271,7 @@ func (h *UserRoutes) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusCreated, types.TokenResponse{
+	u.RespondWithJSON(w, http.StatusOK, types.TokenResponse{
 		Token:        accessToken,
 		RefreshToken: refreshToken,
 	})
@@ -331,7 +331,7 @@ func (h *UserRoutes) SetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusCreated, types.TokenResponse{
+	u.RespondWithJSON(w, http.StatusOK, types.TokenResponse{
 		Token:        accessToken,
 		RefreshToken: refreshToken,
 	})
