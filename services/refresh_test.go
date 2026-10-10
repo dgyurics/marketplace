@@ -39,8 +39,6 @@ func (m *MockRefreshRepository) RevokeTokens(ctx context.Context, tokenHash stri
 	return args.Error(0)
 }
 
-
-
 // Helper function to create an AuthService with configuration
 func createRefreshService(repo *MockRefreshRepository) services.RefreshService {
 	return services.NewRefreshService(repo, types.AuthConfig{
@@ -104,7 +102,7 @@ func TestRevokeRefreshTokens(t *testing.T) {
 	// Mock the behavior of the repository
 	user := &types.User{
 		ID:    "user123",
-		Email: utilities.StringPtr("user@example.com"),
+		Email: utilities.Ptr("user@example.com"),
 	}
 	ctx := context.WithValue(context.Background(), services.UserKey, user)
 	repo.On("RevokeTokens", mock.Anything, user.ID).Return(nil)

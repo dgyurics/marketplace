@@ -116,7 +116,7 @@ func validateAddress(address types.Address) error {
 		return errors.New("invalid country code")
 	}
 
-	if err := u.ValidateState(address.Country, u.StringValue(address.State, "")); err != nil {
+	if err := u.ValidateState(address.Country, u.Value(address.State, "")); err != nil {
 		return err
 	}
 

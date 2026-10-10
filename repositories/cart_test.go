@@ -21,8 +21,8 @@ func createUniqueTestUser(t *testing.T, userRepo UserRepository) *types.User {
 	user := types.User{ID: utilities.MustGenerateIDString()}
 
 	// Create a new user object
-	user.Email = utilities.StringPtr(email)
-	user.PasswordHash = utilities.StringPtr("hashedpassword")
+	user.Email = utilities.Ptr(email)
+	user.PasswordHash = utilities.Ptr("hashedpassword")
 	user.Role = types.RoleUser
 	user.Verified = true
 

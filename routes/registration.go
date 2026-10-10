@@ -57,7 +57,7 @@ func (h *RegistrationRoutes) Register(w http.ResponseWriter, r *http.Request) {
 
 	// create new user
 	usr := types.User{
-		Email:    u.StringPtr(strings.ToLower(reqBody.Email)),
+		Email:    u.Ptr(strings.ToLower(reqBody.Email)),
 		Password: &reqBody.Password,
 		Role:     types.RoleUser,
 		Verified: false,

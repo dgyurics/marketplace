@@ -31,7 +31,7 @@ func (m *MockJWTService) ParseToken(token string) (*types.User, error) {
 func TestAuthenticateUser_ValidToken(t *testing.T) {
 	mockJWTService := &MockJWTService{
 		ParseTokenFunc: func(token string) (*types.User, error) {
-			return &types.User{ID: "123", Email: utilities.StringPtr("test@example.com")}, nil
+			return &types.User{ID: "123", Email: utilities.Ptr("test@example.com")}, nil
 		},
 	}
 	auth := NewAccessControl(mockJWTService)
@@ -87,7 +87,7 @@ func TestAuthenticateUser_InvalidToken(t *testing.T) {
 func TestAuthenticateAdmin_ValidAdminToken(t *testing.T) {
 	mockJWTService := &MockJWTService{
 		ParseTokenFunc: func(token string) (*types.User, error) {
-			return &types.User{ID: "123", Email: utilities.StringPtr("admin@example.com"), Role: "admin"}, nil
+			return &types.User{ID: "123", Email: utilities.Ptr("admin@example.com"), Role: "admin"}, nil
 		},
 	}
 	auth := NewAccessControl(mockJWTService)
@@ -118,7 +118,7 @@ func TestAuthenticateAdmin_ValidAdminToken(t *testing.T) {
 func TestAuthenticateAdmin_NonAdminToken(t *testing.T) {
 	mockJWTService := &MockJWTService{
 		ParseTokenFunc: func(token string) (*types.User, error) {
-			return &types.User{ID: "456", Email: utilities.StringPtr("user@example.com"), Role: "user"}, nil
+			return &types.User{ID: "456", Email: utilities.Ptr("user@example.com"), Role: "user"}, nil
 		},
 	}
 	auth := NewAccessControl(mockJWTService)

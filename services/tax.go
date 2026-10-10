@@ -72,7 +72,7 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 		form.Set(fmt.Sprintf("line_items[%d][amount]", i), strconv.FormatInt(item.UnitPrice*itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][quantity]", i), strconv.FormatInt(itmQty, 10))
 		form.Set(fmt.Sprintf("line_items[%d][tax_behavior]", i), string(s.config.Tax.Behavior))
-		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), utilities.StringValue(item.Product.TaxCode, s.config.Tax.FallbackCode))
+		form.Set(fmt.Sprintf("line_items[%d][tax_code]", i), utilities.Value(item.Product.TaxCode, s.config.Tax.FallbackCode))
 		form.Set(fmt.Sprintf("line_items[%d][reference]", i), fmt.Sprintf("%s:%s", refID, item.Product.ID))
 	}
 
