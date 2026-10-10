@@ -6,7 +6,7 @@
         <div class="order-meta">
           <span class="order-id">ID: {{ order.id }}</span>
           <span class="order-status">
-            {{ order.status.toUpperCase() }}
+            {{ (order.status ?? 'pending').toUpperCase() }}
           </span>
         </div>
       </div>
@@ -62,19 +62,19 @@
       <div class="totals-section">
         <div class="total-row">
           <label>Subtotal:</label>
-          <span>{{ formatPrice(order.amount) }}</span>
+          <span>{{ formatPrice(order.amount ?? 0) }}</span>
         </div>
         <div class="total-row">
           <label>Tax:</label>
-          <span>{{ formatPrice(order.tax_amount) }}</span>
+          <span>{{ formatPrice(order.tax_amount ?? 0) }}</span>
         </div>
         <div class="total-row">
           <label>Shipping:</label>
-          <span>{{ formatPrice(order.shipping_amount) }}</span>
+          <span>{{ formatPrice(order.shipping_amount ?? 0) }}</span>
         </div>
         <div class="total-row total">
           <label>Total:</label>
-          <span>{{ formatPrice(order.total_amount) }}</span>
+          <span>{{ formatPrice(order.total_amount ?? 0) }}</span>
         </div>
       </div>
     </div>

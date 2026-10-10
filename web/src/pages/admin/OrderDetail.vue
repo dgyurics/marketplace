@@ -64,19 +64,19 @@
       <div class="totals-section">
         <div class="total-row">
           <label>Subtotal:</label>
-          <span>{{ formatPrice(order.amount) }}</span>
+          <span>{{ formatPrice(order.amount ?? 0) }}</span>
         </div>
         <div class="total-row">
           <label>Tax:</label>
-          <span>{{ formatPrice(order.tax_amount) }}</span>
+          <span>{{ formatPrice(order.tax_amount ?? 0) }}</span>
         </div>
         <div class="total-row">
           <label>Shipping:</label>
-          <span>{{ formatPrice(order.shipping_amount) }}</span>
+          <span>{{ formatPrice(order.shipping_amount ?? 0) }}</span>
         </div>
         <div class="total-row total">
           <label>Total:</label>
-          <span>{{ formatPrice(order.total_amount) }}</span>
+          <span>{{ formatPrice(order.total_amount ?? 0) }}</span>
         </div>
       </div>
     </div>
@@ -111,7 +111,7 @@ const fetchOrder = async () => {
     const orderId = route.params['id'] as string
     const data = await getOrderAdmin(orderId)
     order.value = data
-    currentStatus.value = data.status
+    currentStatus.value = data.status ?? currentStatus.value
   } catch {
     order.value = null
   }
@@ -123,9 +123,9 @@ const handleStatusChange = async () => {
   try {
     const updated = await updateOrder({ ...order.value, status: currentStatus.value })
     order.value = updated
-    currentStatus.value = updated.status
+    currentStatus.value = updated.status ?? currentStatus.value
   } catch {
-    currentStatus.value = order.value.status
+    currentStatus.value = order.value.status ?? currentStatus.value
   }
 }
 

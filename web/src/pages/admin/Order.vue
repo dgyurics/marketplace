@@ -35,14 +35,14 @@ const formattedOrders = computed(() =>
   orders.value.map((order) => ({
     id: order.id,
     email: order.address.email,
-    status: order.status,
+    status: order.status ?? 'draft',
     location: order.address
       ? [order.address.city, order.address.state].filter(Boolean).join(', ')
       : '',
-    amount: formatPrice(order.amount),
-    tax: formatPrice(order.tax_amount),
-    shipping: formatPrice(order.shipping_amount),
-    total: formatPrice(order.total_amount),
+    amount: formatPrice(order.amount ?? 0),
+    tax: formatPrice(order.tax_amount ?? 0),
+    shipping: formatPrice(order.shipping_amount ?? 0),
+    total: formatPrice(order.total_amount ?? 0),
     updated: formatShortDate(new Date(order.updated_at)),
     created: formatShortDate(new Date(order.created_at)),
     _originalOrder: order, // Keep reference to original order
