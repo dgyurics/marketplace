@@ -1,7 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { useCountdown } from '@/composables/useCountdown'
 import { useCheckoutStore } from '@/store/checkout'
 
 export interface PaymentFormRef {
@@ -22,14 +21,8 @@ export function useStripeCheckout(paymentFormRef: Ref<PaymentFormRef | null>) {
   const isReady = ref(false)
   const isSubmitting = ref(false)
 
-  // Orders hold inventory, so send the user back to the cart if they stall.
-  const { start: startTimer } = useCountdown(14 * 60, () => {
-    router.push('/cart')
-  })
-
   function onReady() {
     isReady.value = true
-    startTimer()
   }
 
   function onError(message: string) {
