@@ -299,6 +299,9 @@ func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// FIXME if user tries to pay with stripe, but fails
+	// then switches to pay-on-delivery, this returns an error
+	// We should allow user to switch
 	if *order.Status != types.OrderDraft {
 		u.RespondWithError(w, r, http.StatusConflict, "order is not open")
 		return
