@@ -28,6 +28,9 @@ services:
       - "443:443"
     volumes:
       - ssl-certs:/etc/letsencrypt:ro
+    networks:
+      - edge
+      - media
     depends_on:
       - api
       - web
@@ -56,6 +59,9 @@ services:
           cpus: "0.25"
     volumes:
       - images-data:/images:rw
+    networks:
+      - edge
+      - data
     depends_on:
       - postgres
       - imgproxy
@@ -83,9 +89,11 @@ services:
         reservations:
           memory: 32m
           cpus: "0.10"
+    networks:
+      - edge
     depends_on:
       - api
-  
+
   postgres:
     container_name: postgres
     build:
@@ -108,6 +116,8 @@ services:
         reservations:
           memory: 256m
           cpus: "0.50"
+    networks:
+      - data
     volumes:
       - postgres-data:/var/lib/postgresql/data
     # PostgreSQL Docker image uses a custom/special entrypoint script.
@@ -131,6 +141,8 @@ services:
       - .env
     volumes:
       - images-data:/images:ro
+    networks:
+      - media
     deploy:
       resources:
         limits:
@@ -162,6 +174,15 @@ services:
         reservations:
           memory: 1024m
           cpus: "0.50"
+    networks:
+      - data
+
+networks:
+  edge:      # nginx, web, api (outbound internet access)
+  media:     # nginx <-> imgproxy (internal)
+    internal: true
+  data:      # api <-> postgres, rembg (internal)
+    internal: true
 
 volumes:
   postgres-data:
