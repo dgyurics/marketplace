@@ -29,6 +29,24 @@ export function useStripeCheckout(paymentFormRef: Ref<PaymentFormRef | null>) {
     checkoutStore.paymentError = message
   }
 
+  function isOrderGone(error: unknown) {
+    const status = (error as { response?: { status?: number } }).response?.status
+    return status === 404 || status === 409
+  }
+
+  /** Creates the intent; if the order expired/cancelled, creates a new one and retries once. */
+  async function fetchIntentWithRetry() {
+    try {
+      await checkoutStore.fetchStripeIntent()
+      return
+    } catch (error: unknown) {
+      if (!isOrderGone(error)) throw error
+      const order = await checkoutStore.createPendingOrder()
+      if (!order) throw error
+    }
+    await checkoutStore.fetchStripeIntent()
+  }
+
   async function submit() {
     if (isSubmitting.value || !checkoutStore.order_id) return
 
@@ -37,6 +55,8 @@ export function useStripeCheckout(paymentFormRef: Ref<PaymentFormRef | null>) {
 
     try {
       if (!paymentFormRef.value) return
+      // Done first so the order id passed below (used in return_url) is current.
+      await fetchIntentWithRetry()
       await paymentFormRef.value.confirmPayment(checkoutStore.order_id, () =>
         checkoutStore.fetchStripeIntent()
       )

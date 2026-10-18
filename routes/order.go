@@ -285,7 +285,7 @@ func (h *OrderRoutes) CheckoutWithStripe(w http.ResponseWriter, r *http.Request)
 
 func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request) {
 	if !h.config.OnDelivery {
-		u.RespondWithError(w, r, http.StatusNotFound, "on delivery payments disabled")
+		u.RespondWithError(w, r, http.StatusBadRequest, "on delivery payments disabled")
 		return
 	}
 
@@ -299,9 +299,6 @@ func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// FIXME if user tries to pay with stripe, but fails
-	// then switches to pay-on-delivery, this returns an error
-	// We should allow user to switch
 	if *order.Status != types.OrderDraft {
 		u.RespondWithError(w, r, http.StatusConflict, "order is not open")
 		return

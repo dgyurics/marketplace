@@ -14,6 +14,24 @@ export function useDeliveryCheckout() {
   const acknowledged = ref(false)
   const isSubmitting = ref(false)
 
+  function isOrderGone(error: unknown) {
+    const status = (error as { response?: { status?: number } }).response?.status
+    return status === 404 || status === 409
+  }
+
+  /** Confirms the order; if it expired/cancelled, creates a new one and retries once. */
+  async function confirmWithRetry() {
+    try {
+      await checkoutStore.confirmPayOnDelivery()
+      return
+    } catch (error: unknown) {
+      if (!isOrderGone(error)) throw error
+      const order = await checkoutStore.createPendingOrder()
+      if (!order) throw error
+    }
+    await checkoutStore.confirmPayOnDelivery()
+  }
+
   async function submit() {
     if (isSubmitting.value || !acknowledged.value) return
 
@@ -21,15 +39,9 @@ export function useDeliveryCheckout() {
     checkoutStore.paymentError = null
 
     try {
-      await checkoutStore.confirmPayOnDelivery()
+      await confirmWithRetry()
       router.push('/checkout/confirmation')
-    } catch (error: unknown) {
-      const status = (error as { response?: { status?: number } }).response?.status
-      if (status === 400) {
-        checkoutStore.shippingError = 'Invalid shipping address'
-        router.push('/checkout/shipping')
-        return
-      }
+    } catch {
       checkoutStore.paymentError = 'Unable to place order. Please try again.'
     } finally {
       isSubmitting.value = false
