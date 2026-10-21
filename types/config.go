@@ -7,6 +7,7 @@ import (
 )
 
 type Config struct {
+	AI                AIConfig
 	AppMetadata       AppMetadata
 	Auth              AuthConfig
 	BaseURL           string
@@ -15,7 +16,6 @@ type Config struct {
 	Environment       Environment
 	HTTPClientTimeout time.Duration
 	Image             ImageConfig
-	ImageTransform    ImageTransformConfig
 	JWT               JWTConfig
 	Logger            LoggerConfig
 	MachineID         uint8
@@ -101,29 +101,26 @@ type StripeConfig struct {
 	Version              string // pinned Stripe API version, e.g. 2025-04-30.basil
 }
 
-type ImageConfig struct {
-	Key              []byte // imgproxy signing key (hex decoded)
-	Salt             []byte // imgproxy salt (hex decoded)
-	BaseURLImgproxy  string // e.g. http://localhost:8002
-	BaseURLRembg     string // e.g. http://localhost:7001
-	ImageUploadPath  string // e.g. /images
-	MaxMegapixels    int    // max resolution
-	MaxFileSizeBytes int    // max file size
+type AIConfig struct {
+	ImageEditing AIModelConfig
 }
 
-type ImageTransformProvider string
+type AIModelConfig struct {
+	APIKey  string
+	BaseURL string
+	Model   string
+}
 
-const (
-	ImageTransformProviderRembg  ImageTransformProvider = "rembg"
-	ImageTransformProviderOpenAI ImageTransformProvider = "openai"
-)
-
-type ImageTransformConfig struct {
-	Enabled  bool
-	Provider ImageTransformProvider
-	BaseURL  string
-	Model    string
-	APIKey   string
+// TODO break this up into ImgProxyConfig & RemBgConfig
+type ImageConfig struct {
+	Key             []byte // hex decoded signing key for imgproxy URLs
+	Salt            []byte // hex decoded salt for imgproxy URLs
+	BaseURLImgproxy string // base URL for imgproxy, e.g. http://localhost:8002
+	BaseURLRembg    string // base URL for rembg, e.g. http://localhost:7001
+	// TODO RembgMode string // see https://github.com/danielgatis/rembg for available models
+	ImageUploadPath  string // directory where uploaded images are stored, e.g. /images
+	MaxMegapixels    int    // max allowed source resolution in megapixels
+	MaxFileSizeBytes int    // max allowed source file size, in bytes
 }
 
 type PaymentConfig struct {
@@ -138,16 +135,16 @@ type PaymentOptions struct {
 	OnDelivery bool `json:"on_delivery"`
 }
 
-type ImageTransformOptions struct {
-	Rembg  bool `json:"rembg"`
-	OpenAI bool `json:"openai"`
+type AIOptions struct {
+	ImageEditing     bool `json:"image_editing"`
+	FieldSuggestions bool `json:"field_suggestions"`
 }
 
 // struct exposed to UI in GET /config
 type AppMetadata struct {
-	ImageTransformOptions ImageTransformOptions `json:"image_transform_options"`
-	Locale                LocaleConfig          `json:"locale"`
-	PaymentOptions        PaymentOptions        `json:"payment_options"`
+	AIOptions      AIOptions      `json:"ai_options"`
+	PaymentOptions PaymentOptions `json:"payment_options"`
+	Locale         LocaleConfig   `json:"locale"`
 }
 
 type LocaleConfig struct {

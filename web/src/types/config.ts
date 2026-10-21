@@ -5,16 +5,16 @@ export type PaymentOptions = {
   on_delivery: boolean
 }
 
-export type ImageTransformOptions = {
-  rembg: boolean
-  openai: boolean
+export type AIOptions = {
+  image_editing: boolean
+  field_suggestions: boolean
 }
 
 /**
  * Application metadata served by GET /config
  */
 export type AppConfig = {
-  image_transform_options: ImageTransformOptions
+  ai_options: AIOptions
   payment_options: PaymentOptions
   locale: Locale
 }
