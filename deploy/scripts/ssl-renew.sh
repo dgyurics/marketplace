@@ -1,22 +1,21 @@
 #!/bin/bash
 
 # SSL renewal script
-# - Renews SSL certificate for the given Docker volume
-# Usage: ./deploy/scripts/ssl-renew.sh <ssl-volume-name>
-# - NOTE: Stop nginx manually before running (e.g. docker compose stop nginx)
-#         certbot --standalone binds to ports 80 and 443 directly, so nginx must not be running
+# - Renews the shared SSL certificate through the running nginx webroot
+# Usage: ./deploy/scripts/ssl-renew.sh <ssl-volume-name> [--dry-run]
 
 set -euo pipefail
 
 print_info() { echo "[INFO] $1"; }
 print_error() { echo "[ERROR] $1"; }
 
-if [ "$#" -ne 1 ]; then
-    print_error "Usage: $0 <ssl-volume-name>"
+if [ "$#" -lt 1 ]; then
+    print_error "Usage: $0 <ssl-volume-name> [--dry-run]"
     exit 1
 fi
 
 VOLUME="$1"
+shift
 
 cd "$(dirname "$0")/../prod"
 
@@ -28,11 +27,15 @@ fi
 print_info "Renewing SSL certificate for volume '$VOLUME'..."
 docker run --rm \
     -v "$VOLUME:/etc/letsencrypt" \
-    -p 80:80 \
-    -p 443:443 \
-    certbot/certbot:v2.11.0 renew --force-renewal --standalone --logs-dir /etc/letsencrypt/logs -v || {
+    certbot/certbot:v5.8.0 renew --cert-name shared \
+    --webroot -w /etc/letsencrypt/webroot \
+    --non-interactive --no-random-sleep-on-renew \
+    --logs-dir /etc/letsencrypt/logs "$@" || {
     print_error "SSL renewal failed."
     exit 1
 }
+
+docker exec nginx nginx -t
+docker exec nginx nginx -s reload
 
 print_info "SSL renewal complete."
