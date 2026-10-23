@@ -1,12 +1,13 @@
-/bin/
+# OS / editor
 .DS_Store
-*.log
-*.out
 .vscode
 
 # Build artifacts
-node_modules
+/bin/
 dist
+node_modules
+*.log
+*.out
 
 # Environment files
 .env
@@ -17,5 +18,9 @@ deploy/prod/nginx.conf
 private.pem*
 public.pem*
 
-# Site Images
+# Site images
 **/images/
+
+# Agents
+AGENTS.md
+CLAUDE.md
