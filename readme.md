@@ -20,14 +20,15 @@ A self-hosted e-commerce framework designed for local businesses and community c
 
 ## Planned Enhancements
 
-* Implement pay on delivery
-* Implement Cache-Control + ETag
-* Remove email requirement for login/registration
-* Documentation for production setup
+* Pay on delivery option
+* Cache-Control + ETags
+* Optional image enhance + field suggestions
+* Email optional for login & registration
+* Documentation for production setup & deployment
 * Product variants (size, color, material, etc.)
 * Geographic access control via Nginx and GeoIP2
 * Product full-text search
-* Simplify deployment and configuration to the max
+* Simplify configuration & deployment to the max
 
 ## Local Development
 
