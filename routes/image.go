@@ -29,12 +29,6 @@ func NewImageRoutes(
 
 // UploadImage parses the multipart request; the service owns upload validation and processing.
 func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if r.MultipartForm != nil {
-			_ = r.MultipartForm.RemoveAll()
-		}
-	}()
-
 	r.Body = http.MaxBytesReader(w, r.Body, int64(h.config.MaxFileSizeBytes)+(1<<20))
 	if err := r.ParseMultipartForm(int64(h.config.MaxFileSizeBytes)); err != nil {
 		u.RespondWithError(w, r, http.StatusRequestEntityTooLarge, err.Error())

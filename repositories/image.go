@@ -79,13 +79,11 @@ func (r *imageRepository) RemoveImage(ctx context.Context, id string) (ImageDele
 	}
 
 	// 3. check if source image still in-use
-	usageQuery := `SELECT COUNT(*) FROM images WHERE source = $1`
-	var usageCount int
-	err = tx.QueryRowContext(ctx, usageQuery, result.SourceImage).Scan(&usageCount)
+	usageQuery := `SELECT NOT EXISTS (SELECT 1 FROM images WHERE source = $1)`
+	err = tx.QueryRowContext(ctx, usageQuery, result.SourceImage).Scan(&result.CanDeleteSource)
 	if err != nil {
 		return result, err
 	}
-	result.CanDeleteSource = (usageCount == 0)
 
 	return result, tx.Commit()
 }
