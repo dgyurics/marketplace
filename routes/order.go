@@ -327,10 +327,16 @@ func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request)
 	u.RespondWithJSON(w, http.StatusOK, stripe.CreateOrderResponse{OrderID: order.ID})
 }
 
+// RequestCheckoutOnDelivery will submit a pay-on-delivery order for approval.
+func (h *OrderRoutes) RequestCheckoutOnDelivery(w http.ResponseWriter, r *http.Request) {
+	u.RespondWithError(w, r, http.StatusNotImplemented, "pay-on-delivery approval requests are not implemented")
+}
+
 func (h *OrderRoutes) RegisterRoutes() {
 	h.mux.Handle("POST /orders", h.secure(types.RoleGuest)(h.limit(h.CreateDraftOrder, 20, time.Hour)))
 	h.mux.Handle("POST /orders/{id}/stripe/intent", h.secure(types.RoleGuest)(h.limit(h.CheckoutWithStripe, 10, time.Hour)))
 	h.mux.Handle("POST /orders/{id}/pay-on-delivery", h.secure(types.RoleMember)(h.CheckoutOnDelivery))
+	h.mux.Handle("POST /orders/{id}/pay-on-delivery/request", h.secure(types.RoleGuest)(h.RequestCheckoutOnDelivery))
 	h.mux.Handle("PUT /orders", h.secure(types.RoleAdmin)(h.UpdateOrder))
 	h.mux.Handle("GET /orders/{id}/public", http.HandlerFunc(h.GetOrderPublic))
 	h.mux.Handle("GET /orders/{id}/owner", h.secure(types.RoleGuest)(h.GetOrderOwner))
