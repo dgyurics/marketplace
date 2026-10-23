@@ -29,16 +29,6 @@
             <td class="type-cell">{{ image.type }}</td>
             <td class="actions-cell">
               <button
-                v-if="aiEnabled && allowEnhancement"
-                type="button"
-                class="improve-btn"
-                title="Improve image with AI"
-                aria-label="Improve image with AI"
-                @click="emit('enhance-image', image.id)"
-              >
-                <SparklesIcon aria-hidden="true" />
-              </button>
-              <button
                 type="button"
                 class="remove-btn"
                 title="Delete image"
@@ -69,24 +59,19 @@
 </template>
 
 <script setup lang="ts">
-import { SparklesIcon } from '@heroicons/vue/24/outline'
 import { ref, onMounted, onUnmounted } from 'vue'
 
 import { removeImage } from '@/services/api'
 import type { Image } from '@/types'
-import { getAppConfig } from '@/utilities/config'
 
 defineProps<{
   images: Image[]
-  allowEnhancement?: boolean
 }>()
 
 const emit = defineEmits<{
   'image-deleted': [imageId: string]
-  'enhance-image': [imageId: string]
 }>()
 
-const aiEnabled = getAppConfig().ai_options.image_editing
 const previewImage = ref<Image | null>(null)
 const previewStyle = ref<Record<string, string | number>>({})
 const isClickPreview = ref(false)
@@ -296,39 +281,9 @@ onUnmounted(() => {
 }
 
 .actions-cell {
-  width: 76px;
-  white-space: nowrap;
+  width: 40px;
   text-align: center;
   padding: 10px 4px;
-}
-
-.improve-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 5px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
-  vertical-align: middle;
-}
-
-.improve-btn svg {
-  color: #489fad;
-  width: 22px;
-  height: 22px;
-}
-
-.improve-btn:hover {
-  background: #f0f6f6;
-}
-
-.improve-btn:focus-visible {
-  outline: 2px solid #609bc4;
-  outline-offset: 2px;
 }
 
 .remove-btn {
@@ -340,8 +295,7 @@ onUnmounted(() => {
   cursor: pointer;
   font-size: 16px;
   font-weight: bold;
-  display: inline-flex;
-  vertical-align: middle;
+  display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;

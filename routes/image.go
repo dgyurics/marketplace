@@ -2,6 +2,7 @@ package routes
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/dgyurics/marketplace/services"
@@ -59,9 +60,25 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 		Type:             types.ParseImageType(r.FormValue("type")),
 		AltText:          altText,
 		RemoveBackground: r.URL.Query().Get("remove_bg") == "true",
+		Enhance:          r.URL.Query().Get("enhance") == "true",
 	})
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, "product not found")
+		return
+	}
+
+	if errors.Is(err, services.ErrImageOptions) || errors.Is(err, services.ErrImageAIDisabled) {
+		u.RespondWithJSON(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+		return
+	}
+	var providerErr *services.ImageProviderError
+	if errors.As(err, &providerErr) {
+		u.RespondWithJSON(w, http.StatusBadGateway, map[string]string{"message": "Image enhancement failed. The image was not uploaded. Please try again."})
+		return
+	}
+	if errors.Is(err, services.ErrImageEnhancement) {
+		slog.Warn("Image enhancement failed", "error", err)
+		u.RespondWithJSON(w, http.StatusBadGateway, map[string]string{"message": "Image enhancement failed. The image was not uploaded. Please try again."})
 		return
 	}
 

@@ -40,10 +40,16 @@
           </span>
         </div>
 
-        <div class="checkbox-row">
+        <div v-if="enhanceEnabled" class="checkbox-row">
+          <label class="checkbox-label">
+            <input v-model="enhance" type="checkbox" :tabindex="0" />
+            Enhance image
+          </label>
+        </div>
+        <div v-else-if="rembgEnabled" class="checkbox-row">
           <label class="checkbox-label">
             <input v-model="removeBackground" type="checkbox" :tabindex="0" />
-            Remove background automatically
+            Remove background
           </label>
         </div>
 
@@ -55,12 +61,14 @@
 </template>
 
 <script setup lang="ts">
+import axios from 'axios'
 import { ref, computed, watch } from 'vue'
 
 import LoadingSpinner from './LoadingSpinner.vue'
 
 import { uploadImage } from '@/services/api'
 import type { Image, ImageType } from '@/types'
+import { getAppConfig } from '@/utilities/config'
 
 const props = defineProps<{
   productId: string
@@ -79,6 +87,9 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
 const imageType = ref<ImageType>('gallery')
 const removeBackground = ref(false)
+const enhance = ref(false)
+const enhanceEnabled = getAppConfig().ai_options.image_editing
+const rembgEnabled = true // TODO: Read from app config when available
 const uploading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
@@ -146,7 +157,8 @@ const handleUpload = async () => {
       props.productId,
       selectedFile.value,
       imageType.value,
-      removeBackground.value
+      removeBackground.value,
+      enhance.value
     )
 
     successMessage.value = 'Image uploaded successfully!'
@@ -171,6 +183,7 @@ const resetForm = () => {
   selectedFile.value = null
   setDefaultImageType()
   removeBackground.value = false
+  enhance.value = false
   errorMessage.value = ''
   successMessage.value = ''
   if (fileInput.value) {
@@ -179,6 +192,8 @@ const resetForm = () => {
 }
 
 const getErrorMessage = (error: unknown) => {
+  if (axios.isAxiosError<{ message?: string }>(error) && error.response?.data?.message)
+    return error.response.data.message
   const status = (error as { response?: { status?: number } }).response?.status
   switch (status) {
     case 400:
@@ -195,10 +210,6 @@ const getErrorMessage = (error: unknown) => {
       return 'Unsupported file format. Use JPG or PNG'
     case 422:
       return 'Unprocessable file. Resolution too high'
-    case 500:
-      return 'Could not process the image. Try a different file'
-    case 502:
-      return 'Background removal failed. Please try uploading again'
     default:
       return 'Something went wrong'
   }
@@ -297,6 +308,8 @@ defineExpose({
 .checkbox-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .checkbox-label {

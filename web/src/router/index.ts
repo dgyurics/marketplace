@@ -3,7 +3,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import AdminCategories from '@/pages/admin/Category.vue'
 import AdminCategoryDetail from '@/pages/admin/CategoryDetail.vue'
-import AdminEnhancement from '@/pages/admin/Enhancement.vue'
 import AdminOffers from '@/pages/admin/Offer.vue'
 import AdminOfferDetail from '@/pages/admin/OfferDetail.vue'
 import AdminOrders from '@/pages/admin/Order.vue'
@@ -62,11 +61,6 @@ async function initRoutes(): Promise<RouteRecordRaw[]> {
     { path: '/inbox/:id', component: InboxDetail, beforeEnter: requireGuest, props: true },
     { path: '/admin/products', component: AdminProducts, beforeEnter: requireAdmin },
     { path: '/admin/products/:id', component: AdminProductEdit, beforeEnter: requireAdmin },
-    {
-      path: '/admin/products/:id/images/:imageId/enhancement',
-      component: AdminEnhancement,
-      beforeEnter: requireAdmin,
-    },
     { path: '/admin/categories', component: AdminCategories, beforeEnter: requireAdmin },
     { path: '/admin/categories/:id', component: AdminCategoryDetail, beforeEnter: requireAdmin },
     { path: '/admin/orders', component: AdminOrders, beforeEnter: requireAdmin },

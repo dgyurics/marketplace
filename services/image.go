@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
@@ -30,6 +31,9 @@ var (
 	ErrImageFormat       = errors.New("unsupported image format")
 	ErrImageDecode       = errors.New("error getting image resolution")
 	ErrBackgroundRemoval = errors.New("background removal failed")
+	ErrImageOptions      = errors.New("select either remove background or enhance, not both")
+	ErrImageAIDisabled   = errors.New("AI image enhancement is disabled")
+	ErrImageEnhancement  = errors.New("image enhancement failed")
 )
 
 type ImageService interface {
@@ -44,10 +48,13 @@ type ImageUpload struct {
 	Type             types.ImageType
 	AltText          *string
 	RemoveBackground bool
+	Enhance          bool
 }
 
 type imageService struct {
 	HttpClient    utilities.HTTPClient
+	ai            types.AIModelConfig
+	aiClient      *http.Client
 	repo          repositories.ImageRepository
 	products      ProductService
 	config        types.ImageConfig
@@ -60,9 +67,15 @@ func NewImageService(
 	client utilities.HTTPClient,
 	repo repositories.ImageRepository,
 	products ProductService,
-	config types.ImageConfig) ImageService {
+	config types.ImageConfig,
+	ai types.AIModelConfig) ImageService {
 	return &imageService{
-		HttpClient:    client,
+		HttpClient: client,
+		ai:         ai,
+		aiClient: &http.Client{
+			Timeout:       150 * time.Second,
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse },
+		},
 		repo:          repo,
 		products:      products,
 		config:        config,
@@ -74,6 +87,13 @@ func NewImageService(
 
 // Upload owns validation and the complete file-to-record lifecycle. The caller owns input.File.
 func (s *imageService) Upload(ctx context.Context, input ImageUpload) ([]types.Image, error) {
+	if input.RemoveBackground && input.Enhance {
+		return nil, ErrImageOptions
+	}
+	if input.Enhance && !s.ai.Enabled {
+		return nil, ErrImageAIDisabled
+	}
+
 	if _, err := s.products.GetProductByID(ctx, input.ProductID); err != nil {
 		return nil, err
 	}
@@ -101,6 +121,14 @@ func (s *imageService) Upload(ctx context.Context, input ImageUpload) ([]types.I
 		return nil, ErrImageFormat
 	}
 
+	if input.Enhance {
+		data, err = s.enhanceImage(ctx, data)
+		input.Filename = "enhanced.png"
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrImageEnhancement, err)
+	}
+
 	imgID, err := utilities.GenerateIDString()
 	if err != nil {
 		return nil, fmt.Errorf("error generating image ID: %w", err)
@@ -114,9 +142,10 @@ func (s *imageService) Upload(ctx context.Context, input ImageUpload) ([]types.I
 
 	if input.RemoveBackground {
 		_, err = s.removeBackground(ctx, path, filename)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrBackgroundRemoval, err)
-		}
+	}
+	if err != nil {
+		_ = os.Remove(path)
+		return nil, fmt.Errorf("%w: %v", ErrBackgroundRemoval, err)
 	}
 
 	kind := types.ParseImageType(string(input.Type))

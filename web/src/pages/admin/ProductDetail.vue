@@ -40,12 +40,7 @@
         />
 
         <!-- Image Gallery Section -->
-        <ImageGallery
-          :images="product.images || []"
-          allow-enhancement
-          @image-deleted="handleImageDeleted"
-          @enhance-image="enhanceImage"
-        />
+        <ImageGallery :images="product.images || []" @image-deleted="handleImageDeleted" />
 
         <!-- Image Upload Section -->
         <ImageUploader
@@ -142,12 +137,6 @@ const fetchProduct = async () => {
       negotiable: data.negotiable ?? false,
       sort_order: data.sort_order ?? 0,
     }
-
-    const draft = window.history.state.productDraft
-    if (draft) {
-      editProduct.value = JSON.parse(draft)
-      window.history.replaceState({ ...window.history.state, productDraft: null }, '')
-    }
   } catch {
     errorMessage.value = 'Product not found or failed to load.'
     product.value = null
@@ -209,15 +198,6 @@ const handleDelete = async () => {
   } catch {
     // Handle error silently
   }
-}
-
-const enhanceImage = (imageId) => {
-  const productDraft = JSON.stringify(editProduct.value)
-  window.history.replaceState({ ...window.history.state, productDraft }, '')
-  router.push({
-    path: `/admin/products/${product.value.id}/images/${imageId}/enhancement`,
-    state: { productDraft },
-  })
 }
 
 const handleImageUploadSuccess = async (images) => {
