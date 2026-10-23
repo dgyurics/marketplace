@@ -21,21 +21,24 @@ import (
 
 type ImageRoutes struct {
 	router
-	imageService   services.ImageService
-	productService services.ProductService
-	config         types.ImageConfig
+	imageService    services.ImageService
+	productService  services.ProductService
+	imageConfig     types.ImageConfig
+	transformConfig types.ImageTransformConfig
 }
 
 func NewImageRoutes(
 	imageService services.ImageService,
 	productService services.ProductService,
 	config types.ImageConfig,
+	transformConfig types.ImageTransformConfig,
 	router router) *ImageRoutes {
 	return &ImageRoutes{
-		router:         router,
-		imageService:   imageService,
-		productService: productService,
-		config:         config,
+		router:          router,
+		imageService:    imageService,
+		productService:  productService,
+		imageConfig:     config,
+		transformConfig: transformConfig,
 	}
 }
 
@@ -50,19 +53,19 @@ const (
 // Process:
 // 1. Validates product exists and image format/resolution
 // 2. Stores image to disk
-// 3. Optionally removes background (if remove_bg=true)
+// 3. Optionally transforms the image (if transform=true and transformations are enabled)
 // 4. Generates signed URLs and creates database records
 //
 // Request:
 //
 //	Form: multipart/form-data with "image" file field
-//	Query: remove_bg=true (optional, blocks until background removal completes)
+//	Query: transform=true (optional, blocks until transformation completes)
 //	Fields: type (hero|gallery|thumbnail, default: gallery), alt_text (optional)
 //
 // Response: 201 Created with image path
 func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	productID := r.PathValue("id")
-	removeBg := r.URL.Query().Get("remove_bg") == "true"
+	transform := r.URL.Query().Get("transform") == "true"
 
 	// Parse and validate request
 	file, fileHeader, err := h.parseAndValidateRequest(w, r)
@@ -88,8 +91,8 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Remove background if requested
-	if removeBg {
+	// Transform if requested and enabled
+	if transform && h.transformConfig.Enabled {
 		if err := h.removeBackground(w, r, productID, imagePath, filename); err != nil {
 			return
 		}
@@ -105,7 +108,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ImageRoutes) parseAndValidateRequest(w http.ResponseWriter, r *http.Request) (multipart.File, *multipart.FileHeader, error) {
-	if err := r.ParseMultipartForm(int64(h.config.MaxFileSizeBytes)); err != nil {
+	if err := r.ParseMultipartForm(int64(h.imageConfig.MaxFileSizeBytes)); err != nil {
 		u.RespondWithError(w, r, http.StatusRequestEntityTooLarge, err.Error())
 		return nil, nil, err
 	}
@@ -138,7 +141,7 @@ func (h *ImageRoutes) validateImage(w http.ResponseWriter, r *http.Request, file
 	}
 
 	slog.Debug("Image resolution", "pixels", res)
-	if res > h.config.MaxMegapixels*1_000_000 {
+	if res > h.imageConfig.MaxMegapixels*1_000_000 {
 		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "image resolution too high")
 		return fmt.Errorf("resolution too high")
 	}
