@@ -28,6 +28,7 @@ import type {
   PendingOrderResult,
   StripeIntentResponse,
   PaymentOptions,
+  Enhancement,
 } from '@/types'
 import type { Conversation } from '@/types/conversation'
 
@@ -482,4 +483,25 @@ export const getConversationById = async (id: string): Promise<Conversation> => 
 
 export const removeConversation = async (id: string): Promise<void> => {
   await apiClient.delete(`/conversations/${id}`)
+}
+
+export const generateEnhancement = async (
+  imageId: string,
+  context = '',
+  signal?: AbortSignal
+): Promise<Enhancement> => {
+  const response = await apiClient.post(
+    `/enhancements/images/${imageId}`,
+    { context },
+    { timeout: 180_000, ...(signal ? { signal } : {}) }
+  )
+  return response.data
+}
+
+export const resolveEnhancement = async (
+  imageId: string,
+  previewId: string,
+  accept: boolean
+): Promise<void> => {
+  await apiClient.post(`/enhancements/images/${imageId}/${previewId}`, { accept })
 }

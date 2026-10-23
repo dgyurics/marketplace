@@ -195,6 +195,10 @@ const getErrorMessage = (error: unknown) => {
       return 'Unsupported file format. Use JPG or PNG'
     case 422:
       return 'Unprocessable file. Resolution too high'
+    case 500:
+      return 'Could not process the image. Try a different file'
+    case 502:
+      return 'Background removal failed. Please try uploading again'
     default:
       return 'Something went wrong'
   }

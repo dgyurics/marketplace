@@ -47,7 +47,7 @@ func loadAppMetadata(payment types.PaymentConfig, ai types.AIConfig) types.AppMe
 	return types.AppMetadata{
 		Locale: Locale,
 		AIOptions: types.AIOptions{
-			ImageEditing: ai.ImageEditing.APIKey != "",
+			ImageEditing: ai.ImageEditing.Enabled,
 		},
 		PaymentOptions: types.PaymentOptions{
 			Stripe:     payment.Stripe.Enabled,
@@ -166,11 +166,19 @@ func loadImageConfig(baseURL string) types.ImageConfig {
 }
 
 func loadAIConfig() types.AIConfig {
-	return types.AIConfig{ImageEditing: types.AIModelConfig{
-		APIKey:  strings.TrimSpace(os.Getenv("AI_IMAGE_API_KEY")),
+	return types.AIConfig{ImageEditing: loadAIImageConfig()}
+}
+
+func loadAIImageConfig() types.AIModelConfig {
+	if !isFeatureEnabled("AI_IMAGE_ENABLED") {
+		return types.AIModelConfig{Enabled: false}
+	}
+	return types.AIModelConfig{
+		Enabled: true,
+		APIKey:  strings.TrimSpace(mustLookupEnv("AI_IMAGE_API_KEY")),
 		BaseURL: getEnvOrDefault("AI_IMAGE_URL", "https://api.openai.com/v1/images/edits"),
 		Model:   getEnvOrDefault("AI_IMAGE_MODEL", "gpt-image-2.5-sunburst"),
-	}}
+	}
 }
 
 func loadPaymentConfig(env types.Environment) types.PaymentConfig {

@@ -85,7 +85,8 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewCategoryRoutes(services.Category, baseRouter),
 		routes.NewConversationRoutes(services.Conversation, baseRouter),
 		routes.NewHealthRoutes(baseRouter),
-		routes.NewImageRoutes(services.Image, services.Product, config.Image, config.ImageTransform, baseRouter),
+		routes.NewImageRoutes(services.Image, config.Image, baseRouter),
+		routes.NewEnhancementRoutes(services.Enhancement, baseRouter),
 		routes.NewOrderRoutes(config.AppMetadata.PaymentOptions, services.Order, services.Tax, services.Payment, services.Cart, services.Address, services.User, services.Notification, baseRouter),
 		routes.NewPasswordRoutes(services.Password, services.User, services.Notification, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, config.AppMetadata, baseRouter),
@@ -149,7 +150,8 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	cartService := services.NewCartService(cartRepository)
 	paymentService := services.NewPaymentService(httpClient, config.Payment, notificationService, userService, orderRepository, cartRepository)
 	orderService := services.NewOrderService(httpClient, orderRepository, cartRepository, paymentService)
-	imageService := services.NewImageService(httpClient, imageRepository, config.Image)
+	imageService := services.NewImageService(httpClient, imageRepository, productService, config.Image)
+	enhancementService := services.NewEnhancementService(imageRepository, config.Image, config.AI.ImageEditing)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	rateLimitService := services.NewRateLimitService(rateLimitRepository)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
@@ -164,6 +166,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		Cart:         cartService,
 		Conversation: conversationService,
 		Image:        imageService,
+		Enhancement:  enhancementService,
 		JWT:          jwtService,
 		Notification: notificationService,
 		Order:        orderService,
@@ -188,6 +191,7 @@ type servicesContainer struct {
 	Category     services.CategoryService
 	Conversation services.ConversationService
 	Image        services.ImageService
+	Enhancement  services.EnhancementService
 	JWT          services.JWTService
 	Notification services.NotificationService
 	Offer        services.OfferService

@@ -106,6 +106,7 @@ type AIConfig struct {
 }
 
 type AIModelConfig struct {
+	Enabled bool
 	APIKey  string
 	BaseURL string
 	Model   string
