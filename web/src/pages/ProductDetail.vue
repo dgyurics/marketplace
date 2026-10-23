@@ -35,6 +35,8 @@
         </div>
       </div>
     </div>
+
+    <CopyToClipboard />
   </div>
 </template>
 
@@ -45,6 +47,7 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import { ref, onMounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 
+import CopyToClipboard from '@/components/CopyToClipboard.vue'
 import ProductActions from '@/components/ProductActions.vue'
 import { getProductById, getOffersByProductId } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
@@ -147,6 +150,7 @@ onMounted(async () => {
 
 /* Prevent images from floating to the top */
 .product-detail {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -162,7 +166,7 @@ onMounted(async () => {
   max-width: 1200px;
   padding: 0 80px;
   gap: 40px;
-  margin-bottom: 50px;
+  margin-bottom: 60px;
 }
 
 .product-info {
