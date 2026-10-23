@@ -74,11 +74,14 @@ func (s *imageService) StoreImage(productID string, file io.Reader, filename str
 	if err != nil {
 		return "", err
 	}
-	defer dst.Close()
-
-	// Copy the file content to the destination
-	if _, err := io.Copy(dst, file); err != nil {
-		return "", err
+	// Copy the file content to the destination and close it even if copying fails.
+	_, copyErr := io.Copy(dst, file)
+	closeErr := dst.Close()
+	if copyErr != nil {
+		return "", copyErr
+	}
+	if closeErr != nil {
+		return "", closeErr
 	}
 
 	return filePath, nil
@@ -168,11 +171,14 @@ func (s *imageService) RemoveBackground(ctx context.Context, filePath, filename 
 	if err != nil {
 		return "", fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer dst.Close()
-
-	// Copy the file content to the destination
-	if _, err := io.Copy(dst, res.Body); err != nil {
-		return "", err
+	// Copy the file content to the destination and close it even if copying fails.
+	_, copyErr := io.Copy(dst, res.Body)
+	closeErr := dst.Close()
+	if copyErr != nil {
+		return "", copyErr
+	}
+	if closeErr != nil {
+		return "", closeErr
 	}
 
 	return filePath, nil
