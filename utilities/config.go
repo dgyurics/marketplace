@@ -18,12 +18,13 @@ func LoadConfig() types.Config {
 	environment := loadEnvironment()
 	payment := loadPaymentConfig(environment)
 	baseURL := loadBaseURL()
+	imageTransform := loadImageTransformConfig()
 
 	// resolve the active locale before anything reads utilities.Locale
 	loadLocale()
 
 	return types.Config{
-		AppMetadata:       loadAppMetadata(payment),
+		AppMetadata:       loadAppMetadata(payment, imageTransform),
 		BaseURL:           baseURL,
 		Environment:       environment,
 		Server:            loadServerConfig(),
@@ -36,17 +37,22 @@ func LoadConfig() types.Config {
 		JWT:               loadJWTConfig(),
 		HTTPClientTimeout: loadHttpClientTimeout(),
 		Image:             loadImageConfig(baseURL),
+		ImageTransform:    imageTransform,
 		RateLimit:         loadRateLimit(),
 	}
 }
 
 // loadAppMetadata builds the metadata exposed to clients via GET /config.
-func loadAppMetadata(payment types.PaymentConfig) types.AppMetadata {
+func loadAppMetadata(payment types.PaymentConfig, imageTransform types.ImageTransformConfig) types.AppMetadata {
 	return types.AppMetadata{
 		Locale: Locale,
 		PaymentOptions: types.PaymentOptions{
 			Stripe:     payment.Stripe.Enabled,
 			OnDelivery: payment.OnDelivery,
+		},
+		ImageTransformOptions: types.ImageTransformOptions{
+			Rembg:  imageTransform.Enabled && imageTransform.Provider == types.ImageTransformProviderRembg,
+			OpenAI: imageTransform.Enabled && imageTransform.Provider == types.ImageTransformProviderOpenAI,
 		},
 	}
 }
@@ -157,6 +163,19 @@ func loadImageConfig(baseURL string) types.ImageConfig {
 		ImageUploadPath:  getEnvOrDefault("IMG_DIR_OVERRIDE", "images"), // need to override when doing local development
 		MaxMegapixels:    mustAtoI("IMGPROXY_MAX_SRC_RESOLUTION"),
 		MaxFileSizeBytes: mustAtoI("IMGPROXY_MAX_SRC_FILE_SIZE"),
+	}
+}
+
+func loadImageTransformConfig() types.ImageTransformConfig {
+	if !isFeatureEnabled("IMAGE_TRANSFORM_ENABLED") {
+		return types.ImageTransformConfig{Enabled: false}
+	}
+	return types.ImageTransformConfig{
+		Enabled:  true,
+		Provider: types.ImageTransformProvider(getEnvOrDefault("IMAGE_TRANSFORM_PROVIDER", string(types.ImageTransformProviderRembg))),
+		BaseURL:  getEnvOrDefault("IMAGE_TRANSFORM_BASE_URL", "http://rembg"),
+		Model:    getEnvOrDefault("IMAGE_TRANSFORM_MODEL", "isnet-general-use"),
+		APIKey:   os.Getenv("IMAGE_TRANSFORM_API_KEY"),
 	}
 }
 
