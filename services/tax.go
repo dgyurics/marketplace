@@ -23,20 +23,20 @@ type TaxService interface {
 }
 
 type taxService struct {
-	HttpClient utilities.HTTPClient
-	repo       repositories.TaxRepository
-	config     types.PaymentConfig
+	client *http.Client
+	repo   repositories.TaxRepository
+	config types.PaymentConfig
 }
 
 func NewTaxService(
+	client *http.Client,
 	repo repositories.TaxRepository,
 	config types.PaymentConfig,
-	HttpClient utilities.HTTPClient,
 ) TaxService {
 	return &taxService{
-		repo:       repo,
-		config:     config,
-		HttpClient: HttpClient,
+		repo:   repo,
+		config: config,
+		client: client,
 	}
 }
 
@@ -86,7 +86,7 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	// req.Header.Set("Idempotency-Key", fmt.Sprintf("tax-calculation-%s", refID))
 
-	resp, err := s.HttpClient.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return 0, err
 	}

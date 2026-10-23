@@ -16,7 +16,6 @@ import (
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
-	"github.com/dgyurics/marketplace/utilities"
 )
 
 // ImageService handles image storage, transformation URL generation, and
@@ -31,7 +30,7 @@ type ImageService interface {
 }
 
 type imageService struct {
-	HttpClient     utilities.HTTPClient
+	client         *http.Client
 	repo           repositories.ImageRepository
 	key            []byte // HMAC-SHA256 key shared with imgproxy for URL signing
 	salt           []byte // Salt prepended to the message before signing
@@ -40,9 +39,9 @@ type imageService struct {
 	imgDir         string
 }
 
-func NewImageService(HttpClient utilities.HTTPClient, repo repositories.ImageRepository, config types.ImageConfig) ImageService {
+func NewImageService(client *http.Client, repo repositories.ImageRepository, config types.ImageConfig) ImageService {
 	return &imageService{
-		HttpClient:     HttpClient,
+		client:         client,
 		repo:           repo,
 		key:            config.Key,
 		salt:           config.Salt,
@@ -152,7 +151,7 @@ func (s *imageService) RemoveBackground(ctx context.Context, filePath, filename 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	// Execute request
-	res, err := s.HttpClient.Do(req)
+	res, err := s.client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to send request to rembg service: %w", err)
 	}

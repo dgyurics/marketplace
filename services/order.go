@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"log/slog"
-	"time"
+	"net/http"
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
@@ -20,25 +20,22 @@ type OrderService interface {
 }
 
 type orderService struct {
+	httpClient     *http.Client
 	orderRepo      repositories.OrderRepository
 	cartRepo       repositories.CartRepository
-	HttpClient     utilities.HTTPClient
 	paymentService PaymentService
 }
 
 func NewOrderService(
+	httpClient *http.Client,
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository,
 	paymentService PaymentService,
-	httpClient utilities.HTTPClient,
 ) OrderService {
-	if httpClient == nil {
-		httpClient = utilities.NewDefaultHTTPClient(10 * time.Second)
-	}
 	return &orderService{
 		orderRepo:      orderRepo,
 		cartRepo:       cartRepo,
-		HttpClient:     httpClient,
+		httpClient:     httpClient,
 		paymentService: paymentService,
 	}
 }

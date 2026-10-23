@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"net/http"
 	"testing"
 
 	"github.com/dgyurics/marketplace/types"
@@ -13,17 +12,6 @@ import (
 // mockOrderRepo implements the OrderRepository interface for testing
 type mockOrderRepo struct {
 	mock.Mock
-}
-
-// MockHTTPClient implements the utilities.HTTPClient interface for testing
-type MockHTTPClient struct {
-	mock.Mock
-}
-
-func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	args := m.Called(req)
-	resp, _ := args.Get(0).(*http.Response)
-	return resp, args.Error(1)
 }
 
 func contextWithUserID(ctx context.Context, userID string) context.Context {

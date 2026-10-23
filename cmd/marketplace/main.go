@@ -133,7 +133,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	registrationRepository := repositories.NewRegistrationRepository(db)
 
 	// create HTTP client
-	httpClient := utilities.NewDefaultHTTPClient(config.HTTPClientTimeout)
+	httpClient := &http.Client{Timeout: config.HTTPClientTimeout}
 
 	// create services
 	templateService := services.NewTemplateService()
@@ -148,14 +148,14 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	productService := services.NewProductService(productRepository)
 	cartService := services.NewCartService(cartRepository)
 	paymentService := services.NewPaymentService(httpClient, config.Payment, notificationService, userService, orderRepository, cartRepository)
-	orderService := services.NewOrderService(orderRepository, cartRepository, paymentService, httpClient)
+	orderService := services.NewOrderService(httpClient, orderRepository, cartRepository, paymentService)
 	imageService := services.NewImageService(httpClient, imageRepository, config.Image)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	rateLimitService := services.NewRateLimitService(rateLimitRepository)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
 	registrationService := services.NewRegistrationService(registrationRepository)
 	jwtService := services.NewJWTService(config.JWT)
-	taxService := services.NewTaxService(taxRepository, config.Payment, httpClient)
+	taxService := services.NewTaxService(httpClient, taxRepository, config.Payment)
 	offerService := services.NewOfferService(productRepository, offerRepository, userService, productService, notificationService)
 
 	return servicesContainer{

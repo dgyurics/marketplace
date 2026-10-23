@@ -33,7 +33,7 @@ type PaymentService interface {
 }
 
 type paymentService struct {
-	HttpClient          utilities.HTTPClient
+	client              *http.Client
 	config              types.PaymentConfig
 	notificationService NotificationService
 	userService         UserService
@@ -42,14 +42,14 @@ type paymentService struct {
 }
 
 func NewPaymentService(
-	httpClient utilities.HTTPClient,
+	client *http.Client,
 	config types.PaymentConfig,
 	notificationService NotificationService,
 	userService UserService,
 	orderRepo repositories.OrderRepository,
 	cartRepo repositories.CartRepository) PaymentService {
 	return &paymentService{
-		HttpClient:          httpClient,
+		client:              client,
 		config:              config,
 		notificationService: notificationService,
 		userService:         userService,
@@ -221,7 +221,7 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 	req.Header.Set("Stripe-Version", s.config.Stripe.Version)
 
 	// Execute request
-	res, err := s.HttpClient.Do(req)
+	res, err := s.client.Do(req)
 	if err != nil {
 		return pi, err
 	}
