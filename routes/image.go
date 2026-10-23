@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"image"
@@ -173,8 +172,7 @@ func (h *ImageRoutes) storeImage(w http.ResponseWriter, r *http.Request, product
 }
 
 func (h *ImageRoutes) removeBackground(w http.ResponseWriter, r *http.Request, productID, imagePath, filename string) error {
-	bgCtx := context.Background()
-	newImagePath, err := h.imageService.RemoveBackground(bgCtx, imagePath, filename)
+	newImagePath, err := h.imageService.RemoveBackground(r.Context(), imagePath, filename)
 	if err != nil {
 		slog.Error("error removing background", "productID", productID, "imgPath", imagePath, "error", err)
 		u.RespondWithError(w, r, http.StatusInternalServerError, "error removing background")
