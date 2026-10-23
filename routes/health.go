@@ -1,8 +1,9 @@
 package routes
 
 import (
-	"encoding/json"
 	"net/http"
+
+	u "github.com/dgyurics/marketplace/utilities"
 )
 
 type HealthRoutes struct {
@@ -16,14 +17,7 @@ func NewHealthRoutes(router router) *HealthRoutes {
 }
 
 func (h *HealthRoutes) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	// TODO enhance to check database connection, external services, etc.
-	response := map[string]string{"status": "ok"}
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
+	u.RespondWithJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *HealthRoutes) RegisterRoutes() {
