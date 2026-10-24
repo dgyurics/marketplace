@@ -9,6 +9,7 @@ type OrderStatus string
 const (
 	OrderDraft     OrderStatus = "draft"
 	OrderPending   OrderStatus = "pending"
+	OrderRequested OrderStatus = "requested"
 	OrderPaid      OrderStatus = "paid"
 	OrderShipped   OrderStatus = "shipped"
 	OrderDelivered OrderStatus = "delivered"

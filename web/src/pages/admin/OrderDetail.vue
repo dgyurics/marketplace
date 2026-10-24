@@ -98,7 +98,9 @@ const order = ref<Order | null>(null)
 const currentStatus = ref<OrderStatus>('pending')
 
 const statusOptions: OrderStatus[] = [
+  'draft',
   'pending',
+  'requested',
   'paid',
   'shipped',
   'delivered',
