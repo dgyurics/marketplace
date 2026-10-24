@@ -62,7 +62,11 @@ func (s *scheduleService) Start(ctx context.Context) {
 				s.removeExpiredPasswordResets(ctxTimeout)
 				cancel()
 			}
-			// TODO ExpiredRegistrationCodes
+			if s.shouldRunJob(ctx, types.ExpiredRegistrationCodes, 24*time.Hour) {
+				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+				s.removeExpiredRegistrationCodes(ctxTimeout)
+				cancel()
+			}
 		}
 	}
 }
@@ -120,6 +124,15 @@ func (s *scheduleService) removeStaleCartItems(ctx context.Context) {
 		WHERE updated_at < NOW() - INTERVAL '30 days'`)
 	if err != nil {
 		slog.ErrorContext(ctx, "Error removing stale cart items", "error", err)
+	}
+}
+
+func (s *scheduleService) removeExpiredRegistrationCodes(ctx context.Context) {
+	_, err := s.db.ExecContext(ctx, `
+		DELETE FROM registration_codes
+		WHERE expires_at < NOW()`)
+	if err != nil {
+		slog.ErrorContext(ctx, "Error removing expired registration codes", "error", err)
 	}
 }
 
