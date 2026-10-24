@@ -52,7 +52,7 @@ type ImageUpload struct {
 }
 
 type imageService struct {
-	HttpClient    utilities.HTTPClient
+	client        *http.Client
 	ai            types.AIModelConfig
 	aiClient      *http.Client
 	repo          repositories.ImageRepository
@@ -64,14 +64,14 @@ type imageService struct {
 }
 
 func NewImageService(
-	client utilities.HTTPClient,
+	client *http.Client,
 	repo repositories.ImageRepository,
 	products ProductService,
 	config types.ImageConfig,
 	ai types.AIModelConfig) ImageService {
 	return &imageService{
-		HttpClient: client,
-		ai:         ai,
+		client: client,
+		ai:     ai,
 		aiClient: &http.Client{
 			Timeout:       150 * time.Second,
 			CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse },
@@ -221,7 +221,7 @@ func (s *imageService) removeBackground(ctx context.Context, filePath, filename 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	// Execute request
-	res, err := s.HttpClient.Do(req)
+	res, err := s.client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to send request to rembg service: %w", err)
 	}
@@ -308,11 +308,14 @@ func (s *imageService) store(productID string, file io.Reader, filename string) 
 	if err != nil {
 		return "", err
 	}
-	defer dst.Close()
-
-	// Copy the file content to the destination
-	if _, err := io.Copy(dst, file); err != nil {
-		return "", err
+	// Copy the file content to the destination and close it even if copying fails.
+	_, copyErr := io.Copy(dst, file)
+	closeErr := dst.Close()
+	if copyErr != nil {
+		return "", copyErr
+	}
+	if closeErr != nil {
+		return "", closeErr
 	}
 
 	return filePath, nil
