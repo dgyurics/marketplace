@@ -42,6 +42,11 @@ func (s *scheduleService) Start(ctx context.Context) {
 				s.removeStaleOrders(ctxTimeout)
 				cancel()
 			}
+			if s.shouldRunJob(ctx, types.StaleRequestedOrders, 24*time.Hour) {
+				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+				s.removeStaleRequestedOrders(ctxTimeout)
+				cancel()
+			}
 			if s.shouldRunJob(ctx, types.ExpiredRateLimits, 10*time.Minute) {
 				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
 				s.removeStaleRateLimits(ctxTimeout)
@@ -106,6 +111,22 @@ func (s *scheduleService) removeStaleOrders(ctx context.Context) {
 		AND id NOT IN (SELECT DISTINCT address_id FROM orders WHERE status != 'canceled')`)
 	if err != nil {
 		slog.ErrorContext(ctx, "Error canceling stale orders", "error", err)
+	}
+}
+
+// Requested orders expire after seven days without an update. Their stock is already released.
+func (s *scheduleService) removeStaleRequestedOrders(ctx context.Context) {
+	_, err := s.db.ExecContext(ctx, `
+		WITH canceled_orders AS (
+			UPDATE orders
+			SET status = 'canceled', updated_at = NOW()
+			WHERE status = 'requested' AND updated_at < NOW() - INTERVAL '7 days'
+			RETURNING id
+		)
+		DELETE FROM requested_items
+		WHERE order_id IN (SELECT id FROM canceled_orders)`)
+	if err != nil {
+		slog.ErrorContext(ctx, "Error canceling stale requested orders", "error", err)
 	}
 }
 

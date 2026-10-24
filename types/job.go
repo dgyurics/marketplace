@@ -4,6 +4,7 @@ type Job string
 
 const (
 	StaleOrders              Job = "stale_orders"
+	StaleRequestedOrders     Job = "stale_requested_orders"
 	StateAddresses           Job = "stale_addresses"
 	StaleCartItems           Job = "stale_cart_items"
 	ExpiredRateLimits        Job = "expired_rate_limits"
