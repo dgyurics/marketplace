@@ -4,8 +4,8 @@ import { useRouter } from 'vue-router'
 import { useCheckoutStore } from '@/store/checkout'
 
 /**
- * Owns the pay-on-delivery side of checkout: acknowledging the terms and
- * confirming the pending order. No payment is collected, so the order is final.
+ * Owns pay-on-delivery checkout: acknowledging the terms and confirming the
+ * order for members or submitting it for approval for non-members.
  */
 export function useDeliveryCheckout() {
   const router = useRouter()

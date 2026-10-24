@@ -99,8 +99,8 @@ const currentStatus = ref<OrderStatus>('pending')
 
 const statusOptions: OrderStatus[] = [
   'draft',
-  'pending',
   'requested',
+  'pending',
   'paid',
   'shipped',
   'delivered',
@@ -190,7 +190,6 @@ onMounted(() => {
   border-radius: 4px;
   font-size: 14px;
   cursor: pointer;
-  text-transform: capitalize;
 }
 
 .status-select:hover {
