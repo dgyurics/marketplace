@@ -52,6 +52,11 @@ func (s *scheduleService) Start(ctx context.Context) {
 				s.removeStaleAddresses(ctxTimeout)
 				cancel()
 			}
+			if s.shouldRunJob(ctx, types.StaleGuestUsers, 24*time.Hour) {
+				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+				s.removeStaleGuestUsers(ctxTimeout)
+				cancel()
+			}
 			if s.shouldRunJob(ctx, types.ExpiredRateLimits, 10*time.Minute) {
 				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
 				s.removeStaleRateLimits(ctxTimeout)
@@ -142,6 +147,24 @@ func (s *scheduleService) removeStaleAddresses(ctx context.Context) {
 		AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.address_id = a.id)`)
 	if err != nil {
 		slog.ErrorContext(ctx, "Error removing stale addresses", "error", err)
+	}
+}
+
+// Remove inactive guests without orders or offers. Other user-owned rows cascade.
+func (s *scheduleService) removeStaleGuestUsers(ctx context.Context) {
+	_, err := s.db.ExecContext(ctx, `
+		DELETE FROM users u
+		WHERE u.role = 'guest'
+		AND u.created_at < NOW() - INTERVAL '7 days'
+		AND NOT EXISTS (
+			SELECT 1 FROM refresh_tokens rt
+			WHERE rt.user_id = u.id
+			AND rt.last_used >= NOW() - INTERVAL '7 days'
+		)
+		AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id)
+		AND NOT EXISTS (SELECT 1 FROM offers o WHERE o.user_id = u.id)`)
+	if err != nil {
+		slog.ErrorContext(ctx, "Error removing stale guest users", "error", err)
 	}
 }
 
