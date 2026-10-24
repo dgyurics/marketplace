@@ -2,9 +2,10 @@
   <div v-if="product" class="product-detail">
     <div class="gallery-container">
       <Swiper
-        :modules="[Navigation, Pagination]"
+        :modules="[Navigation, Pagination, Keyboard]"
         :navigation="true"
         :pagination="{ clickable: true }"
+        :keyboard="true"
         class="product-gallery"
       >
         <SwiperSlide v-for="(img, index) in product.images" :key="index">
@@ -42,7 +43,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { Navigation, Pagination } from 'swiper/modules'
+import { Keyboard, Navigation, Pagination } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { ref, onMounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
