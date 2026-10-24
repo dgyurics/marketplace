@@ -6,115 +6,182 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 )
 
-// ImageService handles image storage, transformation URL generation, and
-// background removal. Transformation is delegated to imgproxy; this service
-// produces signed URLs that imgproxy trusts.
+var (
+	ErrImageFileTooLarge = errors.New("image file too large")
+	ErrImageResolution   = errors.New("image resolution too high")
+	ErrImageFormat       = errors.New("unsupported image format")
+	ErrImageDecode       = errors.New("error getting image resolution")
+	ErrBackgroundRemoval = errors.New("background removal failed")
+	ErrImageOptions      = errors.New("select either remove background or enhance, not both")
+	ErrImageAIDisabled   = errors.New("AI image enhancement is disabled")
+	ErrImageEnhancement  = errors.New("image enhancement failed")
+)
+
 type ImageService interface {
-	StoreImage(productID string, file io.Reader, filename string) (string, error)
-	CreateImageURLs(productID, filename string, imgType ...types.ImageType) []string
-	CreateImageRecord(ctx context.Context, image *types.Image) error
-	RemoveBackground(ctx context.Context, filePath, filename string) (string, error)
-	RemoveImage(ctx context.Context, id string) error
+	Upload(ctx context.Context, input ImageUpload) ([]types.Image, error)
+	Remove(ctx context.Context, id string) error
+}
+
+type ImageUpload struct {
+	ProductID        string
+	Filename         string
+	File             io.Reader
+	Type             types.ImageType
+	AltText          *string
+	RemoveBackground bool
+	Enhance          bool
 }
 
 type imageService struct {
-	client         *http.Client
-	repo           repositories.ImageRepository
-	key            []byte // HMAC-SHA256 key shared with imgproxy for URL signing
-	salt           []byte // Salt prepended to the message before signing
-	baseURLImgPrxy string
-	baseURLRemBg   string
-	imgDir         string
+	client        *http.Client
+	ai            types.AIModelConfig
+	aiClient      *http.Client
+	repo          repositories.ImageRepository
+	products      ProductService
+	config        types.ImageConfig
+	baseURLRemBg  string
+	maxFileSize   int64
+	maxMegapixels int
 }
 
-func NewImageService(client *http.Client, repo repositories.ImageRepository, config types.ImageConfig) ImageService {
+func NewImageService(
+	client *http.Client,
+	repo repositories.ImageRepository,
+	products ProductService,
+	config types.ImageConfig,
+	ai types.AIModelConfig) ImageService {
 	return &imageService{
-		client:         client,
-		repo:           repo,
-		key:            config.Key,
-		salt:           config.Salt,
-		baseURLImgPrxy: config.BaseURLImgproxy,
-		baseURLRemBg:   config.BaseURLRembg,
-		imgDir:         config.ImageUploadPath,
+		client: client,
+		ai:     ai,
+		aiClient: &http.Client{
+			Timeout:       150 * time.Second,
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse },
+		},
+		repo:          repo,
+		products:      products,
+		config:        config,
+		baseURLRemBg:  config.BaseURLRembg,
+		maxFileSize:   int64(config.MaxFileSizeBytes),
+		maxMegapixels: config.MaxMegapixels,
 	}
 }
 
-// mkdir creates a directory for the image file, returning the full path to the file
-func (s *imageService) mkdir(productID string, imagename string) (string, error) {
-	dirPath := filepath.Join(s.imgDir, productID)
-	filePath := filepath.Join(dirPath, filepath.Base(imagename))
-	err := os.MkdirAll(dirPath, os.ModePerm)
+// Upload owns validation and the complete file-to-record lifecycle. The caller owns input.File.
+func (s *imageService) Upload(ctx context.Context, input ImageUpload) ([]types.Image, error) {
+	if input.RemoveBackground && input.Enhance {
+		return nil, ErrImageOptions
+	}
+	if input.Enhance && !s.ai.Enabled {
+		return nil, ErrImageAIDisabled
+	}
+
+	if _, err := s.products.GetProductByID(ctx, input.ProductID); err != nil {
+		return nil, err
+	}
+
+	data, err := io.ReadAll(io.LimitReader(input.File, s.maxFileSize+1))
 	if err != nil {
-		return "", fmt.Errorf("failed to create directory %s: %w", dirPath, err)
+		return nil, fmt.Errorf("error reading image: %w", err)
 	}
-	return filePath, nil
-}
 
-// StoreImage saves the image file to disk and returns the file path
-func (s *imageService) StoreImage(productID string, file io.Reader, filename string) (string, error) {
-	filePath, err := s.mkdir(productID, filename)
+	if int64(len(data)) > s.maxFileSize {
+		return nil, ErrImageFileTooLarge
+	}
+
+	info, format, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
-		return "", fmt.Errorf("failed to create directory for image: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrImageDecode, err)
 	}
 
-	// Save the file
-	dst, err := os.Create(filePath)
+	if int64(info.Width)*int64(info.Height) > int64(s.maxMegapixels)*1_000_000 {
+		return nil, ErrImageResolution
+	}
+
+	// currently, only jpeg & png supported
+	if format != "jpeg" && format != "png" {
+		return nil, ErrImageFormat
+	}
+
+	if input.Enhance {
+		data, err = s.enhanceImage(ctx, data)
+		input.Filename = "enhanced.png"
+	}
 	if err != nil {
-		return "", err
-	}
-	// Copy the file content to the destination and close it even if copying fails.
-	_, copyErr := io.Copy(dst, file)
-	closeErr := dst.Close()
-	if copyErr != nil {
-		return "", copyErr
-	}
-	if closeErr != nil {
-		return "", closeErr
+		return nil, fmt.Errorf("%w: %w", ErrImageEnhancement, err)
 	}
 
-	return filePath, nil
+	imgID, err := utilities.GenerateIDString()
+	if err != nil {
+		return nil, fmt.Errorf("error generating image ID: %w", err)
+	}
+
+	filename := imgID + filepath.Ext(input.Filename)
+	path, err := s.store(input.ProductID, bytes.NewReader(data), filename)
+	if err != nil {
+		return nil, fmt.Errorf("error storing image: %w", err)
+	}
+
+	if input.RemoveBackground {
+		_, err = s.removeBackground(ctx, path, filename)
+	}
+	if err != nil {
+		_ = os.Remove(path)
+		return nil, fmt.Errorf("%w: %v", ErrBackgroundRemoval, err)
+	}
+
+	kind := types.ParseImageType(string(input.Type))
+	kinds := []types.ImageType{kind}
+	if kind == types.Hero {
+		kinds = []types.ImageType{types.Hero, types.Gallery, types.Thumbnail}
+	}
+
+	images := make([]types.Image, 0, len(kinds))
+	for _, kind := range kinds {
+		id, err := utilities.GenerateIDString()
+		if err != nil {
+			return nil, fmt.Errorf("error generating image record ID: %w", err)
+		}
+
+		img := types.Image{
+			ID:        id,
+			ProductID: input.ProductID,
+			Type:      kind,
+			URL:       generateImageURL(s.config, input.ProductID, filename, kind),
+			AltText:   input.AltText,
+			Source:    filename,
+		}
+		if err := s.repo.CreateImage(ctx, &img); err != nil {
+			return nil, fmt.Errorf("error creating image record: %w", err)
+		}
+
+		images = append(images, img)
+	}
+
+	return images, nil
 }
 
-func (s *imageService) CreateImageRecord(ctx context.Context, image *types.Image) error {
-	return s.repo.CreateImage(ctx, image)
-}
-
-func (s *imageService) CreateImageURLs(productID, filename string, imgType ...types.ImageType) []string {
-	urls := make([]string, len(imgType))
-	for i, t := range imgType {
-		urls[i] = s.GenerateImageURL(productID, filename, t)
-	}
-	return urls
-}
-
-const (
-	// Image transformation settings
-	GalleryResolution   = "resize:fit:1200:800:0"
-	ThumbnailResolution = "resize:fit:300:300:0"
-	HeroResolution      = "resize:fit:1600:1200:0"
-	DefaultResolution   = "resize:fit:800:600:0"
-
-	GalleryQuality   = "quality:85"
-	ThumbnailQuality = "quality:80"
-	HeroQuality      = "quality:90"
-	DefaultQuality   = "quality:85"
-)
-
-// RemoveBackground sends the image at filePath to the rembg service for
+// removeBackground sends the image at filePath to the rembg service for
 // background removal, then overwrites the original file with the result.
-func (s *imageService) RemoveBackground(ctx context.Context, filePath, filename string) (string, error) {
+func (s *imageService) removeBackground(ctx context.Context, filePath, filename string) (string, error) {
 	// open source image
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -171,52 +238,17 @@ func (s *imageService) RemoveBackground(ctx context.Context, filePath, filename 
 	if err != nil {
 		return "", fmt.Errorf("failed to create destination file: %w", err)
 	}
-	// Copy the file content to the destination and close it even if copying fails.
-	_, copyErr := io.Copy(dst, res.Body)
-	closeErr := dst.Close()
-	if copyErr != nil {
-		return "", copyErr
-	}
-	if closeErr != nil {
-		return "", closeErr
+	defer dst.Close()
+
+	// Copy the file content to the destination
+	if _, err := io.Copy(dst, res.Body); err != nil {
+		return "", err
 	}
 
 	return filePath, nil
 }
 
-// GenerateImageURL produces a signed imgproxy URL for the given image variant.
-//
-// HMAC-SHA256 is used because both the signer (this service) and the verifier
-// (imgproxy) are internal infrastructure sharing a secret key. HMAC is simple,
-// fast, and appropriate when there is no need to separate signing authority
-// from verification.
-//
-// The signature prevents clients from crafting arbitrary transformation URLs,
-// which could otherwise be used to abuse imgproxy.
-func (s *imageService) GenerateImageURL(productID, filename string, imgType types.ImageType) string {
-	var path string
-	switch imgType {
-	case types.Gallery:
-		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", GalleryResolution, GalleryQuality, productID, filename)
-	case types.Thumbnail:
-		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", ThumbnailResolution, ThumbnailQuality, productID, filename)
-	case types.Hero:
-		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", HeroResolution, HeroQuality, productID, filename)
-	default:
-		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", DefaultResolution, DefaultQuality, productID, filename)
-	}
-
-	// signature = HMAC-SHA256(key, salt + path)
-	mac := hmac.New(sha256.New, s.key)
-	mac.Write(s.salt)
-	mac.Write([]byte(path))
-	signature := mac.Sum(nil)
-	encodedSig := base64.RawURLEncoding.EncodeToString(signature)
-
-	return fmt.Sprintf("%s/%s%s", s.baseURLImgPrxy, encodedSig, path)
-}
-
-func (s *imageService) RemoveImage(ctx context.Context, imageID string) error {
+func (s *imageService) Remove(ctx context.Context, imageID string) error {
 	// remove image from database
 	deleteResult, err := s.repo.RemoveImage(ctx, imageID)
 	if err != nil {
@@ -230,7 +262,7 @@ func (s *imageService) RemoveImage(ctx context.Context, imageID string) error {
 	}
 
 	// remove image from filesystem
-	directory := filepath.Join(s.imgDir, deleteResult.ProductID)
+	directory := filepath.Join(s.config.ImageUploadPath, deleteResult.ProductID)
 	filePath := filepath.Join(directory, deleteResult.SourceImage)
 	if err := os.Remove(filePath); err != nil {
 		slog.WarnContext(ctx, "Failed to remove image file", "file", filePath, "error", err)
@@ -250,4 +282,91 @@ func (s *imageService) RemoveImage(ctx context.Context, imageID string) error {
 	}
 
 	return nil
+}
+
+// mkdir creates a directory for the image file, returning the full path to the file
+func (s *imageService) mkdir(productID string, imagename string) (string, error) {
+	dirPath := filepath.Join(s.config.ImageUploadPath, productID)
+	filePath := filepath.Join(dirPath, filepath.Base(imagename))
+	err := os.MkdirAll(dirPath, os.ModePerm)
+	if err != nil {
+		return "", fmt.Errorf("failed to create directory %s: %w", dirPath, err)
+	}
+
+	return filePath, nil
+}
+
+// store saves the image file to disk and returns the file path
+func (s *imageService) store(productID string, file io.Reader, filename string) (string, error) {
+	filePath, err := s.mkdir(productID, filename)
+	if err != nil {
+		return "", fmt.Errorf("failed to create directory for image: %w", err)
+	}
+
+	// Save the file
+	dst, err := os.Create(filePath)
+	if err != nil {
+		return "", err
+	}
+	// Copy the file content to the destination and close it even if copying fails.
+	_, copyErr := io.Copy(dst, file)
+	closeErr := dst.Close()
+	if copyErr != nil {
+		return "", copyErr
+	}
+	if closeErr != nil {
+		return "", closeErr
+	}
+
+	return filePath, nil
+}
+
+const (
+	// Image transformation settings
+	GalleryResolution   = "resize:fit:1200:800:0"
+	ThumbnailResolution = "resize:fit:300:300:0"
+	HeroResolution      = "resize:fit:1600:1200:0"
+	DefaultResolution   = "resize:fit:800:600:0"
+
+	GalleryQuality   = "quality:85"
+	ThumbnailQuality = "quality:80"
+	HeroQuality      = "quality:90"
+	DefaultQuality   = "quality:85"
+)
+
+// url produces a signed imgproxy URL for the given image variant.
+//
+// HMAC-SHA256 is used because both the signer (this service) and the verifier
+// (imgproxy) are internal infrastructure sharing a secret key. HMAC is simple,
+// fast, and appropriate when there is no need to separate signing authority
+// from verification.
+//
+// The signature prevents clients from crafting arbitrary transformation URLs,
+// which could otherwise be used to abuse imgproxy.
+func generateImageURL(config types.ImageConfig, productID, filename string, imgType types.ImageType) string {
+	var path string
+	switch imgType {
+	case types.Gallery:
+		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", GalleryResolution, GalleryQuality, productID, filename)
+	case types.Thumbnail:
+		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", ThumbnailResolution, ThumbnailQuality, productID, filename)
+	case types.Hero:
+		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", HeroResolution, HeroQuality, productID, filename)
+	default:
+		path = fmt.Sprintf("/%s/%s/plain/local:///%s/%s", DefaultResolution, DefaultQuality, productID, filename)
+	}
+
+	// Explicit PNG output prevents image delivery from flattening transparency.
+	if strings.EqualFold(filepath.Ext(filename), ".png") {
+		path = "/format:png" + path
+	}
+
+	// signature = HMAC-SHA256(key, salt + path)
+	mac := hmac.New(sha256.New, config.Key)
+	mac.Write(config.Salt)
+	mac.Write([]byte(path))
+	signature := mac.Sum(nil)
+	encodedSig := base64.RawURLEncoding.EncodeToString(signature)
+
+	return fmt.Sprintf("%s/%s%s", config.BaseURLImgproxy, encodedSig, path)
 }

@@ -202,13 +202,14 @@ export const uploadImage = async (
   productId: string,
   file: File,
   type: ImageType,
-  transform: Boolean
+  removeBg: boolean,
+  enhance = false
 ): Promise<Image[]> => {
   const formData = new FormData()
   formData.append('image', file)
   formData.append('type', type)
   const response = await apiClient.post(
-    `/images/products/${productId}?transform=${transform}`,
+    `/images/products/${productId}?remove_bg=${removeBg}&enhance=${enhance}`,
     formData,
     {
       headers: {
