@@ -8,6 +8,7 @@ import (
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/utilities"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Helper function to insert a test address for a user
@@ -518,4 +519,60 @@ func TestCreateOrder_NilIdempotencyKey(t *testing.T) {
 	assert.NoError(t, dbPool.QueryRowContext(ctx,
 		`SELECT status FROM orders WHERE id = $1`, first.ID).Scan(&status1))
 	assert.Equal(t, "canceled", status1)
+}
+
+func TestUpdateOrderRequested(t *testing.T) {
+	for _, initialStatus := range []types.OrderStatus{types.OrderDraft, types.OrderPending, types.OrderPaid} {
+		t.Run(string(initialStatus), func(t *testing.T) {
+			ctx := context.Background()
+			productID := createTestProduct(t, 3)
+			user := createUniqueTestUser(t, NewUserRepository(dbPool))
+			addressID := createTestAddress(t, dbPool, user.ID)
+			orderID := utilities.MustGenerateIDString()
+			t.Cleanup(func() {
+				dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, orderID)
+				dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
+				dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
+			})
+			_, err := dbPool.ExecContext(ctx, `
+				INSERT INTO orders (id, user_id, address_id, status, payment_method, payment_status)
+				VALUES ($1, $2, $3, $4, 'on_delivery', 'unpaid')`,
+				orderID, user.ID, addressID, initialStatus)
+			require.NoError(t, err)
+			_, err = dbPool.ExecContext(ctx, `
+				INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+				VALUES ($1, $2, 2, 1000)`, orderID, productID)
+			require.NoError(t, err)
+
+			repo := NewOrderRepository(dbPool)
+			update := &types.Order{ID: orderID, Status: utilities.Ptr(types.OrderRequested)}
+			err = repo.UpdateOrder(ctx, update)
+			require.NoError(t, err)
+			// A retry must not release the same stock twice.
+			require.NoError(t, repo.UpdateOrder(ctx, update))
+			assert.Equal(t, 5, productInventory(t, productID))
+			var quantity int
+			var unitPrice int64
+			require.NoError(t, dbPool.QueryRowContext(ctx, `
+				SELECT quantity, unit_price FROM requested_items WHERE order_id = $1 AND product_id = $2`,
+				orderID, productID).Scan(&quantity, &unitPrice))
+			assert.Equal(t, 2, quantity)
+			assert.Equal(t, int64(1000), unitPrice)
+			var count int
+			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT COUNT(*) FROM order_items WHERE order_id = $1`, orderID).Scan(&count))
+			assert.Zero(t, count)
+			var status types.OrderStatus
+			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1`, orderID).Scan(&status))
+			assert.Equal(t, types.OrderRequested, status)
+
+			// Canceling an approval request must not release stock again.
+			update.Status = utilities.Ptr(types.OrderCanceled)
+			require.NoError(t, repo.UpdateOrder(ctx, update))
+			assert.Equal(t, 5, productInventory(t, productID))
+			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT COUNT(*) FROM requested_items WHERE order_id = $1`, orderID).Scan(&count))
+			assert.Zero(t, count)
+			require.NoError(t, repo.UpdateOrder(ctx, update))
+			assert.Equal(t, 5, productInventory(t, productID))
+		})
+	}
 }

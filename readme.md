@@ -15,12 +15,11 @@ A self-hosted e-commerce framework designed for local businesses and community c
 | Geographic shipping | ✅ | Configure coverage and exclusions |
 | Image processing | ✅ | imgproxy + rembg (AI) background removal |
 | In-app notifications | ✅ | Status updates on orders & offers |
+| Payment processing | ✅ | Pay on delivery, Stripe optional |
 | Email delivery | ❌ | External SMTP (3rd party) |
-| Payment processing | ❌ | Stripe (3rd party) |
 
 ## Planned Enhancements
 
-* Pay on delivery option
 * Cache-Control + ETags
 * Optional image enhance + field suggestions
 * Email optional for login & registration

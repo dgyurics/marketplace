@@ -67,13 +67,7 @@ func (h *PaymentRoutes) EventHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *PaymentRoutes) PaymentMethods(w http.ResponseWriter, r *http.Request) {
 	// FIXME if user cart is $0 disable stripe
-	payOpts := h.config.PaymentOptions
-	usr, ok := r.Context().Value(services.UserKey).(*types.User)
-	if !ok || !usr.HasMinimumRole(types.RoleMember) {
-		payOpts.OnDelivery = false
-	}
-
-	u.RespondWithJSON(w, 200, payOpts)
+	u.RespondWithJSON(w, 200, h.config.PaymentOptions)
 }
 
 func (h *PaymentRoutes) RegisterRoutes() {

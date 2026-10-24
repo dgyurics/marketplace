@@ -570,23 +570,52 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 		return tx.Commit()
 	}
 
-	// restock inventory
-	if *order.Status == types.OrderRefunded || *order.Status == types.OrderCanceled {
-		query = `
-			WITH deleted_items AS (
-				DELETE FROM order_items oi
-				WHERE oi.order_id = $1
-				RETURNING oi.product_id, oi.quantity
-			)
-			UPDATE products
-			SET inventory = inventory + di.quantity, updated_at = NOW()
-			FROM deleted_items di
-			WHERE products.id = di.product_id
-		`
-		if _, err := tx.ExecContext(ctx, query, order.ID); err != nil {
-			return err
-		}
+	switch *order.Status {
+	case types.OrderRequested:
+		err = requestOrderApproval(ctx, tx, order.ID)
+	case types.OrderRefunded, types.OrderCanceled:
+		err = reclaimOrderItems(ctx, tx, order.ID)
+	}
+	if err != nil {
+		return err
 	}
 
 	return tx.Commit()
+}
+
+// reclaimOrderItems reclaim reserved inventory
+func reclaimOrderItems(ctx context.Context, tx *sql.Tx, orderID string) error {
+	_, err := tx.ExecContext(ctx, `
+		WITH deleted_requests AS (
+			DELETE FROM requested_items WHERE order_id = $1
+		), deleted_items AS (
+			DELETE FROM order_items
+			WHERE order_id = $1
+			RETURNING product_id, quantity
+		)
+		UPDATE products
+		SET inventory = inventory + di.quantity, updated_at = NOW()
+		FROM deleted_items di
+		WHERE products.id = di.product_id`, orderID)
+	return err
+}
+
+// requestOrderApproval moves a pending order's items to requested_items
+func requestOrderApproval(ctx context.Context, tx *sql.Tx, orderID string) error {
+	_, err := tx.ExecContext(ctx, `
+		WITH moved_items AS (
+			DELETE FROM order_items
+			WHERE order_id = $1
+			RETURNING order_id, product_id, quantity, unit_price
+		), requested AS (
+			INSERT INTO requested_items (order_id, product_id, quantity, unit_price)
+			SELECT order_id, product_id, quantity, unit_price
+			FROM moved_items
+			RETURNING product_id, quantity
+		)
+		UPDATE products
+		SET inventory = inventory + requested.quantity, updated_at = NOW()
+		FROM requested
+		WHERE products.id = requested.product_id`, orderID)
+	return err
 }

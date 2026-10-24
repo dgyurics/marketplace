@@ -289,6 +289,12 @@ func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	user, ok := r.Context().Value(services.UserKey).(*types.User)
+	if !ok || user == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	order, err := h.orderService.GetOrderByIDAndUser(r.Context(), r.PathValue("id"))
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
@@ -299,14 +305,22 @@ func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if *order.Status != types.OrderDraft {
+	if order.Status == nil || *order.Status != types.OrderDraft {
 		u.RespondWithError(w, r, http.StatusConflict, "order is not open")
 		return
 	}
 
 	// update order
 	order.PaymentMethod = u.Ptr(types.PaymentMethodOnDelivery)
-	order.Status = u.Ptr(types.OrderPending)
+
+	// if user is not a member, pay-on-delivery must be requested
+	order.Status = u.Ptr(types.OrderRequested)
+
+	// if user is a member, pay-on-delivery is auto-approved
+	if user.HasMinimumRole(types.RoleMember) {
+		order.Status = u.Ptr(types.OrderPending)
+	}
+
 	err = h.orderService.UpdateOrder(r.Context(), &order)
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
@@ -317,7 +331,7 @@ func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// No payment webhook will fire for this flow, so confirm and clear here.
+	// No payment webhook will fire for this flow, so notify and clear here.
 	h.notifyOrderCreated(r.Context(), order)
 
 	if err := h.cartService.RemoveItems(r.Context()); err != nil {
@@ -335,7 +349,7 @@ func (h *OrderRoutes) RequestCheckoutOnDelivery(w http.ResponseWriter, r *http.R
 func (h *OrderRoutes) RegisterRoutes() {
 	h.mux.Handle("POST /orders", h.secure(types.RoleGuest)(h.limit(h.CreateDraftOrder, 20, time.Hour)))
 	h.mux.Handle("POST /orders/{id}/stripe/intent", h.secure(types.RoleGuest)(h.limit(h.CheckoutWithStripe, 10, time.Hour)))
-	h.mux.Handle("POST /orders/{id}/pay-on-delivery", h.secure(types.RoleMember)(h.CheckoutOnDelivery))
+	h.mux.Handle("POST /orders/{id}/pay-on-delivery", h.secure(types.RoleGuest)(h.CheckoutOnDelivery))
 	h.mux.Handle("POST /orders/{id}/pay-on-delivery/request", h.secure(types.RoleGuest)(h.RequestCheckoutOnDelivery))
 	h.mux.Handle("PUT /orders", h.secure(types.RoleAdmin)(h.UpdateOrder))
 	h.mux.Handle("GET /orders/{id}/public", http.HandlerFunc(h.GetOrderPublic))
