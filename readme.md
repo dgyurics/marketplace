@@ -22,7 +22,7 @@ A self-hosted e-commerce framework designed for local businesses and community c
 
 * Cache-Control + ETags
 * Optional image enhance + field suggestions
-* Email optional for login & registration
+* No email required for login & registration
 * Documentation for production setup & deployment
 * Product variants (size, color, material, etc.)
 * Geographic access control via Nginx and GeoIP2
