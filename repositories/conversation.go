@@ -167,7 +167,7 @@ func (r *conversationRepository) GetConversations(ctx context.Context, userID st
 	query := `
 		SELECT id, type, subject, recipient_id, recipient_last_read_at, updated_at, created_at
 		FROM conversations
-		WHERE recipient_id = $1 AND is_deleted = FALSE
+		WHERE recipient_id = $1
 		ORDER BY updated_at DESC
 	`
 	rows, err := r.db.QueryContext(ctx, query, userID)
