@@ -86,11 +86,16 @@ func (s *scheduleService) removeStaleOrders(ctx context.Context) {
 			WHERE oi.order_id = co.id
 			RETURNING oi.product_id, oi.quantity
 		),
+		restock_totals AS (
+			SELECT product_id, SUM(quantity) AS quantity
+			FROM deleted_items
+			GROUP BY product_id
+		),
 		restored AS (
 			UPDATE products
-			SET inventory = inventory + di.quantity
-			FROM deleted_items di
-			WHERE products.id = di.product_id
+			SET inventory = inventory + rt.quantity
+			FROM restock_totals rt
+			WHERE products.id = rt.product_id
 		)
 		DELETE FROM addresses
 		WHERE id IN (SELECT address_id FROM canceled_orders)
