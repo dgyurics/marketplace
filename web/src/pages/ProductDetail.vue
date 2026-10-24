@@ -1,5 +1,5 @@
 <template>
-  <div v-if="product" class="product-detail">
+  <div class="product-detail">
     <div class="gallery-container">
       <Swiper
         :modules="[Navigation, Pagination, Keyboard]"
