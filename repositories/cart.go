@@ -117,7 +117,8 @@ func (r *cartRepository) AddItem(ctx context.Context, userID string, item *types
 		SELECT $1, $2, $3, price FROM products WHERE id = $2
 		ON CONFLICT (user_id, product_id) DO UPDATE
 		SET quantity = cart_items.quantity + 1,
-				unit_price = EXCLUDED.unit_price`
+				unit_price = EXCLUDED.unit_price,
+				updated_at = NOW()`
 	_, err = tx.ExecContext(ctx, query, userID, item.Product.ID, item.Quantity)
 	if err != nil {
 		return err

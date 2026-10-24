@@ -117,7 +117,7 @@ func (s *scheduleService) removeStaleRateLimits(ctx context.Context) {
 func (s *scheduleService) removeStaleCartItems(ctx context.Context) {
 	_, err := s.db.ExecContext(ctx, `
 		DELETE FROM cart_items
-		WHERE created_at < NOW() - INTERVAL '30 days'`)
+		WHERE updated_at < NOW() - INTERVAL '30 days'`)
 	if err != nil {
 		slog.ErrorContext(ctx, "Error removing stale cart items", "error", err)
 	}
