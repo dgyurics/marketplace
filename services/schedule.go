@@ -47,6 +47,11 @@ func (s *scheduleService) Start(ctx context.Context) {
 				s.removeStaleRequestedOrders(ctxTimeout)
 				cancel()
 			}
+			if s.shouldRunJob(ctx, types.StaleAddresses, 24*time.Hour) {
+				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+				s.removeStaleAddresses(ctxTimeout)
+				cancel()
+			}
 			if s.shouldRunJob(ctx, types.ExpiredRateLimits, 10*time.Minute) {
 				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
 				s.removeStaleRateLimits(ctxTimeout)
@@ -127,6 +132,16 @@ func (s *scheduleService) removeStaleRequestedOrders(ctx context.Context) {
 		WHERE order_id IN (SELECT id FROM canceled_orders)`)
 	if err != nil {
 		slog.ErrorContext(ctx, "Error canceling stale requested orders", "error", err)
+	}
+}
+
+func (s *scheduleService) removeStaleAddresses(ctx context.Context) {
+	_, err := s.db.ExecContext(ctx, `
+		DELETE FROM addresses a
+		WHERE a.updated_at < NOW() - INTERVAL '1 day'
+		AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.address_id = a.id)`)
+	if err != nil {
+		slog.ErrorContext(ctx, "Error removing stale addresses", "error", err)
 	}
 }
 
