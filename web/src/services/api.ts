@@ -202,7 +202,7 @@ export const uploadImage = async (
   productId: string,
   file: File,
   type: ImageType,
-  transform: Boolean
+  transform: boolean
 ): Promise<Image[]> => {
   const formData = new FormData()
   formData.append('image', file)
