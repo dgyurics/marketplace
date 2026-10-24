@@ -13,7 +13,7 @@ A self-hosted e-commerce framework designed for local businesses and community c
 | Deployment | ✅ | Docker Compose orchestration |
 | Admin dashboard | ✅ | Product + Order management |
 | Geographic shipping | ✅ | Configure coverage and exclusions |
-| Image processing | ✅ | imgproxy + rembg (AI) background removal |
+| Image processing | ✅ | imgproxy + rembg (AI) |
 | In-app notifications | ✅ | Status updates on orders & offers |
 | Payment processing | ✅ | Pay on delivery, Stripe optional |
 | Email delivery | ❌ | External SMTP (3rd party) |
