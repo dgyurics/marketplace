@@ -11,7 +11,7 @@
       <tbody>
         <tr
           v-for="(row, index) in data"
-          :key="index"
+          :key="row.id ?? index"
           :class="{ 'clickable-row': onRowClick }"
           @click="handleRowClick(row, index)"
         >
@@ -27,7 +27,7 @@
 <script setup lang="ts">
 interface Props {
   columns: string[]
-  data: { [key: string]: unknown }[]
+  data: { id?: string | number | undefined; [key: string]: unknown }[]
   onRowClick?: (row: { [key: string]: unknown }, index: number) => void
 }
 

@@ -8,7 +8,7 @@
         :keyboard="true"
         class="product-gallery"
       >
-        <SwiperSlide v-for="(img, index) in product.images" :key="index">
+        <SwiperSlide v-for="img in product.images" :key="img.id">
           <img :src="img.url" :alt="product.name" class="gallery-image" />
         </SwiperSlide>
       </Swiper>

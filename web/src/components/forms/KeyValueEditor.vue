@@ -1,7 +1,7 @@
 <template>
   <div class="key-value-editor">
     <div class="editor-container">
-      <div v-for="(pair, index) in pairs" :key="index" class="pair-row">
+      <div v-for="(pair, index) in pairs" :key="pair.id" class="pair-row">
         <input
           v-model="pair.key"
           type="text"
@@ -66,7 +66,8 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
-const pairs = ref([{ key: '', value: '' }])
+let nextPairId = 0
+const pairs = ref([{ id: nextPairId++, key: '', value: '' }])
 const errors = ref([])
 
 // Helper function to safely trim only strings
@@ -76,9 +77,9 @@ const trimIfString = (value) => (typeof value === 'string' ? value.trim() : valu
 const initializePairs = () => {
   const entries = Object.entries(props.modelValue)
   if (entries.length === 0) {
-    pairs.value = [{ key: '', value: '' }]
+    pairs.value = [{ id: nextPairId++, key: '', value: '' }]
   } else {
-    pairs.value = entries.map(([key, value]) => ({ key, value }))
+    pairs.value = entries.map(([key, value]) => ({ id: nextPairId++, key, value }))
   }
   errors.value = new Array(pairs.value.length).fill('')
 }
@@ -87,7 +88,7 @@ const initializePairs = () => {
 initializePairs()
 
 const addPair = () => {
-  pairs.value.push({ key: '', value: '' })
+  pairs.value.push({ id: nextPairId++, key: '', value: '' })
   errors.value.push('')
 }
 
@@ -152,7 +153,7 @@ const hasErrors = () => {
 defineExpose({
   hasErrors,
   reset: () => {
-    pairs.value = [{ key: '', value: '' }]
+    pairs.value = [{ id: nextPairId++, key: '', value: '' }]
     errors.value = ['']
     emitValue()
   },
