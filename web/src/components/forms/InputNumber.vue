@@ -3,7 +3,7 @@
     <input
       v-model="value"
       type="number"
-      v-bind="step ? { step } : {}"
+      :step="step"
       :required="required || false"
       class="input-field"
     />
