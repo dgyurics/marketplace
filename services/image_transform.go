@@ -3,7 +3,10 @@ package services
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"image/png"
 	"io"
 	"log/slog"
 	"mime/multipart"
@@ -31,7 +34,90 @@ func (s *imageTransformService) Transform(ctx context.Context, filePath, filenam
 	if !s.config.Enabled {
 		return filePath, nil
 	}
-	return s.removeBackground(ctx, filePath, filename)
+	switch s.config.Provider {
+	case types.ImageTransformProviderRembg:
+		return s.removeBackground(ctx, filePath, filename)
+	case types.ImageTransformProviderOpenAI:
+		return s.transformOpenAI(ctx, filePath)
+	default:
+		return "", fmt.Errorf("unsupported image transform provider: %q", s.config.Provider)
+	}
+}
+
+const imageEnhancementPrompt = "Keep the product unchanged, including its proportions and size within the image. Do not enlarge or shrink the product. Remove the background. Improve lighting slightly and add a subtle shadow only if needed."
+
+// transformOpenAI requests an enhanced PNG, then overwrites the stored image.
+// BaseURL is the complete image-edit endpoint, e.g. https://api.openai.com/v1/images/edits.
+func (s *imageTransformService) transformOpenAI(ctx context.Context, filePath string) (string, error) {
+	if s.config.APIKey == "" || s.config.Model == "" {
+		return "", fmt.Errorf("openai image transformation requires an API key and model")
+	}
+
+	original, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read image file: %w", err)
+	}
+	imageURL := "data:" + http.DetectContentType(original) + ";base64," + base64.StdEncoding.EncodeToString(original)
+	payload := map[string]any{
+		"model":         s.config.Model,
+		"images":        []map[string]string{{"image_url": imageURL}},
+		"prompt":        imageEnhancementPrompt,
+		"background":    "transparent",
+		"output_format": "png",
+		"quality":       "medium",
+		"size":          "auto",
+		"n":             1,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode openai request: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.config.BaseURL, bytes.NewReader(body))
+	if err != nil {
+		return "", fmt.Errorf("failed to create openai request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+s.config.APIKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := s.client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request to openai: %w", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		var failure struct {
+			Error struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if err := json.NewDecoder(io.LimitReader(res.Body, 16<<10)).Decode(&failure); err == nil && failure.Error.Message != "" {
+			return "", fmt.Errorf("openai image transformation failed: %s: %s", res.Status, failure.Error.Message)
+		}
+		return "", fmt.Errorf("openai image transformation failed: %s", res.Status)
+	}
+
+	var response struct {
+		Data []struct {
+			Base64 string `json:"b64_json"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(io.LimitReader(res.Body, 48<<20)).Decode(&response); err != nil {
+		return "", fmt.Errorf("failed to decode openai response: %w", err)
+	}
+	if len(response.Data) != 1 || response.Data[0].Base64 == "" {
+		return "", fmt.Errorf("openai did not return an image")
+	}
+	output, err := base64.StdEncoding.DecodeString(response.Data[0].Base64)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode openai image: %w", err)
+	}
+	if _, err := png.DecodeConfig(bytes.NewReader(output)); err != nil {
+		return "", fmt.Errorf("openai did not return a valid PNG: %w", err)
+	}
+	if err := os.WriteFile(filePath, output, 0600); err != nil {
+		return "", fmt.Errorf("failed to save transformed image: %w", err)
+	}
+	return filePath, nil
 }
 
 // removeBackground sends the image at filePath to the rembg service for
