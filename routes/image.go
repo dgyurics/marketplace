@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"log/slog"
@@ -94,6 +95,9 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 	if transform {
 		if _, err := h.imageTransformService.Transform(r.Context(), imagePath, filename); err != nil {
 			slog.Error("error transforming image", "productID", productID, "imgPath", imagePath, "error", err)
+			if err := os.Remove(imagePath); err != nil {
+				slog.Error("error removing failed upload", "imgPath", imagePath, "error", err)
+			}
 			u.RespondWithError(w, r, http.StatusInternalServerError, "error transforming image")
 			return
 		}
