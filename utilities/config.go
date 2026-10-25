@@ -165,6 +165,12 @@ func loadImageConfig(baseURL string) types.ImageConfig {
 	}
 }
 
+// loadImageTransformConfig loads image transform settings.
+// OpenAI:
+// IMAGE_TRANSFORM_PROVIDER=openai
+// IMAGE_TRANSFORM_BASE_URL=https://api.openai.com/v1/images/edits
+// IMAGE_TRANSFORM_MODEL=<image model>
+// IMAGE_TRANSFORM_API_KEY=<sk-proj-xxx>
 func loadImageTransformConfig() types.ImageTransformConfig {
 	if !isFeatureEnabled("IMAGE_TRANSFORM_ENABLED") {
 		return types.ImageTransformConfig{Enabled: false}
