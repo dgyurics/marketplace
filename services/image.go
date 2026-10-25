@@ -6,6 +6,9 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"log/slog"
 	"os"
@@ -18,6 +21,7 @@ import (
 // ImageService handles image storage and produces signed transformation URLs
 // that imgproxy trusts.
 type ImageService interface {
+	ValidateImage(file io.Reader) error
 	StoreImage(productID string, file io.Reader, filename string) (string, error)
 	CreateImageURLs(productID, filename string, imgType ...types.ImageType) []string
 	CreateImageRecord(ctx context.Context, image *types.Image) error
@@ -29,6 +33,7 @@ type imageService struct {
 	key            []byte // HMAC-SHA256 key shared with imgproxy for URL signing
 	salt           []byte // Salt prepended to the message before signing
 	baseURLImgPrxy string
+	maxMegapixels  int
 	imgDir         string
 }
 
@@ -39,6 +44,7 @@ func NewImageService(repo repositories.ImageRepository, config types.ImageConfig
 		salt:           config.Salt,
 		baseURLImgPrxy: config.BaseURLImgproxy,
 		imgDir:         config.ImageUploadPath,
+		maxMegapixels:  config.MaxMegapixels,
 	}
 }
 
@@ -169,4 +175,46 @@ func (s *imageService) RemoveImage(ctx context.Context, imageID string) error {
 	}
 
 	return nil
+}
+
+// ValidateImage checks the image format and resolution.
+func (s *imageService) ValidateImage(file io.Reader) error {
+	res, format, err := getImageInfo(file)
+	if err != nil {
+		return err
+	}
+
+	slog.Debug("Image resolution", "pixels", res)
+	if res > s.maxMegapixels*1_000_000 {
+		return types.ErrImageResolutionTooHigh
+	}
+
+	if !isSupportedFormat(format) {
+		return fmt.Errorf("%w: %s", types.ErrUnsupportedImageFormat, format)
+	}
+
+	return nil
+}
+
+// getImageInfo returns the total pixel count and format of the image from the reader
+// e.g., for a jpeg image of 1920x1080, returns (2073600, "jpeg", nil)
+// e.g., for a png image of 800x600, returns (480000, "png", nil)
+func getImageInfo(r io.Reader) (int, string, error) {
+	config, format, err := image.DecodeConfig(r)
+	if err != nil {
+		return 0, "", err
+	}
+	return config.Width * config.Height, format, nil
+}
+
+func isSupportedFormat(format string) bool {
+	switch format {
+	// "heic" <- HEIC support disabled for now
+	// "webp" <- WEBP support disabled for now
+	// "gif" <- GIF support disabled for now
+	case "jpeg", "png":
+		return true
+	default:
+		return false
+	}
 }

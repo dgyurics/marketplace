@@ -5,6 +5,8 @@ package types
 import "errors"
 
 var (
+	ErrImageResolutionTooHigh    = errors.New("resolution too high")
+	ErrUnsupportedImageFormat    = errors.New("unsupported format")
 	ErrNotFound                  = errors.New("resource not found")
 	ErrUniqueConstraintViolation = errors.New("unique constraint violation")
 	ErrConstraintViolation       = errors.New("constraint violation")

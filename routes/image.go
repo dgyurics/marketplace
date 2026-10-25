@@ -2,10 +2,6 @@ package routes
 
 import (
 	"errors"
-	"fmt"
-	"image"
-	_ "image/jpeg"
-	_ "image/png"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -139,24 +135,18 @@ func (h *ImageRoutes) parseAndValidateRequest(w http.ResponseWriter, r *http.Req
 }
 
 func (h *ImageRoutes) validateImage(w http.ResponseWriter, r *http.Request, file io.Reader) error {
-	res, format, err := getImageInfo(file)
-	if err != nil {
-		u.RespondWithError(w, r, http.StatusInternalServerError, "error getting image resolution")
-		return err
-	}
-
-	slog.Debug("Image resolution", "pixels", res)
-	if res > h.imageConfig.MaxMegapixels*1_000_000 {
+	err := h.imageService.ValidateImage(file)
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, types.ErrImageResolutionTooHigh):
 		u.RespondWithError(w, r, http.StatusUnprocessableEntity, "image resolution too high")
-		return fmt.Errorf("resolution too high")
-	}
-
-	if !isSupportedFormat(format) {
+	case errors.Is(err, types.ErrUnsupportedImageFormat):
 		u.RespondWithError(w, r, http.StatusUnsupportedMediaType, "unsupported image format")
-		return fmt.Errorf("unsupported format: %s", format)
+	default:
+		u.RespondWithError(w, r, http.StatusInternalServerError, "error getting image resolution")
 	}
-
-	return nil
+	return err
 }
 
 func (h *ImageRoutes) storeImage(w http.ResponseWriter, r *http.Request, productID string, file io.Reader, fileHeader *multipart.FileHeader) (string, string, error) {
@@ -237,29 +227,6 @@ func (h *ImageRoutes) RemoveImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u.RespondSuccess(w)
-}
-
-// getImageInfo returns the total pixel count and format of the image from the reader
-// e.g., for a jpeg image of 1920x1080, returns (2073600, "jpeg", nil)
-// e.g., for a png image of 800x600, returns (480000, "png", nil)
-func getImageInfo(r io.Reader) (int, string, error) {
-	config, format, err := image.DecodeConfig(r)
-	if err != nil {
-		return 0, "", err
-	}
-	return config.Width * config.Height, format, nil
-}
-
-func isSupportedFormat(format string) bool {
-	switch format {
-	// "heic" <- HEIC support disabled for now
-	// "webp" <- WEBP support disabled for now
-	// "gif" <- GIF support disabled for now
-	case "jpeg", "png":
-		return true
-	default:
-		return false
-	}
 }
 
 func (h *ImageRoutes) RegisterRoutes() {
