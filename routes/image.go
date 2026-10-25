@@ -20,24 +20,24 @@ import (
 
 type ImageRoutes struct {
 	router
-	imageService    services.ImageService
-	productService  services.ProductService
-	imageConfig     types.ImageConfig
-	transformConfig types.ImageTransformConfig
+	imageTransformService services.ImageTransformService
+	imageService          services.ImageService
+	productService        services.ProductService
+	imageConfig           types.ImageConfig
 }
 
 func NewImageRoutes(
 	imageService services.ImageService,
+	imageTransformService services.ImageTransformService,
 	productService services.ProductService,
 	config types.ImageConfig,
-	transformConfig types.ImageTransformConfig,
 	router router) *ImageRoutes {
 	return &ImageRoutes{
-		router:          router,
-		imageService:    imageService,
-		productService:  productService,
-		imageConfig:     config,
-		transformConfig: transformConfig,
+		router:                router,
+		imageService:          imageService,
+		imageTransformService: imageTransformService,
+		productService:        productService,
+		imageConfig:           config,
 	}
 }
 
@@ -90,9 +90,11 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Transform if requested and enabled
-	if transform && h.transformConfig.Enabled {
-		if err := h.removeBackground(w, r, productID, imagePath, filename); err != nil {
+	// Transform if requested; the service checks whether transformations are enabled.
+	if transform {
+		if _, err := h.imageTransformService.Transform(r.Context(), imagePath, filename); err != nil {
+			slog.Error("error transforming image", "productID", productID, "imgPath", imagePath, "error", err)
+			u.RespondWithError(w, r, http.StatusInternalServerError, "error transforming image")
 			return
 		}
 	}
@@ -169,18 +171,6 @@ func (h *ImageRoutes) storeImage(w http.ResponseWriter, r *http.Request, product
 
 	slog.Debug("Image stored successfully", "path", imagePath)
 	return filename, imagePath, nil
-}
-
-func (h *ImageRoutes) removeBackground(w http.ResponseWriter, r *http.Request, productID, imagePath, filename string) error {
-	newImagePath, err := h.imageService.RemoveBackground(r.Context(), imagePath, filename)
-	if err != nil {
-		slog.Error("error removing background", "productID", productID, "imgPath", imagePath, "error", err)
-		u.RespondWithError(w, r, http.StatusInternalServerError, "error removing background")
-		return err
-	}
-
-	slog.Debug("Background removed successfully", "newPath", newImagePath)
-	return nil
 }
 
 func (h *ImageRoutes) createImageRecords(w http.ResponseWriter, r *http.Request, productID, filename string) ([]types.Image, error) {

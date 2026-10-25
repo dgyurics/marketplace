@@ -1,7 +1,6 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -9,8 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -18,35 +15,29 @@ import (
 	"github.com/dgyurics/marketplace/types"
 )
 
-// ImageService handles image storage, transformation URL generation, and
-// background removal. Transformation is delegated to imgproxy; this service
-// produces signed URLs that imgproxy trusts.
+// ImageService handles image storage and produces signed transformation URLs
+// that imgproxy trusts.
 type ImageService interface {
 	StoreImage(productID string, file io.Reader, filename string) (string, error)
 	CreateImageURLs(productID, filename string, imgType ...types.ImageType) []string
 	CreateImageRecord(ctx context.Context, image *types.Image) error
-	RemoveBackground(ctx context.Context, filePath, filename string) (string, error)
 	RemoveImage(ctx context.Context, id string) error
 }
 
 type imageService struct {
-	client         *http.Client
 	repo           repositories.ImageRepository
 	key            []byte // HMAC-SHA256 key shared with imgproxy for URL signing
 	salt           []byte // Salt prepended to the message before signing
 	baseURLImgPrxy string
-	baseURLRemBg   string
 	imgDir         string
 }
 
-func NewImageService(client *http.Client, repo repositories.ImageRepository, config types.ImageConfig) ImageService {
+func NewImageService(repo repositories.ImageRepository, config types.ImageConfig) ImageService {
 	return &imageService{
-		client:         client,
 		repo:           repo,
 		key:            config.Key,
 		salt:           config.Salt,
 		baseURLImgPrxy: config.BaseURLImgproxy,
-		baseURLRemBg:   config.BaseURLRembg,
 		imgDir:         config.ImageUploadPath,
 	}
 }
@@ -111,78 +102,6 @@ const (
 	HeroQuality      = "quality:90"
 	DefaultQuality   = "quality:85"
 )
-
-// RemoveBackground sends the image at filePath to the rembg service for
-// background removal, then overwrites the original file with the result.
-func (s *imageService) RemoveBackground(ctx context.Context, filePath, filename string) (string, error) {
-	// open source image
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to open image file: %w", err)
-	}
-	defer file.Close()
-
-	// create multipart writer
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	// Create form file using image
-	part, err := writer.CreateFormFile("file", filename)
-	if err != nil {
-		return "", fmt.Errorf("failed to create form file: %w", err)
-	}
-
-	// Copy image into form file part
-	if _, err := io.Copy(part, file); err != nil {
-		return "", fmt.Errorf("failed to copy image file to form: %w", err)
-	}
-
-	// Add model field to form
-	if err := writer.WriteField("model", "isnet-general-use"); err != nil {
-		return "", fmt.Errorf("failed to write model field: %w", err)
-	}
-
-	// Close the multipart writer to finalize the form data
-	writer.Close()
-
-	// Prepare the HTTP request to the rembg service
-	url := fmt.Sprintf("%s/api/remove", s.baseURLRemBg)
-	req, err := http.NewRequestWithContext(ctx, "POST", url, body)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// Execute request
-	res, err := s.client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request to rembg service: %w", err)
-	}
-	defer res.Body.Close()
-
-	// Handle response
-	if res.StatusCode != http.StatusOK {
-		slog.Error("Rembg service returned non-OK status", "status", res.StatusCode, "url", s.baseURLRemBg)
-		return "", fmt.Errorf("failed to remove background: %s", res.Status)
-	}
-
-	// Overwrite the original image with the processed image
-	dst, err := os.Create(filePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to create destination file: %w", err)
-	}
-	// Copy the file content to the destination and close it even if copying fails.
-	_, copyErr := io.Copy(dst, res.Body)
-	closeErr := dst.Close()
-	if copyErr != nil {
-		return "", copyErr
-	}
-	if closeErr != nil {
-		return "", closeErr
-	}
-
-	return filePath, nil
-}
 
 // GenerateImageURL produces a signed imgproxy URL for the given image variant.
 //

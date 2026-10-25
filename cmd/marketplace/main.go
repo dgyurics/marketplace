@@ -85,7 +85,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewCategoryRoutes(services.Category, baseRouter),
 		routes.NewConversationRoutes(services.Conversation, baseRouter),
 		routes.NewHealthRoutes(baseRouter),
-		routes.NewImageRoutes(services.Image, services.Product, config.Image, config.ImageTransform, baseRouter),
+		routes.NewImageRoutes(services.Image, services.ImageTransform, services.Product, config.Image, baseRouter),
 		routes.NewOrderRoutes(config.AppMetadata.PaymentOptions, services.Order, services.Tax, services.Payment, services.Cart, services.Address, services.User, services.Notification, baseRouter),
 		routes.NewPasswordRoutes(services.Password, services.User, services.Notification, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, config.AppMetadata, baseRouter),
@@ -149,7 +149,8 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	cartService := services.NewCartService(cartRepository)
 	paymentService := services.NewPaymentService(httpClient, config.Payment, notificationService, userService, orderRepository, cartRepository)
 	orderService := services.NewOrderService(httpClient, orderRepository, cartRepository, paymentService)
-	imageService := services.NewImageService(httpClient, imageRepository, config.Image)
+	imageService := services.NewImageService(imageRepository, config.Image)
+	imageTransformService := services.NewImageTransformService(httpClient, config.ImageTransform)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	rateLimitService := services.NewRateLimitService(rateLimitRepository)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
@@ -159,49 +160,51 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	offerService := services.NewOfferService(productRepository, offerRepository, userService, productService, notificationService)
 
 	return servicesContainer{
-		Address:      addressService,
-		Category:     categoryService,
-		Cart:         cartService,
-		Conversation: conversationService,
-		Image:        imageService,
-		JWT:          jwtService,
-		Notification: notificationService,
-		Order:        orderService,
-		Password:     passwordService,
-		Payment:      paymentService,
-		Product:      productService,
-		Offer:        offerService,
-		RateLimit:    rateLimitService,
-		Refresh:      refreshService,
-		Registration: registrationService,
-		Shipping:     shippingZoneService,
-		Schedule:     scheduleService,
-		Tax:          taxService,
-		User:         userService,
+		Address:        addressService,
+		Category:       categoryService,
+		Cart:           cartService,
+		Conversation:   conversationService,
+		Image:          imageService,
+		ImageTransform: imageTransformService,
+		JWT:            jwtService,
+		Notification:   notificationService,
+		Order:          orderService,
+		Password:       passwordService,
+		Payment:        paymentService,
+		Product:        productService,
+		Offer:          offerService,
+		RateLimit:      rateLimitService,
+		Refresh:        refreshService,
+		Registration:   registrationService,
+		Shipping:       shippingZoneService,
+		Schedule:       scheduleService,
+		Tax:            taxService,
+		User:           userService,
 	}
 }
 
 // servicesContainer holds all service dependencies
 type servicesContainer struct {
-	Address      services.AddressService
-	Cart         services.CartService
-	Category     services.CategoryService
-	Conversation services.ConversationService
-	Image        services.ImageService
-	JWT          services.JWTService
-	Notification services.NotificationService
-	Offer        services.OfferService
-	Order        services.OrderService
-	Password     services.PasswordService
-	Payment      services.PaymentService
-	Product      services.ProductService
-	RateLimit    services.RateLimitService
-	Refresh      services.RefreshService
-	Registration services.RegistrationService
-	Shipping     services.ShippingZoneService
-	Schedule     services.ScheduleService
-	Tax          services.TaxService
-	User         services.UserService
+	Address        services.AddressService
+	Cart           services.CartService
+	Category       services.CategoryService
+	Conversation   services.ConversationService
+	Image          services.ImageService
+	ImageTransform services.ImageTransformService
+	JWT            services.JWTService
+	Notification   services.NotificationService
+	Offer          services.OfferService
+	Order          services.OrderService
+	Password       services.PasswordService
+	Payment        services.PaymentService
+	Product        services.ProductService
+	RateLimit      services.RateLimitService
+	Refresh        services.RefreshService
+	Registration   services.RegistrationService
+	Shipping       services.ShippingZoneService
+	Schedule       services.ScheduleService
+	Tax            services.TaxService
+	User           services.UserService
 }
 
 // gracefulShutdown handles termination signals and gracefully shuts down the server.

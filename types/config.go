@@ -105,7 +105,6 @@ type ImageConfig struct {
 	Key              []byte // imgproxy signing key (hex decoded)
 	Salt             []byte // imgproxy salt (hex decoded)
 	BaseURLImgproxy  string // e.g. http://localhost:8002
-	BaseURLRembg     string // e.g. http://localhost:7001
 	ImageUploadPath  string // e.g. /images
 	MaxMegapixels    int    // max resolution
 	MaxFileSizeBytes int    // max file size
