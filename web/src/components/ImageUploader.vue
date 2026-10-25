@@ -43,7 +43,7 @@
         <div v-if="transformOptions.rembg || transformOptions.openai" class="checkbox-row">
           <label class="checkbox-label">
             <input v-model="transform" type="checkbox" :tabindex="0" />
-            {{ transformOptions.openai ? 'Enhance image' : 'Remove background automatically' }}
+            {{ transformOptions.openai ? 'Enhance image' : 'Remove background' }}
           </label>
         </div>
 
