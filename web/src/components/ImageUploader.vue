@@ -40,10 +40,10 @@
           </span>
         </div>
 
-        <div class="checkbox-row">
+        <div v-if="transformOptions.rembg || transformOptions.openai" class="checkbox-row">
           <label class="checkbox-label">
-            <input v-model="removeBackground" type="checkbox" :tabindex="0" />
-            Remove background automatically
+            <input v-model="transform" type="checkbox" :tabindex="0" />
+            {{ transformOptions.openai ? 'Enhance image' : 'Remove background automatically' }}
           </label>
         </div>
 
@@ -61,6 +61,7 @@ import LoadingSpinner from './LoadingSpinner.vue'
 
 import { uploadImage } from '@/services/api'
 import type { Image, ImageType } from '@/types'
+import { getAppConfig } from '@/utilities/config'
 
 const props = defineProps<{
   productId: string
@@ -78,7 +79,8 @@ const emit = defineEmits<{
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
 const imageType = ref<ImageType>('gallery')
-const removeBackground = ref(false)
+const transform = ref(false)
+const transformOptions = getAppConfig().image_transform_options
 const uploading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
@@ -146,7 +148,7 @@ const handleUpload = async () => {
       props.productId,
       selectedFile.value,
       imageType.value,
-      removeBackground.value
+      transform.value
     )
 
     successMessage.value = 'Image uploaded successfully!'
@@ -170,7 +172,7 @@ const handleUpload = async () => {
 const resetForm = () => {
   selectedFile.value = null
   setDefaultImageType()
-  removeBackground.value = false
+  transform.value = false
   errorMessage.value = ''
   successMessage.value = ''
   if (fileInput.value) {
