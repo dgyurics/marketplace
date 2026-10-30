@@ -87,6 +87,7 @@ func (h *ImageRoutes) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// FIXME times out after 30 seconds. implement background running job + endpoint to poll status
 	// Transform if requested; the service checks whether transformations are enabled.
 	if transform {
 		if _, err := h.imageTransformService.Transform(r.Context(), imagePath, filename); err != nil {
