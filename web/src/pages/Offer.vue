@@ -12,20 +12,8 @@
       <h3 v-if="product" class="capitalize">{{ product.name }}</h3>
 
       <form @submit.prevent="handleSubmit">
-        <!-- TODO: convert to component -->
         <div class="form-group-flex">
-          <label for="offer-price">Your Offer</label>
-          <div class="price-input-wrapper">
-            <span class="price-symbol">$</span>
-            <input
-              id="offer-price"
-              v-model.number="displayOfferPrice"
-              type="number"
-              step="0.01"
-              min="0"
-              required
-            />
-          </div>
+          <InputCurrency id="offer-price" v-model="displayOfferPrice" label="Your Offer" required />
           <p class="help-text">Asking price: {{ displayPrice(product?.price || 0) }}</p>
         </div>
 
@@ -55,7 +43,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { TextArea } from '@/components/forms'
+import { InputCurrency, TextArea } from '@/components/forms'
 import { createOffer, getProductById, getOffersByProductId } from '@/services/api'
 import type { Product } from '@/types'
 import { displayPrice, toMajorUnits, toMinorUnits } from '@/utilities/currency'
@@ -144,51 +132,6 @@ h3 {
   flex-direction: column;
   margin-bottom: 20px;
   text-align: left;
-}
-
-.form-group-flex label {
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 8px;
-}
-
-.price-input-wrapper {
-  display: flex;
-  align-items: center;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.price-symbol {
-  padding: 10px 8px;
-  background-color: #f5f5f5;
-  border-right: 1px solid #ddd;
-  font-weight: 500;
-  color: #333;
-}
-
-.price-input-wrapper input {
-  flex: 1;
-  border: none;
-  padding: 10px;
-  font-size: 14px;
-}
-
-.price-input-wrapper input::-webkit-outer-spin-button,
-.price-input-wrapper input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.price-input-wrapper input[type='number'] {
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-
-.price-input-wrapper input:focus {
-  outline: none;
-  background-color: #fafafa;
 }
 
 .help-text {
