@@ -97,8 +97,8 @@ const categoryOptions = computed(() =>
 )
 
 const displayPrice = computed({
-  get: () => toMajorUnits(editProduct.value.price),
-  set: (value) => (editProduct.value.price = toMinorUnits(value)),
+  get: () => (editProduct.value.price === '' ? '' : toMajorUnits(editProduct.value.price)),
+  set: (value) => (editProduct.value.price = value === '' ? '' : toMinorUnits(value)),
 })
 
 const editProduct = ref({

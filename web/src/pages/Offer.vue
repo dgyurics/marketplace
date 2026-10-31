@@ -56,14 +56,14 @@ const route = useRoute()
 
 const product = ref<Product | null>(null)
 const comment = ref('')
-const offerPriceValue = ref<number>(0)
+const offerPriceValue = ref<number | ''>('')
 const success = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
 
 const displayOfferPrice = computed({
-  get: () => toMajorUnits(offerPriceValue.value),
-  set: (value) => (offerPriceValue.value = toMinorUnits(value)),
+  get: () => (offerPriceValue.value === '' ? '' : toMajorUnits(offerPriceValue.value)),
+  set: (value) => (offerPriceValue.value = value === '' ? '' : toMinorUnits(value)),
 })
 
 onMounted(async () => {
@@ -78,7 +78,7 @@ onMounted(async () => {
 const handleSubmit = async () => {
   errorMessage.value = null
 
-  if (offerPriceValue.value === null || offerPriceValue.value < 0) {
+  if (offerPriceValue.value === '' || offerPriceValue.value < 0) {
     errorMessage.value = 'Invalid offer amount'
     return
   }
