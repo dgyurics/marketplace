@@ -175,8 +175,8 @@ const props = defineProps({
 
 const currentStep = ref(1)
 const displayPrice = computed({
-  get: () => toMajorUnits(newProduct.value.price),
-  set: (value) => (newProduct.value.price = toMinorUnits(value)),
+  get: () => (newProduct.value.price === '' ? '' : toMajorUnits(newProduct.value.price)),
+  set: (value) => (newProduct.value.price = value === '' ? '' : toMinorUnits(value)),
 })
 
 const categoryOptions = computed(() =>
@@ -190,7 +190,7 @@ const successMessage = ref('')
 
 const newProduct = ref({
   name: '',
-  price: 0,
+  price: '',
   summary: '',
   description: '',
   tax_code: '',
@@ -327,7 +327,7 @@ const resetAndStart = () => {
   currentStep.value = 1
   newProduct.value = {
     name: '',
-    price: 0,
+    price: '',
     summary: '',
     description: '',
     tax_code: '',
