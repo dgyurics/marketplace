@@ -199,7 +199,7 @@ const newProduct = ref({
   cart_limit: '',
   category: '',
   featured: true,
-  sort_order: 0,
+  sort_order: '',
 })
 
 const goToStep = async (step) => {
@@ -247,7 +247,7 @@ const createProduct = async () => {
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit || undefined,
       featured: newProduct.value.featured,
-      sort_order: newProduct.value.sort_order,
+      sort_order: newProduct.value.sort_order || 0,
       ...(categoryId && { category: { id: categoryId } }),
     }
 
@@ -273,7 +273,7 @@ const updateProduct = async () => {
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit || undefined,
       featured: newProduct.value.featured,
-      sort_order: newProduct.value.sort_order,
+      sort_order: newProduct.value.sort_order || 0,
       ...(categoryId && { category: { id: categoryId } }),
     }
 
@@ -304,7 +304,7 @@ const handleSubmit = async () => {
       inventory: newProduct.value.inventory,
       cart_limit: newProduct.value.cart_limit || undefined,
       featured: newProduct.value.featured,
-      sort_order: newProduct.value.sort_order,
+      sort_order: newProduct.value.sort_order || 0,
       ...(categoryId && { category: { id: categoryId } }),
     }
 
@@ -336,7 +336,7 @@ const resetAndStart = () => {
     cart_limit: '',
     category: '',
     featured: true,
-    sort_order: 0,
+    sort_order: '',
   }
   tempProductId.value = null
   tempProductImages.value = []
