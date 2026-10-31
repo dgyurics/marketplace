@@ -23,11 +23,10 @@
               type="number"
               step="0.01"
               min="0"
-              placeholder="0.00"
               required
             />
           </div>
-          <p class="help-text">Product price: {{ displayPrice(product?.price || 0) }}</p>
+          <p class="help-text">Asking price: {{ displayPrice(product?.price || 0) }}</p>
         </div>
 
         <!-- Optional comment -->
