@@ -49,7 +49,7 @@ onMounted(async () => {
     checkoutStore.shippingAddress = order.address
     checkoutStore.order_id = order.id
     checkoutStore.stripe_client_secret = payment_intent_client_secret as string
-    checkoutStore.paymentError = 'Payment failed. Try again or use a different payment method.'
+    checkoutStore.paymentError = 'Payment failed.'
     router.push('/checkout/payment')
   }
 })

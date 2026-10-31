@@ -67,7 +67,7 @@ const loadConversations = async () => {
   } catch (error: unknown) {
     const status = (error as { response?: { status?: number } })?.response?.status
     if (status === 401) {
-      errorMessage.value = 'Please log in to view your inbox'
+      errorMessage.value = 'Log in to view your inbox'
     } else if (status === 403) {
       errorMessage.value = 'Access denied'
     } else {

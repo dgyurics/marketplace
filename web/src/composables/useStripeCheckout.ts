@@ -65,7 +65,7 @@ export function useStripeCheckout(paymentFormRef: Ref<PaymentFormRef | null>) {
       const message =
         error instanceof Error
           ? error.message
-          : 'Payment failed. Try again or use a different payment method.'
+          : 'Payment failed.'
       checkoutStore.paymentError = message
     } finally {
       isSubmitting.value = false

@@ -116,7 +116,7 @@ async function confirmPayment(
   if (error) throw new Error(error.message)
 
   if (paymentIntent?.status !== 'succeeded' && paymentIntent?.status !== 'processing') {
-    throw new Error('Payment was not completed. Please try again.')
+    throw new Error('Payment was not completed.')
   }
 }
 

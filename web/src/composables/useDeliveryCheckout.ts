@@ -42,7 +42,7 @@ export function useDeliveryCheckout() {
       await confirmWithRetry()
       router.push('/checkout/confirmation')
     } catch {
-      checkoutStore.paymentError = 'Unable to place order. Please try again.'
+      checkoutStore.paymentError = 'Unable to place order.'
     } finally {
       isSubmitting.value = false
     }
