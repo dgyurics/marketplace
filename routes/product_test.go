@@ -15,13 +15,6 @@ import (
 
 type dummyAuth struct{}
 
-func (d dummyAuth) AuthenticateUser(next http.HandlerFunc) http.HandlerFunc {
-	return next
-}
-func (d dummyAuth) AuthenticateAdmin(next http.HandlerFunc) http.HandlerFunc {
-	return next
-}
-
 func (d dummyAuth) RequireRole(role types.Role) func(next http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return next
@@ -32,7 +25,6 @@ func (d dummyAuth) OptionalAuth(next http.HandlerFunc) http.HandlerFunc {
 	return next
 }
 
-// Mocking the ProductService
 type MockProductService struct {
 	mock.Mock
 }
@@ -63,10 +55,8 @@ func (m *MockProductService) RemoveProduct(ctx context.Context, id string) error
 }
 
 func TestGetProductByID(t *testing.T) {
-	// Create a mock service
 	mockService := new(MockProductService)
 
-	// Set up the routes with the mock service
 	routes := &ProductRoutes{
 		productService: mockService,
 		router: router{
@@ -75,11 +65,9 @@ func TestGetProductByID(t *testing.T) {
 		},
 	}
 
-	// Register all routes
 	routes.RegisterRoutes()
 
-	// Create a sample product that will be returned by the mock service
-	product := &types.Product{
+	product := types.Product{
 		ID:          "1",
 		Name:        "Test Product",
 		Price:       100000,
@@ -88,51 +76,30 @@ func TestGetProductByID(t *testing.T) {
 		Inventory:   10,
 	}
 
-	// Set up the expected behavior of the mock service
-	mockService.On("GetProductByID", mock.Anything, "1").Return(*product, nil)
+	mockService.On("GetProductByID", mock.Anything, "1").Return(product, nil).Once()
 
-	// Create a new HTTP request with the product ID in the URL
-	req, err := http.NewRequest(http.MethodGet, "/products/1", nil)
-	require.NoError(t, err)
-
-	// Create a response recorder to capture the response
+	req := httptest.NewRequest(http.MethodGet, "/products/1", nil)
 	rr := httptest.NewRecorder()
-
-	// Serve the request via the router
 	routes.mux.ServeHTTP(rr, req)
 
-	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
 
-	// Check the response body is what you expect
-	var responseProduct types.Product
-	err = json.NewDecoder(rr.Body).Decode(&responseProduct)
+	expected, err := json.Marshal(product)
 	require.NoError(t, err)
-
-	require.Equal(t, product.ID, responseProduct.ID)
-	require.Equal(t, product.Name, responseProduct.Name)
-	require.Equal(t, product.Price, responseProduct.Price)
-	require.Equal(t, product.Summary, responseProduct.Summary)
-	require.Equal(t, product.Description, responseProduct.Description)
-
-	// Assert that the mock's expectations were met
+	require.JSONEq(t, string(expected), rr.Body.String())
 	mockService.AssertExpectations(t)
 }
 
 func TestGetProducts(t *testing.T) {
-	// Create a mock service
 	mockService := new(MockProductService)
 
-	// Set up the routes with the mock service
 	routes := &ProductRoutes{
 		productService: mockService,
 		router: router{
-			mux:            http.NewServeMux(),
-			authMiddleware: nil,
+			mux: http.NewServeMux(),
 		},
 	}
 
-	// Create a sample list of products that will be returned by the mock service
 	products := []types.Product{
 		{
 			ID:          "1",
@@ -150,34 +117,18 @@ func TestGetProducts(t *testing.T) {
 		},
 	}
 
-	// Set up the expected behavior of the mock service
-	mockService.On("GetProducts", mock.Anything, mock.Anything).Return(products, nil)
+	mockService.On("GetProducts", mock.Anything, mock.Anything).Return(products, nil).Once()
 
-	// Create a new HTTP request
-	req, err := http.NewRequest(http.MethodGet, "/products", nil)
-	require.NoError(t, err)
-
-	// Create a response recorder to capture the response
+	req := httptest.NewRequest(http.MethodGet, "/products", nil)
 	rr := httptest.NewRecorder()
-
-	// Add the route to the mux router
 	routes.mux.HandleFunc("GET /products", routes.GetProducts)
-
-	// Serve the request via the router
 	routes.mux.ServeHTTP(rr, req)
 
-	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
 
-	// Check the response body is what you expect
-	var responseProducts []types.Product
-	err = json.NewDecoder(rr.Body).Decode(&responseProducts)
+	expected, err := json.Marshal(products)
 	require.NoError(t, err)
+	require.JSONEq(t, string(expected), rr.Body.String())
 
-	require.Len(t, responseProducts, len(products))
-	require.Equal(t, products[0].Name, responseProducts[0].Name)
-	require.Equal(t, products[1].Name, responseProducts[1].Name)
-
-	// Assert that the mock's expectations were met
 	mockService.AssertExpectations(t)
 }

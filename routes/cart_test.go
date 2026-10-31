@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -40,13 +39,10 @@ func (m *MockCartService) RemoveItems(ctx context.Context) error {
 
 func TestAddItem(t *testing.T) {
 	mockCartService := new(MockCartService)
-	mockOrderService := new(MockOrderService)
 	routes := &CartRoutes{
-		cartService:  mockCartService,
-		orderService: mockOrderService,
+		cartService: mockCartService,
 		router: router{
-			mux:            http.NewServeMux(),
-			authMiddleware: nil,
+			mux: http.NewServeMux(),
 		},
 	}
 
@@ -55,86 +51,51 @@ func TestAddItem(t *testing.T) {
 		Quantity: 2,
 		Product: types.Product{
 			ID:      productID,
-			Details: json.RawMessage("{\"key\":\"value\"}"),
+			Details: json.RawMessage(`{"key":"value"}`),
 		},
 	}
 
-	mockCartService.On("AddItem", mock.Anything, &item).Return(nil)
-	mockOrderService.On("GetPendingOrderForUser", mock.Anything).Return(
-		types.Order{},
-		types.ErrNotFound,
-	)
+	mockCartService.On("AddItem", mock.Anything, &item).Return(nil).Once()
 
-	// Create a new HTTP POST request with the cart ID in the URL and the item as the payload
-	payload, _ := json.Marshal(item)
-	url := fmt.Sprintf("/carts/items/%s", productID)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
+	payload, err := json.Marshal(item)
 	require.NoError(t, err)
-
-	// Create a response recorder to capture the response
+	url := "/carts/items/" + productID
+	req := httptest.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
 	rr := httptest.NewRecorder()
-
-	// Add the route to the mux router
 	routes.mux.HandleFunc("POST /carts/items/{id}", routes.AddItem)
-
-	// Serve the request via the router
 	routes.mux.ServeHTTP(rr, req)
 
-	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
-
-	// Assert that the mock's expectations were met
 	mockCartService.AssertExpectations(t)
 }
 
 func TestRemoveItem(t *testing.T) {
 	mockCartService := new(MockCartService)
-	mockOrderService := new(MockOrderService)
 	routes := &CartRoutes{
-		cartService:  mockCartService,
-		orderService: mockOrderService,
+		cartService: mockCartService,
 		router: router{
-			mux:            http.NewServeMux(),
-			authMiddleware: nil,
+			mux: http.NewServeMux(),
 		},
 	}
 
 	productID := "test-product-id"
-	mockCartService.On("RemoveItem", mock.Anything, productID).Return(nil)
-	mockOrderService.On("GetPendingOrderForUser", mock.Anything).Return(
-		types.Order{},
-		types.ErrNotFound,
-	)
+	mockCartService.On("RemoveItem", mock.Anything, productID).Return(nil).Once()
 
-	// Create a new HTTP DELETE request with cartID and productID in the URL
-	req, err := http.NewRequest(http.MethodDelete, "/carts/items/"+productID, nil)
-	require.NoError(t, err)
-
-	// Create a response recorder to capture the response
+	req := httptest.NewRequest(http.MethodDelete, "/carts/items/"+productID, nil)
 	rr := httptest.NewRecorder()
-
-	// Add the route to the mux router
 	routes.mux.HandleFunc("DELETE /carts/items/{id}", routes.RemoveItem)
-
-	// Serve the request via the router
 	routes.mux.ServeHTTP(rr, req)
 
-	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
-
-	// Assert that the mock's expectations were met
 	mockCartService.AssertExpectations(t)
 }
 
-func TestGet(t *testing.T) {
+func TestGetCartItems(t *testing.T) {
 	mockCartService := new(MockCartService)
-	mockOrderService := new(MockOrderService)
 	routes := &CartRoutes{
-		cartService:  mockCartService,
-		orderService: mockOrderService,
+		cartService: mockCartService,
 		router: router{
-			mux:            http.NewServeMux(),
-			authMiddleware: nil,
+			mux: http.NewServeMux(),
 		},
 	}
 
@@ -142,54 +103,37 @@ func TestGet(t *testing.T) {
 		{
 			Product:   types.Product{ID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8"},
 			Quantity:  2,
-			UnitPrice: 1000, // Set an appropriate unit price
+			UnitPrice: 1000,
 		},
 	}
 
-	mockCartService.On("GetItems", mock.Anything).Return(expectedCart, nil)
+	mockCartService.On("GetItems", mock.Anything).Return(expectedCart, nil).Once()
 
-	// Create a new HTTP GET request with cartID in the URL
-	req, err := http.NewRequest(http.MethodGet, "/carts", nil)
-	require.NoError(t, err)
-
-	// Create a response recorder to capture the response
+	req := httptest.NewRequest(http.MethodGet, "/carts", nil)
 	rr := httptest.NewRecorder()
-
-	// Add the route to the mux router
 	routes.mux.HandleFunc("GET /carts", routes.GetItems)
-
-	// Serve the request via the router
 	routes.mux.ServeHTTP(rr, req)
 
-	// Check the status code is what you expect
 	require.Equal(t, http.StatusOK, rr.Code)
 
-	// Decode the response body
-	var responseCart []types.CartItem
-	err = json.NewDecoder(rr.Body).Decode(&responseCart)
+	expected, err := json.Marshal(expectedCart)
 	require.NoError(t, err)
-
-	// Assert that the mock's expectations were met
+	require.JSONEq(t, string(expected), rr.Body.String())
 	mockCartService.AssertExpectations(t)
 }
 
 func TestRemoveItems(t *testing.T) {
 	mockCartService := new(MockCartService)
-	mockOrderService := new(MockOrderService)
 	routes := &CartRoutes{
-		cartService:  mockCartService,
-		orderService: mockOrderService,
+		cartService: mockCartService,
 		router: router{
-			mux:            http.NewServeMux(),
-			authMiddleware: nil,
+			mux: http.NewServeMux(),
 		},
 	}
 
-	mockCartService.On("RemoveItems", mock.Anything).Return(nil)
+	mockCartService.On("RemoveItems", mock.Anything).Return(nil).Once()
 
-	req, err := http.NewRequest(http.MethodDelete, "/carts", nil)
-	require.NoError(t, err)
-
+	req := httptest.NewRequest(http.MethodDelete, "/carts", nil)
 	rr := httptest.NewRecorder()
 	routes.mux.HandleFunc("DELETE /carts", routes.RemoveItems)
 	routes.mux.ServeHTTP(rr, req)
