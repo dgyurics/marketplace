@@ -1,6 +1,10 @@
 <template>
-  <div class="input-container">
-    <label :for="id">{{ label }}</label>
+  <div class="input-container" :class="{ 'input-container--inside': labelPosition === 'inside' }">
+    <label
+      :for="id"
+      :class="{ 'input-label--optional': labelPosition === 'inside' && !required }"
+      >{{ label }}</label
+    >
     <div class="price-input-wrapper">
       <span class="price-symbol">$</span>
       <input
@@ -23,6 +27,7 @@ const props = defineProps<{
   id: string
   label: string
   required?: boolean
+  labelPosition?: 'above' | 'inside'
 }>()
 
 const emit = defineEmits<{
@@ -37,6 +42,7 @@ const value = computed({
 
 <style scoped>
 .input-container {
+  position: relative;
   display: flex;
   flex-direction: column;
 }
@@ -65,6 +71,7 @@ const value = computed({
 
 .price-input-wrapper input {
   flex: 1;
+  min-width: 0;
   border: none;
   padding: 10px;
   font-size: 14px;
@@ -84,5 +91,36 @@ const value = computed({
 .price-input-wrapper input:focus {
   outline: none;
   background-color: #fafafa;
+}
+.input-container--inside label {
+  position: absolute;
+  top: 4px;
+  left: 32px;
+  z-index: 1;
+  margin-bottom: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: #666;
+  text-transform: capitalize;
+}
+
+.input-container--inside .input-label--optional {
+  font-style: italic;
+}
+
+.input-container--inside .price-input-wrapper {
+  align-items: stretch;
+  border-color: #ccc;
+  border-radius: 1px;
+}
+
+.input-container--inside .price-symbol {
+  display: flex;
+  align-items: center;
+}
+
+.input-container--inside input {
+  padding: 24px 12px 6px;
+  font-size: 16px;
 }
 </style>

@@ -28,7 +28,13 @@
 
           <div class="form-row-2col">
             <div class="form-group">
-              <InputNumber v-model="displayPrice" label="Price" step="0.01" required />
+              <InputCurrency
+                id="new-product-price"
+                v-model="displayPrice"
+                label="Price"
+                label-position="inside"
+                required
+              />
             </div>
             <div class="form-group">
               <InputNumber v-model="newProduct.inventory" label="Inventory" required />
@@ -156,7 +162,14 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-import { InputNumber, InputText, KeyValueEditor, SelectInput, TextArea } from '@/components/forms'
+import {
+  InputCurrency,
+  InputNumber,
+  InputText,
+  KeyValueEditor,
+  SelectInput,
+  TextArea,
+} from '@/components/forms'
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import * as authAPI from '@/services/api'
