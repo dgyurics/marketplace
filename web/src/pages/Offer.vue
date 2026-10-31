@@ -3,6 +3,10 @@
     <template v-if="success">
       <h2>Offer Submitted Successfully</h2>
     </template>
+    <template v-else-if="hasPendingOffer">
+      <h2>Offer Pending</h2>
+      <p>You already have a pending offer for this product.</p>
+    </template>
     <template v-else>
       <h2>Submit Offer</h2>
       <h3 v-if="product" class="capitalize">{{ product.name }}</h3>
@@ -32,7 +36,12 @@
         </div>
 
         <div class="button-group">
-          <button type="submit" class="btn-full-width mt-15" :tabindex="0" :disabled="isSubmitting">
+          <button
+            type="submit"
+            class="btn-full-width mt-15"
+            :tabindex="0"
+            :disabled="isSubmitting || !offersLoaded"
+          >
             <span v-if="!isSubmitting">Submit Offer</span>
           </button>
         </div>
@@ -48,7 +57,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { TextArea } from '@/components/forms'
-import { createOffer, getProductById } from '@/services/api'
+import { createOffer, getProductById, getOffersByProductId } from '@/services/api'
 import type { Product } from '@/types'
 import { displayPrice, toMajorUnits, toMinorUnits } from '@/utilities/currency'
 
@@ -60,6 +69,8 @@ const offerPriceValue = ref<number | ''>('')
 const success = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
+const hasPendingOffer = ref(false)
+const offersLoaded = ref(false)
 
 const displayOfferPrice = computed({
   get: () => (offerPriceValue.value === '' ? '' : toMajorUnits(offerPriceValue.value)),
@@ -70,12 +81,18 @@ onMounted(async () => {
   try {
     const productId = route.params['id'] as string
     product.value = await getProductById(productId)
+    const offers = await getOffersByProductId(productId)
+    hasPendingOffer.value = offers.some((offer) => offer.status === 'pending')
+    offersLoaded.value = true
   } catch (error) {
-    console.error('Error fetching product:', error)
+    console.error('Error loading offer form:', error)
+    errorMessage.value = 'Unable to load offer details.'
   }
 })
 
 const handleSubmit = async () => {
+  if (!offersLoaded.value || hasPendingOffer.value || isSubmitting.value) return
+
   errorMessage.value = null
 
   if (offerPriceValue.value === '' || offerPriceValue.value < 0) {

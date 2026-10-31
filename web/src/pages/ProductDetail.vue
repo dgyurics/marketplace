@@ -32,7 +32,11 @@
           </div>
         </div>
         <div>
-          <ProductActions :product="product" />
+          <ProductActions
+            v-if="product.id"
+            :product="product"
+            :has-pending-offer="offers.some((offer) => offer.status === 'pending')"
+          />
         </div>
       </div>
     </div>
@@ -87,16 +91,16 @@ onMounted(async () => {
   try {
     const productData = await getProductById(String(route.params['id']))
     productData.images = productData.images.filter((img) => img.type === 'gallery')
-    Object.assign(product, productData)
 
-    // Check if existing offers exists
-    if (isAuthenticated.value) {
+    // Load existing offers before displaying product actions.
+    if (isAuthenticated.value && authStore.hasMinimumRole('member') && productData.negotiable) {
       try {
         offers.value = await getOffersByProductId(String(route.params['id']))
       } catch (error) {
         console.error('Error fetching offers:', error)
       }
     }
+    Object.assign(product, productData)
   } catch (error) {
     console.error('Error fetching product:', error)
   }

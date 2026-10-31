@@ -1,8 +1,14 @@
 <template>
   <div class="product-action-buttons">
     <div class="top-row">
-      <button v-if="product.negotiable && isMember" class="btn-lg" :tabindex="0" @click="goToOffer">
-        Make an Offer
+      <button
+        v-if="product.negotiable && isMember"
+        class="btn-lg"
+        :disabled="hasPendingOffer || product.inventory < 1"
+        :tabindex="0"
+        @click="goToOffer"
+      >
+        {{ hasPendingOffer ? 'Offer Pending' : 'Make an Offer' }}
       </button>
       <button
         class="btn-lg"
@@ -44,6 +50,7 @@ import type { AuthTokens, Product } from '@/types'
 
 const props = defineProps<{
   product: Product
+  hasPendingOffer: boolean
 }>()
 
 const router = useRouter()
