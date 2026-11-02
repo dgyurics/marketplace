@@ -5,11 +5,20 @@ import (
 	"strings"
 )
 
+type ProductStatus string
+
+const (
+	ProductDraft     ProductStatus = "draft"
+	ProductPublished ProductStatus = "published"
+	ProductArchived  ProductStatus = "archived"
+)
+
 // FIXME update ALL ID fields to be int64 to avoid implicit type conversion by Postgres
 // The below example fixes this issue/overhead while still returning ID fields as string to UI
 // ID int64 `json:"id,string"` // Serializes as string in JSON
 type Product struct {
 	ID          string          `json:"id"`
+	Status      *ProductStatus  `json:"status"`
 	Name        string          `json:"name"`
 	Price       int64           `json:"price"`
 	Details     json.RawMessage `json:"details"`
