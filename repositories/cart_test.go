@@ -13,6 +13,7 @@ import (
 
 // Helper function to create a unique test user
 func createUniqueTestUser(t *testing.T, userRepo UserRepository) *types.User {
+	t.Helper()
 	ctx := context.Background()
 
 	// Generate a unique email using random numbers and current timestamp
@@ -36,6 +37,7 @@ func createUniqueTestUser(t *testing.T, userRepo UserRepository) *types.User {
 
 // Helper function to create a unique guest user
 func createUniqueGuestUser(t *testing.T, userRepo UserRepository) *types.User {
+	t.Helper()
 	ctx := context.Background()
 
 	// Create a new guest user object with nil password, unverified, and empty email

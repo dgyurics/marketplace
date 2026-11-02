@@ -166,6 +166,7 @@ func generateTestEndpoint(prefix string) string {
 
 // Helper function to clean up test data
 func cleanupRateLimit(t *testing.T, ip, path string) {
+	t.Helper()
 	ctx := context.Background()
 
 	// Parse IP to ensure it's valid for INET type

@@ -13,6 +13,7 @@ import (
 
 // Helper function to insert a test address for a user
 func createTestAddress(t *testing.T, db *sql.DB, userID string) string {
+	t.Helper()
 	ctx := context.Background()
 	addressID := utilities.MustGenerateIDString()
 

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"github.com/dgyurics/marketplace/types"
@@ -10,242 +11,117 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// newProductFixture creates a category and returns a product ready to insert.
+func newProductFixture(t *testing.T) *types.Product {
+	t.Helper()
+	ctx := context.Background()
+	categoryID := util.MustGenerateIDString()
+	category := &types.Category{
+		ID:          categoryID,
+		Name:        "Test Category",
+		Slug:        "test-category-" + categoryID,
+		Description: "A test category",
+	}
+	t.Cleanup(func() {
+		_, err := dbPool.ExecContext(ctx, "DELETE FROM categories WHERE id = $1", category.ID)
+		assert.NoError(t, err)
+	})
+	require.NoError(t, NewCategoryRepository(dbPool).CreateCategory(ctx, category))
+
+	product := &types.Product{
+		ID:          util.MustGenerateIDString(),
+		Status:      util.Ptr(types.ProductPublished),
+		Name:        "Test Product",
+		Price:       150000,
+		Summary:     "A test product summary",
+		Description: util.Ptr("A test product description"),
+		Details:     []byte(`{"key": "value"}`),
+		Category:    category,
+	}
+	t.Cleanup(func() {
+		_, err := dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
+		assert.NoError(t, err)
+	})
+	return product
+}
+
 func TestCreateProduct(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
+	product := newProductFixture(t)
 
-	// create category
-	catRepo := NewCategoryRepository(dbPool)
-	categoryID, _ := util.GenerateIDString()
-	category := types.Category{
-		ID:          categoryID,
-		Name:        "Test Category",
-		Slug:        "test-category-23e32",
-		Description: "A test category",
-	}
-	err := catRepo.CreateCategory(ctx, &category)
-	assert.NoError(t, err, "Expected no error on category creation")
+	require.NoError(t, repo.CreateProduct(ctx, product))
 
-	product := &types.Product{
-		Name:        "Test Product with Category",
-		Price:       150000,
-		Description: util.Ptr("A test product with category description"),
-		Details:     []byte(`{"key": "value"}`),
-		Category:    &category,
-	}
-	product.ID, _ = util.GenerateIDString()
-
-	err = repo.CreateProduct(ctx, product)
-	assert.NoError(t, err, "Expected no error on product creation with category")
-	assert.NotEmpty(t, product.ID, "Expected product ID to be set")
-	assert.Equal(t, "Test Product with Category", product.Name, "Expected product name to match")
-	assert.Equal(t, "A test product with category description", *product.Description, "Expected product description to match")
-	expectedPrice := int64(150000)
-	assert.Equal(t, expectedPrice, product.Price, "Expected product price to match")
-
-	// Clean up
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
-	assert.NoError(t, err, "Expected no error on product deletion")
-
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM categories WHERE id = $1", categoryID)
-	assert.NoError(t, err, "Expected no error on category deletion")
+	saved, err := repo.GetProductByID(ctx, product.ID)
+	require.NoError(t, err)
+	assert.Equal(t, product.ID, saved.ID)
+	assert.Equal(t, product.Name, saved.Name)
+	assert.Equal(t, product.Price, saved.Price)
+	assert.Equal(t, product.Summary, saved.Summary)
+	assert.Equal(t, product.Description, saved.Description)
+	assert.Equal(t, product.Status, saved.Status)
+	assert.JSONEq(t, string(product.Details), string(saved.Details))
+	require.NotNil(t, saved.Category)
+	assert.Equal(t, product.Category.ID, saved.Category.ID)
 }
 
 func TestGetProducts(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
+	product := newProductFixture(t)
+	require.NoError(t, repo.CreateProduct(ctx, product))
 
-	// create category
-	catRepo := NewCategoryRepository(dbPool)
-	categoryID, _ := util.GenerateIDString()
-	category := types.Category{
-		ID:          categoryID,
-		Name:        "Test Category",
-		Slug:        "test-category-1111",
-		Description: "A test category",
-	}
-	err := catRepo.CreateCategory(ctx, &category)
-	assert.NoError(t, err, "Expected no error on category creation")
-
-	// Add a test product for retrieval
-	product := &types.Product{
-		Name:        "Test Product for GetAll",
-		Price:       200000,
-		Description: util.Ptr("A test product for get all"),
-		Details:     []byte(`{"key": "value"}`),
-		Category:    &category,
-	}
-	product.ID, _ = util.GenerateIDString()
-
-	err = repo.CreateProduct(ctx, product)
-	assert.NoError(t, err, "Expected no error on product creation")
-	assert.NotEmpty(t, product.ID, "Expected product ID to be set")
-
-	// Get all products
 	products, err := repo.GetProducts(ctx, types.ProductFilter{Limit: 1000, Page: 1})
-	assert.NoError(t, err, "Expected no error on getting all products")
-	assert.NotEmpty(t, products, "Expected products list to not be empty")
-
-	// Verify the product exists in the list
-	var found bool
-	for _, p := range products {
-		if p.ID == product.ID {
-			found = true
-			break
-		}
-	}
-	assert.True(t, found, "Expected to find the created product in the products list")
-
-	// Clean up
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
-	assert.NoError(t, err, "Expected no error on product deletion")
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM categories WHERE id = $1", categoryID)
-	assert.NoError(t, err, "Expected no error on category deletion")
+	require.NoError(t, err)
+	index := slices.IndexFunc(products, func(p types.Product) bool { return p.ID == product.ID })
+	require.NotEqual(t, -1, index, "created product missing from list")
+	assert.Equal(t, product.Status, products[index].Status)
 }
 
 func TestGetProductsByCategory(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
+	product := newProductFixture(t)
+	require.NoError(t, repo.CreateProduct(ctx, product))
 
-	// Create a test category
-	catRepo := NewCategoryRepository(dbPool)
-	categoryID, _ := util.GenerateIDString()
-	category := types.Category{
-		ID:          categoryID,
-		Name:        "Test Category for Filtering",
-		Slug:        "test-category-filtering",
-		Description: "Category for testing product filtering",
-	}
-	err := catRepo.CreateCategory(ctx, &category)
-	require.NoError(t, err, "Expected no error on category creation")
-
-	// Create a product linked to that category
-	product := &types.Product{
-		Name:        "Test Product with Category",
-		Price:       200000,
-		Description: util.Ptr("A test product with a category"),
-		Details:     []byte(`{"key": "value"}`),
-		Category:    &category,
-	}
-	product.ID, _ = util.GenerateIDString()
-
-	err = repo.CreateProduct(ctx, product)
-	require.NoError(t, err, "Expected no error on product creation with category")
-	require.NotEmpty(t, product.ID, "Expected product ID to be set")
-
-	// Get products filtered by the category slug
 	products, err := repo.GetProducts(ctx, types.ProductFilter{
-		Categories: []string{"test-category-filtering"},
+		Categories: []string{product.Category.Slug},
 		Limit:      100,
 		Page:       1,
 	})
-	require.NoError(t, err, "Expected no error on getting products by category")
-	require.NotEmpty(t, products, "Expected products list to not be empty")
-
-	// Verify that the product exists in the list
-	var found bool
-	for _, p := range products {
-		if p.ID == product.ID {
-			found = true
-			break
-		}
-	}
-	assert.True(t, found, "Expected to find the created product in the filtered products list")
-
-	// Clean up
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
-	assert.NoError(t, err, "Expected no error on product deletion")
-
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM categories WHERE id = $1", categoryID)
-	assert.NoError(t, err, "Expected no error on category deletion")
+	require.NoError(t, err)
+	require.Len(t, products, 1)
+	assert.Equal(t, product.ID, products[0].ID)
+	assert.Equal(t, product.Status, products[0].Status)
 }
 
 func TestGetProductByID(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
+	product := newProductFixture(t)
+	require.NoError(t, repo.CreateProduct(ctx, product))
 
-	// create category
-	catRepo := NewCategoryRepository(dbPool)
-	categoryID, _ := util.GenerateIDString()
-	category := types.Category{
-		ID:          categoryID,
-		Name:        "Test Category",
-		Slug:        "test-category-0000",
-		Description: "A test category",
-	}
-	err := catRepo.CreateCategory(ctx, &category)
-	assert.NoError(t, err, "Expected no error on category creation")
-
-	// Add a test product for retrieval
-	product := &types.Product{
-		Name:        "Test Product for GetByID",
-		Price:       250000,
-		Description: util.Ptr("A test product for get by ID"),
-		Details:     []byte(`{"key": "value"}`),
-		Category:    &category,
-	}
-	product.ID, _ = util.GenerateIDString()
-
-	err = repo.CreateProduct(ctx, product)
-	assert.NoError(t, err, "Expected no error on product creation")
-
-	// Get product by ID
-	retrievedProduct, err := repo.GetProductByID(ctx, product.ID)
-	assert.NoError(t, err, "Expected no error on getting product by ID")
-	assert.NotNil(t, retrievedProduct, "Expected retrieved product to not be nil")
-	assert.NotEmpty(t, retrievedProduct.ID, "Expected retrieved product ID to not be empty")
-	assert.Equal(t, product.ID, retrievedProduct.ID, "Expected product ID to match")
-	assert.Equal(t, product.Name, retrievedProduct.Name, "Expected product name to match")
-	assert.Equal(t, product.Description, retrievedProduct.Description, "Expected product description to match")
-	assert.Equal(t, product.Price, retrievedProduct.Price, "Expected product price to match")
-
-	// Clean up
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
-	assert.NoError(t, err, "Expected no error on product deletion")
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM categories WHERE id = $1", categoryID)
-	assert.NoError(t, err, "Expected no error on category deletion")
+	saved, err := repo.GetProductByID(ctx, product.ID)
+	require.NoError(t, err)
+	assert.Equal(t, product.ID, saved.ID)
+	assert.Equal(t, product.Name, saved.Name)
+	assert.Equal(t, product.Description, saved.Description)
+	assert.Equal(t, product.Price, saved.Price)
+	assert.Equal(t, product.Status, saved.Status)
 }
 
-func TestDeleteProduct(t *testing.T) {
+func TestRemoveProduct(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()
+	product := newProductFixture(t)
+	require.NoError(t, repo.CreateProduct(ctx, product))
 
-	// create category
-	catRepo := NewCategoryRepository(dbPool)
-	categoryID, _ := util.GenerateIDString()
-	category := types.Category{
-		ID:          categoryID,
-		Name:        "Test Category",
-		Slug:        "test-category-033003",
-		Description: "A test category",
-	}
-	err := catRepo.CreateCategory(ctx, &category)
-	assert.NoError(t, err, "Expected no error on category creation")
+	require.NoError(t, repo.RemoveProduct(ctx, product.ID))
 
-	// Add a test product for deletion
-	product := &types.Product{
-		Name:        "Test Product for Deletion",
-		Price:       300000,
-		Description: util.Ptr("A test product for deletion"),
-		Details:     []byte(`{"key": "value"}`),
-		Category:    &category,
-	}
-	product.ID, _ = util.GenerateIDString()
+	_, err := repo.GetProductByID(ctx, product.ID)
+	assert.ErrorIs(t, err, types.ErrNotFound)
 
-	err = repo.CreateProduct(ctx, product)
-	assert.NoError(t, err, "Expected no error on product creation")
-
-	// Delete the product
-	err = repo.RemoveProduct(ctx, product.ID)
-	assert.NoError(t, err, "Expected no error on product deletion")
-
-	// Verify the product no longer exists
-	_, err = repo.GetProductByID(ctx, product.ID)
-	assert.Error(t, err, "Expected an error when getting a deleted product")
-
-	// Clean up
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM products WHERE id = $1", product.ID)
-	assert.NoError(t, err, "Expected no error on product deletion")
-	_, err = dbPool.ExecContext(ctx, "DELETE FROM categories WHERE id = $1", categoryID)
-	assert.NoError(t, err, "Expected no error on category deletion")
+	var status types.ProductStatus
+	require.NoError(t, dbPool.QueryRowContext(ctx, "SELECT status FROM products WHERE id = $1", product.ID).Scan(&status))
+	assert.Equal(t, types.ProductArchived, status)
 }
