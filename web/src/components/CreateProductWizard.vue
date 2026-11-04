@@ -74,6 +74,7 @@
             <TextArea
               v-model="newProduct.description"
               label="Description"
+              :resizable="true"
               placeholder="Detailed description of the product"
             ></TextArea>
           </div>
