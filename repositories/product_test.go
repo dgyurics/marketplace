@@ -65,6 +65,20 @@ func TestCreateProduct(t *testing.T) {
 	assert.Equal(t, product.Category.ID, saved.Category.ID)
 }
 
+func TestCreateProductDefaultsStatus(t *testing.T) {
+	repo := NewProductRepository(dbPool)
+	product := newProductFixture(t)
+	product.Status = nil
+
+	require.NoError(t, repo.CreateProduct(context.Background(), product))
+
+	saved, err := repo.GetProductByID(context.Background(), product.ID)
+	require.NoError(t, err)
+	require.NotNil(t, saved.Status)
+	assert.Equal(t, types.ProductPublished, *saved.Status)
+	assert.Equal(t, saved.Status, product.Status)
+}
+
 func TestGetProducts(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	ctx := context.Background()

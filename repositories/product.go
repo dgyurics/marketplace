@@ -27,6 +27,10 @@ func NewProductRepository(db *sql.DB) ProductRepository {
 }
 
 func (r *productRepository) CreateProduct(ctx context.Context, product *types.Product) error {
+	if product.Status == nil {
+		status := types.ProductPublished
+		product.Status = &status
+	}
 	var categoryID sql.NullString
 	if product.Category != nil {
 		categoryID = sql.NullString{String: product.Category.ID, Valid: true}
