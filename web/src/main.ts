@@ -19,16 +19,14 @@ async function initApp() {
   // Register auth directive
   app.use(authDirective)
 
-  // Initialize cart store
-  // Pre-flight http interceptor, apiClient.interceptors, will initialize auth store as well
-  // Feels hacky but works for now...
-  await useCartStore().fetchCart()
+  // Cart loads in the background; it must not delay the first render.
+  // The apiClient request interceptor refreshes an expired access token before each request
+  // (concurrent requests share one refresh).
+  useCartStore().fetchCart()
 
-  const router = await createAppRouter()
+  // Config and categories (router) are required before render; load them concurrently.
+  const [router] = await Promise.all([createAppRouter(), initializeConfig()])
   app.use(router)
-
-  // Initialize app config before creating the app
-  await initializeConfig()
 
   app.mount('#app')
 }

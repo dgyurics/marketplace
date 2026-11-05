@@ -43,6 +43,8 @@ const apiClient = axios.create({
  * Ensures the access token is valid and refreshes it if necessary.
  * @returns {Promise<string | null>} The access token if valid, otherwise null.
  */
+let refreshing: Promise<string | null> | null = null
+
 async function ensureAccessToken(): Promise<string | null> {
   const authStore = useAuthStore()
   const { accessToken, setTokens, refreshToken, clearTokens, isTokenExpired } = authStore
@@ -53,14 +55,20 @@ async function ensureAccessToken(): Promise<string | null> {
 
   if (!refreshToken) return null
 
-  try {
-    const authTokens: AuthTokens = await getNewAccessToken(refreshToken)
-    setTokens(authTokens)
-    return authTokens.token
-  } catch {
-    clearTokens()
-    return null
-  }
+  // Concurrent requests share a single refresh call
+  refreshing ??= getNewAccessToken(refreshToken)
+    .then((authTokens: AuthTokens) => {
+      setTokens(authTokens)
+      return authTokens.token
+    })
+    .catch(() => {
+      clearTokens()
+      return null
+    })
+    .finally(() => {
+      refreshing = null
+    })
+  return refreshing
 }
 
 apiClient.interceptors.request.use(async (config) => {
