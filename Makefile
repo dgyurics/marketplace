@@ -64,7 +64,7 @@ dev-backend: build-backend
 	./$(BINARY)
 
 dev-frontend:
-	cd $(WEB_DIR) && npm run dev
+	cd $(WEB_DIR) && npm run dev -- --open http://localhost
 
 # ============================================================================
 # Build
