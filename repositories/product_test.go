@@ -32,7 +32,7 @@ func newProductFixture(t *testing.T) *types.Product {
 		ID:          util.MustGenerateIDString(),
 		Status:      util.Ptr(types.ProductPublished),
 		Name:        "Test Product",
-		Price:       150000,
+		Price:       util.Ptr(int64(150000)),
 		Summary:     "A test product summary",
 		Description: util.Ptr("A test product description"),
 		Details:     []byte(`{"key": "value"}`),

@@ -20,7 +20,7 @@ type Product struct {
 	ID          string          `json:"id"`
 	Status      *ProductStatus  `json:"status"`
 	Name        string          `json:"name"`
-	Price       int64           `json:"price"`
+	Price       *int64          `json:"price"`
 	Details     json.RawMessage `json:"details"`
 	Summary     string          `json:"summary"`
 	Description *string         `json:"description,omitempty"`
