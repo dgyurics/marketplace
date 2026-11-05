@@ -110,6 +110,7 @@ func (h *ProductRoutes) RemoveProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductRoutes) RegisterRoutes() {
+	// TODO add an admin-only endpoint which also returns draft products
 	h.mux.HandleFunc("GET /products", h.GetProducts)
 	h.mux.HandleFunc("GET /products/{id}", h.GetProduct)
 	h.mux.Handle("POST /products", h.secure(types.RoleAdmin)(h.CreateProduct))

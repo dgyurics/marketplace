@@ -114,7 +114,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 		queryBuilder.WriteString(`
 			SELECT p.id, p.name, p.price, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.images, p.status
 			FROM v_products p
-			WHERE true
+			WHERE p.status = 'published'
 		`)
 	} else {
 		placeholders := make([]string, 0, len(filter.Categories))
@@ -132,7 +132,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 			SELECT p.id, p.name, p.price, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.images, p.status
 			FROM v_products p
 			JOIN category_tree ct ON ct.id = p.category_id
-			WHERE true
+			WHERE p.status = 'published'
 		`, strings.Join(placeholders, ", ")))
 	}
 
