@@ -46,7 +46,9 @@
           <div v-for="item in order.items" :key="item.product.id" class="order-item">
             <div class="item-info">
               <span class="item-name">{{ item.product.name }}</span>
-              <span class="item-summary">{{ item.product.summary }}</span>
+              <span v-if="item.product.summary" class="item-summary">{{
+                item.product.summary
+              }}</span>
             </div>
             <div class="item-details">
               <span class="item-quantity">Qty: {{ item.quantity }}</span>

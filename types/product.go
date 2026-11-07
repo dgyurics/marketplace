@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"strings"
+	"time"
 )
 
 type ProductStatus string
@@ -13,16 +14,13 @@ const (
 	ProductArchived  ProductStatus = "archived"
 )
 
-// FIXME update ALL ID fields to be int64 to avoid implicit type conversion by Postgres
-// The below example fixes this issue/overhead while still returning ID fields as string to UI
-// ID int64 `json:"id,string"` // Serializes as string in JSON
 type Product struct {
 	ID          string          `json:"id"`
-	Status      *ProductStatus  `json:"status"`
 	Name        string          `json:"name"`
 	Price       *int64          `json:"price"`
+	Status      *ProductStatus  `json:"status"`
 	Details     json.RawMessage `json:"details"`
-	Summary     string          `json:"summary"`
+	Summary     *string         `json:"summary"`
 	Description *string         `json:"description,omitempty"`
 	Images      []Image         `json:"images"`
 	Category    *Category       `json:"category"`
@@ -32,8 +30,8 @@ type Product struct {
 	SortOrder   int             `json:"sort_order"`
 	Negotiable  bool            `json:"negotiable"`
 	CartLimit   *int            `json:"cart_limit,omitempty"`
-	CreatedAt   string          `json:"created_at"`
-	UpdatedAt   string          `json:"updated_at"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
 }
 
 type ImageType string

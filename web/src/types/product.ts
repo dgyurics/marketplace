@@ -4,7 +4,7 @@ export interface Product {
   id: string
   name: string
   price: number
-  summary: string
+  summary?: string | null
   details: Record<string, unknown>
   images: Image[]
   inventory: number

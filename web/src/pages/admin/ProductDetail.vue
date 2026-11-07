@@ -10,7 +10,7 @@
           <InputNumber v-model="editProduct.sort_order" label="sort order" min="0" />
           <InputText v-model="editProduct.tax_code" label="tax code" />
           <SelectInput v-model="editProduct.category" label="category" :options="categoryOptions" />
-          <InputText v-model="editProduct.summary" label="summary" required />
+          <InputText v-model="editProduct.summary" label="summary" />
         </div>
 
         <div class="textarea-row">
@@ -126,7 +126,7 @@ const fetchProduct = async () => {
     editProduct.value = {
       name: data.name,
       price: data.price,
-      summary: data.summary,
+      summary: data.summary ?? '',
       description: data.description,
       tax_code: data.tax_code ?? '',
       details: data.details,

@@ -33,7 +33,7 @@ func newProductFixture(t *testing.T) *types.Product {
 		Status:      util.Ptr(types.ProductPublished),
 		Name:        "Test Product",
 		Price:       util.Ptr(int64(150000)),
-		Summary:     "A test product summary",
+		Summary:     util.Ptr("A test product summary"),
 		Description: util.Ptr("A test product description"),
 		Details:     []byte(`{"key": "value"}`),
 		Category:    category,
@@ -138,4 +138,28 @@ func TestRemoveProduct(t *testing.T) {
 	var status types.ProductStatus
 	require.NoError(t, dbPool.QueryRowContext(ctx, "SELECT status FROM products WHERE id = $1", product.ID).Scan(&status))
 	assert.Equal(t, types.ProductArchived, status)
+}
+
+func TestUpdateProductPreservesOmittedStatus(t *testing.T) {
+	repo := NewProductRepository(dbPool)
+	ctx := context.Background()
+	product := newProductFixture(t)
+	product.Status = util.Ptr(types.ProductDraft)
+	require.NoError(t, repo.CreateProduct(ctx, product))
+
+	product.Status = nil
+	product.Summary = util.Ptr("Updated summary")
+	require.NoError(t, repo.UpdateProduct(ctx, *product))
+
+	saved, err := repo.GetProductByID(ctx, product.ID)
+	require.NoError(t, err)
+	require.NotNil(t, saved.Status)
+	assert.Equal(t, types.ProductDraft, *saved.Status)
+	assert.Equal(t, product.Summary, saved.Summary)
+
+	product.Status = util.Ptr(types.ProductPublished)
+	require.NoError(t, repo.UpdateProduct(ctx, *product))
+	saved, err = repo.GetProductByID(ctx, product.ID)
+	require.NoError(t, err)
+	assert.Equal(t, product.Status, saved.Status)
 }

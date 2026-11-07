@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/dgyurics/marketplace/types"
@@ -71,7 +72,7 @@ func TestGetProductByID(t *testing.T) {
 		ID:          "1",
 		Name:        "Test Product",
 		Price:       util.Ptr(int64(100000)),
-		Summary:     "This is a test product summary",
+		Summary:     util.Ptr("This is a test product summary"),
 		Description: util.Ptr("This is a test product description"),
 		Inventory:   10,
 	}
@@ -105,14 +106,14 @@ func TestGetProducts(t *testing.T) {
 			ID:          "1",
 			Name:        "Test Product 1",
 			Price:       util.Ptr(int64(100000)),
-			Summary:     "This is the first test product summary",
+			Summary:     util.Ptr("This is the first test product summary"),
 			Description: util.Ptr("This is the first test product description"),
 		},
 		{
 			ID:          "2",
 			Name:        "Test Product 2",
 			Price:       util.Ptr(int64(200000)),
-			Summary:     "This is the second test product summary",
+			Summary:     util.Ptr("This is the second test product summary"),
 			Description: util.Ptr("This is the second test product description"),
 		},
 	}
@@ -130,5 +131,19 @@ func TestGetProducts(t *testing.T) {
 	require.NoError(t, err)
 	require.JSONEq(t, string(expected), rr.Body.String())
 
+	mockService.AssertExpectations(t)
+}
+
+func TestUpdateProductWithoutStatus(t *testing.T) {
+	mockService := new(MockProductService)
+	routes := &ProductRoutes{productService: mockService}
+	mockService.On("UpdateProduct", mock.Anything, mock.MatchedBy(func(product types.Product) bool {
+		return product.ID == "1" && product.Status == nil && product.Summary != nil && *product.Summary == "Updated summary"
+	})).Return(nil).Once()
+
+	req := httptest.NewRequest(http.MethodPut, "/products", strings.NewReader(`{"id":"1","name":"Test Product","price":1000,"summary":"Updated summary"}`))
+	rr := httptest.NewRecorder()
+	routes.UpdateProduct(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
 	mockService.AssertExpectations(t)
 }

@@ -24,7 +24,7 @@
           <ThumbnailImage :images="item.product.images" />
           <div class="item-text">
             <span class="item-name">{{ item.product.name }}</span>
-            <p class="item-summary">{{ item.product.summary }}</p>
+            <p v-if="item.product.summary" class="item-summary">{{ item.product.summary }}</p>
           </div>
         </div>
         <div class="divider"></div>

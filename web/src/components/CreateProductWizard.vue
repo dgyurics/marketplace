@@ -45,7 +45,6 @@
             <InputText
               v-model="newProduct.summary"
               label="Summary"
-              required
               placeholder="Brief 1-2 sentence description"
             />
           </div>

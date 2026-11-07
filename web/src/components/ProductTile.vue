@@ -11,7 +11,7 @@
     </div>
     <div class="product-info">
       <h3 class="product-title">{{ product.name }}</h3>
-      <p class="product-summary">{{ product.summary }}</p>
+      <p v-if="product.summary" class="product-summary">{{ product.summary }}</p>
       <p class="product-price">{{ displayPrice(product.price) }}</p>
     </div>
   </div>
