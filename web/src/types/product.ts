@@ -1,8 +1,11 @@
 import type { Category } from './category'
 
+export type ProductStatus = 'draft' | 'published' | 'archived'
+
 export interface Product {
   id: string
   name: string
+  status?: ProductStatus
   price: number
   summary?: string | null
   details: Record<string, unknown>
@@ -31,7 +34,9 @@ export interface ProductFilters {
 }
 
 export interface CreateProductRequest {
+  summary?: string | null
   name: string
+  status?: ProductStatus
   price: number
   details: Record<string, unknown>
   description: string

@@ -5,11 +5,11 @@
       <div class="wizard-steps">
         <div :class="['step', { active: currentStep === 1, completed: currentStep > 1 }]">
           <span class="step-number">1</span>
-          <span class="step-label">Info</span>
+          <span class="step-label">Images</span>
         </div>
         <div :class="['step', { active: currentStep === 2, completed: currentStep > 2 }]">
           <span class="step-number">2</span>
-          <span class="step-label">Images</span>
+          <span class="step-label">Info</span>
         </div>
         <div :class="['step', { active: currentStep === 3 }]">
           <span class="step-number">3</span>
@@ -19,148 +19,109 @@
     </div>
 
     <div class="wizard-content">
-      <!-- Step 1: Basic Info -->
       <div v-show="currentStep === 1" class="step-content">
-        <form @submit.prevent="goToStep(2)">
-          <div class="form-group">
-            <InputText v-model="newProduct.name" label="Name" required />
-          </div>
-
-          <div class="form-row-2col">
-            <div class="form-group">
-              <InputCurrency
-                id="new-product-price"
-                v-model="displayPrice"
-                label="Price"
-                label-position="inside"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <InputNumber v-model="newProduct.inventory" label="Inventory" required />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <InputText
-              v-model="newProduct.summary"
-              label="Summary"
-              placeholder="Brief 1-2 sentence description"
-            />
-          </div>
-
-          <div class="form-row-2col">
-            <div class="form-group">
-              <SelectInput
-                v-model="newProduct.category"
-                label="Category"
-                :options="categoryOptions"
-              />
-            </div>
-            <div class="form-group">
-              <InputNumber v-model="newProduct.cart_limit" label="Cart Limit" />
-            </div>
-          </div>
-
-          <div class="form-row-2col">
-            <div class="form-group">
-              <InputNumber v-model="newProduct.sort_order" label="Sort Order" min="0" />
-            </div>
-            <div class="form-group"></div>
-          </div>
-
-          <div class="form-group">
-            <TextArea
-              v-model="newProduct.description"
-              label="Description"
-              :resizable="true"
-              placeholder="Detailed description of the product"
-            ></TextArea>
-          </div>
-
-          <div class="checkbox-group">
-            <label class="checkbox-label">
-              <input v-model="newProduct.featured" type="checkbox" :tabindex="0" />
-              <span>Featured</span>
-            </label>
-          </div>
-
-          <div class="form-actions">
-            <button type="submit" class="btn-primary" :tabindex="0">Next</button>
-          </div>
-        </form>
-      </div>
-
-      <!-- Step 2: Images -->
-      <div v-show="currentStep === 2" class="step-content">
-        <!-- Image Gallery Section -->
-        <ImageGallery :images="tempProductImages" @image-deleted="handleImageDeleted" />
-
-        <!-- Image Upload Section -->
-        <div v-if="tempProductId" class="step-content">
+        <LoadingSpinner v-if="creating" />
+        <template v-if="productId">
           <ImageUploader
-            :product-id="tempProductId"
-            :images="tempProductImages"
+            :product-id="productId"
+            :images="images"
             @upload-success="handleImageUploadSuccess"
-            @upload-error="handleImageUploadError"
-            @image-deleted="handleImageDeleted"
           />
-        </div>
-
+          <ImageGallery v-if="images.length" :images="images" @image-deleted="handleImageDeleted" />
+        </template>
         <div class="form-actions">
+          <button v-if="!productId && !creating" type="button" @click="createDraft">
+            Try again
+          </button>
           <button
             type="button"
             class="btn-primary"
-            :disabled="tempProductImages.length === 0"
-            :tabindex="0"
-            @click="goToStep(3)"
+            :disabled="!images.length"
+            @click="currentStep = 2"
           >
             Next
           </button>
         </div>
       </div>
 
-      <!-- Step 3: Details & Review -->
-      <div v-show="currentStep === 3" class="step-content">
-        <div v-if="successMessage" class="success-message">
-          <p>{{ successMessage }}</p>
-          <button class="btn-primary" @click="resetAndStart">Create Another</button>
+      <form v-show="currentStep === 2" class="step-content" @submit.prevent="goToDetails">
+        <div class="form-group">
+          <InputText v-model="newProduct.name" label="Name" required />
+        </div>
+        <div class="form-row-2col">
+          <InputCurrency
+            id="new-product-price"
+            v-model="displayPrice"
+            label="Price"
+            label-position="inside"
+            required
+          />
+          <InputNumber v-model="newProduct.inventory" label="Inventory" min="0" required />
+        </div>
+        <div class="form-group">
+          <InputText v-model="newProduct.summary" label="Summary" />
+        </div>
+        <div class="form-group">
+          <SelectInput v-model="newProduct.category" label="Category" :options="categoryOptions" />
         </div>
 
-        <div v-else>
-          <div class="form-group">
-            <InputText v-model="newProduct.tax_code" label="Tax Code" />
-          </div>
-
-          <div class="details-editor-wrapper">
-            <KeyValueEditor
-              ref="detailsEditor"
-              v-model="newProduct.details"
-              key-placeholder="Key (e.g., color, size, material)"
-              value-placeholder="Value"
-              pair-name="Detail"
-            />
-          </div>
-
-          <div class="form-actions">
-            <button
-              v-auth="'admin'"
-              type="button"
-              class="btn-primary"
-              :tabindex="0"
-              @click="handleSubmit"
-            >
-              Complete
-            </button>
-          </div>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input v-model="newProduct.featured" type="checkbox" />
+            <span>Featured</span>
+          </label>
+          <label class="checkbox-label">
+            <input v-model="newProduct.negotiable" type="checkbox" />
+            <span>Negotiable</span>
+          </label>
         </div>
-      </div>
+        <div class="form-actions">
+          <button type="button" class="btn-primary btn-outline" @click="currentStep = 1">
+            Back
+          </button>
+          <button type="submit" class="btn-primary">Next</button>
+        </div>
+      </form>
+      <form v-show="currentStep === 3" class="step-content" @submit.prevent="handleSubmit">
+        <div class="form-group">
+          <TextArea v-model="newProduct.description" label="Description" />
+        </div>
+        <div class="form-row-2col">
+          <InputNumber v-model="newProduct.cart_limit" label="Cart Limit" min="1" />
+          <InputNumber v-model="newProduct.sort_order" label="Sort Order" min="0" />
+        </div>
+        <div class="form-group">
+          <InputText v-model="newProduct.tax_code" label="Tax Code" />
+        </div>
+        <KeyValueEditor
+          ref="detailsEditor"
+          v-model="newProduct.details"
+          key-placeholder="Key (e.g., color, size, material)"
+          value-placeholder="Value"
+          pair-name="Detail"
+        />
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn-primary btn-outline"
+            :disabled="saving"
+            @click="currentStep = 2"
+          >
+            Back
+          </button>
+          <button type="submit" class="btn-primary" :disabled="saving || !images.length">
+            {{ saving ? 'Publishing…' : 'Publish' }}
+          </button>
+        </div>
+      </form>
     </div>
+    <div v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</div>
   </div>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 
 import {
   InputCurrency,
@@ -172,189 +133,124 @@ import {
 } from '@/components/forms'
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
-import * as authAPI from '@/services/api'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import { createProduct, updateProduct } from '@/services/api'
+import type { Category, Image } from '@/types'
 import { toMinorUnits, toMajorUnits } from '@/utilities'
 
-const props = defineProps({
-  categories: {
-    type: Array,
-    required: true,
-  },
-  onSuccess: {
-    type: Function,
-    default: null,
-  },
-})
+const props = defineProps<{
+  categories: Category[]
+  onSuccess?: () => void
+}>()
 
 const currentStep = ref(1)
+const productId = ref('')
+const images = ref<Image[]>([])
+const creating = ref(false)
+const saving = ref(false)
+const errorMessage = ref('')
+const detailsEditor = ref<{ hasErrors: () => boolean } | null>(null)
+const newProduct = ref({
+  name: '',
+  price: '' as number | '',
+  inventory: '' as number | '',
+  summary: '',
+  category: '',
+  description: '',
+  cart_limit: '' as number | '',
+  sort_order: '' as number | '',
+  tax_code: '',
+  featured: true,
+  negotiable: false,
+  details: {} as Record<string, string>,
+})
+
 const displayPrice = computed({
   get: () => (newProduct.value.price === '' ? '' : toMajorUnits(newProduct.value.price)),
   set: (value) => (newProduct.value.price = value === '' ? '' : toMinorUnits(value)),
 })
-
 const categoryOptions = computed(() =>
   props.categories.map((category) => ({ value: category.slug, label: category.name }))
 )
 
-const detailsEditor = ref(null)
-const tempProductId = ref(null)
-const tempProductImages = ref([])
-const successMessage = ref('')
-
-const newProduct = ref({
-  name: '',
-  price: '',
-  summary: '',
-  description: '',
-  tax_code: '',
-  details: {},
-  inventory: '',
-  cart_limit: '',
-  category: '',
-  featured: true,
-  sort_order: '',
-})
-
-const goToStep = async (step) => {
-  if (step === 2 && currentStep.value === 1) {
-    // Create product draft and save ID for image uploads
-    await createProduct()
-    currentStep.value = step
-  } else if (step === 2 && currentStep.value === 3) {
-    // Coming back from step 3, update product with any changes
-    if (tempProductId.value) {
-      await updateProduct()
-    }
-    currentStep.value = step
-  } else if (step === 3 && currentStep.value === 2) {
-    // Validate step 2 (must have at least one image)
-    if (tempProductImages.value.length === 0) {
-      return
-    }
-    currentStep.value = step
-  } else if (step < currentStep.value) {
-    currentStep.value = step
-  }
-}
-
-const handleImageUploadSuccess = (images) => tempProductImages.value.push(...images)
-
-const handleImageUploadError = (error) => {
-  console.error('Image upload error:', error)
-}
-
-const handleImageDeleted = (imageId) => {
-  tempProductImages.value = tempProductImages.value.filter((img) => img.id !== imageId)
-}
-
-const createProduct = async () => {
+const createDraft = async () => {
+  if (creating.value || productId.value) return
+  creating.value = true
+  errorMessage.value = ''
   try {
-    const categoryId = props.categories.find((cat) => cat.slug === newProduct.value.category)?.id
-
-    const productData = {
-      name: newProduct.value.name,
-      price: newProduct.value.price,
-      summary: newProduct.value.summary,
-      description: newProduct.value.description || undefined,
-      tax_code: newProduct.value.tax_code || undefined,
-      inventory: newProduct.value.inventory,
-      cart_limit: newProduct.value.cart_limit || undefined,
-      featured: newProduct.value.featured,
-      sort_order: newProduct.value.sort_order || 0,
-      ...(categoryId && { category: { id: categoryId } }),
-    }
-
-    const createdProduct = await authAPI.createProduct(productData)
-    tempProductId.value = createdProduct.id
-  } catch (error) {
-    console.error('Error creating product draft:', error)
+    const product = await createProduct({
+      name: '',
+      price: 0,
+      summary: '',
+      description: '',
+      details: {},
+      status: 'draft',
+    })
+    productId.value = product.id
+  } catch {
+    errorMessage.value = 'Could not start a new product. Please try again.'
+  } finally {
+    creating.value = false
   }
 }
 
-const updateProduct = async () => {
-  try {
-    const categoryId = props.categories.find((cat) => cat.slug === newProduct.value.category)?.id
+const handleImageUploadSuccess = (uploadedImages: Image[]) => images.value.push(...uploadedImages)
+const handleImageDeleted = (imageId: string) => {
+  images.value = images.value.filter((image) => image.id !== imageId)
+}
 
-    const updateData = {
-      id: tempProductId.value,
-      name: newProduct.value.name,
-      price: newProduct.value.price,
-      summary: newProduct.value.summary,
-      description: newProduct.value.description || undefined,
-      tax_code: newProduct.value.tax_code || undefined,
-      details: newProduct.value.details,
-      inventory: newProduct.value.inventory,
-      cart_limit: newProduct.value.cart_limit || undefined,
-      featured: newProduct.value.featured,
-      sort_order: newProduct.value.sort_order || 0,
-      ...(categoryId && { category: { id: categoryId } }),
-    }
-
-    await authAPI.updateProduct(updateData)
-  } catch (error) {
-    console.error('Error updating product draft:', error)
-  }
+const goToDetails = () => {
+  if (
+    !newProduct.value.name.trim() ||
+    newProduct.value.price === '' ||
+    newProduct.value.inventory === ''
+  )
+    return
+  currentStep.value = 3
 }
 
 const handleSubmit = async () => {
-  // Check for validation errors in details
-  if (detailsEditor.value?.hasErrors()) {
+  if (saving.value || !productId.value || !images.value.length || detailsEditor.value?.hasErrors())
     return
-  }
-
+  if (
+    !newProduct.value.name.trim() ||
+    newProduct.value.price === '' ||
+    newProduct.value.inventory === ''
+  )
+    return
+  saving.value = true
+  errorMessage.value = ''
   try {
-    // Update product with all fields from all steps
-    const categoryId = props.categories.find((cat) => cat.slug === newProduct.value.category)?.id
-
-    const updateData = {
-      id: tempProductId.value,
-      name: newProduct.value.name,
+    const category = props.categories.find(
+      (category) => category.slug === newProduct.value.category
+    )
+    await updateProduct({
+      id: productId.value,
+      name: newProduct.value.name.trim(),
       price: newProduct.value.price,
+      inventory: Number(newProduct.value.inventory),
       summary: newProduct.value.summary,
-      description: newProduct.value.description || undefined,
-      tax_code: newProduct.value.tax_code || undefined,
+      ...(newProduct.value.description && { description: newProduct.value.description }),
+      ...(newProduct.value.tax_code && { tax_code: newProduct.value.tax_code }),
       details: newProduct.value.details,
-      inventory: newProduct.value.inventory,
-      cart_limit: newProduct.value.cart_limit || undefined,
+      ...(newProduct.value.cart_limit !== '' && {
+        cart_limit: Number(newProduct.value.cart_limit),
+      }),
+      sort_order: Number(newProduct.value.sort_order || 0),
       featured: newProduct.value.featured,
-      sort_order: newProduct.value.sort_order || 0,
-      ...(categoryId && { category: { id: categoryId } }),
-    }
-
-    await authAPI.updateProduct(updateData)
-
-    // Show success message
-    successMessage.value = `"${newProduct.value.name}" created successfully!`
-
-    // Call success callback if provided
-    if (props.onSuccess) {
-      props.onSuccess()
-    }
-  } catch (error) {
-    console.error('Error finalizing product:', error)
+      negotiable: newProduct.value.negotiable,
+      ...(category && { category }),
+      status: 'published',
+    })
+    props.onSuccess?.()
+  } catch {
+    errorMessage.value = 'Could not publish the product. Please try again.'
+  } finally {
+    saving.value = false
   }
 }
 
-const resetAndStart = () => {
-  successMessage.value = ''
-  currentStep.value = 1
-  newProduct.value = {
-    name: '',
-    price: '',
-    summary: '',
-    description: '',
-    tax_code: '',
-    details: {},
-    inventory: '',
-    cart_limit: '',
-    category: '',
-    featured: true,
-    sort_order: '',
-  }
-  tempProductId.value = null
-  tempProductImages.value = []
-  detailsEditor.value?.reset()
-}
+onMounted(createDraft)
 </script>
 
 <style scoped>
@@ -474,14 +370,6 @@ const resetAndStart = () => {
   margin-bottom: 20px;
 }
 
-.image-uploader-wrapper {
-  margin: 30px 0;
-  padding: 20px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  border: 2px dashed #ddd;
-}
-
 .details-editor-wrapper {
   margin: 30px 0;
 }
@@ -498,20 +386,9 @@ const resetAndStart = () => {
   max-width: 300px;
 }
 
-.success-message {
-  text-align: center;
-  padding: 40px;
-  background: #f0f8f0;
-  border-radius: 8px;
-}
-
-.success-message p {
-  font-size: 18px;
-  color: #333;
-  margin-bottom: 20px;
-}
-
-.success-message .btn-primary {
-  max-width: 250px;
+@media (max-width: 480px) {
+  .form-row-2col {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
