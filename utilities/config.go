@@ -19,12 +19,13 @@ func LoadConfig() types.Config {
 	payment := loadPaymentConfig(environment)
 	baseURL := loadBaseURL()
 	imageTransform := loadImageTransformConfig()
+	assistant := loadAssistantConfig()
 
 	// resolve the active locale before anything reads utilities.Locale
 	loadLocale()
 
 	return types.Config{
-		AppMetadata:       loadAppMetadata(payment, imageTransform),
+		AppMetadata:       loadAppMetadata(payment, imageTransform, assistant),
 		BaseURL:           baseURL,
 		Environment:       environment,
 		Server:            loadServerConfig(),
@@ -38,14 +39,16 @@ func LoadConfig() types.Config {
 		HTTPClientTimeout: loadHttpClientTimeout(),
 		Image:             loadImageConfig(baseURL),
 		ImageTransform:    imageTransform,
+		Assistant:         assistant,
 		RateLimit:         loadRateLimit(),
 	}
 }
 
 // loadAppMetadata builds the metadata exposed to clients via GET /config.
-func loadAppMetadata(payment types.PaymentConfig, imageTransform types.ImageTransformConfig) types.AppMetadata {
+func loadAppMetadata(payment types.PaymentConfig, imageTransform types.ImageTransformConfig, assistant types.AssistantConfig) types.AppMetadata {
 	return types.AppMetadata{
-		Locale: Locale,
+		Locale:           Locale,
+		AssistantEnabled: assistant.Enabled,
 		PaymentOptions: types.PaymentOptions{
 			Stripe:     payment.Stripe.Enabled,
 			OnDelivery: payment.OnDelivery,
@@ -175,6 +178,18 @@ func loadImageTransformConfig() types.ImageTransformConfig {
 		BaseURL:  getEnvOrDefault("IMAGE_TRANSFORM_BASE_URL", "http://rembg"),
 		Model:    getEnvOrDefault("IMAGE_TRANSFORM_MODEL", "isnet-general-use"),
 		APIKey:   os.Getenv("IMAGE_TRANSFORM_API_KEY"),
+	}
+}
+
+func loadAssistantConfig() types.AssistantConfig {
+	if !isFeatureEnabled("ASSISTANT_ENABLED") {
+		return types.AssistantConfig{}
+	}
+	return types.AssistantConfig{
+		Enabled: true,
+		BaseURL: getEnvOrDefault("ASSISTANT_BASE_URL", "https://api.openai.com/v1/responses"),
+		Model:   getEnvOrDefault("ASSISTANT_MODEL", "gpt-5-mini"),
+		APIKey:  mustLookupEnv("ASSISTANT_API_KEY"),
 	}
 }
 

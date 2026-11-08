@@ -65,3 +65,10 @@ export interface CartItem {
   product: Product
   unit_price: number
 }
+
+export interface ProductFields {
+  name: string
+  summary: string
+  description: string
+  details: Record<string, string>
+}

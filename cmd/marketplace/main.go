@@ -89,7 +89,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 		routes.NewOrderRoutes(config.AppMetadata.PaymentOptions, services.Order, services.Tax, services.Payment, services.Cart, services.Address, services.User, services.Notification, baseRouter),
 		routes.NewPasswordRoutes(services.Password, services.User, services.Notification, baseRouter),
 		routes.NewPaymentRoutes(services.Payment, config.AppMetadata, baseRouter),
-		routes.NewProductRoutes(services.Product, baseRouter),
+		routes.NewProductRoutes(services.Product, services.Assistant, baseRouter),
 		routes.NewRegistrationRoutes(services.User, services.Registration, services.JWT, services.Refresh, services.Notification, baseRouter),
 		routes.NewTaxRoutes(services.Cart, services.Tax, baseRouter),
 		routes.NewUserRoutes(services.User, services.JWT, services.Refresh, baseRouter),
@@ -151,6 +151,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	orderService := services.NewOrderService(httpClient, orderRepository, cartRepository, paymentService)
 	imageService := services.NewImageService(imageRepository, config.Image)
 	imageTransformService := services.NewImageTransformService(httpClient, config.ImageTransform)
+	assistantService := services.NewAssistantService(productRepository, httpClient, config.Assistant, config.Image.ImageUploadPath)
 	passwordService := services.NewPasswordService(passwordRepository, config.Auth.HMACSecret)
 	rateLimitService := services.NewRateLimitService(rateLimitRepository)
 	refreshService := services.NewRefreshService(refreshTokenRepository, config.Auth)
@@ -172,6 +173,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 		Password:       passwordService,
 		Payment:        paymentService,
 		Product:        productService,
+		Assistant:      assistantService,
 		Offer:          offerService,
 		RateLimit:      rateLimitService,
 		Refresh:        refreshService,
@@ -198,6 +200,7 @@ type servicesContainer struct {
 	Password       services.PasswordService
 	Payment        services.PaymentService
 	Product        services.ProductService
+	Assistant      services.AssistantService
 	RateLimit      services.RateLimitService
 	Refresh        services.RefreshService
 	Registration   services.RegistrationService

@@ -14,6 +14,7 @@ import (
 	"os"
 
 	"github.com/dgyurics/marketplace/types"
+	"github.com/dgyurics/marketplace/utilities"
 )
 
 type ImageTransformService interface {
@@ -57,16 +58,18 @@ func (s *imageTransformService) transformOpenAI(ctx context.Context, filePath st
 	if err != nil {
 		return "", fmt.Errorf("failed to read image file: %w", err)
 	}
-	imageURL := "data:" + http.DetectContentType(original) + ";base64," + base64.StdEncoding.EncodeToString(original)
+
+	// Build the request, sending the image inline as a data URL
+	imageURL := utilities.DataURL(original)
 	payload := map[string]any{
 		"model":         s.config.Model,
 		"images":        []map[string]string{{"image_url": imageURL}},
 		"prompt":        imageEnhancementPrompt,
-		"background":    "transparent",
-		"output_format": "png",
+		"background":    "transparent", // remove the background
+		"output_format": "png",         // PNG supports transparency
 		"quality":       "medium",
-		"size":          "auto",
-		"n":             1,
+		"size":          "auto", // keep the original dimensions
+		"n":             1,      // one result
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {

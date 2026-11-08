@@ -4,6 +4,9 @@
       v-model="value"
       :required="required || false"
       :disabled="disabled || false"
+      :placeholder="placeholder"
+      :rows="rows"
+      :maxlength="maxlength"
       class="input-field"
       :class="{ 'input-field--not-resizable': resizable === false }"
     ></textarea>
@@ -22,6 +25,9 @@ const props = defineProps<{
   required?: boolean
   resizable?: boolean
   disabled?: boolean
+  placeholder?: string
+  rows?: number
+  maxlength?: number
 }>()
 
 const emit = defineEmits<{

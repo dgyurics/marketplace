@@ -14,6 +14,7 @@ export type ImageTransformOptions = {
  * Application metadata served by GET /config
  */
 export type AppConfig = {
+  assistant_enabled: boolean
   image_transform_options: ImageTransformOptions
   payment_options: PaymentOptions
   locale: Locale

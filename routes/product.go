@@ -3,6 +3,8 @@ package routes
 import (
 	"encoding/json"
 	"errors"
+	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/dgyurics/marketplace/services"
@@ -12,15 +14,18 @@ import (
 
 type ProductRoutes struct {
 	router
-	productService services.ProductService
+	productService   services.ProductService
+	assistantService services.AssistantService
 }
 
 func NewProductRoutes(
 	productService services.ProductService,
+	assistantService services.AssistantService,
 	router router) *ProductRoutes {
 	return &ProductRoutes{
-		router:         router,
-		productService: productService,
+		router:           router,
+		productService:   productService,
+		assistantService: assistantService,
 	}
 }
 
@@ -109,7 +114,26 @@ func (h *ProductRoutes) RemoveProduct(w http.ResponseWriter, r *http.Request) {
 	u.RespondSuccess(w)
 }
 
+func (h *ProductRoutes) AutofillProduct(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		Instructions string `json:"instructions"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil && !errors.Is(err, io.EOF) {
+		u.RespondWithError(w, r, http.StatusBadRequest, "invalid autofill request")
+		return
+	}
+	fields, err := h.assistantService.AutofillProduct(r.Context(), r.PathValue("id"), request.Instructions)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "Failed to auto-fill product fields", "error", err)
+		u.RespondWithError(w, r, http.StatusInternalServerError, "could not auto-fill product fields")
+		return
+	}
+	u.RespondWithJSON(w, http.StatusOK, fields)
+}
+
 func (h *ProductRoutes) RegisterRoutes() {
+	h.mux.Handle("POST /products/{id}/autofill", h.secure(types.RoleAdmin)(h.AutofillProduct))
 	// TODO add an admin-only endpoint which also returns draft products
 	h.mux.HandleFunc("GET /products", h.GetProducts)
 	h.mux.HandleFunc("GET /products/{id}", h.GetProduct)
