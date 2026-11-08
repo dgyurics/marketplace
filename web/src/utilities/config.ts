@@ -1,5 +1,5 @@
 import { getConfig as fetchConfig } from '@/services/api'
-import type { AppConfig, Locale, PaymentOptions } from '@/types'
+import type { AppConfig, AssistantOptions, Locale, PaymentOptions } from '@/types'
 
 let appConfig: AppConfig | null = null
 
@@ -36,6 +36,13 @@ export function getLocale(): Locale {
  */
 export function getPaymentOptions(): PaymentOptions {
   return getAppConfig().payment_options
+}
+
+/**
+ * Get the assistant options for this deployment
+ */
+export function getAssistantOptions(): AssistantOptions {
+  return getAppConfig().assistant_options
 }
 
 /**

@@ -47,8 +47,10 @@ func LoadConfig() types.Config {
 // loadAppMetadata builds the metadata exposed to clients via GET /config.
 func loadAppMetadata(payment types.PaymentConfig, imageTransform types.ImageTransformConfig, assistant types.AssistantConfig) types.AppMetadata {
 	return types.AppMetadata{
-		Locale:           Locale,
-		AssistantEnabled: assistant.Enabled,
+		Locale: Locale,
+		AssistantOptions: types.AssistantOptions{
+			Enabled: assistant.Enabled,
+		},
 		PaymentOptions: types.PaymentOptions{
 			Stripe:     payment.Stripe.Enabled,
 			OnDelivery: payment.OnDelivery,

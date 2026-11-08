@@ -176,14 +176,14 @@ import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import { createProduct, updateProduct, autofillProduct } from '@/services/api'
 import type { Category, Image } from '@/types'
 import { toMinorUnits, toMajorUnits } from '@/utilities'
-import { getAppConfig } from '@/utilities/config'
+import { getAssistantOptions } from '@/utilities/config'
 
 const props = defineProps<{
   categories: Category[]
   onSuccess?: () => void
 }>()
 
-const assistantEnabled = getAppConfig().assistant_enabled
+const assistantEnabled = getAssistantOptions().enabled
 const showAssistant = ref(false)
 const instructions = ref('')
 const generatedText = { name: '', summary: '', description: '' }
