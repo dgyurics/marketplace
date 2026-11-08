@@ -123,21 +123,23 @@ func (h *ProductRoutes) AutofillProduct(w http.ResponseWriter, r *http.Request) 
 		u.RespondWithError(w, r, http.StatusBadRequest, "invalid autofill request")
 		return
 	}
+
+	// Call the assistant service to autofill product fields based on the provided instructions
 	fields, err := h.assistantService.AutofillProduct(r.Context(), r.PathValue("id"), request.Instructions)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "Failed to auto-fill product fields", "error", err)
 		u.RespondWithError(w, r, http.StatusInternalServerError, "could not auto-fill product fields")
 		return
 	}
+
 	u.RespondWithJSON(w, http.StatusOK, fields)
 }
 
 func (h *ProductRoutes) RegisterRoutes() {
-	h.mux.Handle("POST /products/{id}/autofill", h.secure(types.RoleAdmin)(h.AutofillProduct))
-	// TODO add an admin-only endpoint which also returns draft products
 	h.mux.HandleFunc("GET /products", h.GetProducts)
 	h.mux.HandleFunc("GET /products/{id}", h.GetProduct)
+	h.mux.Handle("POST /products/{id}/autofill", h.secure(types.RoleAdmin)(h.AutofillProduct))
 	h.mux.Handle("POST /products", h.secure(types.RoleAdmin)(h.CreateProduct))
-	h.mux.Handle("DELETE /products/{id}", h.secure(types.RoleAdmin)(h.RemoveProduct))
 	h.mux.Handle("PUT /products", h.secure(types.RoleAdmin)(h.UpdateProduct))
+	h.mux.Handle("DELETE /products/{id}", h.secure(types.RoleAdmin)(h.RemoveProduct))
 }

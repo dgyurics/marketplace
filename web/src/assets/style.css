@@ -66,7 +66,6 @@ button {
 }
 
 .btn-xs {
-  flex: initial;
   font-size: 12px;
   padding: 4px 8px;
   min-width: 0;
