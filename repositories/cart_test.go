@@ -9,6 +9,7 @@ import (
 	"github.com/dgyurics/marketplace/types"
 	"github.com/dgyurics/marketplace/utilities"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Helper function to create a unique test user
@@ -239,4 +240,38 @@ func TestGetCartWithImages(t *testing.T) {
 
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
 	assert.NoError(t, err, "Expected no error on deleting user")
+}
+
+func TestCartProductImages(t *testing.T) {
+	ctx := context.Background()
+	repo := NewCartRepository(dbPool)
+	products := []*types.Product{newProductFixture(t), newProductFixture(t), newProductFixture(t)}
+	productRepo := NewProductRepository(dbPool)
+	for _, product := range products {
+		product.Inventory = 10
+		require.NoError(t, productRepo.CreateProduct(ctx, product))
+	}
+	user := createUniqueGuestUser(t, NewUserRepository(dbPool))
+	t.Cleanup(func() {
+		_, err := dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
+		assert.NoError(t, err)
+	})
+	imageRepo := NewImageRepository(dbPool)
+	expected := map[string][]types.Image{}
+	for _, product := range products[:2] {
+		image := types.Image{ID: utilities.MustGenerateIDString(), ProductID: product.ID, URL: "/image.png", Type: types.Hero, Source: product.ID + ".png"}
+		require.NoError(t, imageRepo.CreateImage(ctx, &image))
+		expected[product.ID] = []types.Image{image}
+	}
+	expected[products[2].ID] = []types.Image{}
+	for _, product := range products {
+		require.NoError(t, repo.AddItem(ctx, user.ID, &types.CartItem{Product: *product, Quantity: 1}))
+	}
+	items, err := repo.GetItems(ctx, user.ID)
+	require.NoError(t, err)
+	require.Len(t, items, 3)
+	for _, item := range items {
+		require.NotNil(t, item.Product.Images)
+		require.Equal(t, expected[item.Product.ID], item.Product.Images)
+	}
 }

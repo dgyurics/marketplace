@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"log/slog"
 
 	"github.com/dgyurics/marketplace/types"
@@ -25,7 +24,7 @@ func NewCartRepository(db *sql.DB) CartRepository {
 }
 
 func (r *cartRepository) GetItems(ctx context.Context, userID string) ([]types.CartItem, error) {
-	// Fetch cart items using the materialized view (contains product and images)
+	// Fetch cart items and product information.
 	itemsQuery := `
 		SELECT
 			ci.product_id,
@@ -33,8 +32,7 @@ func (r *cartRepository) GetItems(ctx context.Context, userID string) ([]types.C
 			ci.unit_price,
 			pv.name,
 			pv.price,
-			pv.summary,
-			pv.images
+			pv.summary
 		FROM cart_items ci
 		JOIN v_products pv ON ci.product_id = pv.id
 		WHERE ci.user_id = $1`
@@ -46,9 +44,9 @@ func (r *cartRepository) GetItems(ctx context.Context, userID string) ([]types.C
 	defer rows.Close()
 
 	items := []types.CartItem{}
+	productIDs := []string{}
 	for rows.Next() {
 		var item types.CartItem
-		var imagesJSON []byte
 
 		if err := rows.Scan(
 			&item.Product.ID,
@@ -57,17 +55,12 @@ func (r *cartRepository) GetItems(ctx context.Context, userID string) ([]types.C
 			&item.Product.Name,
 			&item.Product.Price,
 			&item.Product.Summary,
-			&imagesJSON,
 		); err != nil {
 			return nil, err
 		}
 
-		// Convert JSON array to Go struct
-		if err := json.Unmarshal(imagesJSON, &item.Product.Images); err != nil {
-			return nil, err
-		}
-
 		items = append(items, item)
+		productIDs = append(productIDs, item.Product.ID)
 	}
 
 	// Check for errors from iterating over rows.
@@ -75,6 +68,13 @@ func (r *cartRepository) GetItems(ctx context.Context, userID string) ([]types.C
 		return nil, err
 	}
 
+	images, err := getProductImages(ctx, r.db, productIDs)
+	if err != nil {
+		return nil, err
+	}
+	for i := range items {
+		items[i].Product.Images = images[items[i].Product.ID]
+	}
 	return items, nil
 }
 

@@ -63,6 +63,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 
 func (r *productRepository) GetProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, error) {
 	products := []types.Product{}
+	productIDs := []string{}
 	query, args := generateGetProductsQuery(filter)
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
@@ -73,7 +74,6 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 
 	for rows.Next() {
 		var product types.Product
-		var imagesJSON []byte
 		if err = rows.Scan(
 			&product.ID,
 			&product.Name,
@@ -83,18 +83,13 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 			&product.Details,
 			&product.Featured,
 			&product.Negotiable,
-			&imagesJSON,
 			&product.Status,
 		); err != nil {
 			return nil, err
 		}
 
-		// Convert JSONB array to Go struct
-		if err := json.Unmarshal(imagesJSON, &product.Images); err != nil {
-			return nil, err
-		}
-
 		products = append(products, product)
+		productIDs = append(productIDs, product.ID)
 	}
 
 	// Check for errors from iterating over rows.
@@ -102,6 +97,13 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 		return nil, err
 	}
 
+	images, err := getProductImages(ctx, r.db, productIDs)
+	if err != nil {
+		return nil, err
+	}
+	for i := range products {
+		products[i].Images = images[products[i].ID]
+	}
 	return products, nil
 }
 
@@ -112,7 +114,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 	var queryBuilder strings.Builder
 	if len(filter.Categories) == 0 {
 		queryBuilder.WriteString(`
-			SELECT p.id, p.name, p.price, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.images, p.status
+			SELECT p.id, p.name, p.price, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status
 			FROM v_products p
 			WHERE p.status = 'published'
 		`)
@@ -129,7 +131,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 				SELECT c.id FROM categories c
 				JOIN category_tree ct ON c.parent_id = ct.id
 			)
-			SELECT p.id, p.name, p.price, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.images, p.status
+			SELECT p.id, p.name, p.price, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status
 			FROM v_products p
 			JOIN category_tree ct ON ct.id = p.category_id
 			WHERE p.status = 'published'
@@ -165,7 +167,6 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		p.summary,
 		p.description,
 		p.details,
-		p.images,
 		p.inventory,
 		p.cart_limit,
 		p.featured,
@@ -183,7 +184,6 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 	`
 
 	var product types.Product
-	var imagesJSON []byte
 
 	var categoryID, categoryParentID, categoryName, categorySlug, categoryDescription sql.NullString
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
@@ -193,7 +193,6 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		&product.Summary,
 		&product.Description,
 		&product.Details,
-		&imagesJSON,
 		&product.Inventory,
 		&product.CartLimit,
 		&product.Featured,
@@ -213,12 +212,11 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		return product, err
 	}
 
-	// Convert JSON array to Go struct
-	// FIXME seems counterintuitive to convert images to JSON in view/database
-	// and then convert back to Go struct/array
-	if err := json.Unmarshal(imagesJSON, &product.Images); err != nil {
+	images, err := getProductImages(ctx, r.db, []string{product.ID})
+	if err != nil {
 		return product, err
 	}
+	product.Images = images[product.ID]
 
 	// Populate Category if category data exists
 	if categoryID.Valid {

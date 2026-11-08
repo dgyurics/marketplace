@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/dgyurics/marketplace/types"
+	"github.com/lib/pq"
 )
 
 type ImageRepository interface {
@@ -24,16 +25,16 @@ func (r *imageRepository) CreateImage(ctx context.Context, image *types.Image) e
 	query := `
         INSERT INTO images (id, product_id, url, type, alt_text, source)
         VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING created_at, updated_at
     `
-	_, err := r.db.ExecContext(ctx, query,
+	return r.db.QueryRowContext(ctx, query,
 		image.ID,
 		image.ProductID,
 		image.URL,
 		image.Type,
 		image.AltText,
 		image.Source,
-	)
-	return err
+	).Scan(&image.CreatedAt, &image.UpdatedAt)
 }
 
 type ImageDeletionResult struct {
@@ -86,4 +87,45 @@ func (r *imageRepository) RemoveImage(ctx context.Context, id string) (ImageDele
 	}
 
 	return result, tx.Commit()
+}
+
+// getProductImages loads images for all requested products in one query.
+func getProductImages(ctx context.Context, db *sql.DB, productIDs []string) (map[string][]types.Image, error) {
+	images := make(map[string][]types.Image, len(productIDs))
+	if len(productIDs) == 0 {
+		return images, nil
+	}
+	for _, id := range productIDs {
+		images[id] = []types.Image{}
+	}
+
+	query := `
+		SELECT id, product_id, url, type, alt_text, source, created_at, updated_at
+		FROM images
+		WHERE product_id = ANY($1::BIGINT[])
+		ORDER BY id
+	`
+	rows, err := db.QueryContext(ctx, query, pq.Array(productIDs))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var image types.Image
+		if err := rows.Scan(
+			&image.ID,
+			&image.ProductID,
+			&image.URL,
+			&image.Type,
+			&image.AltText,
+			&image.Source,
+			&image.CreatedAt,
+			&image.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		images[image.ProductID] = append(images[image.ProductID], image)
+	}
+	return images, rows.Err()
 }

@@ -163,3 +163,59 @@ func TestUpdateProductPreservesOmittedStatus(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, product.Status, saved.Status)
 }
+
+func TestProductImages(t *testing.T) {
+	ctx := context.Background()
+	repo := NewProductRepository(dbPool)
+	imageRepo := NewImageRepository(dbPool)
+	first := newProductFixture(t)
+	second := newProductFixture(t)
+	third := newProductFixture(t)
+	second.Category = first.Category
+	third.Category = first.Category
+	first.Price = util.Ptr(int64(100))
+	second.Price = util.Ptr(int64(200))
+	third.Price = util.Ptr(int64(300))
+	for _, product := range []*types.Product{first, second, third} {
+		require.NoError(t, repo.CreateProduct(ctx, product))
+	}
+
+	images := []types.Image{
+		{ID: util.MustGenerateIDString(), ProductID: first.ID, URL: "/hero.png", Type: types.Hero, Source: "hero.png", AltText: util.Ptr("Main image")},
+		{ID: util.MustGenerateIDString(), ProductID: first.ID, URL: "/gallery.png", Type: types.Gallery, Source: "gallery.png"},
+	}
+	// Insert in reverse order to verify images are returned in ID order.
+	require.NoError(t, imageRepo.CreateImage(ctx, &images[1]))
+	require.NoError(t, imageRepo.CreateImage(ctx, &images[0]))
+	secondImage := types.Image{ID: util.MustGenerateIDString(), ProductID: second.ID, URL: "/second.png", Type: types.Hero, Source: "second.png"}
+	require.NoError(t, imageRepo.CreateImage(ctx, &secondImage))
+
+	saved, err := repo.GetProductByID(ctx, first.ID)
+	require.NoError(t, err)
+	require.Equal(t, images, saved.Images)
+	require.False(t, saved.Images[0].CreatedAt.IsZero())
+	require.False(t, saved.Images[0].UpdatedAt.IsZero())
+
+	saved, err = repo.GetProductByID(ctx, third.ID)
+	require.NoError(t, err)
+	require.NotNil(t, saved.Images)
+	require.Empty(t, saved.Images)
+
+	products, err := repo.GetProducts(ctx, types.ProductFilter{Categories: []string{first.Category.Slug}, SortBy: types.SortByPrice, Limit: 2, Page: 1})
+	require.NoError(t, err)
+	require.Len(t, products, 2)
+	require.Equal(t, third.ID, products[0].ID)
+	require.NotNil(t, products[0].Images)
+	require.Empty(t, products[0].Images)
+	require.Equal(t, []types.Image{secondImage}, products[1].Images)
+
+	products, err = repo.GetProducts(ctx, types.ProductFilter{Categories: []string{first.Category.Slug}, SortBy: types.SortByPrice, Limit: 2, Page: 2})
+	require.NoError(t, err)
+	require.Len(t, products, 1)
+	require.Equal(t, images, products[0].Images)
+
+	products, err = repo.GetProducts(ctx, types.ProductFilter{Categories: []string{"missing-" + first.ID}, Limit: 10, Page: 1})
+	require.NoError(t, err)
+	require.NotNil(t, products)
+	require.Empty(t, products)
+}

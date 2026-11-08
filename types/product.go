@@ -61,7 +61,9 @@ type Image struct {
 	URL       string    `json:"url"`
 	Type      ImageType `json:"type"`
 	AltText   *string   `json:"alt_text,omitempty"` // FIXME convert pointer to string
-	Source    string    `json:"source"`
+	Source    string    `json:"-"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ProductFilter struct {

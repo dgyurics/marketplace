@@ -52,6 +52,9 @@ export type ImageType = 'hero' | 'thumbnail' | 'gallery'
 
 export interface Image {
   id: string
+  product_id: string
+  created_at: string
+  updated_at: string
   url: string
   type: ImageType
   alt_text?: string | null
