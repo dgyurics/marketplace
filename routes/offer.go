@@ -87,6 +87,8 @@ func (h *OfferRoutes) UpdateOffer(w http.ResponseWriter, r *http.Request) {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	u.RespondSuccess(w)
 }
 
 func (h *OfferRoutes) GetOfferOwner(w http.ResponseWriter, r *http.Request) {
