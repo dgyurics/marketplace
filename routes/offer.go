@@ -13,15 +13,15 @@ import (
 
 type OfferRoutes struct {
 	router
-	service services.OfferService
+	offerService services.OfferService
 }
 
 func NewOfferRoutes(
 	offerService services.OfferService,
 	router router) *OfferRoutes {
 	return &OfferRoutes{
-		router:  router,
-		service: offerService,
+		router:       router,
+		offerService: offerService,
 	}
 }
 
@@ -37,7 +37,7 @@ func (h *OfferRoutes) CreateOffer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create offer
-	err := h.service.CreateOffer(r.Context(), &offer)
+	err := h.offerService.CreateOffer(r.Context(), &offer)
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -78,7 +78,7 @@ func (h *OfferRoutes) UpdateOffer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update offer status
-	err := h.service.UpdateOffer(r.Context(), &offer)
+	err := h.offerService.UpdateOffer(r.Context(), &offer)
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -92,7 +92,7 @@ func (h *OfferRoutes) UpdateOffer(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OfferRoutes) GetOfferOwner(w http.ResponseWriter, r *http.Request) {
-	offer, err := h.service.GetOfferByIDAndUser(r.Context(), r.PathValue("id"))
+	offer, err := h.offerService.GetOfferByIDAndUser(r.Context(), r.PathValue("id"))
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -105,7 +105,7 @@ func (h *OfferRoutes) GetOfferOwner(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OfferRoutes) GetOfferAdmin(w http.ResponseWriter, r *http.Request) {
-	offer, err := h.service.GetOfferByID(r.Context(), r.PathValue("id"))
+	offer, err := h.offerService.GetOfferByID(r.Context(), r.PathValue("id"))
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -118,7 +118,7 @@ func (h *OfferRoutes) GetOfferAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OfferRoutes) GetOfferByProductID(w http.ResponseWriter, r *http.Request) {
-	offers, err := h.service.GetOffersByProductID(r.Context(), r.PathValue("id"))
+	offers, err := h.offerService.GetOffersByProductID(r.Context(), r.PathValue("id"))
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -127,7 +127,7 @@ func (h *OfferRoutes) GetOfferByProductID(w http.ResponseWriter, r *http.Request
 }
 
 func (h *OfferRoutes) GetOffers(w http.ResponseWriter, r *http.Request) {
-	offers, err := h.service.GetOffers(r.Context())
+	offers, err := h.offerService.GetOffers(r.Context())
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return

@@ -12,13 +12,13 @@ import (
 
 type ConversationRoutes struct {
 	router
-	service services.ConversationService
+	conversationService services.ConversationService
 }
 
-func NewConversationRoutes(service services.ConversationService, router router) *ConversationRoutes {
+func NewConversationRoutes(conversationService services.ConversationService, router router) *ConversationRoutes {
 	return &ConversationRoutes{
-		router:  router,
-		service: service,
+		router:              router,
+		conversationService: conversationService,
 	}
 }
 
@@ -42,7 +42,7 @@ func (h *ConversationRoutes) CreateConversation(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if err := h.service.CreateConversation(r.Context(), &conversation); err != nil {
+	if err := h.conversationService.CreateConversation(r.Context(), &conversation); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -51,7 +51,7 @@ func (h *ConversationRoutes) CreateConversation(w http.ResponseWriter, r *http.R
 }
 
 func (h *ConversationRoutes) GetConversations(w http.ResponseWriter, r *http.Request) {
-	conversations, err := h.service.GetConversations(r.Context())
+	conversations, err := h.conversationService.GetConversations(r.Context())
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -60,7 +60,7 @@ func (h *ConversationRoutes) GetConversations(w http.ResponseWriter, r *http.Req
 }
 
 func (h *ConversationRoutes) GetConversationAdmin(w http.ResponseWriter, r *http.Request) {
-	conversation, err := h.service.GetConversationByID(r.Context(), r.PathValue("id"))
+	conversation, err := h.conversationService.GetConversationByID(r.Context(), r.PathValue("id"))
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -74,7 +74,7 @@ func (h *ConversationRoutes) GetConversationAdmin(w http.ResponseWriter, r *http
 
 func (h *ConversationRoutes) RemoveConversation(w http.ResponseWriter, r *http.Request) {
 	conversationID := r.PathValue("id")
-	err := h.service.RemoveConversation(r.Context(), conversationID)
+	err := h.conversationService.RemoveConversation(r.Context(), conversationID)
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -88,7 +88,7 @@ func (h *ConversationRoutes) RemoveConversation(w http.ResponseWriter, r *http.R
 }
 
 func (h *ConversationRoutes) GetConversation(w http.ResponseWriter, r *http.Request) {
-	conversation, err := h.service.GetConversationByIDAndUser(r.Context(), r.PathValue("id"))
+	conversation, err := h.conversationService.GetConversationByIDAndUser(r.Context(), r.PathValue("id"))
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -114,7 +114,7 @@ func (h *ConversationRoutes) CreateMessage(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := h.service.CreateMessage(r.Context(), &message); err != nil {
+	if err := h.conversationService.CreateMessage(r.Context(), &message); err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
