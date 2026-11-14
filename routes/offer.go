@@ -29,7 +29,7 @@ func (h *OfferRoutes) CreateOffer(w http.ResponseWriter, r *http.Request) {
 	productID := r.PathValue("id")
 	var offer types.Offer
 	if err := json.NewDecoder(r.Body).Decode(&offer); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
 	}
 	offer.Product = types.Product{

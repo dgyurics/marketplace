@@ -43,7 +43,7 @@ func (h *PaymentRoutes) EventHandler(w http.ResponseWriter, r *http.Request) {
 
 	var event stripe.Event
 	if err := json.Unmarshal(body, &event); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
 	}
 

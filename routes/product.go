@@ -32,7 +32,7 @@ func NewProductRoutes(
 func (h *ProductRoutes) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var product types.Product
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request body")
+		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
 		return
 	}
 
