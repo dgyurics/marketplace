@@ -108,11 +108,19 @@ func (r *shippingZone) AddShippingZone(ctx context.Context, zone *types.Shipping
 }
 
 func (r *shippingZone) RemoveShippingZone(ctx context.Context, zoneID string) error {
-	_, err := r.db.ExecContext(ctx, `
+	res, err := r.db.ExecContext(ctx, `
 		DELETE FROM shipping_zones
 		WHERE id = $1
 	`, zoneID)
-	return err
+	if err != nil {
+		return err
+	}
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return types.ErrNotFound
+	}
+	return nil
 }
 
 func (r *shippingZone) GetShippingZones(ctx context.Context) ([]types.ShippingZone, error) {
@@ -175,11 +183,19 @@ func (r *shippingZone) AddExcludedShippingZone(ctx context.Context, zone *types.
 }
 
 func (r *shippingZone) RemoveExcludedShippingZone(ctx context.Context, zoneID string) error {
-	_, err := r.db.ExecContext(ctx, `
+	res, err := r.db.ExecContext(ctx, `
 		DELETE FROM shipping_exclusions
 		WHERE id = $1
 	`, zoneID)
-	return err
+	if err != nil {
+		return err
+	}
+	// lib/pq always returns nil error for RowsAffected()
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return types.ErrNotFound
+	}
+	return nil
 }
 
 func (r *shippingZone) GetExcludedShippingZones(ctx context.Context) ([]types.ExcludedShippingZone, error) {

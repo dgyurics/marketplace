@@ -65,7 +65,12 @@ func (h *ShippingZoneRoutes) ListShippingZones(w http.ResponseWriter, r *http.Re
 
 func (h *ShippingZoneRoutes) RemoveShippingZone(w http.ResponseWriter, r *http.Request) {
 	zoneID := r.PathValue("id")
-	if err := h.shippingZoneService.RemoveShippingZone(r.Context(), zoneID); err != nil {
+	err := h.shippingZoneService.RemoveShippingZone(r.Context(), zoneID)
+	if errors.Is(err, types.ErrNotFound) {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -114,7 +119,12 @@ func (h *ShippingZoneRoutes) ListExcludedShippingZones(w http.ResponseWriter, r 
 
 func (h *ShippingZoneRoutes) RemoveExcludedShippingZone(w http.ResponseWriter, r *http.Request) {
 	zoneID := r.PathValue("id")
-	if err := h.shippingZoneService.RemoveExcludedShippingZone(r.Context(), zoneID); err != nil {
+	err := h.shippingZoneService.RemoveExcludedShippingZone(r.Context(), zoneID)
+	if errors.Is(err, types.ErrNotFound) {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
