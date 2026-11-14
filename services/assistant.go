@@ -112,18 +112,30 @@ func (s *assistantService) heroImageURL(product types.Product) (string, error) {
 // requestFields sends the image and seller instructions to the model and
 // returns the raw JSON text it produced.
 func (s *assistantService) requestFields(ctx context.Context, imageURL, instructions string) (string, error) {
-	// Build the request, sending the image inline as a data URL
+	// The user message has two parts: the seller's text and the image (inline data URL)
+	text := map[string]string{
+		"type": "input_text",
+		"text": "Suggest product fields as JSON.\nAdditional context from the seller:\n" + instructions,
+	}
+	image := map[string]string{
+		"type":      "input_image",
+		"image_url": imageURL,
+		"detail":    "low", // low detail uses fewer tokens
+	}
+	message := map[string]any{
+		"role":    "user", // who the message is from; the system prompt is sent separately as instructions
+		"content": []any{text, image},
+	}
+
+	// Build the request
 	payload := map[string]any{
 		"model":             s.config.Model,
-		"store":             false,                                                              // don't keep the response on OpenAI's side
-		"max_output_tokens": 2048,                                                               // cap the reply length
-		"reasoning":         map[string]string{"effort": "low"},                                 // keep it fast and cheap
-		"instructions":      productAutofillPrompt,                                              // system prompt
+		"instructions":      productAutofillPrompt, // system prompt
+		"input":             []any{message},
 		"text":              map[string]any{"format": map[string]string{"type": "json_object"}}, // reply with JSON only
-		"input": []any{map[string]any{"role": "user", "content": []any{
-			map[string]string{"type": "input_text", "text": "Suggest product fields as JSON.\nAdditional context from the seller:\n" + instructions},
-			map[string]string{"type": "input_image", "image_url": imageURL, "detail": "low"}, // low detail uses fewer tokens
-		}}},
+		"reasoning":         map[string]string{"effort": "low"},                                 // keep it fast and cheap
+		"max_output_tokens": 2048,                                                               // cap the reply length
+		"store":             false,                                                              // don't keep the response on OpenAI's side
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
