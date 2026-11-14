@@ -65,3 +65,12 @@ export interface CartItem {
   product: Product
   unit_price: number
 }
+
+// used by assistant to auto-fill fields
+// when creating a new product
+export interface ProductFields {
+  name: string
+  summary: string
+  description: string
+  details: Record<string, string>
+}

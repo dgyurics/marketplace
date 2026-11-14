@@ -13,6 +13,7 @@ import type {
   Image,
   ImageType,
   Product,
+  ProductFields,
   CreateProductRequest,
   UpdateProductRequest,
   ProductFilters,
@@ -490,4 +491,12 @@ export const getConversationById = async (id: string): Promise<Conversation> => 
 
 export const removeConversation = async (id: string): Promise<void> => {
   await apiClient.delete(`/conversations/${id}`)
+}
+
+export const autofillProduct = async (
+  productId: string,
+  instructions = ''
+): Promise<ProductFields> => {
+  const response = await apiClient.post(`/products/${productId}/autofill`, { instructions })
+  return response.data
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"log/slog"
 
@@ -157,7 +158,7 @@ func (h *ImageRoutes) storeImage(w http.ResponseWriter, r *http.Request, product
 		return "", "", err
 	}
 
-	filename := imgID + filepath.Ext(fileHeader.Filename)
+	filename := imgID + strings.ToLower(filepath.Ext(fileHeader.Filename))
 	imagePath, err := h.imageService.StoreImage(productID, file, filename)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, "error storing image")

@@ -65,6 +65,12 @@ button {
   min-width: 160px;
 }
 
+.btn-xs {
+  font-size: 12px;
+  padding: 4px 8px;
+  min-width: 0;
+}
+
 .btn-sm {
   font-size: 12px;
   padding: 8px 16px;

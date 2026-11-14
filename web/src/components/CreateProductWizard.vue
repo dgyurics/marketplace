@@ -45,6 +45,38 @@
       </div>
 
       <form v-show="currentStep === 2" class="step-content" @submit.prevent="goToDetails">
+        <div v-if="assistantEnabled" class="form-group">
+          <button
+            type="button"
+            class="assistant-button"
+            :disabled="autofilling || !images.some((image) => image.type === 'hero')"
+            :aria-expanded="showAssistant"
+            aria-controls="product-assistant"
+            @click="showAssistant = !showAssistant"
+          >
+            <SparklesIcon class="assistant-icon" aria-hidden="true" />
+            <span>Auto-fill</span>
+          </button>
+          <div v-if="showAssistant" id="product-assistant" class="assistant-context">
+            <textarea
+              v-model="instructions"
+              class="assistant-input"
+              aria-label="Additional context"
+              placeholder="Optional context or instructions…"
+              :disabled="autofilling"
+              rows="2"
+              maxlength="4000"
+            ></textarea>
+            <button
+              type="button"
+              class="btn-xs btn-subtle assistant-generate"
+              :disabled="autofilling"
+              @click="autoFill"
+            >
+              <span>{{ autofilling ? 'Generating…' : 'Generate' }}</span>
+            </button>
+          </div>
+        </div>
         <div class="form-group">
           <InputText v-model="newProduct.name" label="Name" required />
         </div>
@@ -94,11 +126,13 @@
           <InputText v-model="newProduct.tax_code" label="Tax Code" />
         </div>
         <KeyValueEditor
+          :key="detailsVersion"
           ref="detailsEditor"
           v-model="newProduct.details"
           key-placeholder="Key (e.g., color, size, material)"
           value-placeholder="Value"
           pair-name="Detail"
+          @update:model-value="detailsEdited = true"
         />
 
         <div class="form-actions">
@@ -110,7 +144,11 @@
           >
             Back
           </button>
-          <button type="submit" class="btn-primary" :disabled="saving || !images.length">
+          <button
+            type="submit"
+            class="btn-primary"
+            :disabled="saving || autofilling || !images.length"
+          >
             {{ saving ? 'Publishing…' : 'Publish' }}
           </button>
         </div>
@@ -121,6 +159,7 @@
 </template>
 
 <script setup lang="ts">
+import { SparklesIcon } from '@heroicons/vue/24/outline'
 import { ref, computed, onMounted } from 'vue'
 
 import {
@@ -134,15 +173,23 @@ import {
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
-import { createProduct, updateProduct } from '@/services/api'
+import { createProduct, updateProduct, autofillProduct } from '@/services/api'
 import type { Category, Image } from '@/types'
 import { toMinorUnits, toMajorUnits } from '@/utilities'
+import { getAssistantOptions } from '@/utilities/config'
 
 const props = defineProps<{
   categories: Category[]
   onSuccess?: () => void
 }>()
 
+const assistantEnabled = getAssistantOptions().enabled
+const showAssistant = ref(false)
+const instructions = ref('')
+const generatedText = { name: '', summary: '', description: '' }
+const autofilling = ref(false)
+const detailsVersion = ref(0)
+const detailsEdited = ref(false)
 const currentStep = ref(1)
 const productId = ref('')
 const images = ref<Image[]>([])
@@ -199,6 +246,30 @@ const handleImageDeleted = (imageId: string) => {
   images.value = images.value.filter((image) => image.id !== imageId)
 }
 
+const autoFill = async () => {
+  if (autofilling.value || !productId.value || !images.value.some((image) => image.type === 'hero'))
+    return
+  autofilling.value = true
+  errorMessage.value = ''
+  try {
+    const fields = await autofillProduct(productId.value, instructions.value)
+    for (const key of ['name', 'summary', 'description'] as const) {
+      if (!newProduct.value[key].trim() || newProduct.value[key] === generatedText[key]) {
+        newProduct.value[key] = fields[key]
+        generatedText[key] = fields[key]
+      }
+    }
+    if (!detailsEdited.value && Object.keys(fields.details).length) {
+      newProduct.value.details = fields.details
+      detailsVersion.value++
+    }
+  } catch {
+    errorMessage.value = 'Could not auto-fill product fields. Please try again.'
+  } finally {
+    autofilling.value = false
+  }
+}
+
 const goToDetails = () => {
   if (
     !newProduct.value.name.trim() ||
@@ -210,7 +281,13 @@ const goToDetails = () => {
 }
 
 const handleSubmit = async () => {
-  if (saving.value || !productId.value || !images.value.length || detailsEditor.value?.hasErrors())
+  if (
+    saving.value ||
+    autofilling.value ||
+    !productId.value ||
+    !images.value.length ||
+    detailsEditor.value?.hasErrors()
+  )
     return
   if (
     !newProduct.value.name.trim() ||
@@ -254,6 +331,67 @@ onMounted(createDraft)
 </script>
 
 <style scoped>
+.assistant-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.assistant-button > span {
+  display: block;
+}
+
+.assistant-button:hover {
+  background: transparent;
+  color: #222;
+}
+
+.assistant-button:disabled {
+  background: transparent;
+  color: #aaa;
+}
+
+.assistant-icon {
+  width: 14px;
+  height: 14px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.assistant-context {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.assistant-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 1px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.assistant-input::placeholder {
+  color: #888;
+}
+
+.assistant-generate {
+  align-self: flex-start;
+}
+
 .wizard-header {
   margin-bottom: 30px;
 }

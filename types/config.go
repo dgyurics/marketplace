@@ -16,6 +16,7 @@ type Config struct {
 	HTTPClientTimeout time.Duration
 	Image             ImageConfig
 	ImageTransform    ImageTransformConfig
+	Assistant         AssistantConfig
 	JWT               JWTConfig
 	Logger            LoggerConfig
 	MachineID         uint8
@@ -125,6 +126,13 @@ type ImageTransformConfig struct {
 	APIKey   string
 }
 
+type AssistantConfig struct {
+	Enabled bool
+	BaseURL string
+	Model   string
+	APIKey  string
+}
+
 type PaymentConfig struct {
 	Stripe      StripeConfig
 	OnDelivery  bool
@@ -137,6 +145,11 @@ type PaymentOptions struct {
 	OnDelivery bool `json:"on_delivery"`
 }
 
+// AssistantOptions controls assistant features exposed to the UI, currently product autofill.
+type AssistantOptions struct {
+	Enabled bool `json:"enabled"`
+}
+
 type ImageTransformOptions struct {
 	Rembg  bool `json:"rembg"`
 	OpenAI bool `json:"openai"`
@@ -144,6 +157,7 @@ type ImageTransformOptions struct {
 
 // struct exposed to UI in GET /config
 type AppMetadata struct {
+	AssistantOptions      AssistantOptions      `json:"assistant_options"`
 	ImageTransformOptions ImageTransformOptions `json:"image_transform_options"`
 	Locale                LocaleConfig          `json:"locale"`
 	PaymentOptions        PaymentOptions        `json:"payment_options"`
