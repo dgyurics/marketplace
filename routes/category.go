@@ -51,6 +51,10 @@ func (h *CategoryRoutes) GetCategories(w http.ResponseWriter, r *http.Request) {
 
 func (h *CategoryRoutes) GetCategory(w http.ResponseWriter, r *http.Request) {
 	category, err := h.categoryService.GetCategoryByID(r.Context(), r.PathValue("id"))
+	if errors.Is(err, types.ErrNotFound) {
+		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
+		return
+	}
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return

@@ -127,6 +127,9 @@ func (r *categoryRepository) GetCategoryByID(ctx context.Context, id string) (*t
 		&category.CreatedAt,
 		&category.UpdatedAt,
 	)
+	if err == sql.ErrNoRows {
+		return nil, types.ErrNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
