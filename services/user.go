@@ -91,9 +91,16 @@ func (s *userService) UpdatePassword(ctx context.Context, curPass, newPass strin
 	}
 
 	// compare old passwords
+	if usr.PasswordHash == nil {
+		return nil, types.ErrNotFound
+	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(*usr.PasswordHash), []byte(curPass))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		return nil, types.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	// hash new password
