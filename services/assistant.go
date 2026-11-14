@@ -159,8 +159,7 @@ func (s *assistantService) requestFields(ctx context.Context, imageURL, instruct
 	return outputText(res.Body)
 }
 
-// outputText decodes a successful API response and returns the first text
-// the model produced.
+// outputText decodes a successful API response and returns the first text the model produced.
 func outputText(body io.Reader) (string, error) {
 	var response struct {
 		Status string `json:"status"`
