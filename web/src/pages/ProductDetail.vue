@@ -1,47 +1,58 @@
 <template>
   <div class="product-detail">
-    <div class="gallery-container">
-      <Swiper
-        :modules="[Navigation, Pagination, Keyboard]"
-        :navigation="true"
-        :pagination="{ clickable: true }"
-        :keyboard="true"
-        class="product-gallery"
-      >
-        <SwiperSlide v-for="img in product.images" :key="img.id">
-          <img :src="img.url" :alt="product.name" class="gallery-image" />
-        </SwiperSlide>
-      </Swiper>
-    </div>
+    <nav class="product-breadcrumb" aria-label="Breadcrumb">
+      <router-link to="/">Marketplace</router-link>
+      <span aria-hidden="true">/</span>
+      <span>{{ product.name || 'Item details' }}</span>
+    </nav>
 
-    <div class="product-detail-bottom">
+    <div class="product-layout">
+      <div class="gallery-container">
+        <Swiper
+          v-if="product.images.length"
+          :modules="[Navigation, Pagination, Keyboard]"
+          :navigation="product.images.length > 1"
+          :pagination="{ clickable: true }"
+          :keyboard="true"
+          class="product-gallery"
+        >
+          <SwiperSlide v-for="img in product.images" :key="img.id">
+            <img :src="img.url" :alt="product.name" class="gallery-image" />
+          </SwiperSlide>
+        </Swiper>
+        <p v-else class="image-placeholder">No photo available</p>
+      </div>
+
       <div class="product-info">
         <h1 class="product-title">{{ product.name }}</h1>
         <p v-if="product.summary" class="product-summary">{{ product.summary }}</p>
-        <p v-if="product.description" class="product-description" v-html="product.description"></p>
-        <p class="product-price">{{ displayPrice(product.price) }}</p>
-      </div>
+        <p v-if="product.id" class="product-price">{{ displayPrice(product.price) }}</p>
 
-      <div class="product-actions">
-        <div v-if="Object.entries(product.details).length > 0" class="product-details">
-          <h3>Details</h3>
-          <div class="details">
-            <p v-for="(value, key) in product.details" :key="key">
-              <b class="detail-item">{{ key }}:</b> {{ value }}
-            </p>
-          </div>
-        </div>
-        <div>
+        <div class="purchase-panel">
           <ProductActions
             v-if="product.id"
             :product="product"
             :has-pending-offer="offers.some((offer) => offer.status === 'pending')"
           />
         </div>
+
+        <section v-if="product.description" class="product-section">
+          <h2>About this item</h2>
+          <div class="product-description" v-html="product.description"></div>
+        </section>
+
+        <section v-if="Object.entries(product.details).length > 0" class="product-section">
+          <h2>Item details</h2>
+          <dl class="details">
+            <div v-for="(value, key) in product.details" :key="key" class="detail-row">
+              <dt>{{ key }}</dt>
+              <dd>{{ value }}</dd>
+            </div>
+          </dl>
+        </section>
+        <div class="share-row"><CopyToClipboard /></div>
       </div>
     </div>
-
-    <CopyToClipboard />
   </div>
 </template>
 
@@ -90,7 +101,10 @@ const offers = ref<Offer[]>([])
 onMounted(async () => {
   try {
     const productData = await getProductById(String(route.params['id']))
-    productData.images = productData.images.filter((img) => img.type === 'gallery')
+    const galleryImages = productData.images.filter((img) => img.type === 'gallery')
+    productData.images = galleryImages.length
+      ? galleryImages
+      : productData.images.filter((img) => img.type === 'hero')
 
     // Load existing offers before displaying product actions.
     if (isAuthenticated.value && authStore.hasMinimumRole('member') && productData.negotiable) {
@@ -108,174 +122,190 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Swiper Pagination (bubbles) */
-:deep(.swiper-pagination-bullet) {
-  background-color: black !important;
-}
-
-/* Ensure navigation arrows are visible and properly styled */
-:deep(.swiper-button-prev),
-:deep(.swiper-button-next) {
-  color: black !important;
-}
-
-:deep(.swiper-button-prev) {
-  left: 10px !important;
-}
-
-:deep(.swiper-button-next) {
-  right: 10px !important;
-}
-
-.gallery-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.product-detail {
   width: 100%;
-  max-width: 600px;
-  height: 500px;
-  margin-bottom: 35px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 32px 64px;
 }
-
-.gallery-image {
-  width: auto;
-  max-width: 100%;
-  height: 100%;
-  max-height: 500px;
-  object-fit: contain;
+.product-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+  font-size: 12px;
+  color: var(--muted-text-color);
 }
-
-/* Ensure slides maintain consistent height */
+.product-breadcrumb > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.product-breadcrumb a {
+  flex-shrink: 0;
+}
+.product-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 56px;
+}
+.gallery-container {
+  min-width: 0;
+  background: #f7f5ee;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.product-gallery {
+  width: 100%;
+  --swiper-navigation-size: 20px;
+  --swiper-navigation-color: var(--accent-color);
+  --swiper-pagination-color: var(--accent-color);
+}
 :deep(.swiper-slide) {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 500px;
+  aspect-ratio: 1;
+  height: auto;
+  padding: 36px;
 }
-
-/* Prevent images from floating to the top */
-.product-detail {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 20px;
-}
-
-.product-detail-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+.gallery-image {
   width: 100%;
-  max-width: 1200px;
-  padding: 0 80px;
-  gap: 40px;
-  margin-bottom: 60px;
+  height: 100%;
+  object-fit: contain;
 }
-
+.image-placeholder {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  color: var(--muted-text-color);
+  font-size: 14px;
+}
 .product-info {
-  flex: 1;
-  text-align: left;
-  max-width: 50%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  min-width: 0;
 }
-
-.product-actions {
-  flex: 1;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 20px;
-}
-
-/* Tablet styles */
-@media (max-width: 768px) {
-  .product-detail-bottom {
-    flex-direction: column;
-    align-items: center;
-    padding: 0 40px;
-    gap: 15px;
-  }
-
-  .product-info {
-    max-width: 100%;
-    text-align: left;
-    width: 100%;
-  }
-
-  .product-actions {
-    width: 100%;
-    align-items: flex-start;
-  }
-}
-
-/* Mobile styles */
-@media (max-width: 480px) {
-  .product-detail {
-    padding: 15px;
-  }
-
-  .product-detail-bottom {
-    padding: 0 20px;
-    gap: 25px;
-  }
-
-  .gallery-container {
-    max-width: 100%;
-    height: 350px;
-    margin-bottom: 25px;
-  }
-
-  :deep(.swiper-slide) {
-    height: 350px;
-  }
-
-  .gallery-image {
-    max-height: 350px;
-  }
-}
-
-.product-details h3 {
-  margin-bottom: 20px;
-}
-
-.product-details {
-  font-size: 14px;
-  color: #555;
-}
-
-.product-details p,
-.details p {
-  margin-bottom: 8px;
-}
-
 .product-title {
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-bottom: 20px;
+  font-size: clamp(26px, 3vw, 36px);
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
-
-.product-summary,
-.product-description {
-  margin-bottom: 20px;
-}
-
-.product-price {
-  text-transform: uppercase;
-}
-
-.product-title,
-.product-description,
-.product-summary,
-.product-price,
-.product-details {
+.product-summary {
   font-size: 14px;
-  font-family: 'Open Sans', sans-serif;
-  color: #222;
+  color: var(--muted-text-color);
+  line-height: 1.7;
+  margin-top: 14px;
+}
+.product-price {
+  font-size: 28px;
+  font-weight: 700;
+  margin-top: 22px;
+}
+.purchase-panel {
+  margin: 24px 0 30px;
+}
+.purchase-panel :deep(button) {
+  min-width: 0;
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: var(--accent-color);
+}
+.purchase-panel :deep(button:hover:not(:disabled)) {
+  background: #bf3c32;
+}
+.purchase-panel :deep(.btn-outline) {
+  background: white;
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+.purchase-panel :deep(.btn-outline:hover:not(:disabled)) {
+  color: white;
+}
+.purchase-panel :deep(button:disabled) {
+  background: #eee;
+  color: #777;
+}
+.product-section {
+  border-top: 1px solid #e9e6e0;
+  padding: 24px 0;
+}
+.product-section h2 {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  margin-bottom: 14px;
+}
+.product-description {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #555;
+  overflow-wrap: anywhere;
+}
+.product-description :deep(p + p) {
+  margin-top: 12px;
+}
+.product-description :deep(ul),
+.product-description :deep(ol) {
+  padding-left: 20px;
+}
+.product-description :deep(img) {
+  max-width: 100%;
+  height: auto;
+}
+.details {
+  font-size: 13px;
+}
+.detail-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 20px;
+  padding: 10px 0;
+  overflow-wrap: anywhere;
+}
+.detail-row + .detail-row {
+  border-top: 1px solid #f0eeea;
+}
+.detail-row dt {
+  color: var(--muted-text-color);
+}
+.share-row {
+  border-top: 1px solid #e9e6e0;
+  padding-top: 18px;
+}
+.share-row :deep(.copy-btn) {
+  position: static;
+  flex-direction: row;
+  gap: 10px;
+}
+.share-row :deep(.copy-label) {
+  font-size: 12px;
+}
+@media (max-width: 900px) {
+  .product-layout {
+    gap: 28px;
+  }
+}
+@media (max-width: 768px) {
+  .product-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gallery-container {
+    max-width: 560px;
+    width: 100%;
+    margin: 0 auto;
+  }
+}
+@media (max-width: 600px) {
+  .product-detail {
+    padding: 20px 16px 40px;
+  }
+  .product-breadcrumb {
+    margin-bottom: 20px;
+  }
+  :deep(.swiper-slide) {
+    padding: 28px;
+  }
 }
 </style>
