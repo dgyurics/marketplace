@@ -16,7 +16,7 @@ import { useRoute } from 'vue-router'
 import Banner from '@/components/Banner.vue'
 import Footer from '@/components/Footer.vue'
 import NavBar from '@/components/NavBar.vue'
-import { TEST_MODE } from '@/config'
+import { TEST_MODE } from '@/utilities/env'
 
 const route = useRoute()
 

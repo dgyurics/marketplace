@@ -1,7 +1,7 @@
 import { type Stripe } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 
-import { STRIPE_PUBLISHABLE_KEY } from '@/config'
+import { STRIPE_PUBLISHABLE_KEY } from '@/utilities/env'
 
 let stripePromise: Promise<Stripe | null> | undefined
 

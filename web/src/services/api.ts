@@ -1,6 +1,5 @@
 import axios from 'axios'
 
-import { API_URL as baseURL, REQUEST_TIMEOUT as timeout } from '@/config'
 import { useAuthStore } from '@/store/auth'
 import type {
   CartItem,
@@ -31,6 +30,7 @@ import type {
   PaymentOptions,
 } from '@/types'
 import type { Conversation } from '@/types/conversation'
+import { API_URL as baseURL, REQUEST_TIMEOUT as timeout } from '@/utilities/env'
 
 const apiClient = axios.create({
   baseURL,

@@ -62,10 +62,7 @@ export function useStripeCheckout(paymentFormRef: Ref<PaymentFormRef | null>) {
       )
       router.push('/checkout/confirmation')
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Payment failed.'
+      const message = error instanceof Error ? error.message : 'Payment failed.'
       checkoutStore.paymentError = message
     } finally {
       isSubmitting.value = false
