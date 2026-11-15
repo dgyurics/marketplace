@@ -19,7 +19,6 @@ type Conversation struct {
 	RecipientID         string           `json:"recipient_id"`
 	RecipientLastReadAt time.Time        `json:"recipient_last_read_at"`
 	Messages            []Message        `json:"messages"`
-	IsDeleted           bool             `json:"-"`
 	UpdatedAt           time.Time        `json:"updated_at"`
 	CreatedAt           time.Time        `json:"created_at"`
 }
