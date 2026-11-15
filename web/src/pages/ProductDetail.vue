@@ -278,8 +278,4 @@ onMounted(async () => {
   font-family: 'Open Sans', sans-serif;
   color: #222;
 }
-
-.detail-item {
-  text-transform: capitalize;
-}
 </style>
