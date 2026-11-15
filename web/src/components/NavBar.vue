@@ -11,8 +11,6 @@
       <!-- Center: Navigation Links -->
       <div class="nav-center">
         <div class="nav-links">
-          <router-link to="/new"><span class="nav-text">Just added</span></router-link>
-          <router-link to="/popular"><span class="nav-text">Popular</span></router-link>
           <router-link
             v-for="category in categories"
             :key="category.id"
@@ -65,8 +63,6 @@
     <!-- Mobile Menu Overlay -->
     <div v-if="isMobileMenuOpen" ref="mobileMenu" class="mobile-menu">
       <div class="mobile-nav-links">
-        <router-link to="/new" @click="closeMobileMenu">Just added</router-link>
-        <router-link to="/popular" @click="closeMobileMenu">Popular</router-link>
         <router-link
           v-for="category in categories"
           :key="category.id"

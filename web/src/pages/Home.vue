@@ -5,9 +5,6 @@
         <div class="hero-inner">
           <p class="hero-eyebrow">A little discovery. A great find.</p>
           <h1 class="hero-title">Your next favorite<br />is waiting here.</h1>
-          <p class="hero-description">
-            Explore unique finds and everyday essentials from your community.
-          </p>
           <div class="hero-actions">
             <router-link class="hero-btn" to="/new"
               >Discover what's new <ArrowRightIcon
@@ -25,7 +22,6 @@
             <ShoppingBagIcon />
             <span>Good things,<br /><strong>closer to home.</strong></span>
           </div>
-          <span class="hero-sticker">Find your happy</span>
         </div>
       </div>
     </section>
@@ -33,7 +29,7 @@
     <section class="products" aria-labelledby="featured-heading">
       <div class="section-heading">
         <div>
-          <p class="section-eyebrow">A little inspiration for your day</p>
+          <p class="section-eyebrow">Some inspiration for your day…</p>
           <h2 id="featured-heading">Find your next favorite</h2>
         </div>
         <router-link to="/new">Shop all <ArrowRightIcon /></router-link>
@@ -132,12 +128,10 @@ onMounted(() => {
   line-height: 1.14;
   color: #302521;
 }
-.hero-description {
-  max-width: 360px;
-  font-size: 14px;
-  line-height: 1.7;
-  margin-top: 18px;
-  color: #68534c;
+.hero-secondary {
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .hero-actions {
   display: flex;
@@ -159,11 +153,6 @@ onMounted(() => {
 }
 .hero-btn:hover {
   background: #bf3c32;
-}
-.hero-secondary {
-  font-size: 13px;
-  text-decoration: underline;
-  text-underline-offset: 4px;
 }
 .hero-art {
   position: relative;
@@ -210,17 +199,6 @@ onMounted(() => {
   right: 0;
   top: 60px;
   transform: rotate(10deg);
-}
-.hero-sticker {
-  position: absolute;
-  bottom: 0;
-  left: 24px;
-  border-radius: 30px;
-  background: #f8cf65;
-  padding: 10px 18px;
-  font-size: 12px;
-  font-weight: 600;
-  transform: rotate(-6deg);
 }
 .section-heading > a {
   display: inline-flex;
