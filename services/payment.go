@@ -203,10 +203,12 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 	payload := url.Values{
 		"amount":                {fmt.Sprintf("%d", amount)},
 		"currency":              {data.Currency},
-		"receipt_email":         {email},
 		"metadata[order_id]":    {refID},
 		"metadata[environment]": {string(s.config.Environment)},
 		// "payment_method_types[]": {"card"}, // omit to have automatic payment options displayed to user
+	}
+	if email != "" {
+		payload.Set("receipt_email", email)
 	}
 	reqBody := strings.NewReader(payload.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, reqBody)
