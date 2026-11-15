@@ -83,15 +83,16 @@ const resetAndFetch = () => {
 
 <style scoped>
 .product-container {
-  max-width: 1200px;
+  max-width: 1280px;
+  width: 100%;
   margin: auto;
-  padding: 20px;
+  padding: 28px 32px;
   text-align: center;
 }
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
   font-family: 'Open Sans', sans-serif;
   margin-top: 20px;
@@ -100,7 +101,7 @@ const resetAndFetch = () => {
 /* Tablet breakpoint */
 @media (max-width: 768px) {
   .product-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 15px;
   }
 }
@@ -108,7 +109,7 @@ const resetAndFetch = () => {
 /* Mobile breakpoint */
 @media (max-width: 480px) {
   .product-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px;
   }
 

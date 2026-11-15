@@ -11,6 +11,8 @@
       <!-- Center: Navigation Links -->
       <div class="nav-center">
         <div class="nav-links">
+          <router-link to="/new"><span class="nav-text">Just added</span></router-link>
+          <router-link to="/popular"><span class="nav-text">Popular</span></router-link>
           <router-link
             v-for="category in categories"
             :key="category.id"
@@ -30,12 +32,14 @@
             ref="mobileMenuBtn"
             :tabindex="0"
             class="mobile-menu-btn"
+            aria-label="Toggle navigation"
+            :aria-expanded="isMobileMenuOpen"
             @click="toggleMobileMenu"
           >
             <Bars3Icon class="icon" />
           </button>
 
-          <router-link to="/cart" :tabindex="0" class="cart-link">
+          <router-link to="/cart" :tabindex="0" class="cart-link" aria-label="Shopping bag">
             <ShoppingBagIcon class="icon" />
             <span v-if="cartStore.hasItems" class="cart-count">{{ cartStore.totalQuantity }}</span>
           </router-link>
@@ -44,13 +48,14 @@
             to="/inbox"
             :tabindex="0"
             class="inbox-link"
+            aria-label="Inbox"
           >
             <EnvelopeIcon class="icon" />
             <span v-if="inboxStore.unreadCount > 0" class="inbox-count">{{
               inboxStore.unreadCount
             }}</span>
           </router-link>
-          <router-link to="/auth" :tabindex="0">
+          <router-link to="/auth" :tabindex="0" aria-label="Your account">
             <UserIcon class="icon" />
           </router-link>
         </div>
@@ -60,6 +65,8 @@
     <!-- Mobile Menu Overlay -->
     <div v-if="isMobileMenuOpen" ref="mobileMenu" class="mobile-menu">
       <div class="mobile-nav-links">
+        <router-link to="/new" @click="closeMobileMenu">Just added</router-link>
+        <router-link to="/popular" @click="closeMobileMenu">Popular</router-link>
         <router-link
           v-for="category in categories"
           :key="category.id"
@@ -147,7 +154,7 @@ nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1400px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 0 2rem;
   height: 70px;
@@ -161,14 +168,15 @@ nav {
 }
 
 .logo {
-  text-transform: uppercase;
-  font-size: 1rem;
+  text-transform: none;
+  font-size: 1.4rem;
+  font-weight: 700;
   letter-spacing: 0.05em;
   color: #000;
 }
 
 .logo a {
-  color: #000;
+  color: var(--accent-color);
   text-decoration: none;
   transition: color 0.3s ease;
   position: relative;
@@ -176,18 +184,25 @@ nav {
 
 /* Center Section - Navigation Links */
 .nav-center {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  flex: 1;
+  min-width: 0;
+  margin: 0 40px;
+  overflow-x: auto;
+  scroll-padding-inline: 6px;
+  padding: 10px 0;
 }
 
 .nav-links {
   display: flex;
-  gap: 2.5rem;
+  gap: 1.5rem;
+  width: max-content;
+  min-width: 100%;
+  padding: 0 6px;
 }
 
 .nav-text {
-  text-transform: uppercase;
+  text-transform: none;
+  white-space: nowrap;
   font-size: 0.85rem;
   letter-spacing: 0.05em;
 }
@@ -206,7 +221,7 @@ nav {
   left: 0;
   width: 0;
   height: 1px;
-  background-color: #000;
+  background-color: var(--accent-color);
   transition: width 0.3s ease;
 }
 
@@ -250,7 +265,7 @@ nav {
   font-size: 9px;
   font-weight: 600;
   color: #fff;
-  background-color: #000;
+  background-color: var(--accent-color);
   border-radius: 50%;
   width: 16px;
   height: 16px;
@@ -306,7 +321,7 @@ nav {
   text-decoration: none;
   padding: 20px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  text-transform: uppercase;
+  text-transform: none;
   font-size: 0.9rem;
   letter-spacing: 0.05em;
   cursor: pointer;

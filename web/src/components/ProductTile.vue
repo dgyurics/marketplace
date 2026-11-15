@@ -41,88 +41,52 @@ const imgURL = computed(() => props.product.images.find((img) => img.type === 'h
 
 <style scoped>
 .product-tile {
-  display: flex;
+  min-width: 0;
   cursor: pointer;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  text-align: center;
-  padding: 20px;
-  border: var(--tile-border);
-  box-shadow: var(--tile-shadow);
-  border-radius: var(--tile-radius);
-  background-color: var(--surface-background);
-  transition:
-    transform 0.2s ease-in-out,
-    box-shadow 0.2s ease-in-out;
+  text-align: left;
 }
-
-.product-tile:hover {
-  transform: scale(1.02);
-  box-shadow: var(--tile-hover-shadow);
-}
-
 .image-container {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 250px; /* Ensures consistent height */
+  aspect-ratio: 1;
+  padding: 16px;
+  background: #f5f5f3;
+  border-radius: 10px;
+  overflow: hidden;
 }
-
 .product-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain; /* Ensures entire image is visible without cropping */
-}
-
-.product-info {
   width: 100%;
-  margin-top: 10px;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.2s ease;
 }
-
+.product-tile:hover .product-image {
+  transform: scale(1.04);
+}
+.product-info {
+  padding: 12px 2px 0;
+}
 .product-title {
-  font-size: 16px;
-  font-weight: 500;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-bottom: 5px;
-}
-
-.product-price {
-  font-size: 11px;
-  font-weight: 700;
-  color: #222;
-  margin: 5px 0;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.product-summary {
   font-size: 14px;
-  color: var(--muted-text-color);
-  margin-top: 5px;
-  padding: 0 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-/* Mobile adjustments */
-@media (max-width: 480px) {
-  .product-tile {
-    padding: 15px;
-  }
-
-  .image-container {
-    height: 200px;
-  }
-
-  .product-title {
-    font-size: 14px;
-    letter-spacing: 1px;
-  }
-
-  .product-summary {
-    font-size: 13px;
-    padding: 0 5px;
-  }
+.product-price {
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 6px;
+}
+.product-summary {
+  font-size: 12px;
+  color: var(--muted-text-color);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
