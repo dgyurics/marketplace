@@ -28,6 +28,7 @@ services:
       - "443:443"
     volumes:
       - ssl-certs:/etc/letsencrypt:ro
+      - nginx-image-cache:/var/cache/nginx/images
     networks:
       - edge
       - media
@@ -188,3 +189,4 @@ volumes:
   postgres-data:
   images-data:
   ssl-certs:
+  nginx-image-cache:
