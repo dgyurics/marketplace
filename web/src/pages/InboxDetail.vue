@@ -1,16 +1,16 @@
 <template>
   <div class="inbox-container">
-    <h2>Inbox</h2>
+    <router-link class="inbox-back" to="/inbox">← Back to inbox</router-link>
+    <header class="inbox-heading conversation-heading">
+      <h1>{{ conversation?.subject || 'Conversation' }}</h1>
+      <EnvelopeIcon class="inbox-heading-icon" />
+    </header>
 
-    <div v-if="loading" class="loading">Loading conversation...</div>
+    <div v-if="loading" class="inbox-state" role="status">Loading conversation...</div>
 
     <div v-else-if="conversation" class="conversation-detail">
-      <div class="detail-header">
-        <h3 class="conversation-title">{{ conversation.subject }}</h3>
-      </div>
-
       <div class="messages">
-        <div v-if="conversation.messages.length === 0" class="no-messages">
+        <div v-if="conversation.messages.length === 0" class="inbox-state">
           No messages in this conversation.
         </div>
         <div v-for="message in conversation.messages" :key="message.id" class="message">
@@ -22,11 +22,12 @@
       </div>
     </div>
 
-    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="inbox-error" role="alert">{{ errorMessage }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
+import { EnvelopeIcon } from '@heroicons/vue/24/outline'
 import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -75,111 +76,75 @@ watch(
 </script>
 
 <style scoped>
-.inbox-container {
-  max-width: 900px;
-  width: calc(100% - 40px);
-  margin: auto;
-  padding: 20px;
-  text-align: center;
-  position: relative;
-  top: -20px;
+.conversation-heading {
+  padding: 16px 20px;
+  margin-bottom: 20px;
 }
-
-@media (max-width: 768px) {
-  .inbox-container {
-    width: calc(100% - 20px);
-    padding: 10px;
-  }
-
-  .detail-header h3 {
-    font-size: 16px;
-    margin: 15px 0;
-  }
-
-  .message {
-    padding: 12px;
-    margin-bottom: 10px;
-  }
-
-  .message-header {
-    font-size: 12px;
-  }
-
-  .message-body {
-    font-size: 14px;
-    line-height: 1.4;
-  }
+.conversation-heading h1 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
-
-.conversation-detail {
-  margin-top: 20px;
+.conversation-heading .inbox-heading-icon {
+  width: 26px;
+  height: 26px;
 }
-
-.detail-header {
-  margin-bottom: 30px;
+.inbox-back {
+  display: inline-block;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--muted-text-color);
 }
-
-.conversation-title {
-  text-transform: capitalize;
-}
-
 .messages {
-  text-align: left;
-}
-
-.no-messages {
-  padding: 20px;
-  color: #666;
-  font-style: italic;
-}
-
-.loading {
-  padding: 20px;
-  font-style: italic;
-  color: #666;
-}
-
-.message {
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 15px;
-  margin-bottom: 15px;
-  background-color: var(--surface-background);
-}
-
-.message-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  font-size: 14px;
-  color: #666;
+  flex-direction: column;
+  gap: 20px;
 }
-
+.message {
+  border: 1px solid #e9e6e0;
+  border-radius: 12px;
+  padding: 28px;
+  background: var(--surface-background);
+  min-width: 0;
+}
+.message-header {
+  border-bottom: 1px solid #f0eeea;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+}
 .message-time {
   font-size: 12px;
+  color: var(--muted-text-color);
 }
-
 .message-body {
-  line-height: 1.6;
+  line-height: 1.8;
   white-space: pre-wrap;
-  font-size: 15px;
-  color: #333;
-  letter-spacing: 0.2px;
-}
-
-.message-body :deep(a) {
-  color: #2563eb;
-  text-decoration: underline;
-}
-
-.message-body :deep(a:hover) {
-  color: #1d4ed8;
-}
-
-.error {
-  color: #e74c3c;
-  margin-top: 15px;
   font-size: 14px;
+  color: #444;
+  overflow-wrap: anywhere;
+}
+.message-body :deep(a) {
+  color: var(--accent-color);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.message-body :deep(a:hover) {
+  color: #a3342b;
+}
+.message-body :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+.message-body :deep(ul),
+.message-body :deep(ol) {
+  padding-left: 20px;
+}
+@media (max-width: 600px) {
+  .message {
+    padding: 20px;
+  }
 }
 </style>
