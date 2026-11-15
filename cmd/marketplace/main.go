@@ -27,7 +27,7 @@ import (
 
 func main() {
 	// Load environment variables
-	utilities.LoadEnvironment()
+	utilities.LoadDotEnv()
 
 	// Root context
 	ctx, cancel := context.WithCancel(context.Background())

@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 		Level: slog.LevelDebug,
 	})
 	// Load environment variables
-	utilities.LoadEnvironment()
+	utilities.LoadDotEnv()
 	port, _ := strconv.Atoi(os.Getenv("POSTGRES_PORT"))
 	dbConfig := types.DBConfig{
 		Host:            os.Getenv("POSTGRES_HOST"),

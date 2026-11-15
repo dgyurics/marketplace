@@ -36,7 +36,7 @@ func LoadConfig() types.Config {
 		MachineID:         loadMachineID(),
 		Payment:           payment,
 		JWT:               loadJWTConfig(),
-		HTTPClientTimeout: loadHttpClientTimeout(),
+		HTTPClientTimeout: loadHTTPClientTimeout(),
 		Image:             loadImageConfig(baseURL),
 		ImageTransform:    imageTransform,
 		Assistant:         assistant,
@@ -242,7 +242,7 @@ func loadEnvironment() types.Environment {
 	}
 }
 
-func loadHttpClientTimeout() time.Duration {
+func loadHTTPClientTimeout() time.Duration {
 	duration, err := time.ParseDuration(getEnvOrDefault("HTTP_CLIENT_TIMEOUT", "30s"))
 	if err != nil {
 		slog.Error("Error parsing duration", "duration", duration, "error", err)

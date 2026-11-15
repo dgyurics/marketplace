@@ -8,7 +8,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func LoadEnvironment() {
+func LoadDotEnv() {
 	env, _ := os.LookupEnv("ENVIRONMENT")
 	if strings.EqualFold(env, "production") {
 		return

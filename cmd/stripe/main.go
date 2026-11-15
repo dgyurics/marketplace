@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// Load environment variables
-	utilities.LoadEnvironment()
+	utilities.LoadDotEnv()
 
 	// Define CLI commands
 	command := flag.String("cmd", "", "Command to execute: listen, update, confirm, refund")
