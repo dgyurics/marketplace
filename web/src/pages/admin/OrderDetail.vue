@@ -92,7 +92,7 @@ import { useRoute } from 'vue-router'
 import { getOrderAdmin, updateOrder } from '@/services/api'
 import type { Order, OrderStatus } from '@/types'
 import { formatPrice } from '@/utilities/currency'
-import { formatDate } from '@/utilities/dateFormat'
+import { formatDate } from '@/utilities/date'
 
 const route = useRoute()
 

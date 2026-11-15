@@ -13,7 +13,7 @@ import DataTable from '@/components/DataTable.vue'
 import { getOrders } from '@/services/api'
 import type { Order } from '@/types'
 import { formatPrice } from '@/utilities/currency'
-import { formatShortDate } from '@/utilities/dateFormat'
+import { formatShortDate } from '@/utilities/date'
 
 const router = useRouter()
 const orders = ref<Order[]>([])

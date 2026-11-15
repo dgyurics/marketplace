@@ -7,7 +7,7 @@
       <form @submit.prevent="handleCreateUser">
         <div class="form-row">
           <InputText v-model="newUserEmail" label="email" type="email" />
-          <SelectInput v-model="newUserRole" label="role" :options="roleOptions" required />
+          <InputSelect v-model="newUserRole" label="role" :options="roleOptions" required />
         </div>
         <button type="submit" class="btn-full-width mt-15" :disabled="!newUserRole">
           Create User
@@ -25,10 +25,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import DataTable from '@/components/DataTable.vue'
-import { InputText, SelectInput } from '@/components/forms'
+import { InputText, InputSelect } from '@/components/forms'
 import { getUsers, createUser } from '@/services/api'
 import type { UserRecord } from '@/types'
-import { formatDate } from '@/utilities/dateFormat'
+import { formatDate } from '@/utilities/date'
 
 const router = useRouter()
 

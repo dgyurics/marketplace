@@ -19,7 +19,7 @@
 
         <!-- Optional comment -->
         <div class="form-group-flex">
-          <TextArea v-model="comment" label="Comment" :resizable="false"></TextArea>
+          <InputTextArea v-model="comment" label="Comment" :resizable="false"></InputTextArea>
         </div>
 
         <div class="button-group">
@@ -43,7 +43,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { InputCurrency, TextArea } from '@/components/forms'
+import { InputCurrency, InputTextArea } from '@/components/forms'
 import { createOffer, getProductById, getOffersByProductId } from '@/services/api'
 import type { Product } from '@/types'
 import { displayPrice, toMajorUnits, toMinorUnits } from '@/utilities/currency'

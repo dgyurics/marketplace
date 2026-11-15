@@ -5,7 +5,7 @@
         <div class="form-row">
           <InputText v-model="newCategory.name" label="name" required />
           <InputText v-model="newCategory.slug" label="slug" required />
-          <SelectInput
+          <InputSelect
             v-model="newCategory.parent_id"
             label="parent category"
             :options="parentCategoryOptions"
@@ -34,7 +34,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import CategoryTile from '@/components/CategoryTile.vue'
-import { InputText, SelectInput } from '@/components/forms'
+import { InputText, InputSelect } from '@/components/forms'
 import { getCategories, createCategory } from '@/services/api'
 import type { Category } from '@/types/category'
 

@@ -57,7 +57,7 @@ import { useRoute } from 'vue-router'
 import { getOfferAdmin, updateOffer } from '@/services/api'
 import type { Offer, OfferStatus } from '@/types'
 import { formatPrice } from '@/utilities/currency'
-import { formatDate } from '@/utilities/dateFormat'
+import { formatDate } from '@/utilities/date'
 
 const route = useRoute()
 

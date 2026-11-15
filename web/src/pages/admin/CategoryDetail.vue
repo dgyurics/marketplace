@@ -5,7 +5,7 @@
         <div class="form-row">
           <InputText v-model="editCategory.name" label="name" required />
           <InputText v-model="editCategory.slug" label="slug" required />
-          <SelectInput
+          <InputSelect
             v-model="editCategory.parent_id"
             label="parent category"
             :options="parentCategoryOptions"
@@ -41,7 +41,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { InputText, SelectInput } from '@/components/forms'
+import { InputText, InputSelect } from '@/components/forms'
 import { getCategoryById, getCategories, updateCategory, removeCategory } from '@/services/api'
 
 const route = useRoute()

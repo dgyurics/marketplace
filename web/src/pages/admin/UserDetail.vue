@@ -70,7 +70,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { getUser, removeUser, createRegistrationCode } from '@/services/api'
 import type { UserRecord, RegistrationCode } from '@/types'
-import { formatDate } from '@/utilities/dateFormat'
+import { formatDate } from '@/utilities/date'
 
 const route = useRoute()
 const router = useRouter()

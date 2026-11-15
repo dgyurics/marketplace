@@ -94,7 +94,7 @@
           <InputText v-model="newProduct.summary" label="Summary" />
         </div>
         <div class="form-group">
-          <SelectInput v-model="newProduct.category" label="Category" :options="categoryOptions" />
+          <InputSelect v-model="newProduct.category" label="Category" :options="categoryOptions" />
         </div>
 
         <div class="checkbox-group">
@@ -116,7 +116,7 @@
       </form>
       <form v-show="currentStep === 3" class="step-content" @submit.prevent="handleSubmit">
         <div class="form-group">
-          <TextArea v-model="newProduct.description" label="Description" />
+          <InputTextArea v-model="newProduct.description" label="Description" />
         </div>
         <div class="form-row-2col">
           <InputNumber v-model="newProduct.cart_limit" label="Cart Limit" min="1" />
@@ -167,8 +167,8 @@ import {
   InputNumber,
   InputText,
   KeyValueEditor,
-  SelectInput,
-  TextArea,
+  InputSelect,
+  InputTextArea,
 } from '@/components/forms'
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'

@@ -9,12 +9,12 @@
           <InputNumber v-model="editProduct.cart_limit" label="cart limit" />
           <InputNumber v-model="editProduct.sort_order" label="sort order" min="0" />
           <InputText v-model="editProduct.tax_code" label="tax code" />
-          <SelectInput v-model="editProduct.category" label="category" :options="categoryOptions" />
+          <InputSelect v-model="editProduct.category" label="category" :options="categoryOptions" />
           <InputText v-model="editProduct.summary" label="summary" />
         </div>
 
         <div class="textarea-row">
-          <TextArea v-model="editProduct.description" label="description"></TextArea>
+          <InputTextArea v-model="editProduct.description" label="description"></InputTextArea>
         </div>
 
         <div class="checkbox-group">
@@ -78,7 +78,13 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { InputNumber, InputText, KeyValueEditor, SelectInput, TextArea } from '@/components/forms'
+import {
+  InputNumber,
+  InputText,
+  KeyValueEditor,
+  InputSelect,
+  InputTextArea,
+} from '@/components/forms'
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import { getProductById, getCategories, updateProduct, removeProduct } from '@/services/api'

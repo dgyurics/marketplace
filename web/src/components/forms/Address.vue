@@ -33,7 +33,7 @@
         />
       </div>
       <div v-if="locale.state_required" class="form-group-flex">
-        <SelectInput
+        <InputSelect
           :label="locale.state_label"
           :options="states"
           :required="locale.state_required"
@@ -68,7 +68,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
-import { InputText, SelectInput } from '@/components/forms'
+import { InputText, InputSelect } from '@/components/forms'
 import type { Address, Locale } from '@/types'
 import { getLocale } from '@/utilities'
 

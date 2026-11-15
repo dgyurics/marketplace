@@ -6,7 +6,7 @@
       <div class="new-zone-form">
         <form @submit.prevent="handleShippingZoneSubmit">
           <div class="form-row">
-            <SelectInput
+            <InputSelect
               v-model="newShippingZone.state"
               :label="locale.state_label"
               :options="states"
@@ -53,7 +53,7 @@
 import { ref, computed, onMounted } from 'vue'
 
 import DataTable from '@/components/DataTable.vue'
-import { InputText, SelectInput } from '@/components/forms'
+import { InputText, InputSelect } from '@/components/forms'
 import {
   getShippingZones,
   createShippingZone,
