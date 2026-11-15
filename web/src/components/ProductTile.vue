@@ -57,27 +57,6 @@ const imgURL = computed(() => props.product.images.find((img) => img.type === 'h
     box-shadow 0.2s ease-in-out;
 }
 
-/* Mobile adjustments */
-@media (max-width: 480px) {
-  .product-tile {
-    padding: 15px;
-  }
-
-  .image-container {
-    height: 200px;
-  }
-
-  .product-title {
-    font-size: 14px;
-    letter-spacing: 1px;
-  }
-
-  .product-summary {
-    font-size: 13px;
-    padding: 0 5px;
-  }
-}
-
 .product-tile:hover {
   transform: scale(1.02);
   box-shadow: var(--tile-hover-shadow);
@@ -124,5 +103,26 @@ const imgURL = computed(() => props.product.images.find((img) => img.type === 'h
   color: var(--muted-text-color);
   margin-top: 5px;
   padding: 0 10px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .product-tile {
+    padding: 15px;
+  }
+
+  .image-container {
+    height: 200px;
+  }
+
+  .product-title {
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+
+  .product-summary {
+    font-size: 13px;
+    padding: 0 5px;
+  }
 }
 </style>
