@@ -31,7 +31,6 @@ export const useInboxStore = defineStore('inbox', {
     async fetchConversations() {
       try {
         this.conversations = await apiGetConversations()
-        console.log('Fetched conversations:', this.conversations)
         return this.conversations
       } catch {
         this.conversations = []

@@ -291,7 +291,7 @@ func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request)
 
 	user, ok := r.Context().Value(services.UserKey).(*types.User)
 	if !ok || user == nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		u.RespondWithError(w, r, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
