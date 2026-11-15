@@ -1,7 +1,12 @@
 <template>
-  <div class="auth-container">
+  <div
+    class="auth-container"
+    :class="{
+      'auth-container--account': authStore.hasMinimumRole('user'),
+      'auth-container--admin': authStore.hasMinimumRole('staff'),
+    }"
+  >
     <template v-if="authStore.hasMinimumRole('user')">
-      <header class="auth-heading"><h1>Your account</h1></header>
       <UserMenu />
     </template>
     <template v-else>
@@ -147,6 +152,14 @@ const handleRegister = async () => {
   border-radius: 14px;
   background: var(--surface-background);
 }
+.auth-container--account {
+  max-width: 620px;
+  padding: 0;
+  border: none;
+}
+.auth-container--admin {
+  max-width: 1000px;
+}
 .auth-heading {
   padding: 24px;
   border-radius: 10px;
@@ -193,14 +206,14 @@ input:focus-visible {
   gap: 12px;
   margin-top: 28px;
 }
-.auth-container :deep(button) {
+.auth-container form button {
   min-width: 0;
   padding: 14px 20px;
   border-radius: 8px;
   font-size: 14px;
   background: var(--accent-color);
 }
-.auth-container :deep(button:hover) {
+.auth-container form button:hover {
   background: #bf3c32;
 }
 .auth-container .btn-outline {
@@ -211,10 +224,6 @@ input:focus-visible {
 .auth-container .btn-outline:hover {
   background: var(--accent-color);
   color: white;
-}
-.auth-container :deep(.button-group.menu) {
-  max-width: 100%;
-  margin-top: 0;
 }
 .error {
   background: #fff2ef;
@@ -240,6 +249,9 @@ input:focus-visible {
     width: calc(100% - 32px);
     margin: 24px auto 40px;
     padding: 20px;
+  }
+  .auth-container--account {
+    padding: 0;
   }
   .auth-heading {
     padding: 20px;
