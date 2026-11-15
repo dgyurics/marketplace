@@ -1,5 +1,9 @@
 <template>
   <div class="product-tile" :tabindex="0" @click="handleClick" @keydown.enter="handleClick">
+    <div class="image-container">
+      <img v-if="imageUrl" :src="imageUrl" alt="" class="product-image" loading="lazy" />
+      <span v-else class="no-image">No image</span>
+    </div>
     <div class="product-info">
       <h3 class="product-title">{{ product.name }}</h3>
       <p class="product-id">ID: {{ product.id }}</p>
@@ -23,6 +27,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type { Product } from '@/types'
@@ -30,6 +35,11 @@ import { formatPrice } from '@/utilities/currency'
 
 const props = defineProps<{ product: Product }>()
 const router = useRouter()
+const imageUrl = computed(
+  () =>
+    props.product.images?.find((image) => image.type === 'hero')?.url ||
+    props.product.images?.[0]?.url
+)
 
 const handleClick = () => {
   router.push(`/admin/products/${props.product.id}`)
@@ -62,6 +72,26 @@ const handleClick = () => {
 .product-tile:hover {
   transform: scale(1.02);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.image-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 150px;
+  margin-bottom: 10px;
+}
+
+.product-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.no-image {
+  color: #888;
+  font-size: 12px;
 }
 
 .product-info {
