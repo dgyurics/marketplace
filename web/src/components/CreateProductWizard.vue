@@ -91,6 +91,14 @@
           <InputNumber v-model="newProduct.inventory" label="Inventory" min="0" required />
         </div>
         <div class="form-group">
+          <InputCurrency
+            id="new-product-member-price"
+            v-model="displayMemberPrice"
+            label="Member price"
+            label-position="inside"
+          />
+        </div>
+        <div class="form-group">
           <InputText v-model="newProduct.summary" label="Summary" />
         </div>
         <div class="form-group">
@@ -200,6 +208,7 @@ const detailsEditor = ref<{ hasErrors: () => boolean } | null>(null)
 const newProduct = ref({
   name: '',
   price: '' as number | '',
+  member_price: '' as number | '',
   inventory: '' as number | '',
   summary: '',
   category: '',
@@ -215,6 +224,12 @@ const newProduct = ref({
 const displayPrice = computed({
   get: () => (newProduct.value.price === '' ? '' : toMajorUnits(newProduct.value.price)),
   set: (value) => (newProduct.value.price = value === '' ? '' : toMinorUnits(value)),
+})
+
+const displayMemberPrice = computed({
+  get: () =>
+    newProduct.value.member_price === '' ? '' : toMajorUnits(newProduct.value.member_price),
+  set: (value) => (newProduct.value.member_price = value === '' ? '' : toMinorUnits(value)),
 })
 const categoryOptions = computed(() =>
   props.categories.map((category) => ({ value: category.slug, label: category.name }))
@@ -305,6 +320,7 @@ const handleSubmit = async () => {
       id: productId.value,
       name: newProduct.value.name.trim(),
       price: newProduct.value.price,
+      member_price: newProduct.value.member_price === '' ? null : newProduct.value.member_price,
       inventory: Number(newProduct.value.inventory),
       summary: newProduct.value.summary,
       ...(newProduct.value.description && { description: newProduct.value.description }),

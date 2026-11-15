@@ -14,7 +14,9 @@
       <form @submit.prevent="handleSubmit">
         <div class="form-group-flex">
           <InputCurrency id="offer-price" v-model="displayOfferPrice" label="Your Offer" required />
-          <p class="help-text">Asking price: {{ displayPrice(product?.price || 0) }}</p>
+          <p class="help-text">
+            Asking price: {{ displayPrice(product?.member_price ?? product?.price ?? 0) }}
+          </p>
         </div>
 
         <!-- Optional comment -->

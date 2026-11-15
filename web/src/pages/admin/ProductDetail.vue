@@ -5,6 +5,7 @@
         <div class="form-row">
           <InputText v-model="editProduct.name" label="name" required />
           <InputNumber v-model="displayPrice" label="Price" step="0.01" required />
+          <InputNumber v-model="displayMemberPrice" label="Member price" step="0.01" />
           <InputNumber v-model="editProduct.inventory" label="inventory" required />
           <InputNumber v-model="editProduct.cart_limit" label="cart limit" />
           <InputNumber v-model="editProduct.sort_order" label="sort order" min="0" />
@@ -107,9 +108,16 @@ const displayPrice = computed({
   set: (value) => (editProduct.value.price = value === '' ? '' : toMinorUnits(value)),
 })
 
+const displayMemberPrice = computed({
+  get: () =>
+    editProduct.value.member_price === '' ? '' : toMajorUnits(editProduct.value.member_price),
+  set: (value) => (editProduct.value.member_price = value === '' ? '' : toMinorUnits(value)),
+})
+
 const editProduct = ref({
   name: '',
   price: '',
+  member_price: '',
   summary: '',
   description: '',
   tax_code: '',
@@ -132,6 +140,7 @@ const fetchProduct = async () => {
     editProduct.value = {
       name: data.name,
       price: data.price,
+      member_price: data.member_price ?? '',
       summary: data.summary ?? '',
       description: data.description ?? '',
       tax_code: data.tax_code ?? '',
@@ -171,6 +180,7 @@ const handleSubmit = async () => {
       id: product.value.id,
       name: editProduct.value.name,
       price: editProduct.value.price,
+      member_price: editProduct.value.member_price === '' ? null : editProduct.value.member_price,
       summary: editProduct.value.summary,
       description: editProduct.value.description || undefined,
       tax_code: editProduct.value.tax_code || undefined,
