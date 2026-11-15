@@ -1,39 +1,40 @@
 import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
-import AdminCategories from '@/pages/admin/Category.vue'
-import AdminCategoryDetail from '@/pages/admin/CategoryDetail.vue'
-import AdminOffers from '@/pages/admin/Offer.vue'
-import AdminOfferDetail from '@/pages/admin/OfferDetail.vue'
-import AdminOrders from '@/pages/admin/Order.vue'
-import AdminOrderDetail from '@/pages/admin/OrderDetail.vue'
-import AdminProducts from '@/pages/admin/Product.vue'
-import AdminProductEdit from '@/pages/admin/ProductDetail.vue'
-import AdminShippingZones from '@/pages/admin/ShippingZone.vue'
-import AdminUsers from '@/pages/admin/User.vue'
-import AdminUserDetail from '@/pages/admin/UserDetail.vue'
-import Cart from '@/pages/Cart.vue'
-import Error from '@/pages/Error.vue'
 import Home from '@/pages/Home.vue'
-import Inbox from '@/pages/Inbox.vue'
-import InboxDetail from '@/pages/InboxDetail.vue'
-import LoginRegister from '@/pages/LoginRegister.vue'
-import NotFound from '@/pages/NotFound.vue'
-import Offer from '@/pages/Offer.vue'
-import OfferDetail from '@/pages/OfferDetail.vue'
-import OrderConfirmation from '@/pages/OrderConfirmation.vue'
-import OrderDetail from '@/pages/OrderDetail.vue'
-import PasswordReset from '@/pages/PasswordReset.vue'
-import PasswordResetRequest from '@/pages/PasswordResetRequest.vue'
-import Payment from '@/pages/Payment.vue'
-import Product from '@/pages/Product.vue'
-import ProductDetails from '@/pages/ProductDetail.vue'
-import Profile from '@/pages/Profile.vue'
-import RegisterConfirmation from '@/pages/RegisterConfirmation.vue'
-import ShippingAddress from '@/pages/ShippingAddress.vue'
 import { getCategories, registerConfirm } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { useInboxStore } from '@/store/inbox'
+
+const AdminCategories = () => import('@/pages/admin/Category.vue')
+const AdminCategoryDetail = () => import('@/pages/admin/CategoryDetail.vue')
+const AdminOffers = () => import('@/pages/admin/Offer.vue')
+const AdminOfferDetail = () => import('@/pages/admin/OfferDetail.vue')
+const AdminOrders = () => import('@/pages/admin/Order.vue')
+const AdminOrderDetail = () => import('@/pages/admin/OrderDetail.vue')
+const AdminProducts = () => import('@/pages/admin/Product.vue')
+const AdminProductEdit = () => import('@/pages/admin/ProductDetail.vue')
+const AdminShippingZones = () => import('@/pages/admin/ShippingZone.vue')
+const AdminUsers = () => import('@/pages/admin/User.vue')
+const AdminUserDetail = () => import('@/pages/admin/UserDetail.vue')
+const Cart = () => import('@/pages/Cart.vue')
+const Error = () => import('@/pages/Error.vue')
+const Inbox = () => import('@/pages/Inbox.vue')
+const InboxDetail = () => import('@/pages/InboxDetail.vue')
+const LoginRegister = () => import('@/pages/LoginRegister.vue')
+const NotFound = () => import('@/pages/NotFound.vue')
+const Offer = () => import('@/pages/Offer.vue')
+const OfferDetail = () => import('@/pages/OfferDetail.vue')
+const OrderConfirmation = () => import('@/pages/OrderConfirmation.vue')
+const OrderDetail = () => import('@/pages/OrderDetail.vue')
+const PasswordReset = () => import('@/pages/PasswordReset.vue')
+const PasswordResetRequest = () => import('@/pages/PasswordResetRequest.vue')
+const Payment = () => import('@/pages/Payment.vue')
+const Product = () => import('@/pages/Product.vue')
+const ProductDetails = () => import('@/pages/ProductDetail.vue')
+const Profile = () => import('@/pages/Profile.vue')
+const RegisterConfirmation = () => import('@/pages/RegisterConfirmation.vue')
+const ShippingAddress = () => import('@/pages/ShippingAddress.vue')
 
 async function initRoutes(): Promise<RouteRecordRaw[]> {
   const baseRoutes: RouteRecordRaw[] = [
