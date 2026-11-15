@@ -52,16 +52,6 @@
         />
       </div>
     </div>
-    <div class="form-group-flex">
-      <InputText
-        label="email"
-        type="email"
-        required
-        :model-value="modelValue.email ?? ''"
-        @update:model-value="(val) => updateField('email', val)"
-      />
-      <small class="receipt-note">A receipt will be sent to this email.</small>
-    </div>
   </div>
 </template>
 
@@ -96,11 +86,5 @@ onMounted(() => {
 
 .form-row .form-group-flex {
   flex: 1;
-}
-
-.receipt-note {
-  font-size: 10px;
-  color: #666;
-  margin-top: 2px;
 }
 </style>
