@@ -1,53 +1,56 @@
 <template>
   <div class="inbox-container">
-    <h2>Inbox</h2>
+    <header class="inbox-heading">
+      <div>
+        <h1>Inbox</h1>
+        <p>Messages and order updates, all in one place.</p>
+      </div>
+      <EnvelopeIcon class="inbox-heading-icon" />
+    </header>
 
     <div class="conversation-list">
-      <div v-if="loading" class="loading">Loading conversations...</div>
-      <div v-else-if="conversations.length === 0" class="no-conversations">
-        No conversations found
+      <div v-if="loading" class="inbox-state" role="status">Loading conversations...</div>
+      <div v-else-if="conversations.length === 0 && !errorMessage" class="inbox-state">
+        <EnvelopeIcon class="empty-icon" />
+        <h2>You're all caught up</h2>
+        <p>Your messages and order updates will appear here.</p>
       </div>
-      <div v-else>
-        <div
+      <ul v-else class="conversation-rows" aria-label="Conversations">
+        <li
           v-for="conversation in conversations"
           :key="conversation.id"
           :class="['conversation-item', { 'conversation-item--unread': isUnread(conversation) }]"
-          tabindex="0"
-          @click="openConversation(conversation.id)"
-          @keydown.enter="openConversation(conversation.id)"
         >
-          <div class="conversation-header">
-            <div class="subject">
-              <span v-if="isUnread(conversation)" class="unread-badge">new</span>
-              <span class="subject-label">Subject: </span>
-              <span :class="['subject-text', { 'subject-text--unread': isUnread(conversation) }]">
-                {{ conversation.subject }}
+          <router-link :to="`/inbox/${conversation.id}`" class="conversation-link">
+            <span class="conversation-symbol"><EnvelopeIcon /></span>
+            <span class="conversation-content">
+              <span class="subject-text">{{ conversation.subject }}</span>
+              <span class="conversation-meta">
+                <span v-if="isUnread(conversation)" class="unread-badge">New</span>
+                <span class="date">{{ formatDate(conversation.updated_at) }}</span>
               </span>
-            </div>
-            <div class="conversation-actions">
-              <div class="date">{{ formatDate(conversation.updated_at) }}</div>
-              <button
-                class="delete-btn"
-                title="Delete conversation"
-                :tabindex="0"
-                @click.stop="removeConversation(conversation.id)"
-              >
-                <TrashIcon class="delete-icon" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+            </span>
+            <ChevronRightIcon class="conversation-arrow" />
+          </router-link>
+          <button
+            type="button"
+            class="delete-btn"
+            :aria-label="`Delete conversation: ${conversation.subject}`"
+            title="Delete conversation"
+            @click="removeConversation(conversation.id)"
+          >
+            <TrashIcon class="delete-icon" />
+          </button>
+        </li>
+      </ul>
     </div>
-
-    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="inbox-error" role="alert">{{ errorMessage }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { TrashIcon } from '@heroicons/vue/24/outline'
+import { ChevronRightIcon, EnvelopeIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 
 import { useInboxStore } from '@/store/inbox'
 import { formatDate } from '@/utilities'
@@ -55,7 +58,6 @@ import { formatDate } from '@/utilities'
 const inboxStore = useInboxStore()
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
-const router = useRouter()
 
 const conversations = computed(() => inboxStore.conversations)
 
@@ -78,10 +80,6 @@ const loadConversations = async () => {
   }
 }
 
-const openConversation = (id: string) => {
-  router.push(`/inbox/${id}`)
-}
-
 const removeConversation = async (id: string) => {
   try {
     await inboxStore.removeConversation(id)
@@ -96,168 +94,133 @@ onMounted(loadConversations)
 </script>
 
 <style scoped>
-.inbox-container {
-  max-width: 900px;
-  width: calc(100% - 40px);
-  margin: auto;
-  padding: 20px;
-  text-align: center;
-  position: relative;
-  top: -20px;
+.conversation-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
-
-@media (max-width: 768px) {
-  .inbox-container {
-    width: calc(100% - 20px);
-    padding: 10px;
-  }
-
-  .conversation-item {
-    padding: 12px;
-  }
-
-  .subject {
-    font-size: 15px;
-  }
-
-  .date-time {
-    font-size: 11px;
-  }
-
-  .from {
-    font-size: 13px;
-  }
-}
-
-.loading {
-  padding: 20px;
-  font-style: italic;
-  color: #666;
-}
-
-.no-conversations {
-  padding: 20px;
-  color: #666;
-  font-style: italic;
-}
-
-/* Conversation List Styles */
-.conversation-list {
-  margin-top: 20px;
-}
-
 .conversation-item {
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 15px;
-  margin-bottom: 10px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  text-align: left;
-  background-color: var(--surface-background);
-}
-
-.conversation-item:hover {
-  background-color: #f5f5f5;
-}
-
-.conversation-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px 12px 12px;
+  border: 1px solid #e9e6e0;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  transition: background 0.2s;
 }
-
-.subject {
-  /* font-weight: 500;
-  font-size: 16px; */
-  flex: 1;
-  margin-right: 10px;
-  text-align: left;
-
-  font-weight: 400;
-  font-size: 14px;
-  text-transform: lowercase;
+.conversation-item:hover {
+  background: #faf8f2;
 }
-
-.subject-label {
-  color: #888;
-}
-
 .conversation-item--unread {
-  border-left: 3px solid #3d3d3d;
+  background: #fffaf3;
+  border-color: #e8d9b6;
 }
-
-.subject-text--unread {
+.conversation-link {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex: 1;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 8px;
+}
+.conversation-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #f5f3ee;
+  color: #7c7568;
+}
+.conversation-symbol svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.5;
+}
+.conversation-item--unread .conversation-symbol {
+  background: #fff0eb;
+  color: var(--accent-color);
+}
+.conversation-content {
+  flex: 1;
+  min-width: 0;
+}
+.subject-text {
+  display: block;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.conversation-item--unread .subject-text {
   font-weight: 600;
 }
-
-.unread-badge {
-  display: inline-block;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #fff;
-  background-color: #3d3d3d;
-  border-radius: 3px;
-  padding: 1px 5px;
-  margin-right: 7px;
-  vertical-align: middle;
-  position: relative;
-  top: -1px;
-}
-
-.subject-text {
-  color: #3d3d3d;
-}
-
-.conversation-actions {
+.conversation-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
+  margin-top: 7px;
+}
+.date {
   font-size: 12px;
-  color: #666;
+  color: var(--muted-text-color);
 }
-
-.delete-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  opacity: 0.4;
-  transition: opacity 0.2s;
+.unread-badge {
+  color: #a3342b;
+  background: #ffe8e2;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 2px 6px;
 }
-
-.delete-btn:hover {
-  opacity: 1;
-}
-
-.delete-icon {
+.conversation-arrow {
   width: 16px;
   height: 16px;
-  color: #666;
+  flex-shrink: 0;
+  color: #888;
 }
-
-.date {
-  margin-bottom: 2px;
+.delete-btn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #777;
+  padding: 10px;
+  border-radius: 8px;
 }
-
-.time {
-  color: #999;
+.delete-btn:hover {
+  background: #fff0eb;
+  color: var(--accent-color);
 }
-
-.from {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 8px;
+.delete-icon {
+  width: 18px;
+  height: 18px;
 }
-
-.error {
-  color: #e74c3c;
-  margin-top: 15px;
-  font-size: 14px;
+.empty-icon {
+  width: 40px;
+  height: 40px;
+  stroke-width: 1.3;
+  color: #8e7650;
+  margin-bottom: 16px;
+}
+@media (max-width: 600px) {
+  .conversation-item {
+    gap: 4px;
+    padding: 8px;
+  }
+  .conversation-link {
+    gap: 12px;
+  }
+  .conversation-symbol {
+    width: 36px;
+    height: 36px;
+  }
+  .conversation-arrow {
+    display: none;
+  }
 }
 </style>

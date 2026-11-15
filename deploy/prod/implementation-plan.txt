@@ -1,0 +1,61 @@
+PRODUCTION DEPLOYMENT PLAN
+
+Goal: download Marketplace, run ./setup.sh, answer a few questions, open the store.
+Proposed work only; not implemented yet.
+
+1. PREBUILT IMAGES
+We build Docker images once per release. Publish ours to GitHub Container
+Registry (currently free for storage/downloads); use upstream third-party images.
+Compose downloads them instead of building on the user's server.
+Ship a small archive with Compose, setup/config files, and maintenance scripts.
+Pin versions. Users need Docker, not Go, Node, or source code.
+
+2. ONE DOMAIN SETTING
+Use /api in the frontend and get the public Stripe key from /config.
+Stop copying production .env into frontend builds. One image works for everyone.
+
+3. AUTOMATIC HTTPS
+Prefer replacing edge Nginx with Caddy for automatic certificates and renewal.
+Persist certificates; preserve routing, upload limits, and rate protection.
+Decide explicitly what replaces Nginx image caching.
+Users provide DNS and open ports 80/443. No manual SSL steps or required www.
+
+4. AUTOMATIC SECRETS
+Generate database credentials, JWT keys, HMAC secret, and imgproxy key/salt.
+Store privately; mount keys instead of baking them into images.
+Never replace existing secrets on reruns. Exclude secrets from build contexts.
+
+5. MINIMAL SETUP
+Ask for domain, country, owner credentials, and SMTP settings.
+Default technical settings. Enable pay on delivery; make Stripe, AI, and rembg
+optional. Validate settings, check prerequisites, wait for healthy services,
+and verify HTTPS before declaring success. Reruns must preserve data.
+
+6. SECURE OWNER + WORKING EMAIL
+Create the owner through a private initialization command using existing hashing.
+Remove the known default admin from fresh installs; handle existing installs
+without overwriting real accounts. Never reset credentials on reruns.
+Send a test email. Customer verification/password recovery still require SMTP;
+owner creation should not. Report incomplete email setup clearly.
+
+7. SIMPLE MAINTENANCE
+One backup command: pg_dump + uploaded images + secrets. Briefly pause writes
+for consistency. Never archive live PostgreSQL files as the database backup.
+Test restoration elsewhere and explain off-server copies.
+Updates: choose version -> backup -> pull -> start -> verify.
+Preserve configuration/volumes. Schema changes may require restoring a backup
+instead of reverting images. Handle PostgreSQL major upgrades separately.
+
+ORDER
+Runtime config -> secrets/owner -> optional services -> HTTPS -> released images
+-> setup/health/email -> backup/restore/updates -> user instructions.
+
+DONE MEANS
+Test a fresh Linux installation, orders/uploads, email, optional Stripe/rembg,
+reboot, rerun, restore, and update. Run relevant Go/frontend checks.
+Measure resource use before promising smaller servers. Preserve unrelated work.
+
+EXISTING BLOCKERS TO RESOLVE
+Missing nginx.conf; mismatched certificate names; keys baked into API images;
+placeholder credentials/blank secrets; public default admin; mandatory rembg;
+missing Compose health checks.
