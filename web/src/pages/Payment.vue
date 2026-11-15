@@ -1,18 +1,31 @@
 <template>
-  <div v-if="!isInitializing" class="container">
-    <h2>Checkout</h2>
-    <OrderSummary :tax-amount="taxAmount" />
+  <div v-if="!isInitializing" class="container checkout-page checkout-page--wide">
+    <header class="checkout-heading">
+      <p class="checkout-eyebrow">Step 2 of 2 · Payment</p>
+      <h1>The final details</h1>
+      <p>Review your items and choose how to pay.</p>
+    </header>
+    <div class="checkout-layout">
+      <div class="checkout-panel">
+        <router-link class="checkout-back" to="/checkout/shipping"
+          >← Edit shipping address</router-link
+        >
+        <h2>Payment method</h2>
+        <PaymentMethodSelector v-model="paymentMethod" :enabled="enabledMethods" />
 
-    <h3>Payment Method</h3>
-    <PaymentMethodSelector v-model="paymentMethod" :enabled="enabledMethods" />
+        <StripeCheckout
+          v-if="paymentMethod === 'stripe'"
+          :amount="cartStore.subtotal + taxAmount"
+        />
 
-    <StripeCheckout v-if="paymentMethod === 'stripe'" :amount="cartStore.subtotal + taxAmount" />
+        <DeliveryCheckout v-else-if="paymentMethod === 'on_delivery'" />
 
-    <DeliveryCheckout v-else-if="paymentMethod === 'on_delivery'" />
+        <NoPaymentMethods v-else />
 
-    <NoPaymentMethods v-else />
-
-    <p v-if="checkoutStore.paymentError" class="error">{{ checkoutStore.paymentError }}</p>
+        <p v-if="checkoutStore.paymentError" class="error">{{ checkoutStore.paymentError }}</p>
+      </div>
+      <OrderSummary :tax-amount="taxAmount" />
+    </div>
   </div>
 </template>
 
@@ -91,16 +104,3 @@ function handleInitError(error: unknown) {
   }
 }
 </script>
-
-<style scoped>
-h2,
-h3 {
-  text-align: center;
-  margin-bottom: 20px;
-  text-transform: capitalize;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-</style>

@@ -50,7 +50,11 @@ async function initializePaymentElement(stripe: Stripe) {
       variables: {
         fontFamily: "'Open Sans', sans-serif",
         fontSizeBase: '16px',
-        borderRadius: '1px',
+        borderRadius: '8px',
+        colorPrimary: window
+          .getComputedStyle(document.documentElement)
+          .getPropertyValue('--accent-color')
+          .trim(),
       },
     },
   })

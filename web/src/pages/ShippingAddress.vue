@@ -1,14 +1,19 @@
 <template>
-  <div class="container">
-    <h2>Checkout</h2>
-    <div>
-      <h3>shipping address</h3>
+  <div class="container checkout-page">
+    <header class="checkout-heading">
+      <p class="checkout-eyebrow">Step 1 of 2 · Shipping</p>
+      <h1>Where should we send it?</h1>
+      <p>Enter your shipping details to continue.</p>
+    </header>
+    <div class="checkout-panel">
       <form @submit.prevent="handleShippingSubmit">
         <AddressForm
           :model-value="checkoutStore.shippingAddress"
           @update:model-value="handleAddressUpdate"
         />
-        <button type="submit" class="btn-full-width mt-15" :tabindex="0">Continue</button>
+        <button type="submit" class="btn-full-width mt-15" :tabindex="0">
+          Continue to payment
+        </button>
       </form>
       <p v-if="checkoutStore.shippingError" class="error">{{ checkoutStore.shippingError }}</p>
     </div>
@@ -68,12 +73,3 @@ async function handleShippingSubmit() {
   }
 }
 </script>
-
-<style scoped>
-h2,
-h3 {
-  text-align: center;
-  margin-bottom: 20px;
-  text-transform: capitalize;
-}
-</style>

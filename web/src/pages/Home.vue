@@ -34,7 +34,7 @@
       <div class="section-heading">
         <div>
           <p class="section-eyebrow">A little inspiration for your day</p>
-          <h2 id="featured-heading">Find something you love</h2>
+          <h2 id="featured-heading">Find your next favorite</h2>
         </div>
         <router-link to="/new">Shop all <ArrowRightIcon /></router-link>
       </div>

@@ -46,11 +46,12 @@ defineEmits<{
 
 .method-btn {
   flex: 1;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  padding: 8px 16px;
+  letter-spacing: 0;
+  text-transform: capitalize;
+  padding: 14px 16px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
   background: transparent;
@@ -64,14 +65,14 @@ defineEmits<{
 }
 
 .method-btn--active {
-  background: #0a0a0a;
+  background: var(--accent-color);
   color: #fff;
-  border-color: #0a0a0a;
+  border-color: var(--accent-color);
 }
 
 .method-btn--active:hover:not(:disabled) {
-  background: #333;
-  border-color: #333;
+  background: #bf3c32;
+  border-color: #bf3c32;
   color: #fff;
 }
 

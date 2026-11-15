@@ -1,6 +1,10 @@
 <template>
-  <div class="container">
-    <h2>Shopping Cart</h2>
+  <div class="container checkout-page checkout-page--wide">
+    <header class="checkout-heading">
+      <p class="checkout-eyebrow">Your finds, all in one place</p>
+      <h1>Shopping cart</h1>
+      <router-link class="checkout-back" to="/new">← Keep shopping</router-link>
+    </header>
 
     <!-- Insufficient stock warning -->
     <div v-if="insufficientStock.length">
@@ -15,43 +19,57 @@
     </div>
 
     <!-- Display a message if the cart is empty -->
-    <div v-if="items.length === 0" class="empty-cart">Your cart is empty</div>
+    <div v-if="items.length === 0" class="checkout-panel empty-cart">
+      <h2>Your cart is empty</h2>
+      <p>Explore new finds and everyday essentials.</p>
+      <router-link class="checkout-link-button" to="/new">Explore new finds</router-link>
+    </div>
 
     <!-- Display the cart items -->
-    <ul v-else>
-      <li v-for="item in items" :key="item.product.id" class="cart-item">
-        <div class="item-info">
-          <ThumbnailImage :images="item.product.images" />
-          <div class="item-text">
-            <span class="item-name">{{ item.product.name }}</span>
-            <p v-if="item.product.summary" class="item-summary">{{ item.product.summary }}</p>
+    <div v-else class="checkout-layout">
+      <ul class="checkout-panel cart-list">
+        <li v-for="item in items" :key="item.product.id" class="cart-item">
+          <div class="item-info">
+            <ThumbnailImage :images="item.product.images" />
+            <div class="item-text">
+              <span class="item-name">{{ item.product.name }}</span>
+              <p v-if="item.product.summary" class="item-summary">{{ item.product.summary }}</p>
+            </div>
           </div>
-        </div>
-        <div class="divider"></div>
-        <div class="item-actions">
-          <div class="item-details">
-            <span class="item-price">{{ formatPrice(item.unit_price) }}</span>
-            <span class="item-quantity">Qty: {{ item.quantity }}</span>
+          <div class="item-actions">
+            <div class="item-details">
+              <span class="item-price">{{ formatPrice(item.unit_price) }}</span>
+              <span class="item-quantity">Qty: {{ item.quantity }}</span>
+            </div>
+            <button
+              class="remove-button"
+              :aria-label="`Remove ${item.product.name} from cart`"
+              :tabindex="0"
+              @click="removeFromCart(item.product.id)"
+            >
+              <TrashIcon class="remove-icon" />
+            </button>
           </div>
-          <button class="remove-button" :tabindex="0" @click="removeFromCart(item.product.id)">
-            <TrashIcon class="remove-icon" />
-          </button>
-        </div>
-      </li>
-    </ul>
+        </li>
+      </ul>
 
-    <!-- Display the subtotal and checkout button -->
-    <div v-if="items.length > 0" class="cart-total">
-      <strong>Subtotal:</strong> {{ formatPrice(subtotal) }}
+      <!-- Display the subtotal and checkout button -->
+      <aside class="checkout-panel cart-summary">
+        <h2>Order summary</h2>
+        <div class="cart-total">
+          <span>Subtotal</span><strong>{{ formatPrice(subtotal) }}</strong>
+        </div>
+        <p class="cart-note">Tax is calculated at checkout.</p>
+        <button
+          v-if="items.length > 0"
+          class="btn-full-width mt-15"
+          :tabindex="0"
+          @click="goToCheckout"
+        >
+          Proceed to Checkout
+        </button>
+      </aside>
     </div>
-    <button
-      v-if="items.length > 0"
-      class="btn-full-width mt-15"
-      :tabindex="0"
-      @click="goToCheckout"
-    >
-      Proceed to Checkout
-    </button>
   </div>
 </template>
 
@@ -106,193 +124,121 @@ const goToCheckout = () => {
 </script>
 
 <style scoped>
-.container {
-  max-width: 1200px;
-}
-
-.remove-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: transparent;
-  color: inherit; /* Match text color */
-  border: none;
-  padding: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  border-radius: 5px;
-  transition: opacity 0.3s;
-  flex-shrink: 0;
-}
-
-@media (max-width: 768px) {
-  .remove-button {
-    align-self: center;
-  }
-}
-
-.remove-button:hover {
-  opacity: 0.7;
-}
-
-.remove-icon {
-  width: 24px;
-  height: 24px;
-}
-
-.empty-cart {
-  text-align: center;
-  font-size: 18px;
-  color: #777;
-  padding: 20px;
-}
-
-/* Cart List */
-ul {
+.cart-list {
   list-style: none;
-  padding: 0;
+  margin: 0;
 }
-
-/* Cart Item */
 .cart-item {
   display: flex;
   align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #ddd;
   justify-content: space-between;
-  gap: 15px;
+  gap: 20px;
+  padding: 22px 0;
 }
-
-@media (max-width: 768px) {
-  .cart-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
+.cart-item:first-child {
+  padding-top: 0;
 }
-
-/* Item Info */
+.cart-item:last-child {
+  padding-bottom: 0;
+}
+.cart-item + .cart-item {
+  border-top: 1px solid #e9e6e0;
+}
 .item-info {
   display: flex;
   align-items: center;
   flex: 1;
-  min-width: 0; /* Prevents text from shrinking */
+  min-width: 0;
+  gap: 18px;
 }
-
-@media (max-width: 768px) {
-  .item-info {
-    width: 100%;
-  }
-}
-
 .item-text {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  margin-left: 20px;
-  flex: 1;
+  min-width: 0;
 }
-
-@media (max-width: 768px) {
-  .item-text {
-    margin-left: 15px;
-  }
-}
-
 .item-name {
-  font-size: 18px;
-  color: #333;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
-
-@media (max-width: 768px) {
-  .item-name {
-    white-space: normal;
-    font-size: 16px;
-  }
-}
-
 .item-summary {
-  font-size: 16px;
-  color: #555;
+  font-size: 12px;
+  color: var(--muted-text-color);
   margin-top: 6px;
-  line-height: 1.4;
-  max-width: 100%;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
 }
-
-/* Divider */
-.divider {
-  width: 2px;
-  height: 80%;
-  background-color: #ddd;
-  margin: 0 15px;
-  flex-shrink: 0;
-}
-
-@media (max-width: 768px) {
-  .divider {
-    display: none;
-  }
-}
-
-/* Price & Quantity & Actions Group */
 .item-actions {
   display: flex;
   align-items: center;
-  gap: 15px;
-  flex-shrink: 0;
+  gap: 16px;
 }
-
-@media (max-width: 768px) {
-  .item-actions {
-    width: 100%;
-    justify-content: space-between;
-    margin: 10px 0;
-  }
-}
-
-/* Price & Quantity */
 .item-details {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  min-width: 120px;
-  font-size: 14px;
+  gap: 4px;
+  white-space: nowrap;
 }
-
-@media (max-width: 768px) {
+.item-price {
+  font-size: 15px;
+  font-weight: 600;
+}
+.item-quantity {
+  font-size: 12px;
+  color: var(--muted-text-color);
+}
+.remove-button {
+  flex: 0;
+  background: transparent;
+  color: #777;
+  padding: 8px;
+  display: flex;
+}
+.remove-button:hover {
+  background: #f7f1df;
+  color: var(--accent-color);
+}
+.remove-icon {
+  width: 20px;
+  height: 20px;
+}
+.empty-cart {
+  text-align: center;
+}
+.empty-cart h2 {
+  text-align: center;
+}
+.empty-cart p {
+  font-size: 14px;
+  color: var(--muted-text-color);
+}
+.cart-summary {
+  background: #f7f1df;
+}
+.cart-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 15px;
+  margin-top: 24px;
+}
+.cart-note {
+  font-size: 12px;
+  color: var(--muted-text-color);
+  margin: 12px 0 24px;
+}
+@media (max-width: 600px) {
+  .cart-item {
+    flex-wrap: wrap;
+  }
+  .item-info {
+    flex-basis: 100%;
+  }
+  .item-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
   .item-details {
     flex-direction: row;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
   }
-}
-
-.item-price {
-  font-weight: 500;
-}
-
-.item-quantity {
-  color: #444;
-  margin-top: 2px;
-}
-
-@media (max-width: 768px) {
-  .item-quantity {
-    margin-top: 0;
-  }
-}
-
-.cart-total {
-  text-align: right;
-  font-size: 14px;
-  color: #444;
-  margin-top: 20px;
-  margin-bottom: 10px;
 }
 </style>

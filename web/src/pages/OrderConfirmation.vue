@@ -1,14 +1,15 @@
 <template>
-  <div class="container">
-    <h2>Order Confirmed</h2>
-    <div class="confirmation-message mt-45">
-      <h3>Your order has been placed!</h3>
-      <p class="confirmation-note">A notification has been sent to your account</p>
+  <div class="container checkout-page">
+    <div class="checkout-panel checkout-confirmation">
+      <CheckCircleIcon class="confirmation-icon" />
+      <h1>Order confirmed</h1>
+      <p>A notification has been sent to your account.</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -68,15 +69,3 @@ const clearCart = () => {
   window.setTimeout(() => window.clearInterval(poll), 10000)
 }
 </script>
-
-<style scoped>
-h2,
-h3 {
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-.confirmation-note {
-  text-align: center;
-}
-</style>

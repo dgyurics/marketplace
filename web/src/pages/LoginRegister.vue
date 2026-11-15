@@ -1,23 +1,24 @@
 <template>
   <div class="auth-container">
     <template v-if="authStore.hasMinimumRole('user')">
-      <h2>You are logged in</h2>
+      <header class="auth-heading"><h1>Your account</h1></header>
       <UserMenu />
     </template>
     <template v-else>
-      <h2>Sign In or Create an Account</h2>
+      <header class="auth-heading">
+        <h1>Sign in or register</h1>
+        <p>Enter your email and password.</p>
+      </header>
 
       <form @submit.prevent="handleLogin">
         <div class="form-group">
           <label for="email">Email</label>
           <input id="email" v-model="email" type="email" required :tabindex="0" />
-          <div class="underline"></div>
         </div>
 
         <div class="form-group">
           <label for="password">Password</label>
           <input id="password" v-model="password" type="password" required :tabindex="0" />
-          <div class="underline"></div>
         </div>
 
         <div class="button-group">
@@ -138,92 +139,113 @@ const handleRegister = async () => {
 
 <style scoped>
 .auth-container {
-  max-width: 450px;
-  margin: auto;
-  padding: 20px;
-  text-align: center;
-  position: relative;
-  top: -20px;
+  width: calc(100% - 64px);
+  max-width: 520px;
+  margin: 48px auto 64px;
+  padding: 36px;
+  border: 1px solid #e9e6e0;
+  border-radius: 14px;
+  background: var(--surface-background);
 }
-
-form {
-  margin-top: 50px;
+.auth-heading {
+  padding: 24px;
+  border-radius: 10px;
+  background: #f7f1df;
+  margin-bottom: 28px;
 }
-
-/* Labels */
+.auth-heading h1 {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.7px;
+}
+.auth-heading p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted-text-color);
+  margin-top: 12px;
+}
+.form-group {
+  margin-bottom: 20px;
+}
 label {
-  font-weight: 500;
-  font-size: 14px;
   display: block;
-  margin-bottom: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
 }
-
-/* Wider Input Fields */
 input {
   width: 100%;
-  max-width: 100%;
-  padding: 10px 0;
-  border: none;
-  border-bottom: 2px solid #999;
-  outline: none;
-  background: transparent;
-  font-size: 18px;
+  padding: 14px 12px;
+  border: 1px solid #d9d5ce;
+  border-radius: 8px;
+  background: var(--surface-background);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 16px;
 }
-
-input:focus {
-  border-bottom: 2px solid black;
+input:focus-visible {
+  border-color: var(--accent-color);
+  outline-offset: 2px;
 }
-
-/* Underline effect */
-.underline {
-  width: 100%;
-  height: 2px;
-  background: #999;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-}
-
-/* Button Group */
 .button-group {
   display: flex;
-  justify-content: space-between;
-  margin-top: 30px;
-  gap: 8px;
+  gap: 12px;
+  margin-top: 28px;
 }
-
-.button-group.menu {
-  flex-direction: column;
-  align-items: center;
-  max-width: 200px;
-  margin: 30px auto 0;
+.auth-container :deep(button) {
+  min-width: 0;
+  padding: 14px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--accent-color);
 }
-
-.button-group.menu button {
-  width: 100%;
+.auth-container :deep(button:hover) {
+  background: #bf3c32;
 }
-
-/* Error message */
+.auth-container .btn-outline {
+  border-color: var(--accent-color);
+  background: white;
+  color: var(--accent-color);
+}
+.auth-container .btn-outline:hover {
+  background: var(--accent-color);
+  color: white;
+}
+.auth-container :deep(.button-group.menu) {
+  max-width: 100%;
+  margin-top: 0;
+}
 .error {
-  color: #d32f2f;
-  font-size: 14px;
-  margin-top: 15px;
+  background: #fff2ef;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #a52f27;
+  font-size: 13px;
+  text-align: left;
+  line-height: 1.7;
+  margin-top: 20px;
+  overflow-wrap: anywhere;
 }
-
-/* Success message */
-.success {
-  font-size: 14px;
-  margin-top: 15px;
-}
-
-/* Reset password text - make entire line black */
 .error :deep(.reset-password-text) {
-  color: #000 !important;
+  color: var(--text-color);
 }
-
-/* Forgot password link styling - keep underline but inherit black color */
 .error :deep(a) {
   color: inherit;
   text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .auth-container {
+    width: calc(100% - 32px);
+    margin: 24px auto 40px;
+    padding: 20px;
+  }
+  .auth-heading {
+    padding: 20px;
+  }
+  .auth-heading h1 {
+    font-size: 23px;
+  }
 }
 </style>
