@@ -7,7 +7,7 @@
           type="text"
           :placeholder="keyPlaceholder"
           class="pair-input"
-          :class="{ error: errors[index] }"
+          :class="{ 'pair-input--error': errors[index] }"
           :tabindex="0"
           @input="validateKey(index)"
         />
@@ -189,7 +189,7 @@ defineExpose({
 .pair-input {
   flex: 1;
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--input-border-color);
   border-radius: 4px;
   font-size: 14px;
   background-color: white;
@@ -201,7 +201,7 @@ defineExpose({
   border-color: #007bff;
 }
 
-.pair-input.error {
+.pair-input.pair-input--error {
   border-color: #e74c3c;
 }
 

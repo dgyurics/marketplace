@@ -53,7 +53,7 @@ const value = computed({
 .input-field {
   width: 100%;
   padding: 24px 12px 6px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--input-border-color);
   border-radius: 1px;
   font-size: 16px;
   box-sizing: border-box;

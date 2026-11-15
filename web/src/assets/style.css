@@ -2,13 +2,23 @@
 @import './fonts.css';
 
 :root {
+  --page-background: #fafafa;
+  --surface-background: #fff;
+  --text-color: #111;
+  --muted-text-color: #666;
+  --tile-border: 1px solid rgba(0, 0, 0, 0.1);
+  --tile-radius: 8px;
+  --tile-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  --tile-hover-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  --input-border-color: #ccc;
+
   font-family: 'Open Sans', sans-serif;
   font-size: 16px;
   line-height: 1.5;
 
   color-scheme: light;
-  color: #111;
-  background-color: #fafafa;
+  color: var(--text-color);
+  background-color: var(--page-background);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -28,8 +38,8 @@ body {
   width: 100%;
   min-height: 100vh;
   margin: 0;
-  background: #fafafa;
-  color: #111;
+  background: var(--page-background);
+  color: var(--text-color);
   display: flex;
   flex-direction: column;
 }
@@ -228,7 +238,7 @@ h2 {
 
 /* Floating Panel Container */
 .floating-panel {
-  background: #fff;
+  background: var(--surface-background);
   border-radius: 12px;
   padding: 30px;
   margin-bottom: 40px;

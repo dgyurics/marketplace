@@ -154,7 +154,7 @@ onMounted(loadConversations)
   cursor: pointer;
   transition: background-color 0.2s;
   text-align: left;
-  background-color: #fff;
+  background-color: var(--surface-background);
 }
 
 .conversation-item:hover {

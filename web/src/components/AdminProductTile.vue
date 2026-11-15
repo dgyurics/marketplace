@@ -55,10 +55,10 @@ const handleClick = () => {
   justify-content: center;
   text-align: center;
   padding: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
-  background-color: #fff;
+  border: var(--tile-border);
+  box-shadow: var(--tile-shadow);
+  border-radius: var(--tile-radius);
+  background-color: var(--surface-background);
   cursor: pointer;
   transition:
     transform 0.2s ease-in-out,
@@ -71,7 +71,7 @@ const handleClick = () => {
 
 .product-tile:hover {
   transform: scale(1.02);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--tile-hover-shadow);
 }
 
 .image-container {
@@ -123,7 +123,7 @@ const handleClick = () => {
 
 .product-summary {
   font-size: 12px;
-  color: #666;
+  color: var(--muted-text-color);
   margin-top: 5px;
   padding: 0 10px;
   line-height: 1.4;

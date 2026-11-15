@@ -20,7 +20,7 @@ import { BuildingStorefrontIcon } from '@heroicons/vue/24/outline'
   padding: 15px 0;
   text-align: center;
   font-size: 14px;
-  background: #fff;
+  background: var(--surface-background);
   color: #000;
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   margin-top: auto;

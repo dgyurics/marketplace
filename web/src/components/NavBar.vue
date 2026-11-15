@@ -138,7 +138,7 @@ onUnmounted(() => {
 nav {
   width: 100%;
   z-index: 1000;
-  background: #fff;
+  background: var(--surface-background);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
@@ -280,7 +280,7 @@ nav {
   left: 0;
   width: 100%;
   height: calc(100vh - 70px);
-  background: white;
+  background: var(--surface-background);
   z-index: 999;
   animation: slideDown 0.3s ease;
 }

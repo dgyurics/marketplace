@@ -74,7 +74,7 @@ watch(
 )
 </script>
 
-<style>
+<style scoped>
 .inbox-container {
   max-width: 900px;
   width: calc(100% - 40px);
@@ -144,7 +144,7 @@ watch(
   border-radius: 4px;
   padding: 15px;
   margin-bottom: 15px;
-  background-color: #fff;
+  background-color: var(--surface-background);
 }
 
 .message-header {
@@ -168,12 +168,12 @@ watch(
   letter-spacing: 0.2px;
 }
 
-.message-body a {
+.message-body :deep(a) {
   color: #2563eb;
   text-decoration: underline;
 }
 
-.message-body a:hover {
+.message-body :deep(a:hover) {
   color: #1d4ed8;
 }
 
