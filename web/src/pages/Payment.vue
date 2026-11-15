@@ -78,9 +78,11 @@ async function initializePayment() {
   const { tax_amount } = await checkoutStore.estimateTax()
   taxAmount.value = tax_amount
 
-  // server decides which payment methods are available
+  // Only offer Stripe for a positive total.
   const options = await getPaymentMethods()
-  enabledMethods.value = (Object.keys(options) as PaymentMethod[]).filter((m) => options[m])
+  enabledMethods.value = (Object.keys(options) as PaymentMethod[]).filter(
+    (m) => options[m] && (m !== 'stripe' || cartStore.subtotal + taxAmount.value > 0)
+  )
   paymentMethod.value = enabledMethods.value[0] ?? null
 
   if (!paymentMethod.value) return
