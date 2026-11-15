@@ -13,21 +13,25 @@ A self-hosted e-commerce framework designed for local businesses and community c
 | Deployment | ✅ | Docker Compose orchestration |
 | Admin dashboard | ✅ | Product + Order management |
 | Geographic shipping | ✅ | Configure coverage and exclusions |
-| Image processing | ✅ | imgproxy + rembg (AI) |
+| Image processing | ✅ | imgproxy |
 | In-app notifications | ✅ | Status updates on orders & offers |
 | Payment processing | ✅ | Pay on delivery, Stripe optional |
 | Email delivery | ❌ | External SMTP (3rd party) |
 
+<br>
+
+*Optional image enhancement and product field suggestions are available through an external provider. Self-hosted background removal is also available with rembg.*
+
 ## Planned Enhancements
 
 * Cache-Control + ETags
-* Optional image enhance + field suggestions
 * No email required for login & registration
 * Documentation for production setup & deployment
 * Product variants (size, color, material, etc.)
 * Geographic access control via Nginx and GeoIP2
 * Product full-text search
 * Simplify configuration & deployment to the max
+* Admin and seller feature showcase
 
 ## Local Development
 
