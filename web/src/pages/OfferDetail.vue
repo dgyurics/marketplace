@@ -78,13 +78,13 @@ onMounted(() => {
 .header {
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .header h1 {
   margin: 0 0 10px 0;
   font-size: 24px;
-  color: #333;
+  color: var(--text-color);
 }
 
 .meta {
@@ -96,12 +96,12 @@ onMounted(() => {
 .id {
   font-family: 'Roboto Mono', monospace;
   font-size: 14px;
-  color: #666;
+  color: var(--muted-text-color);
 }
 
 .status {
   padding: 4px 12px;
-  border-radius: 4px;
+  border-radius: var(--control-radius);
   border-width: 1px;
   border-style: solid;
   font-size: 12px;
@@ -118,17 +118,17 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--subtle-border-color);
 }
 
 .info-row label {
   font-weight: 600;
-  color: #333;
+  color: var(--text-color);
   min-width: 150px;
 }
 
 .info-row span {
-  color: #666;
+  color: var(--muted-text-color);
   flex: 1;
   text-align: right;
 }

@@ -240,23 +240,23 @@ onMounted(() => {
 .header h1 {
   margin: 0;
   font-size: 24px;
-  color: #333;
+  color: var(--text-color);
 }
 
 .error {
   text-align: center;
   padding: 40px;
   font-size: 16px;
-  color: #666;
+  color: var(--muted-text-color);
 }
 
 .error {
-  color: #e74c3c;
+  color: var(--error-color);
 }
 
 .edit-form {
   padding: 30px;
-  border-radius: 8px;
+  border-radius: var(--control-radius);
 }
 
 .form-row {
@@ -296,7 +296,7 @@ onMounted(() => {
   gap: 8px;
   cursor: pointer;
   font-size: 13px;
-  color: #666;
+  color: var(--muted-text-color);
   margin: 0;
 }
 
@@ -304,7 +304,6 @@ onMounted(() => {
   cursor: pointer;
   width: 18px;
   height: 18px;
-  accent-color: #000;
 }
 
 .form-actions {

@@ -35,7 +35,7 @@ const copyUrl = async () => {
   padding: 0;
   min-width: 0;
   background: none;
-  color: #666;
+  color: var(--muted-text-color);
   border: none;
   cursor: pointer;
 }
@@ -46,19 +46,19 @@ const copyUrl = async () => {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 50%;
-  background: #fff;
+  background: var(--surface-background);
 }
 
 .copy-btn:hover {
   background: none;
-  color: #000;
+  color: var(--text-color);
 }
 
 .copy-btn:hover .copy-circle {
-  border-color: #000;
-  background: #f0f0f0;
+  border-color: var(--text-color);
+  background: var(--subtle-background);
 }
 
 .copy-icon {

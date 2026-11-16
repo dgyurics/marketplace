@@ -200,24 +200,24 @@ onUnmounted(() => {
 .image-gallery h3 {
   margin: 0 0 15px 0;
   font-size: 16px;
-  color: #333;
+  color: var(--text-color);
 }
 
 .no-images {
   text-align: center;
   padding: 40px 20px;
-  color: #666;
+  color: var(--muted-text-color);
   font-style: italic;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background-color: #f9f9f9;
+  border: 1px solid var(--border-color);
+  border-radius: var(--control-radius);
+  background-color: var(--subtle-background);
 }
 
 .table-container {
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--control-radius);
   overflow-x: auto;
-  background-color: white;
+  background-color: var(--surface-background);
 }
 
 .images-table {
@@ -227,28 +227,28 @@ onUnmounted(() => {
 }
 
 .images-table th {
-  background-color: #f8f9fa;
+  background-color: var(--subtle-background);
   padding: 12px 8px;
   text-align: left;
   font-weight: 600;
-  color: #495057;
-  border-bottom: 2px solid #dee2e6;
+  color: var(--muted-text-color);
+  border-bottom: 2px solid var(--border-color);
 }
 
 .images-table td {
   padding: 10px 8px;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--border-color);
   vertical-align: middle;
 }
 
 .image-row:hover {
-  background-color: #f8f9fa;
+  background-color: var(--subtle-background);
 }
 
 .id-cell {
   font-family: 'Roboto Mono', monospace;
   font-size: 12px;
-  color: #6c757d;
+  color: var(--muted-text-color);
   width: 120px;
 }
 
@@ -258,7 +258,7 @@ onUnmounted(() => {
 }
 
 .url-link {
-  color: #007bff;
+  color: var(--accent-color);
   cursor: pointer;
   text-decoration: underline;
   font-family: 'Roboto Mono', monospace;
@@ -268,8 +268,8 @@ onUnmounted(() => {
 }
 
 .url-link:hover {
-  color: #0056b3;
-  background-color: #e3f2fd;
+  color: var(--accent-hover-color);
+  background-color: var(--accent-background);
   padding: 2px 4px;
   border-radius: 3px;
 }
@@ -277,7 +277,7 @@ onUnmounted(() => {
 .type-cell {
   width: 100px;
   text-transform: capitalize;
-  color: #495057;
+  color: var(--muted-text-color);
 }
 
 .actions-cell {
@@ -291,7 +291,7 @@ onUnmounted(() => {
   height: 24px;
   border: none;
   background: none;
-  color: #333;
+  color: var(--text-color);
   cursor: pointer;
   font-size: 16px;
   font-weight: bold;
@@ -303,13 +303,13 @@ onUnmounted(() => {
 }
 
 .remove-btn:hover {
-  color: #000;
+  color: var(--text-color);
 }
 
 /* Image Preview Popup */
 .image-preview {
   position: fixed;
-  background: white;
+  background: var(--surface-background);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   max-width: 300px;
@@ -327,8 +327,8 @@ onUnmounted(() => {
 
 .preview-info {
   padding: 8px 12px;
-  background-color: #f8f9fa;
-  border-top: 1px solid #dee2e6;
+  background-color: var(--subtle-background);
+  border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -338,13 +338,13 @@ onUnmounted(() => {
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  color: #495057;
+  color: var(--muted-text-color);
 }
 
 .preview-id {
   font-family: 'Roboto Mono', monospace;
   font-size: 11px;
-  color: #6c757d;
+  color: var(--muted-text-color);
 }
 
 @keyframes fadeIn {

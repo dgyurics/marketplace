@@ -104,17 +104,17 @@ onMounted(loadConversations)
   align-items: center;
   gap: 12px;
   padding: 12px 20px 12px 12px;
-  border: 1px solid #e9e6e0;
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--panel-radius);
   margin-bottom: 12px;
   transition: background 0.2s;
 }
 .conversation-item:hover {
-  background: #faf8f2;
+  background: var(--subtle-background);
 }
 .conversation-item--unread {
-  background: #fffaf3;
-  border-color: #e8d9b6;
+  background: var(--subtle-background);
+  border-color: var(--highlight-border-color);
 }
 .conversation-link {
   display: flex;
@@ -123,7 +123,7 @@ onMounted(loadConversations)
   flex: 1;
   min-width: 0;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: var(--control-radius);
 }
 .conversation-symbol {
   display: flex;
@@ -132,9 +132,9 @@ onMounted(loadConversations)
   width: 44px;
   height: 44px;
   flex-shrink: 0;
-  border-radius: 12px;
-  background: #f5f3ee;
-  color: #7c7568;
+  border-radius: var(--panel-radius);
+  background: var(--subtle-background);
+  color: var(--highlight-icon-color);
 }
 .conversation-symbol svg {
   width: 22px;
@@ -142,7 +142,7 @@ onMounted(loadConversations)
   stroke-width: 1.5;
 }
 .conversation-item--unread .conversation-symbol {
-  background: #fff0eb;
+  background: var(--accent-background);
   color: var(--accent-color);
 }
 .conversation-content {
@@ -169,18 +169,18 @@ onMounted(loadConversations)
   color: var(--muted-text-color);
 }
 .unread-badge {
-  color: #a3342b;
-  background: #ffe8e2;
+  color: var(--accent-text-color);
+  background: var(--accent-background);
   font-size: 10px;
   font-weight: 600;
-  border-radius: 4px;
+  border-radius: var(--control-radius);
   padding: 2px 6px;
 }
 .conversation-arrow {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  color: #888;
+  color: var(--subtle-text-color);
 }
 .delete-btn {
   flex: none;
@@ -188,12 +188,12 @@ onMounted(loadConversations)
   align-items: center;
   justify-content: center;
   background: transparent;
-  color: #777;
+  color: var(--disabled-text-color);
   padding: 10px;
-  border-radius: 8px;
+  border-radius: var(--control-radius);
 }
 .delete-btn:hover {
-  background: #fff0eb;
+  background: var(--accent-background);
   color: var(--accent-color);
 }
 .delete-icon {
@@ -204,7 +204,7 @@ onMounted(loadConversations)
   width: 40px;
   height: 40px;
   stroke-width: 1.3;
-  color: #8e7650;
+  color: var(--highlight-icon-color);
   margin-bottom: 16px;
 }
 @media (max-width: 600px) {

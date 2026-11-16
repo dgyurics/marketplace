@@ -103,14 +103,14 @@ watch(
   gap: 20px;
 }
 .message {
-  border: 1px solid #e9e6e0;
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--panel-radius);
   padding: 28px;
   background: var(--surface-background);
   min-width: 0;
 }
 .message-header {
-  border-bottom: 1px solid #f0eeea;
+  border-bottom: 1px solid var(--subtle-border-color);
   padding-bottom: 14px;
   margin-bottom: 18px;
 }
@@ -122,7 +122,7 @@ watch(
   line-height: 1.8;
   white-space: pre-wrap;
   font-size: 14px;
-  color: #444;
+  color: var(--muted-text-color);
   overflow-wrap: anywhere;
 }
 .message-body :deep(a) {
@@ -131,12 +131,12 @@ watch(
   text-underline-offset: 3px;
 }
 .message-body :deep(a:hover) {
-  color: #a3342b;
+  color: var(--accent-text-color);
 }
 .message-body :deep(img) {
   max-width: 100%;
   height: auto;
-  border-radius: 8px;
+  border-radius: var(--control-radius);
 }
 .message-body :deep(ul),
 .message-body :deep(ol) {

@@ -94,13 +94,26 @@ onMounted(() => {
   gap: 10px;
 }
 
+.form-group-flex {
+  min-width: 0;
+  margin-bottom: 18px;
+}
+
 .form-row .form-group-flex {
   flex: 1;
 }
 
 .receipt-note {
-  font-size: 10px;
-  color: #666;
-  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted-text-color);
+  margin-top: 6px;
+}
+@media (max-width: 600px) {
+  .form-row {
+    flex-wrap: wrap;
+  }
+  .form-row .form-group-flex {
+    flex-basis: 100%;
+  }
 }
 </style>

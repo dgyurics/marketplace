@@ -104,7 +104,7 @@ onMounted(() => {
   align-items: center;
   min-height: 370px;
   padding: 48px 56px;
-  background: #f7f1df;
+  background: var(--highlight-background);
   border-radius: 16px;
   overflow: hidden;
   position: relative;
@@ -118,7 +118,7 @@ onMounted(() => {
 .section-eyebrow {
   font-size: 13px;
   font-weight: 600;
-  color: #8e4337;
+  color: var(--accent-text-color);
   margin-bottom: 14px;
 }
 .hero-title {
@@ -126,7 +126,7 @@ onMounted(() => {
   font-weight: 700;
   letter-spacing: -2px;
   line-height: 1.14;
-  color: #302521;
+  color: var(--text-color);
 }
 .hero-secondary {
   font-size: 13px;
@@ -145,14 +145,14 @@ onMounted(() => {
   align-items: center;
   gap: 14px;
   background: var(--accent-color);
-  color: white;
-  border-radius: 8px;
+  color: var(--on-accent-color);
+  border-radius: var(--control-radius);
   padding: 13px 20px;
   font-size: 14px;
   font-weight: 600;
 }
 .hero-btn:hover {
-  background: #bf3c32;
+  background: var(--accent-hover-color);
 }
 .hero-art {
   position: relative;
@@ -165,7 +165,7 @@ onMounted(() => {
   width: 290px;
   height: 290px;
   border-radius: 50%;
-  background: #ebdda9;
+  background: var(--hero-orbit-background);
   top: 0;
   left: 20px;
 }
@@ -173,12 +173,12 @@ onMounted(() => {
   position: absolute;
   width: 180px;
   height: 210px;
-  border-radius: 14px;
+  border-radius: var(--panel-radius);
   padding: 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 12px 30px #713c2315;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
   font-size: 14px;
 }
 .find-card svg {
@@ -187,15 +187,15 @@ onMounted(() => {
   stroke-width: 1.2;
 }
 .find-card--back {
-  background: #e0e9db;
-  color: #42573c;
+  background: var(--decoration-background);
+  color: var(--decoration-text-color);
   left: 0;
   top: 16px;
   transform: rotate(-12deg);
 }
 .find-card--front {
-  background: #fffaf5;
-  color: #b64a3c;
+  background: var(--surface-background);
+  color: var(--accent-text-color);
   right: 0;
   top: 60px;
   transform: rotate(10deg);

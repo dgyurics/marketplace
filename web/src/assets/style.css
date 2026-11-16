@@ -4,14 +4,40 @@
 :root {
   --page-background: #fff;
   --accent-color: #d9473c;
+  --accent-hover-color: #bf3c32;
+  --accent-text-color: #8e4337;
+  --accent-background: #fff2ef;
+  --on-accent-color: #fff;
   --surface-background: #fff;
   --text-color: #111;
   --muted-text-color: #666;
-  --tile-border: 1px solid rgba(0, 0, 0, 0.1);
-  --tile-radius: 8px;
+  --subtle-text-color: #888;
+  --subtle-background: #faf8f2;
+  --image-background: #f5f5f3;
+  --border-color: #e9e6e0;
+  --subtle-border-color: #f0eeea;
+  --highlight-background: #f7f1df;
+  --highlight-border-color: #d9c99f;
+  --highlight-text-color: #71582c;
+  --highlight-icon-color: #8e7650;
+  --disabled-background: #eee;
+  --disabled-text-color: #777;
+  --error-color: #a52f27;
+  --error-background: #fff2ef;
+  --error-border-color: #f5c6cb;
+  --success-color: #52684b;
+  --success-background: #d4edda;
+  --success-border-color: #c3e6cb;
+  --control-radius: 8px;
+  --panel-radius: 12px;
+  --hero-orbit-background: #ebdda9;
+  --decoration-background: #e0e9db;
+  --decoration-text-color: #42573c;
+  --tile-border: 1px solid var(--border-color);
+  --tile-radius: var(--control-radius);
   --tile-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   --tile-hover-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  --input-border-color: #ccc;
+  --input-border-color: #d9d5ce;
 
   font-family: 'Open Sans', sans-serif;
   font-size: 16px;
@@ -53,17 +79,18 @@ a {
 }
 
 a:hover {
-  color: #333;
+  color: var(--text-color);
 }
 
 /* Buttons */
 button {
   flex: 1;
-  padding: 12px;
-  background: #000;
-  color: #fff;
+  padding: 14px 20px;
+  background: var(--accent-color);
+  color: var(--on-accent-color);
   font-weight: 600;
   border: none;
+  border-radius: var(--control-radius);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -104,45 +131,53 @@ button {
 }
 
 .btn-outline {
-  background: #fff;
-  border: 1px solid #000;
-  color: #000;
+  background: var(--surface-background);
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
 }
 
-button:hover {
-  background: #333;
+button:hover:not(:disabled) {
+  background: var(--accent-hover-color);
 }
 
-.btn-outline:hover {
-  background: #000;
-  color: #fff;
+.btn-outline:hover:not(:disabled) {
+  background: var(--accent-hover-color);
+  color: var(--on-accent-color);
 }
 
 .btn-subtle {
-  background: #f8f9fa;
-  color: #6c757d;
-  border: 1px solid #dee2e6;
+  background: var(--subtle-background);
+  color: var(--muted-text-color);
+  border: 1px solid var(--border-color);
 }
 
-.btn-subtle:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
-  color: #495057;
+.btn-subtle:hover:not(:disabled) {
+  background: var(--highlight-background);
+  border-color: var(--input-border-color);
+  color: var(--text-color);
 }
 
 button:disabled {
   opacity: 0.5;
-  background: #ccc;
-  color: #666;
-  border-color: #999;
+  background: var(--disabled-background);
+  color: var(--disabled-text-color);
+  border-color: var(--border-color);
 }
 
 button:disabled:hover {
   cursor: default;
 }
 
+button,
+input,
+select,
 textarea {
   font-family: inherit;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--accent-color);
 }
 
 /* Headings */
@@ -175,11 +210,6 @@ h2 {
     font-size: 14px;
   }
 
-  button {
-    padding: 8px 16px;
-    font-size: 12px;
-  }
-
   .btn-lg {
     font-size: 14px;
     padding: 8px 16px;
@@ -196,7 +226,7 @@ h2 {
 
 .error {
   text-align: center;
-  color: red;
+  color: var(--error-color);
   margin-top: 15px;
   font-size: 14px;
 }
@@ -240,7 +270,7 @@ h2 {
 /* Floating Panel Container */
 .floating-panel {
   background: var(--surface-background);
-  border-radius: 12px;
+  border-radius: var(--panel-radius);
   padding: 30px;
   margin-bottom: 40px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -266,7 +296,7 @@ h2 {
 .checkout-eyebrow {
   font-size: 12px;
   font-weight: 600;
-  color: #8e4337;
+  color: var(--accent-text-color);
   margin-bottom: 10px;
 }
 .checkout-page h1 {
@@ -289,8 +319,8 @@ h2 {
 .checkout-panel {
   min-width: 0;
   padding: 28px;
-  border: 1px solid #e9e6e0;
-  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--panel-radius);
   background: var(--surface-background);
 }
 .checkout-panel h2 {
@@ -308,67 +338,30 @@ h2 {
 .checkout-panel > .checkout-back {
   margin: 0 0 24px;
 }
-.checkout-page button {
-  border-radius: 8px;
-}
-.checkout-page .btn-full-width,
-.checkout-link-button {
-  background: var(--accent-color);
-  color: #fff;
-  padding: 14px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 8px;
-}
-.checkout-page .btn-full-width:hover:not(:disabled),
-.checkout-link-button:hover {
-  background: #bf3c32;
-  color: #fff;
-}
-.checkout-page .btn-full-width:disabled {
-  background: #eee;
-  color: #777;
-}
 .checkout-link-button {
   display: inline-block;
   margin-top: 24px;
-}
-.checkout-page .input-field {
-  border-color: #d9d5ce;
-  border-radius: 8px;
-  font-family: inherit;
-}
-.checkout-page .input-field:focus-visible {
-  border-color: var(--accent-color);
-  outline-offset: 2px;
-}
-.checkout-page .form-group-flex {
-  min-width: 0;
-  margin-bottom: 18px;
-}
-.checkout-page .receipt-note {
-  font-size: 11px;
-  margin-top: 6px;
-}
-.checkout-page .delivery-info {
-  background: #faf8f2;
-  border-color: #e9e6e0;
-  max-width: none;
+  background: var(--accent-color);
+  color: var(--on-accent-color);
+  padding: 14px 20px;
   font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--control-radius);
 }
-.checkout-page input[type='checkbox'] {
-  accent-color: var(--accent-color);
+.checkout-link-button:hover {
+  background: var(--accent-hover-color);
+  color: var(--on-accent-color);
 }
 .checkout-page .error {
-  background: #fff2ef;
-  border-radius: 8px;
-  color: #a52f27;
+  background: var(--error-background);
+  border-radius: var(--control-radius);
+  color: var(--error-color);
   padding: 12px 16px;
   text-align: left;
 }
 .checkout-confirmation {
   text-align: center;
-  background: #f7f1df;
+  background: var(--highlight-background);
   margin-top: 24px;
   padding: 48px 32px;
 }
@@ -381,7 +374,7 @@ h2 {
 .confirmation-icon {
   width: 56px;
   height: 56px;
-  color: #52684b;
+  color: var(--success-color);
   stroke-width: 1.3;
   margin-bottom: 20px;
 }
@@ -397,12 +390,6 @@ h2 {
   }
   .checkout-panel {
     padding: 20px;
-  }
-  .checkout-page .form-row {
-    flex-wrap: wrap;
-  }
-  .checkout-page .form-row .form-group-flex {
-    flex-basis: 100%;
   }
   .checkout-confirmation {
     padding: 32px 20px;
@@ -423,8 +410,8 @@ h2 {
   gap: 24px;
   padding: 28px 32px;
   margin-bottom: 28px;
-  background: #f7f1df;
-  border-radius: 12px;
+  background: var(--highlight-background);
+  border-radius: var(--panel-radius);
 }
 .inbox-heading > div {
   min-width: 0;
@@ -444,7 +431,7 @@ h2 {
 .inbox-heading-icon {
   width: 44px;
   height: 44px;
-  color: #8e7650;
+  color: var(--highlight-icon-color);
   stroke-width: 1.2;
   flex-shrink: 0;
 }
@@ -452,8 +439,8 @@ h2 {
   width: 100%;
   text-align: center;
   padding: 48px 24px;
-  border: 1px solid #e9e6e0;
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--panel-radius);
   color: var(--muted-text-color);
   font-size: 14px;
 }
@@ -467,9 +454,9 @@ h2 {
   font-size: 13px;
 }
 .inbox-error {
-  background: #fff2ef;
-  color: #a52f27;
-  border-radius: 8px;
+  background: var(--error-background);
+  color: var(--error-color);
+  border-radius: var(--control-radius);
   padding: 14px 18px;
   font-size: 13px;
   margin-top: 20px;

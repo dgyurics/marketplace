@@ -93,28 +93,24 @@ const resetAndFetch = () => {
 .product-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
+  gap: 28px 20px;
   font-family: 'Open Sans', sans-serif;
   margin-top: 20px;
 }
 
-/* Tablet breakpoint */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-/* Mobile breakpoint */
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
+    gap: 24px 12px;
   }
-
   .product-container {
-    padding: 15px;
+    padding: 24px 16px;
   }
 }
 </style>

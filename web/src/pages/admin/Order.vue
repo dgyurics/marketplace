@@ -79,6 +79,6 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 300;
   margin-bottom: 20px;
-  color: #333;
+  color: var(--text-color);
 }
 </style>

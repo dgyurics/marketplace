@@ -11,7 +11,7 @@
 .error {
   text-align: center;
   padding: 4rem 2rem;
-  color: #555;
+  color: var(--muted-text-color);
 }
 
 h1 {

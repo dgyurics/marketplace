@@ -20,6 +20,6 @@ h1 {
 
 p {
   margin-bottom: 2rem;
-  color: #555;
+  color: var(--muted-text-color);
 }
 </style>

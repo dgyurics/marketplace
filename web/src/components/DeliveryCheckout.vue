@@ -39,27 +39,27 @@ const { acknowledged, isSubmitting, submit } = useDeliveryCheckout()
 
 <style scoped>
 .delivery-info {
+  font-size: 14px;
   margin-top: 20px;
   margin-bottom: 12px;
-  border: 1px solid #e9e9e9;
-  background: #fafafa;
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--subtle-background);
+  border-radius: var(--panel-radius);
   padding: 16px 18px;
-  max-width: 560px;
   margin-left: auto;
   margin-right: auto;
 }
 
 .delivery-info-description {
   margin: 0;
-  color: #444;
+  color: var(--muted-text-color);
   line-height: 1.45;
 }
 
 .delivery-steps {
   margin: 12px 0 0;
   padding-left: 18px;
-  color: #444;
+  color: var(--muted-text-color);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -71,7 +71,7 @@ const { acknowledged, isSubmitting, submit } = useDeliveryCheckout()
   margin-top: 14px;
   font-size: 12px;
   line-height: 1.5;
-  color: #555;
+  color: var(--muted-text-color);
   cursor: pointer;
 }
 

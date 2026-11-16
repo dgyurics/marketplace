@@ -49,10 +49,10 @@ const handleRowClick = (row: { [key: string]: unknown }, index: number) => {
 <style scoped>
 .data-table {
   width: 100%;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  color: #212529;
+  background-color: var(--surface-background);
+  border-radius: var(--control-radius);
+  border: 1px solid var(--border-color);
+  color: var(--muted-text-color);
   overflow: hidden;
   font-family: 'Roboto Mono', monospace;
 }
@@ -63,19 +63,20 @@ table {
 }
 
 th {
+  background-color: var(--subtle-background);
   padding: 12px 15px;
   text-align: left;
   font-weight: bold;
   font-size: 12px;
-  color: #333;
-  border-bottom: 1px solid #ddd;
+  color: var(--text-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
 td {
   padding: 12px 15px;
   font-size: 12px;
-  color: #666;
-  border-bottom: 1px solid #f0f0f0;
+  color: var(--muted-text-color);
+  border-bottom: 1px solid var(--subtle-border-color);
 }
 
 tbody tr:last-child td {
@@ -88,7 +89,7 @@ tbody tr:last-child td {
 }
 
 .clickable-row:hover {
-  background-color: #f0f0f0;
+  background-color: var(--subtle-background);
 }
 
 @media (max-width: 480px) {

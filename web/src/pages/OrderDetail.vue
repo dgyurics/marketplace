@@ -160,8 +160,8 @@ onMounted(() => {
 .order-header {
   grid-area: header;
   padding: 24px 28px;
-  border-radius: 12px;
-  background: #f7f1df;
+  border-radius: var(--panel-radius);
+  background: var(--highlight-background);
 }
 .order-header h1 {
   font-size: 26px;
@@ -178,15 +178,15 @@ onMounted(() => {
 .order-id {
   font-family: 'Roboto Mono', monospace;
   font-size: 12px;
-  color: #6c6250;
+  color: var(--highlight-text-color);
   overflow-wrap: anywhere;
 }
 .order-status {
   padding: 4px 10px;
-  border: 1px solid #d9c99f;
+  border: 1px solid var(--highlight-border-color);
   border-radius: 6px;
-  background: #fffaf0;
-  color: #71582c;
+  background: var(--surface-background);
+  color: var(--highlight-text-color);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -197,8 +197,8 @@ onMounted(() => {
 .totals-section {
   min-width: 0;
   padding: 24px;
-  border: 1px solid #e9e6e0;
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--panel-radius);
 }
 .order-info {
   grid-area: info;
@@ -229,7 +229,7 @@ onMounted(() => {
 .address {
   font-size: 13px;
   line-height: 1.8;
-  color: #555;
+  color: var(--muted-text-color);
   overflow-wrap: anywhere;
 }
 .address > div:first-child {
@@ -247,7 +247,7 @@ onMounted(() => {
   padding: 20px 0;
 }
 .order-item + .order-item {
-  border-top: 1px solid #e9e6e0;
+  border-top: 1px solid var(--border-color);
 }
 .order-item:last-child {
   padding-bottom: 0;
@@ -288,7 +288,7 @@ onMounted(() => {
 }
 .totals-section {
   grid-area: totals;
-  background: #f7f1df;
+  background: var(--highlight-background);
 }
 .total-row {
   display: flex;
@@ -300,12 +300,12 @@ onMounted(() => {
   margin-top: 14px;
 }
 .total-row label {
-  color: #6c6250;
+  color: var(--highlight-text-color);
 }
 .total-row.total {
   font-size: 20px;
   font-weight: 700;
-  border-top: 1px solid #ded8c6;
+  border-top: 1px solid var(--highlight-border-color);
   padding-top: 20px;
   margin-top: 20px;
 }

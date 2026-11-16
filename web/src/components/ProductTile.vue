@@ -52,7 +52,7 @@ const imgURL = computed(() => props.product.images.find((img) => img.type === 'h
   width: 100%;
   aspect-ratio: 1;
   padding: 16px;
-  background: #f5f5f3;
+  background: var(--image-background);
   border-radius: 10px;
   overflow: hidden;
 }

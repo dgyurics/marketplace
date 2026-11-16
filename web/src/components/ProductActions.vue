@@ -133,6 +133,8 @@ const handleBuyNow = async () => {
 }
 
 .product-action-buttons button {
+  min-width: 0;
+  padding: 14px 16px;
   font-size: 15px;
 }
 
@@ -140,7 +142,7 @@ const handleBuyNow = async () => {
 .limit-reached-warning {
   text-align: center;
   font-size: 12px;
-  color: #c00;
+  color: var(--error-color);
   margin-top: 8px;
 }
 

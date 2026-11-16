@@ -105,13 +105,13 @@ onMounted(() => {
 .header {
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .header h1 {
   margin: 0 0 10px 0;
   font-size: 24px;
-  color: #333;
+  color: var(--text-color);
 }
 
 .meta {
@@ -122,7 +122,7 @@ onMounted(() => {
 .id {
   font-family: 'Roboto Mono', monospace;
   font-size: 14px;
-  color: #666;
+  color: var(--muted-text-color);
 }
 
 .info-section {
@@ -134,17 +134,17 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--subtle-border-color);
 }
 
 .info-row label {
   font-weight: 600;
-  color: #333;
+  color: var(--text-color);
   min-width: 150px;
 }
 
 .info-row span {
-  color: #666;
+  color: var(--muted-text-color);
   flex: 1;
   text-align: right;
 }
@@ -156,20 +156,20 @@ onMounted(() => {
 
 .status-select {
   padding: 6px 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--control-radius);
   font-size: 14px;
   cursor: pointer;
   text-transform: capitalize;
 }
 
 .status-select:hover {
-  border-color: #999;
+  border-color: var(--subtle-text-color);
 }
 
 .status-select:focus {
   outline: none;
-  border-color: #333;
+  border-color: var(--text-color);
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
 }
 

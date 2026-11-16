@@ -21,7 +21,7 @@ import { BuildingStorefrontIcon } from '@heroicons/vue/24/outline'
   text-align: center;
   font-size: 14px;
   background: var(--surface-background);
-  color: #000;
+  color: var(--text-color);
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   margin-top: auto;
   z-index: 1000;
@@ -43,12 +43,12 @@ import { BuildingStorefrontIcon } from '@heroicons/vue/24/outline'
 }
 
 a {
-  color: #000;
+  color: var(--text-color);
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
 a:hover {
-  color: #333;
+  color: var(--text-color);
 }
 </style>

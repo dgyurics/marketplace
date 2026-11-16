@@ -56,17 +56,21 @@ const value = computed({
 .price-input-wrapper {
   display: flex;
   align-items: center;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--input-border-color);
+  border-radius: var(--control-radius);
   overflow: hidden;
+}
+
+.price-input-wrapper:focus-within {
+  border-color: var(--accent-color);
 }
 
 .price-symbol {
   padding: 10px 8px;
-  background-color: #f5f5f5;
-  border-right: 1px solid #ddd;
+  background-color: var(--subtle-background);
+  border-right: 1px solid var(--border-color);
   font-weight: 500;
-  color: #333;
+  color: var(--text-color);
 }
 
 .price-input-wrapper input {
@@ -75,6 +79,8 @@ const value = computed({
   border: none;
   padding: 10px;
   font-size: 14px;
+  background-color: var(--surface-background);
+  color: var(--text-color);
 }
 
 .price-input-wrapper input::-webkit-outer-spin-button,
@@ -90,7 +96,7 @@ const value = computed({
 
 .price-input-wrapper input:focus {
   outline: none;
-  background-color: #fafafa;
+  background-color: var(--subtle-background);
 }
 .input-container--inside label {
   position: absolute;
@@ -100,7 +106,7 @@ const value = computed({
   margin-bottom: 0;
   font-size: 12px;
   font-weight: 400;
-  color: #666;
+  color: var(--muted-text-color);
   text-transform: capitalize;
 }
 
@@ -110,8 +116,6 @@ const value = computed({
 
 .input-container--inside .price-input-wrapper {
   align-items: stretch;
-  border-color: #ccc;
-  border-radius: 1px;
 }
 
 .input-container--inside .price-symbol {

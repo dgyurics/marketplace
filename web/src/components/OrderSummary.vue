@@ -57,9 +57,9 @@ const total = computed(() => subtotal.value + taxAmount.value)
 .order-summary {
   min-width: 0;
   padding: 28px;
-  border: 1px solid #e9e6e0;
-  background: #f7f1df;
-  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: var(--highlight-background);
+  border-radius: var(--panel-radius);
   font-size: 14px;
 }
 .order-summary h3 {
@@ -80,8 +80,8 @@ const total = computed(() => subtotal.value + taxAmount.value)
   flex-shrink: 0;
   object-fit: contain;
   padding: 6px;
-  background: #fff;
-  border-radius: 8px;
+  background: var(--surface-background);
+  border-radius: var(--control-radius);
 }
 .details {
   min-width: 0;
@@ -103,7 +103,7 @@ const total = computed(() => subtotal.value + taxAmount.value)
   font-size: 12px;
 }
 .totals {
-  border-top: 1px solid #ded8c6;
+  border-top: 1px solid var(--highlight-border-color);
   padding-top: 16px;
   margin-top: 24px;
 }
@@ -114,7 +114,7 @@ const total = computed(() => subtotal.value + taxAmount.value)
   margin-top: 10px;
 }
 .totals p:last-child {
-  border-top: 1px solid #ded8c6;
+  border-top: 1px solid var(--highlight-border-color);
   padding-top: 16px;
   margin-top: 16px;
   font-size: 18px;

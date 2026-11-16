@@ -42,8 +42,11 @@ const value = computed({
   width: 100%;
   padding: 24px 12px 6px 12px;
   border: 1px solid var(--input-border-color);
-  border-radius: 1px;
+  border-radius: var(--control-radius);
   font-size: 16px;
+  font-family: inherit;
+  background-color: var(--surface-background);
+  color: var(--text-color);
   box-sizing: border-box;
 }
 
@@ -59,12 +62,17 @@ const value = computed({
   appearance: textfield;
 }
 
+.input-field:focus-visible {
+  border-color: var(--accent-color);
+  outline-offset: 2px;
+}
+
 .input-label {
   position: absolute;
   top: 4px;
   left: 12px;
   font-size: 12px;
-  color: #666;
+  color: var(--muted-text-color);
   text-transform: capitalize;
 }
 
