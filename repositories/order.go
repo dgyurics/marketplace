@@ -91,9 +91,10 @@ func cancelPendingOrders(ctx context.Context, tx *sql.Tx, userID string) error {
 				)
 			RETURNING id
 		), restored AS (
-			DELETE FROM order_items
+			SELECT product_id, SUM(quantity) AS quantity
+			FROM order_items
 			WHERE order_id IN (SELECT id FROM canceled)
-			RETURNING product_id, quantity
+			GROUP BY product_id
 		)
 		UPDATE products
 		SET inventory = inventory + restored.quantity, updated_at = NOW()
@@ -534,6 +535,21 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	}
 	defer tx.Rollback()
 
+	var previousStatus types.OrderStatus
+	err = tx.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1 FOR UPDATE`, order.ID).Scan(&previousStatus)
+	if err == sql.ErrNoRows {
+		return types.ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+
+	if order.Status != nil && *order.Status != previousStatus &&
+		(previousStatus == types.OrderCanceled || previousStatus == types.OrderRefunded || previousStatus == types.OrderRequested) &&
+		*order.Status != types.OrderCanceled && *order.Status != types.OrderRefunded {
+		return fmt.Errorf("cannot change order status from %s to %s", previousStatus, *order.Status)
+	}
+
 	query := `
 		UPDATE orders SET 
 			status = COALESCE($1, status),
@@ -566,7 +582,7 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 		return err
 	}
 
-	if order.Status == nil {
+	if order.Status == nil || *order.Status == previousStatus {
 		return tx.Commit()
 	}
 
@@ -574,7 +590,17 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	case types.OrderRequested:
 		err = requestOrderApproval(ctx, tx, order.ID)
 	case types.OrderRefunded, types.OrderCanceled:
-		err = reclaimOrderItems(ctx, tx, order.ID)
+		if previousStatus == types.OrderRequested {
+			_, err = tx.ExecContext(ctx, `
+				WITH items AS (
+					DELETE FROM requested_items WHERE order_id = $1
+					RETURNING order_id, product_id, quantity, unit_price
+				)
+				INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+				SELECT order_id, product_id, quantity, unit_price FROM items`, order.ID)
+		} else if previousStatus != types.OrderCanceled && previousStatus != types.OrderRefunded {
+			err = reclaimOrderItems(ctx, tx, order.ID)
+		}
 	}
 	if err != nil {
 		return err
@@ -586,16 +612,12 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 // reclaimOrderItems reclaim reserved inventory
 func reclaimOrderItems(ctx context.Context, tx *sql.Tx, orderID string) error {
 	_, err := tx.ExecContext(ctx, `
-		WITH deleted_requests AS (
-			DELETE FROM requested_items WHERE order_id = $1
-		), deleted_items AS (
-			DELETE FROM order_items
-			WHERE order_id = $1
-			RETURNING product_id, quantity
+		WITH items AS (
+			SELECT product_id, quantity FROM order_items WHERE order_id = $1
 		)
 		UPDATE products
 		SET inventory = inventory + di.quantity, updated_at = NOW()
-		FROM deleted_items di
+		FROM items di
 		WHERE products.id = di.product_id`, orderID)
 	return err
 }
