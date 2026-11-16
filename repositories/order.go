@@ -544,12 +544,6 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 		return err
 	}
 
-	if order.Status != nil && *order.Status != previousStatus &&
-		(previousStatus == types.OrderCanceled || previousStatus == types.OrderRefunded || previousStatus == types.OrderRequested) &&
-		*order.Status != types.OrderCanceled && *order.Status != types.OrderRefunded {
-		return fmt.Errorf("cannot change order status from %s to %s", previousStatus, *order.Status)
-	}
-
 	query := `
 		UPDATE orders SET 
 			status = COALESCE($1, status),
@@ -590,17 +584,7 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	case types.OrderRequested:
 		err = requestOrderApproval(ctx, tx, order.ID)
 	case types.OrderRefunded, types.OrderCanceled:
-		if previousStatus == types.OrderRequested {
-			_, err = tx.ExecContext(ctx, `
-				WITH items AS (
-					DELETE FROM requested_items WHERE order_id = $1
-					RETURNING order_id, product_id, quantity, unit_price
-				)
-				INSERT INTO order_items (order_id, product_id, quantity, unit_price)
-				SELECT order_id, product_id, quantity, unit_price FROM items`, order.ID)
-		} else if previousStatus != types.OrderCanceled && previousStatus != types.OrderRefunded {
-			err = reclaimOrderItems(ctx, tx, order.ID)
-		}
+		err = reclaimOrderItems(ctx, tx, order.ID, previousStatus)
 	}
 	if err != nil {
 		return err
@@ -609,16 +593,28 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	return tx.Commit()
 }
 
-// reclaimOrderItems reclaim reserved inventory
-func reclaimOrderItems(ctx context.Context, tx *sql.Tx, orderID string) error {
+// reclaimOrderItems releases reserved stock while preserving the order's items.
+func reclaimOrderItems(ctx context.Context, tx *sql.Tx, orderID string, previousStatus types.OrderStatus) error {
+	switch previousStatus {
+	case types.OrderCanceled, types.OrderRefunded:
+		return nil
+	case types.OrderRequested:
+		// Requested stock was already released; only move its items back.
+		_, err := tx.ExecContext(ctx, `
+			WITH items AS (
+				DELETE FROM requested_items WHERE order_id = $1
+				RETURNING order_id, product_id, quantity, unit_price
+			)
+			INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+			SELECT order_id, product_id, quantity, unit_price FROM items`, orderID)
+		return err
+	}
+
 	_, err := tx.ExecContext(ctx, `
-		WITH items AS (
-			SELECT product_id, quantity FROM order_items WHERE order_id = $1
-		)
 		UPDATE products
-		SET inventory = inventory + di.quantity, updated_at = NOW()
-		FROM items di
-		WHERE products.id = di.product_id`, orderID)
+		SET inventory = inventory + oi.quantity, updated_at = NOW()
+		FROM order_items oi
+		WHERE products.id = oi.product_id AND oi.order_id = $1`, orderID)
 	return err
 }
 
