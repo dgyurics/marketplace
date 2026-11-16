@@ -585,23 +585,48 @@ func TestUpdateOrderRequested(t *testing.T) {
 			var quantity int
 			var unitPrice int64
 			require.NoError(t, dbPool.QueryRowContext(ctx, `
-				SELECT quantity, unit_price FROM requested_items WHERE order_id = $1 AND product_id = $2`,
+				SELECT quantity, unit_price FROM order_items WHERE order_id = $1 AND product_id = $2`,
 				orderID, productID).Scan(&quantity, &unitPrice))
 			assert.Equal(t, 2, quantity)
 			assert.Equal(t, int64(1000), unitPrice)
 			var count int
 			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT COUNT(*) FROM order_items WHERE order_id = $1`, orderID).Scan(&count))
-			assert.Zero(t, count)
+			assert.Equal(t, 1, count)
 			var status types.OrderStatus
 			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1`, orderID).Scan(&status))
 			assert.Equal(t, types.OrderRequested, status)
+
+			var totalSold int
+			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT total_sold FROM v_products WHERE id = $1`, productID).Scan(&totalSold))
+			assert.Zero(t, totalSold)
+
+			// Approval must fail without changing the order if stock is unavailable.
+			_, err = dbPool.ExecContext(ctx, `UPDATE products SET inventory = 1 WHERE id = $1`, productID)
+			require.NoError(t, err)
+			update.Status = utilities.Ptr(types.OrderPending)
+			var stockErr *types.InsufficientStockError
+			require.ErrorAs(t, repo.UpdateOrder(ctx, update), &stockErr)
+			assert.Equal(t, 1, productInventory(t, productID))
+			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1`, orderID).Scan(&status))
+			assert.Equal(t, types.OrderRequested, status)
+			_, err = dbPool.ExecContext(ctx, `UPDATE products SET inventory = 5 WHERE id = $1`, productID)
+			require.NoError(t, err)
+
+			// Approval reserves stock again; retries must not reserve it twice.
+			update.Status = utilities.Ptr(types.OrderPending)
+			require.NoError(t, repo.UpdateOrder(ctx, update))
+			require.NoError(t, repo.UpdateOrder(ctx, update))
+			assert.Equal(t, 3, productInventory(t, productID))
+			update.Status = utilities.Ptr(types.OrderRequested)
+			require.NoError(t, repo.UpdateOrder(ctx, update))
+			assert.Equal(t, 5, productInventory(t, productID))
 
 			// Canceling an approval request must not release stock again.
 			update.Status = utilities.Ptr(types.OrderCanceled)
 			require.NoError(t, repo.UpdateOrder(ctx, update))
 			assert.Equal(t, 5, productInventory(t, productID))
-			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT COUNT(*) FROM requested_items WHERE order_id = $1`, orderID).Scan(&count))
-			assert.Zero(t, count)
+			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT COUNT(*) FROM order_items WHERE order_id = $1`, orderID).Scan(&count))
+			assert.Equal(t, 1, count)
 			require.NoError(t, repo.UpdateOrder(ctx, update))
 			assert.Equal(t, 5, productInventory(t, productID))
 			fetched, err := repo.GetOrderByID(ctx, orderID)
