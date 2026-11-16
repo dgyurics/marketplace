@@ -97,28 +97,22 @@ func (s *scheduleService) removeStaleOrders(ctx context.Context) {
 					status = 'draft' OR
 					(status = 'pending' AND payment_method = 'stripe')
 				)
-			RETURNING id, address_id
+			RETURNING id
 		),
-		deleted_items AS (
-			DELETE FROM order_items oi
-			USING canceled_orders co
-			WHERE oi.order_id = co.id
-			RETURNING oi.product_id, oi.quantity
+		items AS (
+			SELECT oi.product_id, oi.quantity
+			FROM order_items oi
+			JOIN canceled_orders co ON oi.order_id = co.id
 		),
 		restock_totals AS (
 			SELECT product_id, SUM(quantity) AS quantity
-			FROM deleted_items
+			FROM items
 			GROUP BY product_id
-		),
-		restored AS (
-			UPDATE products
-			SET inventory = inventory + rt.quantity
-			FROM restock_totals rt
-			WHERE products.id = rt.product_id
 		)
-		DELETE FROM addresses
-		WHERE id IN (SELECT address_id FROM canceled_orders)
-		AND id NOT IN (SELECT DISTINCT address_id FROM orders WHERE status != 'canceled')`)
+		UPDATE products
+		SET inventory = inventory + rt.quantity, updated_at = NOW()
+		FROM restock_totals rt
+		WHERE products.id = rt.product_id`)
 	if err != nil {
 		slog.ErrorContext(ctx, "Error canceling stale orders", "error", err)
 	}
@@ -132,9 +126,13 @@ func (s *scheduleService) removeStaleRequestedOrders(ctx context.Context) {
 			SET status = 'canceled', updated_at = NOW()
 			WHERE status = 'requested' AND updated_at < NOW() - INTERVAL '7 days'
 			RETURNING id
+		), items AS (
+			DELETE FROM requested_items
+			WHERE order_id IN (SELECT id FROM canceled_orders)
+			RETURNING order_id, product_id, quantity, unit_price
 		)
-		DELETE FROM requested_items
-		WHERE order_id IN (SELECT id FROM canceled_orders)`)
+		INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+		SELECT order_id, product_id, quantity, unit_price FROM items`)
 	if err != nil {
 		slog.ErrorContext(ctx, "Error canceling stale requested orders", "error", err)
 	}

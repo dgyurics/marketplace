@@ -127,11 +127,41 @@ func TestCancelPendingOrders(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 10, inventory)
 
-	// Order items are removed so the inventory cannot be restored twice
+	// Canceled orders retain the original quantities and prices.
 	var itemCount int
 	err = dbPool.QueryRowContext(ctx, `SELECT COUNT(*) FROM order_items WHERE order_id = $1`, orderID).Scan(&itemCount)
 	assert.NoError(t, err)
-	assert.Zero(t, itemCount)
+	assert.Equal(t, 1, itemCount)
+	var quantity int
+	var unitPrice int64
+	require.NoError(t, dbPool.QueryRowContext(ctx,
+		`SELECT quantity, unit_price FROM order_items WHERE order_id = $1`, orderID).Scan(&quantity, &unitPrice))
+	assert.Equal(t, 7, quantity)
+	assert.Equal(t, int64(1000), unitPrice)
+
+	repo := NewOrderRepository(dbPool)
+	for _, status := range []types.OrderStatus{types.OrderCanceled, types.OrderRefunded, types.OrderCanceled} {
+		require.NoError(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &status}))
+		assert.Equal(t, 10, productInventory(t, productID))
+	}
+	// Exercise direct cancellation and refund as well as checkout replacement.
+	for _, status := range []types.OrderStatus{types.OrderCanceled, types.OrderRefunded} {
+		_, err = dbPool.ExecContext(ctx, `UPDATE orders SET status = 'paid' WHERE id = $1`, orderID)
+		require.NoError(t, err)
+		_, err = dbPool.ExecContext(ctx, `UPDATE products SET inventory = 3 WHERE id = $1`, productID)
+		require.NoError(t, err)
+		require.NoError(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &status}))
+		require.NoError(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &status}))
+		assert.Equal(t, 10, productInventory(t, productID))
+		fetched, err := repo.GetOrderByID(ctx, orderID)
+		require.NoError(t, err)
+		require.Len(t, fetched.Items, 1)
+		assert.Equal(t, 7, fetched.Items[0].Quantity)
+		assert.Equal(t, int64(1000), fetched.Items[0].UnitPrice)
+		var totalSold int
+		require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT total_sold FROM v_products WHERE id = $1`, productID).Scan(&totalSold))
+		assert.Zero(t, totalSold)
+	}
 }
 
 func TestCancelPendingOrders_NoPendingOrder(t *testing.T) {
@@ -574,6 +604,11 @@ func TestUpdateOrderRequested(t *testing.T) {
 			assert.Zero(t, count)
 			require.NoError(t, repo.UpdateOrder(ctx, update))
 			assert.Equal(t, 5, productInventory(t, productID))
+			fetched, err := repo.GetOrderByID(ctx, orderID)
+			require.NoError(t, err)
+			require.Len(t, fetched.Items, 1)
+			assert.Equal(t, 2, fetched.Items[0].Quantity)
+			assert.Equal(t, int64(1000), fetched.Items[0].UnitPrice)
 		})
 	}
 }
