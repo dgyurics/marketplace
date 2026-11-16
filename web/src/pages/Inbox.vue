@@ -21,7 +21,7 @@
           :key="conversation.id"
           :class="['conversation-item', { 'conversation-item--unread': isUnread(conversation) }]"
         >
-          <router-link :to="`/inbox/${conversation.id}`" class="conversation-link">
+          <router-link :to="`/inbox/${conversation.id}`" :tabindex="0" class="conversation-link">
             <span class="conversation-symbol"><EnvelopeIcon /></span>
             <span class="conversation-content">
               <span class="subject-text">{{ conversation.subject }}</span>
@@ -34,6 +34,7 @@
           </router-link>
           <button
             type="button"
+            :tabindex="0"
             class="delete-btn"
             :aria-label="`Delete conversation: ${conversation.subject}`"
             title="Delete conversation"
