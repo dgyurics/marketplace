@@ -111,6 +111,9 @@ func getAppliedMigrations(db *sql.DB) (map[string]bool, error) {
 		}
 		applied[filename] = true
 	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return applied, nil
 }
