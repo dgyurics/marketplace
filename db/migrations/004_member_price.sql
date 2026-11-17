@@ -1,11 +1,14 @@
 ALTER TABLE products
-ADD COLUMN member_price BIGINT CHECK (member_price >= 0);
+ADD COLUMN member_price BIGINT;
+
+DROP VIEW v_products;
 
 CREATE OR REPLACE VIEW v_products AS
 SELECT
     p.id,
     p.name,
     p.price,
+    p.member_price,
     COALESCE(p.summary, '') AS summary,
     COALESCE(p.description, '') AS description,
     p.details,
@@ -19,8 +22,7 @@ SELECT
     c.slug AS category_slug,
     COALESCE(order_stats.total_sold, 0) AS total_sold,
     p.created_at,
-    p.status,
-    p.member_price
+    p.status
 FROM products p
 LEFT JOIN categories c ON p.category_id = c.id
 LEFT JOIN (
