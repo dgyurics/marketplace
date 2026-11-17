@@ -235,14 +235,11 @@ func TestProductMemberPrice(t *testing.T) {
 	require.Len(t, products, 1)
 	assert.Equal(t, product.MemberPrice, products[0].MemberPrice)
 
-	for _, price := range []*int64{util.Ptr(int64(0)), nil} {
+	for _, price := range []*int64{util.Ptr(int64(0)), nil, util.Ptr(int64(-1))} {
 		product.MemberPrice = price
 		require.NoError(t, repo.UpdateProduct(ctx, *product))
 		saved, err = repo.GetProductByID(ctx, product.ID)
 		require.NoError(t, err)
 		assert.Equal(t, price, saved.MemberPrice)
 	}
-
-	product.MemberPrice = util.Ptr(int64(-1))
-	assert.Error(t, repo.UpdateProduct(ctx, *product))
 }

@@ -28,6 +28,8 @@ LEFT JOIN categories c ON p.category_id = c.id
 LEFT JOIN (
     SELECT product_id, sum(oi.quantity) AS total_sold
     FROM order_items oi
+    JOIN orders o ON o.id = oi.order_id
+    WHERE o.status NOT IN ('requested', 'canceled', 'refunded')
     GROUP BY product_id
 ) order_stats ON order_stats.product_id = p.id
 WHERE p.status <> 'archived';
