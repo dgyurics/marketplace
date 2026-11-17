@@ -21,15 +21,16 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
 import AdminProductTile from '@/components/AdminProductTile.vue'
 import CreateProductWizard from '@/components/CreateProductWizard.vue'
 import { getProducts, getCategories } from '@/services/api'
+import type { Product, Category } from '@/types'
 
-const products = ref([])
-const categories = ref([])
+const products = ref<Product[]>([])
+const categories = ref<Category[]>([])
 const showWizard = ref(false)
 
 const handleWizardSuccess = async () => {
