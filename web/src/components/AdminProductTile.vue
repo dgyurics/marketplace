@@ -48,6 +48,7 @@ const handleClick = () => {
 
 <style scoped>
 .product-tile {
+  min-width: 0;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -96,6 +97,7 @@ const handleClick = () => {
 
 .product-info {
   width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .product-title {

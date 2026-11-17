@@ -64,6 +64,7 @@ onMounted(() => {
 <style scoped>
 .product-container {
   max-width: 1000px;
+  width: 100%;
   margin: auto;
   padding: 20px;
 }
@@ -75,7 +76,7 @@ onMounted(() => {
 
 .product-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
 
@@ -92,7 +93,6 @@ onMounted(() => {
   }
 
   .product-grid {
-    grid-template-columns: 1fr;
     gap: 15px;
   }
 }
