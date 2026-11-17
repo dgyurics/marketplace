@@ -36,6 +36,7 @@ func TestCreateAddress(t *testing.T) {
 	err := repo.CreateAddress(ctx, address)
 	assert.NoError(t, err, "Expected no error while creating an address")
 	assert.NotEmpty(t, address.ID, "Expected address ID to be set")
+	assert.False(t, address.UpdatedAt.IsZero(), "Expected updated timestamp to be set on creation")
 
 	// Validate the address fields
 	assert.Equal(t, user.ID, address.UserID, "Expected user ID to match")

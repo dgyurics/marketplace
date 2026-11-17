@@ -85,7 +85,7 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 			country,
 			email
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING created_at
+		RETURNING created_at, updated_at
 	`
 	return r.db.QueryRowContext(ctx, query,
 		address.ID,
@@ -98,7 +98,7 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 		address.PostalCode,
 		address.Country,
 		address.Email,
-	).Scan(&address.CreatedAt)
+	).Scan(&address.CreatedAt, &address.UpdatedAt)
 }
 
 func (r *addressRepository) RemoveAddress(ctx context.Context, userID, addressID string) error {
