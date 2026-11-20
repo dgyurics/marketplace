@@ -156,9 +156,11 @@ export const logout = async () => {
 }
 
 export const getNewAccessToken = async (refreshToken: string): Promise<AuthTokens> => {
-  const response = await axios.post(`${baseURL}/users/refresh-token`, {
-    refresh_token: refreshToken,
-  })
+  const response = await axios.post(
+    `${baseURL}/users/refresh-token`,
+    { refresh_token: refreshToken },
+    { timeout }
+  )
   return response.data
 }
 
