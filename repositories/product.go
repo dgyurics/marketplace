@@ -39,7 +39,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		product.Details = json.RawMessage(`{}`)
 	}
 	query := `
-		INSERT INTO products (id, name, price, summary, description, details, tax_code, inventory, cart_limit, featured, negotiable, category_id, status, member_price)
+		INSERT INTO products (id, name, price, member_price, summary, description, details, tax_code, inventory, cart_limit, featured, negotiable, category_id, status)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 	`
 	_, err := r.db.ExecContext(ctx,
@@ -47,6 +47,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		product.ID,
 		product.Name,
 		product.Price,
+		product.MemberPrice,
 		product.Summary,
 		product.Description,
 		product.Details,
@@ -57,7 +58,6 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		product.Negotiable,
 		categoryID,
 		product.Status,
-		product.MemberPrice,
 	)
 	return err
 }
