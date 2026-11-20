@@ -8,12 +8,12 @@ export interface Product {
   status?: ProductStatus
   price: number
   member_price?: number
-  summary?: string | null
+  summary?: string
+  description?: string
   details: Record<string, unknown>
   images: Image[]
   inventory: number
   category?: Category
-  description?: string
   featured: boolean
   negotiable: boolean
   sort_order?: number
@@ -35,7 +35,7 @@ export interface ProductFilters {
 }
 
 export interface CreateProductRequest {
-  summary?: string | null
+  summary?: string
   name: string
   status?: ProductStatus
   price: number

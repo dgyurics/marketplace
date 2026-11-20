@@ -133,7 +133,7 @@ const fetchProduct = async () => {
       name: data.name,
       price: data.price,
       summary: data.summary ?? '',
-      description: data.description,
+      description: data.description ?? '',
       tax_code: data.tax_code ?? '',
       details: data.details,
       category: data.category?.slug ?? '',

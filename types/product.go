@@ -20,10 +20,10 @@ type Product struct {
 	Price       *int64          `json:"price"`
 	Status      *ProductStatus  `json:"status"`
 	Details     json.RawMessage `json:"details"`
-	Summary     *string         `json:"summary"`
+	Summary     *string         `json:"summary,omitempty"`
 	Description *string         `json:"description,omitempty"`
 	Images      []Image         `json:"images"`
-	Category    *Category       `json:"category"`
+	Category    *Category       `json:"category,omitempty"`
 	TaxCode     *string         `json:"tax_code,omitempty"`
 	Inventory   int             `json:"inventory"`
 	Featured    bool            `json:"featured"`
