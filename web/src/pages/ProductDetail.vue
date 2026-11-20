@@ -27,6 +27,9 @@
         <h1 class="product-title">{{ product.name }}</h1>
         <p v-if="product.summary" class="product-summary">{{ product.summary }}</p>
         <p v-if="product.id" class="product-price">{{ displayPrice(product.price) }}</p>
+        <p v-if="product.id && product.member_price != null" class="member-price">
+          {{ displayPrice(product.member_price) }} <span>for members</span>
+        </p>
 
         <div class="purchase-panel">
           <ProductActions
@@ -202,6 +205,16 @@ onMounted(async () => {
   font-size: 28px;
   font-weight: 700;
   margin-top: 22px;
+}
+.member-price {
+  color: var(--accent-text-color);
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 3px;
+}
+.member-price span {
+  font-size: 14px;
+  font-weight: 400;
 }
 .purchase-panel {
   margin: 24px 0 30px;

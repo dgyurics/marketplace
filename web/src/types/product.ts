@@ -7,6 +7,7 @@ export interface Product {
   name: string
   status?: ProductStatus
   price: number
+  member_price?: number
   summary?: string | null
   details: Record<string, unknown>
   images: Image[]
