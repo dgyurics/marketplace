@@ -16,10 +16,11 @@ type CartService interface {
 
 type cartService struct {
 	cartRepo repositories.CartRepository
+	userRepo repositories.UserRepository
 }
 
-func NewCartService(cartRepo repositories.CartRepository) CartService {
-	return &cartService{cartRepo: cartRepo}
+func NewCartService(cartRepo repositories.CartRepository, userRepo repositories.UserRepository) CartService {
+	return &cartService{cartRepo: cartRepo, userRepo: userRepo}
 }
 
 func (s *cartService) AddItem(ctx context.Context, item *types.CartItem) error {
@@ -27,7 +28,23 @@ func (s *cartService) AddItem(ctx context.Context, item *types.CartItem) error {
 }
 
 func (s *cartService) GetItems(ctx context.Context) ([]types.CartItem, error) {
-	return s.cartRepo.GetItems(ctx, getUserID(ctx))
+	userID := getUserID(ctx)
+	items, err := s.cartRepo.GetItems(ctx, userID)
+	if err != nil || len(items) == 0 {
+		return items, err
+	}
+	user, err := s.userRepo.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user.HasMinimumRole(types.RoleMember) {
+		for i := range items {
+			if items[i].Product.MemberPrice != nil {
+				items[i].Product.Price = items[i].Product.MemberPrice
+			}
+		}
+	}
+	return items, nil
 }
 
 func (s *cartService) RemoveItem(ctx context.Context, productID string) error {
