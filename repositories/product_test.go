@@ -219,3 +219,27 @@ func TestProductImages(t *testing.T) {
 	require.NotNil(t, products)
 	require.Empty(t, products)
 }
+
+func TestProductMemberPrice(t *testing.T) {
+	ctx := context.Background()
+	repo := NewProductRepository(dbPool)
+	product := newProductFixture(t)
+	product.MemberPrice = util.Ptr(int64(1000))
+	require.NoError(t, repo.CreateProduct(ctx, product))
+	saved, err := repo.GetProductByID(ctx, product.ID)
+	require.NoError(t, err)
+	assert.Equal(t, product.MemberPrice, saved.MemberPrice)
+
+	products, err := repo.GetProducts(ctx, types.ProductFilter{Page: 1, Limit: 1000, Categories: []string{product.Category.Slug}})
+	require.NoError(t, err)
+	require.Len(t, products, 1)
+	assert.Equal(t, product.MemberPrice, products[0].MemberPrice)
+
+	for _, price := range []*int64{util.Ptr(int64(0)), nil, util.Ptr(int64(-1))} {
+		product.MemberPrice = price
+		require.NoError(t, repo.UpdateProduct(ctx, *product))
+		saved, err = repo.GetProductByID(ctx, product.ID)
+		require.NoError(t, err)
+		assert.Equal(t, price, saved.MemberPrice)
+	}
+}
