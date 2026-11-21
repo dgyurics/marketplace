@@ -320,7 +320,7 @@ const handleSubmit = async () => {
       id: productId.value,
       name: newProduct.value.name.trim(),
       price: newProduct.value.price,
-      member_price: newProduct.value.member_price === '' ? null : newProduct.value.member_price,
+      ...(newProduct.value.member_price !== '' && { member_price: newProduct.value.member_price }),
       inventory: Number(newProduct.value.inventory),
       summary: newProduct.value.summary,
       ...(newProduct.value.description && { description: newProduct.value.description }),

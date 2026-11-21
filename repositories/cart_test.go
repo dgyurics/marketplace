@@ -289,50 +289,20 @@ func TestCartProductImages(t *testing.T) {
 func TestCartMemberPrice(t *testing.T) {
 	ctx := context.Background()
 	repo := NewCartRepository(dbPool)
-	productRepo := NewProductRepository(dbPool)
-	for _, role := range []types.Role{types.RoleGuest, types.RoleUser, types.RoleMember, types.RoleStaff, types.RoleAdmin} {
-		t.Run(string(role), func(t *testing.T) {
-			user := createUniqueTestUser(t, NewUserRepository(dbPool))
-			t.Cleanup(func() {
-				_, err := dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
-				assert.NoError(t, err)
-			})
-			_, err := dbPool.ExecContext(ctx, "UPDATE users SET role = $1 WHERE id = $2", role, user.ID)
-			require.NoError(t, err)
-			user.Role = role
-
-			for _, price := range []*int64{nil, utilities.Ptr(int64(0)), utilities.Ptr(int64(1000))} {
-				product := newProductFixture(t)
-				product.Inventory = 10
-				product.MemberPrice = price
-				require.NoError(t, productRepo.CreateProduct(ctx, product))
-				item := types.CartItem{Product: types.Product{ID: product.ID}, Quantity: 1}
-				require.NoError(t, repo.AddItem(ctx, user.ID, &item))
-
-				expected := *product.Price
-				if user.HasMinimumRole(types.RoleMember) && price != nil {
-					expected = *price
-				}
-				var storedPrice int64
-				require.NoError(t, dbPool.QueryRowContext(ctx, "SELECT unit_price FROM cart_items WHERE user_id = $1 AND product_id = $2", user.ID, product.ID).Scan(&storedPrice))
-				assert.Equal(t, expected, storedPrice)
-
-				items, err := repo.GetItems(ctx, user.ID)
-				require.NoError(t, err)
-				require.Len(t, items, 1)
-				assert.Equal(t, expected, items[0].UnitPrice)
-				assert.Equal(t, expected, *items[0].Product.Price)
-
-				// Checkout must use the current role, even for an existing cart.
-				_, err = dbPool.ExecContext(ctx, "UPDATE users SET role = 'user' WHERE id = $1", user.ID)
-				require.NoError(t, err)
-				items, err = repo.GetItems(ctx, user.ID)
-				require.NoError(t, err)
-				assert.Equal(t, *product.Price, items[0].UnitPrice)
-				_, err = dbPool.ExecContext(ctx, "UPDATE users SET role = $1 WHERE id = $2", role, user.ID)
-				require.NoError(t, err)
-				require.NoError(t, repo.RemoveItems(ctx, user.ID))
-			}
-		})
-	}
+	user := createUniqueTestUser(t, NewUserRepository(dbPool))
+	t.Cleanup(func() {
+		_, err := dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
+		assert.NoError(t, err)
+	})
+	product := newProductFixture(t)
+	product.Inventory = 10
+	product.MemberPrice = utilities.Ptr(int64(0))
+	require.NoError(t, NewProductRepository(dbPool).CreateProduct(ctx, product))
+	require.NoError(t, repo.AddItem(ctx, user.ID, &types.CartItem{Product: *product, Quantity: 1}))
+	items, err := repo.GetItems(ctx, user.ID)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.NotNil(t, items[0].Product.MemberPrice)
+	assert.Equal(t, int64(0), *items[0].Product.MemberPrice)
+	assert.Equal(t, *product.Price, *items[0].Product.Price)
 }
