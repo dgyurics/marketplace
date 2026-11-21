@@ -12,7 +12,7 @@
       <div class="details">
         <h4>{{ item.product.name }}</h4>
         <p>Quantity: {{ item.quantity }}</p>
-        <p>Unit Price: {{ formatPrice(item.unit_price) }}</p>
+        <p>Unit Price: {{ formatPrice(item.product.price) }}</p>
       </div>
     </div>
     <div class="totals">
@@ -45,7 +45,7 @@ const cartStore = useCartStore()
 const { items: cartItems } = storeToRefs(cartStore)
 
 const subtotal = computed(() =>
-  cartItems.value.reduce((total, item) => total + item.unit_price * item.quantity, 0)
+  cartItems.value.reduce((total, item) => total + item.product.price * item.quantity, 0)
 )
 
 const taxAmount = computed(() => props.taxAmount || 0)

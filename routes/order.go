@@ -147,10 +147,10 @@ func populateOrderFromCart(order *types.Order, cart []types.CartItem) {
 		oi := types.OrderItem{
 			Product:   ci.Product,
 			Quantity:  ci.Quantity,
-			UnitPrice: ci.UnitPrice,
+			UnitPrice: *ci.Product.Price,
 		}
 		order.Items = append(order.Items, oi)
-		order.Amount = u.Ptr(*order.Amount + ci.UnitPrice*int64(ci.Quantity))
+		order.Amount = u.Ptr(*order.Amount + *ci.Product.Price*int64(ci.Quantity))
 	}
 	order.TotalAmount = u.Ptr(*order.Amount + *order.TaxAmount + *order.ShippingAmount)
 }

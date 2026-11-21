@@ -37,7 +37,7 @@
           </div>
           <div class="item-actions">
             <div class="item-details">
-              <span class="item-price">{{ formatPrice(item.unit_price) }}</span>
+              <span class="item-price">{{ formatPrice(item.product.price) }}</span>
               <span class="item-quantity">Qty: {{ item.quantity }}</span>
             </div>
             <button

@@ -337,8 +337,8 @@ func TestCreateOrder_InsufficientStock_ReleasesReservedInventory(t *testing.T) {
 		{outOfStock, 1},
 	} {
 		_, err := dbPool.ExecContext(ctx, `
-			INSERT INTO cart_items (user_id, product_id, quantity, unit_price)
-			VALUES ($1, $2, $3, 1000)`,
+			INSERT INTO cart_items (user_id, product_id, quantity)
+			VALUES ($1, $2, $3)`,
 			user.ID, it.productID, it.quantity)
 		assert.NoError(t, err)
 	}

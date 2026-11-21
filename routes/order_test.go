@@ -19,6 +19,23 @@ type MockOrderService struct {
 	mock.Mock
 }
 
+func TestPopulateOrderFromCartUsesProductPrice(t *testing.T) {
+	price := int64(1200)
+	order := types.Order{
+		Amount:         utilities.Ptr(int64(0)),
+		TaxAmount:      utilities.Ptr(int64(100)),
+		ShippingAmount: utilities.Ptr(int64(200)),
+	}
+	cart := []types.CartItem{{Product: types.Product{Price: &price}, Quantity: 2}}
+
+	populateOrderFromCart(&order, cart)
+	price = 1500
+
+	require.Equal(t, int64(1200), order.Items[0].UnitPrice)
+	require.Equal(t, int64(2400), *order.Amount)
+	require.Equal(t, int64(2700), *order.TotalAmount)
+}
+
 func (m *MockOrderService) CreateOrder(ctx context.Context, order *types.Order) error {
 	args := m.Called(ctx, order)
 	return args.Error(0)

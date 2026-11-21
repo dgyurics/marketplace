@@ -64,7 +64,6 @@ export interface Image {
 export interface CartItem {
   quantity: number
   product: Product
-  unit_price: number
 }
 
 // used by assistant to auto-fill fields
