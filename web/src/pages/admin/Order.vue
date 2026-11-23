@@ -20,7 +20,6 @@ const orders = ref<Order[]>([])
 
 const columns = [
   'id',
-  'email',
   'status',
   'location',
   'amount',
@@ -34,7 +33,6 @@ const columns = [
 const formattedOrders = computed(() =>
   orders.value.map((order) => ({
     id: order.id,
-    email: order.address.email,
     status: order.status ?? 'draft',
     location: order.address
       ? [order.address.city, order.address.state].filter(Boolean).join(', ')

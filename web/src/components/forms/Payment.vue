@@ -66,7 +66,6 @@ async function initializePaymentElement(stripe: Stripe) {
     defaultValues: {
       billingDetails: {
         name: props.address.name,
-        email: props.address.email,
         address: {
           line1: props.address.line1,
           line2: props.address.line2,
