@@ -90,7 +90,7 @@ server {
 
    # API: users
    location ~ ^/api/users(/.*)?$ {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
@@ -104,7 +104,7 @@ server {
 
    # API: orders
    location ~ ^/api/orders(/.*)?$ {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
@@ -118,7 +118,7 @@ server {
 
    # API: stripe webhooks
    location /api/payment/events {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
@@ -132,7 +132,7 @@ server {
 
    # API: image uploads (larger body)
    location /api/images/products/ {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
@@ -146,7 +146,7 @@ server {
 
    # API: catch-all
    location /api/ {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
@@ -161,7 +161,7 @@ server {
 
    # Image proxy (imgproxy) with caching
    location /images/ {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
@@ -188,7 +188,7 @@ server {
 
    # Frontend (web container)
    location / {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
