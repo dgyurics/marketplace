@@ -11,11 +11,7 @@
           >← Edit shipping address</router-link
         >
         <h2>Payment method</h2>
-        <PaymentMethodSelector
-          v-if="enabledMethods.length"
-          v-model="paymentMethod"
-          :enabled="enabledMethods"
-        />
+        <PaymentMethodSelector v-model="paymentMethod" :enabled="enabledMethods" />
 
         <StripeCheckout
           v-if="paymentMethod === 'stripe'"
@@ -24,7 +20,7 @@
 
         <DeliveryCheckout v-else-if="paymentMethod === 'on_delivery'" />
 
-        <NoPaymentMethods v-else-if="!checkoutStore.paymentError" />
+        <NoPaymentMethods v-else />
 
         <p v-if="checkoutStore.paymentError" class="error">{{ checkoutStore.paymentError }}</p>
       </div>
@@ -105,8 +101,6 @@ function handleInitError(error: unknown) {
   if (status === 400) {
     checkoutStore.shippingError = 'Invalid shipping address'
     router.push('/checkout/shipping')
-  } else {
-    checkoutStore.paymentError = 'Sorry, we couldn’t load payment options. Please try again.'
   }
 }
 </script>
