@@ -73,15 +73,14 @@ async function initializePayment() {
     return
   }
 
-  // populate cart and get tax estimate
   await cartStore.fetchCart()
-  const { tax_amount } = await checkoutStore.estimateTax()
+  const { tax_amount, payment_options } = await getPaymentMethods(
+    checkoutStore.shippingAddress.country,
+    checkoutStore.shippingAddress.state
+  )
   taxAmount.value = tax_amount
-
-  // Only offer Stripe for a positive total.
-  const options = await getPaymentMethods()
-  enabledMethods.value = (Object.keys(options) as PaymentMethod[]).filter(
-    (m) => options[m] && (m !== 'stripe' || cartStore.subtotal + taxAmount.value > 0)
+  enabledMethods.value = (Object.keys(payment_options) as PaymentMethod[]).filter(
+    (method) => payment_options[method]
   )
   paymentMethod.value = enabledMethods.value[0] ?? null
 

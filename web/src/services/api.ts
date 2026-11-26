@@ -315,8 +315,11 @@ export const confirmPayOnDelivery = async (orderId: string): Promise<PayOnDelive
   return response.data
 }
 
-export const getPaymentMethods = async (): Promise<PaymentOptions> => {
-  const response = await apiClient.get('/payment/methods')
+export const getPaymentMethods = async (
+  country: string,
+  state?: string
+): Promise<{ tax_amount: number; payment_options: PaymentOptions }> => {
+  const response = await apiClient.get('/payment/methods', { params: { country, state } })
   return response.data
 }
 
@@ -350,21 +353,6 @@ export const getOrderOwner = async (orderId: string): Promise<Order> => {
 
 export const getOrderAdmin = async (orderId: string): Promise<Order> => {
   const response = await apiClient.get(`/orders/${orderId}/admin`)
-  return response.data
-}
-
-export const getTaxEstimate = async (
-  country: string,
-  state?: string
-): Promise<{ tax_amount: number }> => {
-  const params = new URLSearchParams()
-  params.append('country', country)
-
-  if (state) {
-    params.append('state', state)
-  }
-
-  const response = await apiClient.get(`/tax/estimate?${params}`)
   return response.data
 }
 
