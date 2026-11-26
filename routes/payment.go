@@ -16,16 +16,19 @@ type PaymentRoutes struct {
 	router
 	config         types.AppMetadata
 	paymentService services.PaymentService
+	cartService    services.CartService
 }
 
 func NewPaymentRoutes(
 	paymentService services.PaymentService,
+	cartService services.CartService,
 	config types.AppMetadata,
 	router router) *PaymentRoutes {
 	return &PaymentRoutes{
 		router:         router,
 		config:         config,
 		paymentService: paymentService,
+		cartService:    cartService,
 	}
 }
 
@@ -66,11 +69,25 @@ func (h *PaymentRoutes) EventHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PaymentRoutes) PaymentMethods(w http.ResponseWriter, r *http.Request) {
-	// FIXME if user cart is $0 disable stripe
-	u.RespondWithJSON(w, 200, h.config.PaymentOptions)
+	options := h.config.PaymentOptions
+	if options.Stripe {
+		items, err := h.cartService.GetItems(r.Context())
+		if err != nil {
+			u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
+			return
+		}
+		options.Stripe = false
+		for _, item := range items {
+			if item.Product.Price != nil && *item.Product.Price > 0 {
+				options.Stripe = true
+				break
+			}
+		}
+	}
+	u.RespondWithJSON(w, http.StatusOK, options)
 }
 
 func (h *PaymentRoutes) RegisterRoutes() {
 	h.mux.Handle("POST /payment/events", http.HandlerFunc(h.EventHandler))
-	h.mux.Handle("GET /payment/methods", h.authMiddleware.OptionalAuth(http.HandlerFunc(h.PaymentMethods)))
+	h.mux.Handle("GET /payment/methods", h.secure(types.RoleGuest)(h.PaymentMethods))
 }
