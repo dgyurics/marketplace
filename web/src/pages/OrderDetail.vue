@@ -12,10 +12,6 @@
       </div>
 
       <div class="order-info">
-        <div v-if="order.address.email" class="info-row">
-          <label>Email:</label>
-          <span>{{ order.address.email }}</span>
-        </div>
         <div class="info-row">
           <label>Created:</label>
           <span>{{ formatDate(order.created_at) }}</span>

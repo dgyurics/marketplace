@@ -12,7 +12,6 @@ type Address struct {
 	City       string    `json:"city"`            // city, district, suburb, town, village
 	State      *string   `json:"state,omitempty"` // state, county, province, region
 	PostalCode string    `json:"postal_code"`
-	Email      string    `json:"email"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
