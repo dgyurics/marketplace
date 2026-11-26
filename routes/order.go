@@ -271,7 +271,7 @@ func (h *OrderRoutes) CheckoutWithStripe(w http.ResponseWriter, r *http.Request)
 	}
 
 	// create payment intent
-	pi, err := h.paymentService.CreatePaymentIntent(r.Context(), order.ID, *order.TotalAmount, order.Address.Email)
+	pi, err := h.paymentService.CreatePaymentIntent(r.Context(), order.ID, *order.TotalAmount)
 	if err != nil {
 		u.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		return

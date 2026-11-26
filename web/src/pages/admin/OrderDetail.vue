@@ -20,10 +20,6 @@
 
       <div class="order-info">
         <div class="info-row">
-          <label>Email:</label>
-          <span>{{ order.address.email }}</span>
-        </div>
-        <div class="info-row">
           <label>Created:</label>
           <span>{{ formatDate(order.created_at) }}</span>
         </div>

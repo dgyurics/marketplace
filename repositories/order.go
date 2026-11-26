@@ -255,7 +255,6 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			a.state,
 			a.postal_code,
 			a.country,
-			a.email,
 			o.created_at,
 			o.updated_at
 		FROM orders o
@@ -292,7 +291,6 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			&order.Address.State,
 			&order.Address.PostalCode,
 			&order.Address.Country,
-			&order.Address.Email,
 			&order.CreatedAt,
 			&order.UpdatedAt,
 		)
@@ -378,7 +376,6 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 			a.state,
 			a.postal_code,
 			a.country,
-			a.email,
 			o.created_at,
 			o.updated_at
 		FROM orders o
@@ -406,7 +403,6 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 		&order.Address.State,
 		&order.Address.PostalCode,
 		&order.Address.Country,
-		&order.Address.Email,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
@@ -484,7 +480,6 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 			a.state,
 			a.postal_code,
 			a.country,
-			a.email,
 			o.created_at,
 			o.updated_at
 		FROM orders o
@@ -508,7 +503,6 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 		&order.Address.State,
 		&order.Address.PostalCode,
 		&order.Address.Country,
-		&order.Address.Email,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
