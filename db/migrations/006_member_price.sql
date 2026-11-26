@@ -1,5 +1,5 @@
 ALTER TABLE products
-ADD COLUMN member_price BIGINT;
+ADD COLUMN IF NOT EXISTS member_price BIGINT;
 
 DROP VIEW v_products;
 
