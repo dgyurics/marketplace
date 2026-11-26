@@ -3,7 +3,6 @@ package routes
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,48 +13,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type estimateTaxStub struct {
-	services.TaxService
-	tax int64
-	err error
-}
-
-func (s estimateTaxStub) EstimateTax(_ context.Context, addr types.Address, _ []types.CartItem) (int64, error) {
-	if addr.Country != "US" || addr.State == nil || *addr.State != "CA" {
-		return 0, errors.New("incorrect address")
-	}
-	return s.tax, s.err
-}
-
 func TestPaymentMethods(t *testing.T) {
+	zero, positive := int64(0), int64(100)
 	for _, tc := range []struct {
 		name       string
-		price      int64
-		tax        int64
+		items      []types.CartItem
 		configured types.PaymentOptions
 		expected   types.PaymentOptions
 	}{
-		{"zero total", 0, 0, types.PaymentOptions{Stripe: true, OnDelivery: true}, types.PaymentOptions{OnDelivery: true}},
-		{"positive total", 100, 10, types.PaymentOptions{Stripe: true, OnDelivery: true}, types.PaymentOptions{Stripe: true, OnDelivery: true}},
-		{"positive tax", 0, 10, types.PaymentOptions{Stripe: true}, types.PaymentOptions{Stripe: true}},
-		{"stripe disabled", 100, 10, types.PaymentOptions{OnDelivery: true}, types.PaymentOptions{OnDelivery: true}},
-		{"no alternative", 0, 0, types.PaymentOptions{Stripe: true}, types.PaymentOptions{}},
+		{"all free", []types.CartItem{{Product: types.Product{Price: &zero}, Quantity: 2}}, types.PaymentOptions{Stripe: true, OnDelivery: true}, types.PaymentOptions{OnDelivery: true}},
+		{"mixed prices", []types.CartItem{{Product: types.Product{Price: &zero}, Quantity: 1}, {Product: types.Product{Price: &positive}, Quantity: 1}}, types.PaymentOptions{Stripe: true, OnDelivery: true}, types.PaymentOptions{Stripe: true, OnDelivery: true}},
+		{"stripe disabled", []types.CartItem{{Product: types.Product{Price: &positive}, Quantity: 1}}, types.PaymentOptions{OnDelivery: true}, types.PaymentOptions{OnDelivery: true}},
+		{"no alternative", []types.CartItem{{Product: types.Product{Price: &zero}, Quantity: 1}}, types.PaymentOptions{Stripe: true}, types.PaymentOptions{}},
+		{"empty cart", []types.CartItem{}, types.PaymentOptions{Stripe: true}, types.PaymentOptions{}},
+		{"missing price", []types.CartItem{{Product: types.Product{}, Quantity: 1}}, types.PaymentOptions{Stripe: true}, types.PaymentOptions{}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cart := new(MockCartService)
-			items := []types.CartItem{{Product: types.Product{Price: &tc.price}, Quantity: 2}}
-			cart.On("GetItems", mock.Anything).Return(items, nil).Once()
-			h := &PaymentRoutes{cartService: cart, taxService: estimateTaxStub{tax: tc.tax}, config: types.AppMetadata{PaymentOptions: tc.configured}}
+			cart.On("GetItems", mock.Anything).Return(tc.items, nil).Once()
+			h := &PaymentRoutes{cartService: cart, config: types.AppMetadata{PaymentOptions: tc.configured}}
 			w := httptest.NewRecorder()
-			h.PaymentMethods(w, httptest.NewRequest(http.MethodGet, "/payment/methods?country=US&state=CA", nil))
+			h.PaymentMethods(w, httptest.NewRequest(http.MethodGet, "/payment/methods", nil))
 			require.Equal(t, http.StatusOK, w.Code)
-			var result struct {
-				TaxAmount      int64                `json:"tax_amount"`
-				PaymentOptions types.PaymentOptions `json:"payment_options"`
-			}
+			var result types.PaymentOptions
 			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
-			require.Equal(t, tc.tax, result.TaxAmount)
-			require.Equal(t, tc.expected, result.PaymentOptions)
+			require.Equal(t, tc.expected, result)
 			cart.AssertExpectations(t)
 		})
 	}

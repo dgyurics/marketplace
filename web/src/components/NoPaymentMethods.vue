@@ -1,7 +1,7 @@
 <template>
   <section class="no-methods">
-    <p class="no-methods-title">No payment methods available</p>
-    <p class="no-methods-description">Order cannot be placed</p>
+    <p class="no-methods-title">No payment options available</p>
+    <p class="no-methods-description">Sorry, we can’t accept payment for this order right now.</p>
   </section>
 </template>
 

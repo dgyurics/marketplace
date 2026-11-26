@@ -11,7 +11,11 @@
           >← Edit shipping address</router-link
         >
         <h2>Payment method</h2>
-        <PaymentMethodSelector v-model="paymentMethod" :enabled="enabledMethods" />
+        <PaymentMethodSelector
+          v-if="enabledMethods.length"
+          v-model="paymentMethod"
+          :enabled="enabledMethods"
+        />
 
         <StripeCheckout
           v-if="paymentMethod === 'stripe'"
@@ -20,7 +24,7 @@
 
         <DeliveryCheckout v-else-if="paymentMethod === 'on_delivery'" />
 
-        <NoPaymentMethods v-else />
+        <NoPaymentMethods v-else-if="!checkoutStore.paymentError" />
 
         <p v-if="checkoutStore.paymentError" class="error">{{ checkoutStore.paymentError }}</p>
       </div>
@@ -73,15 +77,14 @@ async function initializePayment() {
     return
   }
 
+  // populate cart and get tax estimate
   await cartStore.fetchCart()
-  const { tax_amount, payment_options } = await getPaymentMethods(
-    checkoutStore.shippingAddress.country,
-    checkoutStore.shippingAddress.state
-  )
+  const { tax_amount } = await checkoutStore.estimateTax()
   taxAmount.value = tax_amount
-  enabledMethods.value = (Object.keys(payment_options) as PaymentMethod[]).filter(
-    (method) => payment_options[method]
-  )
+
+  // server decides which payment methods are available
+  const options = await getPaymentMethods()
+  enabledMethods.value = (Object.keys(options) as PaymentMethod[]).filter((m) => options[m])
   paymentMethod.value = enabledMethods.value[0] ?? null
 
   if (!paymentMethod.value) return
@@ -102,6 +105,8 @@ function handleInitError(error: unknown) {
   if (status === 400) {
     checkoutStore.shippingError = 'Invalid shipping address'
     router.push('/checkout/shipping')
+  } else {
+    checkoutStore.paymentError = 'Sorry, we couldn’t load payment options. Please try again.'
   }
 }
 </script>

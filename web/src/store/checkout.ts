@@ -6,6 +6,7 @@ import {
   createOrder as apiCreateOrder,
   createStripeIntent as apiCreateStripeIntent,
   confirmPayOnDelivery as apiConfirmPayOnDelivery,
+  getTaxEstimate as apiGetTaxEstimate,
 } from '@/services/api'
 import type {
   Address,
@@ -47,6 +48,10 @@ export const useCheckoutStore = defineStore('checkout', {
 
       this.shippingAddress = savedAddress
       return savedAddress
+    },
+
+    async estimateTax(): Promise<{ tax_amount: number }> {
+      return apiGetTaxEstimate(this.shippingAddress.country, this.shippingAddress.state)
     },
 
     async createPendingOrder(): Promise<PendingOrderResponse | null> {
