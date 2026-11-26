@@ -30,7 +30,9 @@ func TestPaymentMethods(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cart := new(MockCartService)
-			cart.On("GetItems", mock.Anything).Return(tc.items, nil).Once()
+			if tc.configured.Stripe {
+				cart.On("GetItems", mock.Anything).Return(tc.items, nil).Once()
+			}
 			h := &PaymentRoutes{cartService: cart, config: types.AppMetadata{PaymentOptions: tc.configured}}
 			w := httptest.NewRecorder()
 			h.PaymentMethods(w, httptest.NewRequest(http.MethodGet, "/payment/methods", nil))
@@ -39,6 +41,9 @@ func TestPaymentMethods(t *testing.T) {
 			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
 			require.Equal(t, tc.expected, result)
 			cart.AssertExpectations(t)
+			if !tc.configured.Stripe {
+				cart.AssertNotCalled(t, "GetItems", mock.Anything)
+			}
 		})
 	}
 }
