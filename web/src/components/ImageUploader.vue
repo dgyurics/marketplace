@@ -214,10 +214,10 @@ defineExpose({
 }
 
 .uploader-container {
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--control-radius);
   padding: 15px;
-  background-color: #f9f9f9;
+  background-color: var(--subtle-background);
 }
 
 .upload-section {
@@ -235,36 +235,30 @@ defineExpose({
 
 .image-type-select {
   padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--control-radius);
   font-size: 14px;
-  background-color: white;
+  background-color: var(--surface-background);
   min-width: 120px;
 }
 
 .image-type-select option:disabled {
-  color: #999;
-  background-color: #f5f5f5;
+  color: var(--subtle-text-color);
+  background-color: var(--subtle-background);
 }
 
 .file-input {
   flex: 1;
   padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--control-radius);
   font-size: 14px;
-  background-color: white;
+  background-color: var(--surface-background);
   min-width: 200px;
 }
 
 .upload-btn {
   padding: 8px 16px;
-  background-color: #000;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
   transition: background-color 0.2s;
   white-space: nowrap;
   display: flex;
@@ -272,24 +266,19 @@ defineExpose({
   justify-content: center;
 }
 
-.upload-btn:hover:not(:disabled) {
-  background-color: #333;
-}
-
 .upload-btn:disabled {
-  background-color: #6c757d;
   cursor: not-allowed;
 }
 
 .file-preview {
   padding: 8px;
-  background-color: #e9ecef;
-  border-radius: 4px;
+  background-color: var(--subtle-background);
+  border-radius: var(--control-radius);
   font-size: 14px;
 }
 
 .file-info {
-  color: #495057;
+  color: var(--muted-text-color);
 }
 
 .checkbox-row {
@@ -310,21 +299,21 @@ defineExpose({
 }
 
 .error-message {
-  color: #e74c3c;
+  color: var(--error-color);
   font-size: 14px;
   padding: 8px;
-  background-color: #fdeaea;
-  border: 1px solid #f5c6cb;
-  border-radius: 4px;
+  background-color: var(--error-background);
+  border: 1px solid var(--error-border-color);
+  border-radius: var(--control-radius);
 }
 
 .success-message {
-  color: #155724;
+  color: var(--success-color);
   font-size: 14px;
   padding: 8px;
-  background-color: #d4edda;
-  border: 1px solid #c3e6cb;
-  border-radius: 4px;
+  background-color: var(--success-background);
+  border: 1px solid var(--success-border-color);
+  border-radius: var(--control-radius);
 }
 
 @media (max-width: 768px) {

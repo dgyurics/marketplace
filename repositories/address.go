@@ -26,13 +26,13 @@ func (r *addressRepository) GetAddress(ctx context.Context, userID, addressID st
 	var addr types.Address
 	query := `
 		SELECT id, user_id, name, line1, line2,
-			city, state, postal_code, country, email, created_at, updated_at
+			city, state, postal_code, country, created_at, updated_at
 		FROM addresses
 		WHERE id = $1 AND user_id = $2
 	`
 	err := r.db.QueryRowContext(ctx, query, addressID, userID).Scan(
 		&addr.ID, &addr.UserID, &addr.Name, &addr.Line1, &addr.Line2,
-		&addr.City, &addr.State, &addr.PostalCode, &addr.Country, &addr.Email, &addr.CreatedAt, &addr.UpdatedAt)
+		&addr.City, &addr.State, &addr.PostalCode, &addr.Country, &addr.CreatedAt, &addr.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return addr, types.ErrNotFound
 	}
@@ -48,9 +48,8 @@ func (r *addressRepository) UpdateAddress(ctx context.Context, address *types.Ad
 		state = $5,
 		postal_code = $6,
 		country = $7,
-		email = $8,
 		updated_at = NOW()
-		WHERE user_id = $9 AND id = $10
+		WHERE user_id = $8 AND id = $9
 		RETURNING updated_at
 	`
 	err := r.db.QueryRowContext(ctx, query,
@@ -61,7 +60,6 @@ func (r *addressRepository) UpdateAddress(ctx context.Context, address *types.Ad
 		address.State,
 		address.PostalCode,
 		address.Country,
-		address.Email,
 		address.UserID,
 		address.ID,
 	).Scan(&address.UpdatedAt)
@@ -82,10 +80,9 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 			city,
 			state,
 			postal_code,
-			country,
-			email
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING created_at
+			country
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING created_at, updated_at
 	`
 	return r.db.QueryRowContext(ctx, query,
 		address.ID,
@@ -97,8 +94,7 @@ func (r *addressRepository) CreateAddress(ctx context.Context, address *types.Ad
 		address.State,
 		address.PostalCode,
 		address.Country,
-		address.Email,
-	).Scan(&address.CreatedAt)
+	).Scan(&address.CreatedAt, &address.UpdatedAt)
 }
 
 func (r *addressRepository) RemoveAddress(ctx context.Context, userID, addressID string) error {

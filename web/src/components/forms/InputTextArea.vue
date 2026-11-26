@@ -49,8 +49,11 @@ const value = computed({
   width: 100%;
   padding: 24px 12px 12px 12px;
   border: 1px solid var(--input-border-color);
-  border-radius: 1px;
+  border-radius: var(--control-radius);
   font-size: 16px;
+  font-family: inherit;
+  background-color: var(--surface-background);
+  color: var(--text-color);
   box-sizing: border-box;
   resize: vertical;
   min-height: 80px;
@@ -61,9 +64,14 @@ const value = computed({
 }
 
 .input-field:disabled {
-  background-color: #f5f5f5;
-  color: #999;
+  background-color: var(--subtle-background);
+  color: var(--subtle-text-color);
   cursor: not-allowed;
+}
+
+.input-field:focus-visible {
+  border-color: var(--accent-color);
+  outline-offset: 2px;
 }
 
 .input-label {
@@ -71,7 +79,7 @@ const value = computed({
   top: 4px;
   left: 12px;
   font-size: 12px;
-  color: #666;
+  color: var(--muted-text-color);
   text-transform: capitalize;
 }
 

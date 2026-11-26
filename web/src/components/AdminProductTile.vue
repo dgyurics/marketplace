@@ -48,6 +48,7 @@ const handleClick = () => {
 
 <style scoped>
 .product-tile {
+  min-width: 0;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -90,12 +91,13 @@ const handleClick = () => {
 }
 
 .no-image {
-  color: #888;
+  color: var(--subtle-text-color);
   font-size: 12px;
 }
 
 .product-info {
   width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .product-title {
@@ -108,7 +110,7 @@ const handleClick = () => {
 
 .product-id {
   font-size: 10px;
-  color: #888;
+  color: var(--subtle-text-color);
   margin-bottom: 5px;
   font-family: 'Roboto Mono', monospace;
 }
@@ -116,7 +118,7 @@ const handleClick = () => {
 .product-price {
   font-size: 14px;
   font-weight: 700;
-  color: #222;
+  color: var(--text-color);
   margin: 5px 0;
   letter-spacing: 0.5px;
 }
@@ -131,7 +133,7 @@ const handleClick = () => {
 
 .product-tax-code {
   font-size: 10px;
-  color: #888;
+  color: var(--subtle-text-color);
   margin-top: 5px;
   font-family: 'Roboto Mono', monospace;
   text-transform: uppercase;
@@ -145,7 +147,7 @@ const handleClick = () => {
 .details-title {
   font-size: 10px;
   font-weight: 600;
-  color: #555;
+  color: var(--muted-text-color);
   margin-bottom: 4px;
   text-align: center;
 }
@@ -158,8 +160,8 @@ const handleClick = () => {
 
 .detail-item {
   font-size: 9px;
-  color: #666;
-  background-color: #f5f5f5;
+  color: var(--muted-text-color);
+  background-color: var(--subtle-background);
   padding: 2px 4px;
   border-radius: 2px;
   font-family: 'Roboto Mono', monospace;

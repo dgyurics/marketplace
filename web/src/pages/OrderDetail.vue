@@ -12,10 +12,6 @@
       </div>
 
       <div class="order-info">
-        <div v-if="order.address.email" class="info-row">
-          <label>Email:</label>
-          <span>{{ order.address.email }}</span>
-        </div>
         <div class="info-row">
           <label>Created:</label>
           <span>{{ formatDate(order.created_at) }}</span>
@@ -145,176 +141,208 @@ onMounted(() => {
 
 <style scoped>
 .order-detail-container {
-  max-width: 800px;
-  width: 800px;
-  margin: auto;
-  padding: 20px;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 36px 32px 64px;
 }
-
-@media (max-width: 768px) {
-  .order-detail-container {
-    width: 100%;
-    padding: 15px;
-  }
+.order-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  grid-template-areas: 'header header' 'info address' 'items totals';
+  gap: 24px;
+  align-items: start;
 }
-
 .order-header {
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #ddd;
+  grid-area: header;
+  padding: 24px 28px;
+  border-radius: var(--panel-radius);
+  background: var(--highlight-background);
 }
-
 .order-header h1 {
-  margin: 0 0 10px 0;
-  font-size: 24px;
-  color: #333;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.7px;
+  margin-bottom: 14px;
 }
-
 .order-meta {
   display: flex;
   align-items: center;
-  gap: 20px;
+  flex-wrap: wrap;
+  gap: 12px 20px;
 }
-
 .order-id {
   font-family: 'Roboto Mono', monospace;
-  font-size: 14px;
-  color: #666;
-}
-
-.order-status {
-  padding: 4px 12px;
-  border-radius: 4px;
-  border-width: 1px;
-  border-style: solid;
   font-size: 12px;
+  color: var(--highlight-text-color);
+  overflow-wrap: anywhere;
+}
+.order-status {
+  padding: 4px 10px;
+  border: 1px solid var(--highlight-border-color);
+  border-radius: 6px;
+  background: var(--surface-background);
+  color: var(--highlight-text-color);
+  font-size: 10px;
   font-weight: 600;
-  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-
+.order-info,
+.address-section,
+.items-section,
+.totals-section {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--panel-radius);
+}
 .order-info {
-  margin-bottom: 30px;
+  grid-area: info;
 }
-
 .info-row {
-  display: flex;
-  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 16px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
-
+.info-row + .info-row {
+  margin-top: 16px;
+}
 .info-row label {
-  min-width: 100px;
-  font-weight: 500;
-  color: #666;
+  color: var(--muted-text-color);
 }
-
 .address-section {
-  margin-bottom: 30px;
+  grid-area: address;
 }
-
-.address-section h3 {
-  margin: 0 0 15px 0;
-  font-size: 18px;
-  color: #333;
-}
-
-.address {
-  padding: 15px;
-  background-color: #f9f9f9;
-  border-radius: 4px;
-  line-height: 1.4;
-}
-
-.items-section {
-  margin-bottom: 30px;
-}
-
+.address-section h3,
 .items-section h3 {
-  margin: 0 0 15px 0;
-  font-size: 18px;
-  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  margin-bottom: 18px;
 }
-
+.address {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--muted-text-color);
+  overflow-wrap: anywhere;
+}
+.address > div:first-child {
+  font-weight: 600;
+  color: var(--text-color);
+}
+.items-section {
+  grid-area: items;
+}
 .order-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 15px;
-  border-bottom: 1px solid #eee;
+  align-items: start;
+  gap: 24px;
+  padding: 20px 0;
 }
-
-@media (max-width: 768px) {
-  .order-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
+.order-item + .order-item {
+  border-top: 1px solid var(--border-color);
 }
-
 .order-item:last-child {
-  border-bottom: none;
+  padding-bottom: 0;
 }
-
 .item-info {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 6px;
+  overflow-wrap: anywhere;
 }
-
 .item-name {
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.item-summary {
   font-size: 14px;
-  color: #666;
+  font-weight: 600;
 }
-
+.item-summary {
+  font-size: 12px;
+  color: var(--muted-text-color);
+  line-height: 1.7;
+}
 .item-details {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
-  font-size: 14px;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
 }
-
-@media (max-width: 768px) {
-  .item-details {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
+.item-quantity,
+.item-price {
+  color: var(--muted-text-color);
 }
-
-.item-quantity {
-  color: #666;
-}
-
-.item-price,
 .item-total {
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 4px;
 }
-
 .totals-section {
-  border-top: 1px solid #ddd;
-  padding-top: 15px;
+  grid-area: totals;
+  background: var(--highlight-background);
 }
-
 .total-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 8px;
+  gap: 20px;
+  font-size: 14px;
 }
-
-.total-row.total {
-  font-weight: 600;
-  font-size: 16px;
-  border-top: 1px solid #ddd;
-  padding-top: 8px;
-  margin-top: 8px;
+.total-row + .total-row {
+  margin-top: 14px;
 }
-
 .total-row label {
-  color: #666;
+  color: var(--highlight-text-color);
+}
+.total-row.total {
+  font-size: 20px;
+  font-weight: 700;
+  border-top: 1px solid var(--highlight-border-color);
+  padding-top: 20px;
+  margin-top: 20px;
+}
+.total-row.total label {
+  color: var(--text-color);
+}
+@media (max-width: 768px) {
+  .order-detail {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'header' 'info' 'address' 'items' 'totals';
+    gap: 20px;
+  }
+}
+@media (max-width: 600px) {
+  .order-detail-container {
+    padding: 24px 16px 40px;
+  }
+  .order-header,
+  .order-info,
+  .address-section,
+  .items-section,
+  .totals-section {
+    padding: 20px;
+  }
+  .order-header h1 {
+    font-size: 23px;
+  }
+  .order-item {
+    flex-direction: column;
+    gap: 14px;
+  }
+  .item-details {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .item-total {
+    margin-top: 0;
+  }
 }
 </style>

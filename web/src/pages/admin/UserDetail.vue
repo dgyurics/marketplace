@@ -147,13 +147,13 @@ onMounted(() => {
 .user-header {
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .user-header h1 {
   margin: 0 0 10px 0;
   font-size: 24px;
-  color: #333;
+  color: var(--text-color);
 }
 
 .user-meta {
@@ -165,17 +165,17 @@ onMounted(() => {
 .user-id {
   font-family: 'Roboto Mono', monospace;
   font-size: 14px;
-  color: #666;
+  color: var(--muted-text-color);
 }
 
 .user-status {
   padding: 4px 12px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
+  border-radius: var(--control-radius);
+  border: 1px solid var(--border-color);
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  background-color: #f8f9fa;
+  background-color: var(--subtle-background);
 }
 
 .user-info {
@@ -191,7 +191,7 @@ onMounted(() => {
 .info-row label {
   min-width: 100px;
   font-weight: 500;
-  color: #666;
+  color: var(--muted-text-color);
 }
 
 .code-section {
@@ -206,12 +206,12 @@ onMounted(() => {
   font-family: 'Roboto Mono', monospace;
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-color);
   letter-spacing: 1px;
-  background-color: #f8f9fa;
+  background-color: var(--subtle-background);
   padding: 6px 10px;
-  border-radius: 4px;
-  border: 1px solid #e1e5e9;
+  border-radius: var(--control-radius);
+  border: 1px solid var(--border-color);
   line-height: 1;
 }
 
@@ -221,12 +221,12 @@ onMounted(() => {
   gap: 6px;
   font-family: 'Roboto Mono', monospace;
   font-size: 13px;
-  color: #333;
+  color: var(--text-color);
   letter-spacing: 1px;
-  background-color: #f8f9fa;
+  background-color: var(--subtle-background);
   padding: 6px 10px;
-  border-radius: 4px;
-  border: 1px solid #e1e5e9;
+  border-radius: var(--control-radius);
+  border: 1px solid var(--border-color);
   line-height: 1;
   word-break: break-all;
 }
@@ -235,12 +235,12 @@ onMounted(() => {
   width: 14px;
   height: 14px;
   cursor: pointer;
-  color: #666;
+  color: var(--muted-text-color);
   flex-shrink: 0;
 }
 
 .copy-icon:hover {
-  color: #333;
+  color: var(--text-color);
 }
 
 .clickable-generate {

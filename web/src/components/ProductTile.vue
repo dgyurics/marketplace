@@ -13,6 +13,9 @@
       <h3 class="product-title">{{ product.name }}</h3>
       <p v-if="product.summary" class="product-summary">{{ product.summary }}</p>
       <p class="product-price">{{ displayPrice(product.price) }}</p>
+      <p v-if="product.member_price != null" class="member-price">
+        {{ displayPrice(product.member_price) }} <span>for members</span>
+      </p>
     </div>
   </div>
 </template>
@@ -52,7 +55,7 @@ const imgURL = computed(() => props.product.images.find((img) => img.type === 'h
   width: 100%;
   aspect-ratio: 1;
   padding: 16px;
-  background: #f5f5f3;
+  background: var(--image-background);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -80,6 +83,16 @@ const imgURL = computed(() => props.product.images.find((img) => img.type === 'h
   font-size: 16px;
   font-weight: 700;
   margin-top: 6px;
+}
+.member-price {
+  color: var(--accent-text-color);
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 3px;
+}
+.member-price span {
+  font-size: 12px;
+  font-weight: 400;
 }
 .product-summary {
   font-size: 12px;

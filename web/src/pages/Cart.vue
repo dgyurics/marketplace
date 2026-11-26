@@ -21,7 +21,6 @@
     <!-- Display a message if the cart is empty -->
     <div v-if="items.length === 0" class="checkout-panel empty-cart">
       <h2>Your cart is empty</h2>
-      <p>Explore new finds and everyday essentials.</p>
       <router-link class="checkout-link-button" to="/new">Explore new finds</router-link>
     </div>
 
@@ -38,7 +37,7 @@
           </div>
           <div class="item-actions">
             <div class="item-details">
-              <span class="item-price">{{ formatPrice(item.unit_price) }}</span>
+              <span class="item-price">{{ formatPrice(item.product.price) }}</span>
               <span class="item-quantity">Qty: {{ item.quantity }}</span>
             </div>
             <button
@@ -142,7 +141,7 @@ const goToCheckout = () => {
   padding-bottom: 0;
 }
 .cart-item + .cart-item {
-  border-top: 1px solid #e9e6e0;
+  border-top: 1px solid var(--border-color);
 }
 .item-info {
   display: flex;
@@ -187,12 +186,12 @@ const goToCheckout = () => {
 .remove-button {
   flex: 0;
   background: transparent;
-  color: #777;
+  color: var(--disabled-text-color);
   padding: 8px;
   display: flex;
 }
 .remove-button:hover {
-  background: #f7f1df;
+  background: var(--highlight-background);
   color: var(--accent-color);
 }
 .remove-icon {
@@ -210,7 +209,7 @@ const goToCheckout = () => {
   color: var(--muted-text-color);
 }
 .cart-summary {
-  background: #f7f1df;
+  background: var(--highlight-background);
 }
 .cart-total {
   display: flex;

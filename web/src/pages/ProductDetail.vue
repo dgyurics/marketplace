@@ -27,6 +27,9 @@
         <h1 class="product-title">{{ product.name }}</h1>
         <p v-if="product.summary" class="product-summary">{{ product.summary }}</p>
         <p v-if="product.id" class="product-price">{{ displayPrice(product.price) }}</p>
+        <p v-if="product.id && product.member_price != null" class="member-price">
+          {{ displayPrice(product.member_price) }} <span>for members</span>
+        </p>
 
         <div class="purchase-panel">
           <ProductActions
@@ -152,8 +155,8 @@ onMounted(async () => {
 }
 .gallery-container {
   min-width: 0;
-  background: #f7f5ee;
-  border-radius: 14px;
+  background: var(--image-background);
+  border-radius: var(--panel-radius);
   overflow: hidden;
 }
 .product-gallery {
@@ -203,32 +206,21 @@ onMounted(async () => {
   font-weight: 700;
   margin-top: 22px;
 }
+.member-price {
+  color: var(--accent-text-color);
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 3px;
+}
+.member-price span {
+  font-size: 14px;
+  font-weight: 400;
+}
 .purchase-panel {
   margin: 24px 0 30px;
 }
-.purchase-panel :deep(button) {
-  min-width: 0;
-  border-radius: 8px;
-  padding: 14px 16px;
-  background: var(--accent-color);
-}
-.purchase-panel :deep(button:hover:not(:disabled)) {
-  background: #bf3c32;
-}
-.purchase-panel :deep(.btn-outline) {
-  background: white;
-  color: var(--accent-color);
-  border-color: var(--accent-color);
-}
-.purchase-panel :deep(.btn-outline:hover:not(:disabled)) {
-  color: white;
-}
-.purchase-panel :deep(button:disabled) {
-  background: #eee;
-  color: #777;
-}
 .product-section {
-  border-top: 1px solid #e9e6e0;
+  border-top: 1px solid var(--border-color);
   padding: 24px 0;
 }
 .product-section h2 {
@@ -240,7 +232,7 @@ onMounted(async () => {
 .product-description {
   font-size: 14px;
   line-height: 1.8;
-  color: #555;
+  color: var(--muted-text-color);
   overflow-wrap: anywhere;
 }
 .product-description :deep(p + p) {
@@ -265,13 +257,13 @@ onMounted(async () => {
   overflow-wrap: anywhere;
 }
 .detail-row + .detail-row {
-  border-top: 1px solid #f0eeea;
+  border-top: 1px solid var(--subtle-border-color);
 }
 .detail-row dt {
   color: var(--muted-text-color);
 }
 .share-row {
-  border-top: 1px solid #e9e6e0;
+  border-top: 1px solid var(--border-color);
   padding-top: 18px;
 }
 .share-row :deep(.copy-btn) {

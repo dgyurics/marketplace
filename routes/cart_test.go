@@ -101,9 +101,8 @@ func TestGetCartItems(t *testing.T) {
 
 	expectedCart := []types.CartItem{
 		{
-			Product:   types.Product{ID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8"},
-			Quantity:  2,
-			UnitPrice: 1000,
+			Product:  types.Product{ID: "1c2d6b57-5e1b-4f29-bb38-dbb4b065e5e8"},
+			Quantity: 2,
 		},
 	}
 

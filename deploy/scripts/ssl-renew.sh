@@ -35,7 +35,7 @@ docker run --rm \
     exit 1
 }
 
-docker exec nginx nginx -t
-docker exec nginx nginx -s reload
+docker compose exec -T nginx nginx -t
+docker compose exec -T nginx nginx -s reload
 
 print_info "SSL renewal complete."

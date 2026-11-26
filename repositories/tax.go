@@ -50,5 +50,8 @@ func (r *taxRepository) GetTaxRates(ctx context.Context, address types.Address, 
 	if err == sql.ErrNoRows {
 		return 0, types.ErrNotFound
 	}
+	if err != nil {
+		return 0, err
+	}
 	return rate, nil
 }

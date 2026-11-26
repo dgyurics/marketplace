@@ -200,7 +200,7 @@ h3 {
 }
 
 .error {
-  color: #e74c3c;
+  color: var(--error-color);
   margin-top: 15px;
   font-size: 14px;
   word-break: break-word;

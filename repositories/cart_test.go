@@ -99,19 +99,31 @@ func TestAddItemToCart(t *testing.T) {
 
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
-		Product:   product,
-		Quantity:  1,
-		UnitPrice: 100000,
+		Product:  product,
+		Quantity: 1,
 	}
 	err = repo.AddItem(ctx, user.ID, item)
 	assert.NoError(t, err, "Expected no error on adding item to cart")
 
 	// Step 4: Validate that the item was added
 	cart, err := repo.GetItems(ctx, user.ID)
-	assert.NoError(t, err, "Expected no error on fetching cart")
-	assert.Equal(t, 1, len(cart), "Expected one item in the cart")
+	require.NoError(t, err, "Expected no error on fetching cart")
+	require.Len(t, cart, 1, "Expected one item in the cart")
 	assert.Equal(t, item.Product.ID, cart[0].Product.ID, "Expected the same product ID")
 	assert.Equal(t, item.Quantity, cart[0].Quantity, "Expected the same quantity")
+	assert.Equal(t, "Test Product", cart[0].Product.Name)
+	require.NotNil(t, cart[0].Product.Summary)
+	assert.Equal(t, "Test product summary", *cart[0].Product.Summary)
+	require.NotNil(t, cart[0].Product.Price)
+	assert.Equal(t, int64(1000), *cart[0].Product.Price)
+
+	_, err = dbPool.ExecContext(ctx, "UPDATE products SET price = $1 WHERE id = $2", 1200, product.ID)
+	require.NoError(t, err)
+	cart, err = repo.GetItems(ctx, user.ID)
+	require.NoError(t, err)
+	require.Len(t, cart, 1)
+	require.NotNil(t, cart[0].Product.Price)
+	assert.Equal(t, int64(1200), *cart[0].Product.Price)
 
 	// Clean up the cart, product, and user
 	_, err = dbPool.ExecContext(ctx, "DELETE FROM cart_items WHERE user_id = $1", user.ID)
@@ -147,9 +159,8 @@ func TestRemoveItem(t *testing.T) {
 
 	// Step 3: Add an item to the cart
 	item := &types.CartItem{
-		Product:   product,
-		Quantity:  1,
-		UnitPrice: 100000,
+		Product:  product,
+		Quantity: 1,
 	}
 	err = repo.AddItem(ctx, user.ID, item)
 	assert.NoError(t, err, "Expected no error on adding item to cart")
@@ -209,9 +220,8 @@ func TestGetCartWithImages(t *testing.T) {
 
 	// Step 4: Add an item to the cart
 	item := &types.CartItem{
-		Product:   product,
-		Quantity:  1,
-		UnitPrice: 100000,
+		Product:  product,
+		Quantity: 1,
 	}
 	err = repo.AddItem(ctx, user.ID, item)
 	assert.NoError(t, err, "Expected no error on adding item to cart")

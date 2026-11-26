@@ -7,12 +7,13 @@ export interface Product {
   name: string
   status?: ProductStatus
   price: number
-  summary?: string | null
+  member_price?: number
+  summary?: string
+  description?: string
   details: Record<string, unknown>
   images: Image[]
   inventory: number
   category?: Category
-  description?: string
   featured: boolean
   negotiable: boolean
   sort_order?: number
@@ -34,7 +35,7 @@ export interface ProductFilters {
 }
 
 export interface CreateProductRequest {
-  summary?: string | null
+  summary?: string
   name: string
   status?: ProductStatus
   price: number
@@ -63,7 +64,6 @@ export interface Image {
 export interface CartItem {
   quantity: number
   product: Product
-  unit_price: number
 }
 
 // used by assistant to auto-fill fields

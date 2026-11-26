@@ -91,9 +91,10 @@ func cancelPendingOrders(ctx context.Context, tx *sql.Tx, userID string) error {
 				)
 			RETURNING id
 		), restored AS (
-			DELETE FROM order_items
+			SELECT product_id, SUM(quantity) AS quantity
+			FROM order_items
 			WHERE order_id IN (SELECT id FROM canceled)
-			RETURNING product_id, quantity
+			GROUP BY product_id
 		)
 		UPDATE products
 		SET inventory = inventory + restored.quantity, updated_at = NOW()
@@ -254,7 +255,6 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			a.state,
 			a.postal_code,
 			a.country,
-			a.email,
 			o.created_at,
 			o.updated_at
 		FROM orders o
@@ -291,7 +291,6 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 			&order.Address.State,
 			&order.Address.PostalCode,
 			&order.Address.Country,
-			&order.Address.Email,
 			&order.CreatedAt,
 			&order.UpdatedAt,
 		)
@@ -377,7 +376,6 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 			a.state,
 			a.postal_code,
 			a.country,
-			a.email,
 			o.created_at,
 			o.updated_at
 		FROM orders o
@@ -405,7 +403,6 @@ func (r *orderRepository) GetOrderByIDAndUser(ctx context.Context, orderID, user
 		&order.Address.State,
 		&order.Address.PostalCode,
 		&order.Address.Country,
-		&order.Address.Email,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
@@ -483,7 +480,6 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 			a.state,
 			a.postal_code,
 			a.country,
-			a.email,
 			o.created_at,
 			o.updated_at
 		FROM orders o
@@ -507,7 +503,6 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, orderID string) (typ
 		&order.Address.State,
 		&order.Address.PostalCode,
 		&order.Address.Country,
-		&order.Address.Email,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
@@ -533,6 +528,15 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 		return err
 	}
 	defer tx.Rollback()
+
+	var previousStatus types.OrderStatus
+	err = tx.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1 FOR UPDATE`, order.ID).Scan(&previousStatus)
+	if err == sql.ErrNoRows {
+		return types.ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
 
 	query := `
 		UPDATE orders SET 
@@ -566,56 +570,47 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 		return err
 	}
 
-	if order.Status == nil {
+	if order.Status == nil || *order.Status == previousStatus {
 		return tx.Commit()
 	}
 
-	switch *order.Status {
-	case types.OrderRequested:
-		err = requestOrderApproval(ctx, tx, order.ID)
-	case types.OrderRefunded, types.OrderCanceled:
-		err = reclaimOrderItems(ctx, tx, order.ID)
+	if *order.Status == types.OrderRequested || *order.Status == types.OrderRefunded || *order.Status == types.OrderCanceled {
+		if err := reclaimOrderItems(ctx, tx, order.ID, previousStatus); err != nil {
+			return err
+		}
+		return tx.Commit()
 	}
+
+	if previousStatus != types.OrderRequested {
+		return tx.Commit()
+	}
+
+	items, err := r.populateOrderItems(ctx, order.ID)
 	if err != nil {
 		return err
+	}
+	shortages, err := reserveInventory(ctx, tx, items)
+	if err != nil {
+		return err
+	}
+	if len(shortages) > 0 {
+		return &types.InsufficientStockError{Items: shortages}
 	}
 
 	return tx.Commit()
 }
 
-// reclaimOrderItems reclaim reserved inventory
-func reclaimOrderItems(ctx context.Context, tx *sql.Tx, orderID string) error {
-	_, err := tx.ExecContext(ctx, `
-		WITH deleted_requests AS (
-			DELETE FROM requested_items WHERE order_id = $1
-		), deleted_items AS (
-			DELETE FROM order_items
-			WHERE order_id = $1
-			RETURNING product_id, quantity
-		)
-		UPDATE products
-		SET inventory = inventory + di.quantity, updated_at = NOW()
-		FROM deleted_items di
-		WHERE products.id = di.product_id`, orderID)
-	return err
-}
+// reclaimOrderItems releases reserved stock while preserving the order's items.
+func reclaimOrderItems(ctx context.Context, tx *sql.Tx, orderID string, previousStatus types.OrderStatus) error {
+	switch previousStatus {
+	case types.OrderRequested, types.OrderCanceled, types.OrderRefunded:
+		return nil
+	}
 
-// requestOrderApproval moves a pending order's items to requested_items
-func requestOrderApproval(ctx context.Context, tx *sql.Tx, orderID string) error {
 	_, err := tx.ExecContext(ctx, `
-		WITH moved_items AS (
-			DELETE FROM order_items
-			WHERE order_id = $1
-			RETURNING order_id, product_id, quantity, unit_price
-		), requested AS (
-			INSERT INTO requested_items (order_id, product_id, quantity, unit_price)
-			SELECT order_id, product_id, quantity, unit_price
-			FROM moved_items
-			RETURNING product_id, quantity
-		)
 		UPDATE products
-		SET inventory = inventory + requested.quantity, updated_at = NOW()
-		FROM requested
-		WHERE products.id = requested.product_id`, orderID)
+		SET inventory = inventory + oi.quantity, updated_at = NOW()
+		FROM order_items oi
+		WHERE products.id = oi.product_id AND oi.order_id = $1`, orderID)
 	return err
 }

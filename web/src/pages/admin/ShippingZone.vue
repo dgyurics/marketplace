@@ -242,7 +242,7 @@ onMounted(() => {
 }
 
 .error {
-  color: #e74c3c;
+  color: var(--error-color);
   text-align: center;
   margin-top: 10px;
   font-size: 14px;

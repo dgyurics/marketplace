@@ -121,8 +121,8 @@ const handleLogout = async () => {
   justify-content: space-between;
   align-items: center;
   gap: 24px;
-  background: #f7f1df;
-  border-radius: 12px;
+  background: var(--highlight-background);
+  border-radius: var(--panel-radius);
   padding: 32px;
   margin-bottom: 24px;
 }
@@ -131,7 +131,7 @@ const handleLogout = async () => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  color: #8e4337;
+  color: var(--accent-text-color);
   margin-bottom: 10px;
 }
 .account-header h1 {
@@ -151,7 +151,7 @@ const handleLogout = async () => {
   height: 64px;
   flex-shrink: 0;
   stroke-width: 1.2;
-  color: #8e7650;
+  color: var(--highlight-icon-color);
 }
 .management-grid {
   display: grid;
@@ -165,22 +165,22 @@ const handleLogout = async () => {
   flex-direction: column;
   align-items: flex-start;
   padding: 24px;
-  border: 1px solid #e9e6e0;
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--panel-radius);
   transition:
     background 0.2s,
     border-color 0.2s;
 }
 .management-card:hover {
-  background: #faf8f2;
-  border-color: #d9c99f;
+  background: var(--subtle-background);
+  border-color: var(--highlight-border-color);
 }
 .card-icon {
   width: 38px;
   height: 38px;
   padding: 8px;
   border-radius: 10px;
-  background: #fff2ef;
+  background: var(--accent-background);
   color: var(--accent-color);
   margin-bottom: 18px;
 }
@@ -199,11 +199,11 @@ const handleLogout = async () => {
   right: 20px;
   width: 16px;
   height: 16px;
-  color: #888;
+  color: var(--subtle-text-color);
 }
 .account-links {
-  border: 1px solid #e9e6e0;
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--panel-radius);
 }
 .account-link {
   display: flex;
@@ -212,10 +212,10 @@ const handleLogout = async () => {
   padding: 22px;
 }
 .account-link + .account-link {
-  border-top: 1px solid #e9e6e0;
+  border-top: 1px solid var(--border-color);
 }
 .account-link:hover {
-  background: #faf8f2;
+  background: var(--subtle-background);
 }
 .account-link:first-child {
   border-radius: 12px 12px 0 0;
@@ -245,7 +245,7 @@ const handleLogout = async () => {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  color: #888;
+  color: var(--subtle-text-color);
 }
 .account-menu--admin .account-links {
   display: grid;
@@ -253,7 +253,7 @@ const handleLogout = async () => {
 }
 .account-menu--admin .account-link + .account-link {
   border-top: none;
-  border-left: 1px solid #e9e6e0;
+  border-left: 1px solid var(--border-color);
 }
 .account-menu--admin .account-link:first-child {
   border-radius: 12px 0 0 12px;
@@ -286,7 +286,7 @@ const handleLogout = async () => {
   border-radius: 6px;
 }
 .logout-button:hover {
-  background: #fff2ef;
+  background: var(--accent-background);
   color: var(--accent-color);
 }
 @media (max-width: 700px) {
@@ -309,7 +309,7 @@ const handleLogout = async () => {
   }
   .account-menu--admin .account-link + .account-link {
     border-left: none;
-    border-top: 1px solid #e9e6e0;
+    border-top: 1px solid var(--border-color);
   }
   .account-menu--admin .account-link:first-child {
     border-radius: 12px 12px 0 0;

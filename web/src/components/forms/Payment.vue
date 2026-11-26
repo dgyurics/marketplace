@@ -41,6 +41,8 @@ onBeforeUnmount(() => {
 })
 
 async function initializePaymentElement(stripe: Stripe) {
+  const style = window.getComputedStyle(document.documentElement)
+
   elements = stripe.elements({
     mode: 'payment',
     amount: props.amount,
@@ -48,13 +50,13 @@ async function initializePaymentElement(stripe: Stripe) {
     appearance: {
       theme: 'stripe',
       variables: {
-        fontFamily: "'Open Sans', sans-serif",
+        fontFamily: style.fontFamily,
         fontSizeBase: '16px',
-        borderRadius: '8px',
-        colorPrimary: window
-          .getComputedStyle(document.documentElement)
-          .getPropertyValue('--accent-color')
-          .trim(),
+        borderRadius: style.getPropertyValue('--control-radius').trim(),
+        colorPrimary: style.getPropertyValue('--accent-color').trim(),
+        colorBackground: style.getPropertyValue('--surface-background').trim(),
+        colorText: style.getPropertyValue('--text-color').trim(),
+        colorDanger: style.getPropertyValue('--error-color').trim(),
       },
     },
   })
@@ -64,7 +66,6 @@ async function initializePaymentElement(stripe: Stripe) {
     defaultValues: {
       billingDetails: {
         name: props.address.name,
-        email: props.address.email,
         address: {
           line1: props.address.line1,
           line2: props.address.line2,

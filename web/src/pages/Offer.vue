@@ -122,7 +122,7 @@ const handleSubmit = async () => {
 h3 {
   font-size: 16px;
   font-weight: 400;
-  color: #666;
+  color: var(--muted-text-color);
   margin-bottom: 40px;
   margin-top: 0;
 }
@@ -136,7 +136,7 @@ h3 {
 
 .help-text {
   font-size: 12px;
-  color: #999;
+  color: var(--subtle-text-color);
   margin-top: 4px;
   margin-bottom: 0;
 }
@@ -148,7 +148,7 @@ h3 {
 .error {
   text-align: center;
   font-size: 12px;
-  color: #c00;
+  color: var(--error-color);
   margin-top: 8px;
 }
 

@@ -5,7 +5,6 @@
       <div class="form-group">
         <label for="password">New Password</label>
         <input id="password" v-model="password" type="password" required />
-        <div class="underline"></div>
       </div>
 
       <div class="button-group">
@@ -77,40 +76,19 @@ label {
   margin-bottom: 5px;
 }
 
-/* Wider Input Fields */
 input {
   width: 100%;
-  max-width: 100%;
-  padding: 10px 0;
-  border: none;
-  border-bottom: 2px solid #999;
-  outline: none;
-  background: transparent;
-  font-size: 18px;
+  padding: 14px 12px;
+  border: 1px solid var(--input-border-color);
+  border-radius: var(--control-radius);
+  background: var(--surface-background);
+  color: var(--text-color);
+  font-size: 16px;
 }
 
-input:focus {
-  border-bottom: 2px solid black;
-}
-
-input.readonly {
-  color: #666;
-  background-color: #f5f5f5;
-  cursor: not-allowed;
-}
-
-input.readonly:focus {
-  border-bottom: 2px solid #999;
-}
-
-/* Underline effect */
-.underline {
-  width: 100%;
-  height: 2px;
-  background: #999;
-  position: absolute;
-  bottom: 0;
-  left: 0;
+input:focus-visible {
+  border-color: var(--accent-color);
+  outline-offset: 2px;
 }
 
 /* Button Group */

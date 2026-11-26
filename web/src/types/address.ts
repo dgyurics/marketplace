@@ -7,7 +7,6 @@ export type Address = {
   state?: string
   postal_code: string
   country: string
-  email: string
 }
 
 export type UpdateAddress = Required<Pick<Address, 'id'>> & Omit<Address, 'id'>

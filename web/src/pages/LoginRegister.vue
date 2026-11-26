@@ -148,8 +148,8 @@ const handleRegister = async () => {
   max-width: 520px;
   margin: 48px auto 64px;
   padding: 36px;
-  border: 1px solid #e9e6e0;
-  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--panel-radius);
   background: var(--surface-background);
 }
 .auth-container--account {
@@ -163,7 +163,7 @@ const handleRegister = async () => {
 .auth-heading {
   padding: 24px;
   border-radius: 10px;
-  background: #f7f1df;
+  background: var(--highlight-background);
   margin-bottom: 28px;
 }
 .auth-heading h1 {
@@ -190,8 +190,8 @@ label {
 input {
   width: 100%;
   padding: 14px 12px;
-  border: 1px solid #d9d5ce;
-  border-radius: 8px;
+  border: 1px solid var(--input-border-color);
+  border-radius: var(--control-radius);
   background: var(--surface-background);
   color: var(--text-color);
   font-family: inherit;
@@ -208,28 +208,12 @@ input:focus-visible {
 }
 .auth-container form button {
   min-width: 0;
-  padding: 14px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  background: var(--accent-color);
-}
-.auth-container form button:hover {
-  background: #bf3c32;
-}
-.auth-container .btn-outline {
-  border-color: var(--accent-color);
-  background: white;
-  color: var(--accent-color);
-}
-.auth-container .btn-outline:hover {
-  background: var(--accent-color);
-  color: white;
 }
 .error {
-  background: #fff2ef;
-  border-radius: 8px;
+  background: var(--error-background);
+  border-radius: var(--control-radius);
   padding: 12px 16px;
-  color: #a52f27;
+  color: var(--error-color);
   font-size: 13px;
   text-align: left;
   line-height: 1.7;

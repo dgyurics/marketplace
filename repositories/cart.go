@@ -29,7 +29,6 @@ func (r *cartRepository) GetItems(ctx context.Context, userID string) ([]types.C
 		SELECT
 			ci.product_id,
 			ci.quantity,
-			ci.unit_price,
 			pv.name,
 			pv.price,
 			pv.summary
@@ -51,7 +50,6 @@ func (r *cartRepository) GetItems(ctx context.Context, userID string) ([]types.C
 		if err := rows.Scan(
 			&item.Product.ID,
 			&item.Quantity,
-			&item.UnitPrice,
 			&item.Product.Name,
 			&item.Product.Price,
 			&item.Product.Summary,
@@ -113,11 +111,10 @@ func (r *cartRepository) AddItem(ctx context.Context, userID string, item *types
 	}
 
 	query := `
-		INSERT INTO cart_items (user_id, product_id, quantity, unit_price)
-		SELECT $1, $2, $3, price FROM products WHERE id = $2
+		INSERT INTO cart_items (user_id, product_id, quantity)
+		VALUES ($1, $2, $3)
 		ON CONFLICT (user_id, product_id) DO UPDATE
 		SET quantity = cart_items.quantity + 1,
-				unit_price = EXCLUDED.unit_price,
 				updated_at = NOW()`
 	_, err = tx.ExecContext(ctx, query, userID, item.Product.ID, item.Quantity)
 	if err != nil {

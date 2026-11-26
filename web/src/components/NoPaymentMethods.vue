@@ -9,9 +9,9 @@
 .no-methods {
   margin-top: 20px;
   margin-bottom: 12px;
-  border: 1px solid #e9e9e9;
-  background: #fafafa;
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--subtle-background);
+  border-radius: var(--panel-radius);
   padding: 16px 18px;
   max-width: 560px;
   margin-left: auto;
@@ -22,7 +22,7 @@
 .no-methods-title {
   margin: 0;
   font-weight: 600;
-  color: #222;
+  color: var(--text-color);
 }
 
 .no-methods-title::after {
@@ -31,12 +31,12 @@
   width: 40px;
   height: 1px;
   margin: 12px auto;
-  background: #dcdcdc;
+  background: var(--border-color);
 }
 
 .no-methods-description {
   margin: 0;
-  color: #444;
+  color: var(--muted-text-color);
   line-height: 1.45;
 }
 </style>

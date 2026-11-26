@@ -21,15 +21,16 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
 import AdminProductTile from '@/components/AdminProductTile.vue'
 import CreateProductWizard from '@/components/CreateProductWizard.vue'
 import { getProducts, getCategories } from '@/services/api'
+import type { Product, Category } from '@/types'
 
-const products = ref([])
-const categories = ref([])
+const products = ref<Product[]>([])
+const categories = ref<Category[]>([])
 const showWizard = ref(false)
 
 const handleWizardSuccess = async () => {
@@ -64,6 +65,7 @@ onMounted(() => {
 <style scoped>
 .product-container {
   max-width: 1000px;
+  width: 100%;
   margin: auto;
   padding: 20px;
 }
@@ -75,7 +77,7 @@ onMounted(() => {
 
 .product-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
 
@@ -92,7 +94,6 @@ onMounted(() => {
   }
 
   .product-grid {
-    grid-template-columns: 1fr;
     gap: 15px;
   }
 }

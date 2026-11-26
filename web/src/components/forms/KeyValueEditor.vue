@@ -172,10 +172,10 @@ defineExpose({
 }
 
 .editor-container {
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--control-radius);
   padding: 15px;
-  background-color: #f9f9f9;
+  background-color: var(--subtle-background);
 }
 
 .pair-row {
@@ -190,19 +190,19 @@ defineExpose({
   flex: 1;
   padding: 8px;
   border: 1px solid var(--input-border-color);
-  border-radius: 4px;
+  border-radius: var(--control-radius);
   font-size: 14px;
-  background-color: white;
+  background-color: var(--surface-background);
   transition: border-color 0.2s;
 }
 
 .pair-input:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--accent-color);
 }
 
 .pair-input.pair-input--error {
-  border-color: #e74c3c;
+  border-color: var(--error-color);
 }
 
 .remove-btn {
@@ -214,7 +214,7 @@ defineExpose({
   height: 20px;
   border: none;
   background: rgba(255, 255, 255, 0.9);
-  color: #666;
+  color: var(--muted-text-color);
   cursor: pointer;
   font-size: 14px;
   font-weight: bold;
@@ -227,37 +227,37 @@ defineExpose({
 }
 
 .remove-btn:disabled {
-  color: #bdc3c7;
+  color: var(--disabled-text-color);
   cursor: not-allowed;
 }
 
 .remove-btn:not(:disabled):hover {
-  color: #000;
+  color: var(--text-color);
 }
 
 .add-btn {
   width: 100%;
   padding: 10px;
-  border: 1px dashed #666;
+  border: 1px dashed var(--muted-text-color);
   background-color: transparent;
-  color: #666;
-  border-radius: 4px;
+  color: var(--muted-text-color);
+  border-radius: var(--control-radius);
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s;
 }
 
 .add-btn:hover {
-  background-color: #f0f0f0;
-  border-color: #333;
-  color: #333;
+  background-color: var(--subtle-background);
+  border-color: var(--text-color);
+  color: var(--text-color);
 }
 
 .error-message {
   position: absolute;
   top: 100%;
   left: 0;
-  color: #e74c3c;
+  color: var(--error-color);
   font-size: 12px;
   margin-top: 2px;
 }

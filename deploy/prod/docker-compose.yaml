@@ -2,7 +2,6 @@ name: marketplace
 
 services:
   nginx:
-    container_name: nginx
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.nginx
@@ -37,7 +36,6 @@ services:
       - web
 
   api:
-    container_name: api
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.api
@@ -69,7 +67,6 @@ services:
       - rembg
 
   web:
-    container_name: web
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.web
@@ -96,7 +93,6 @@ services:
       - api
 
   postgres:
-    container_name: postgres
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.postgres
@@ -124,10 +120,8 @@ services:
     # PostgreSQL Docker image uses a custom/special entrypoint script.
     # To avoid overriding it, run command from here rather than CMD within the Dockerfile.
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
-    
 
   imgproxy:
-    container_name: imgproxy
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.imgproxy
@@ -154,7 +148,6 @@ services:
           cpus: "0.25"
 
   rembg:
-    container_name: rembg
     build:
       context: ../../
       dockerfile: deploy/prod/Dockerfile.rembg

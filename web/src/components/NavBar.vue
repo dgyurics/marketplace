@@ -168,7 +168,7 @@ nav {
   font-size: 1.4rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: #000;
+  color: var(--text-color);
 }
 
 .logo a {
@@ -204,7 +204,7 @@ nav {
 }
 
 .nav-links a {
-  color: #000;
+  color: var(--text-color);
   text-decoration: none;
   transition: color 0.3s ease;
   position: relative;
@@ -242,7 +242,7 @@ nav {
 .icon {
   width: 22px;
   height: 22px;
-  color: #000;
+  color: var(--text-color);
   stroke-width: 1.5;
   cursor: pointer;
   transition: color 0.3s ease;
@@ -260,7 +260,7 @@ nav {
   right: -7px;
   font-size: 9px;
   font-weight: 600;
-  color: #fff;
+  color: var(--on-accent-color);
   background-color: var(--accent-color);
   border-radius: 50%;
   width: 16px;
@@ -313,7 +313,7 @@ nav {
 }
 
 .mobile-nav-links a {
-  color: #000;
+  color: var(--text-color);
   text-decoration: none;
   padding: 20px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -325,7 +325,7 @@ nav {
 }
 
 .mobile-nav-links a:hover {
-  color: #666;
+  color: var(--muted-text-color);
 }
 
 .mobile-nav-links a:last-child {

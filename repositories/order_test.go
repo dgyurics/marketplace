@@ -18,8 +18,8 @@ func createTestAddress(t *testing.T, db *sql.DB, userID string) string {
 	addressID := utilities.MustGenerateIDString()
 
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO addresses (id, user_id, line1, city, state, postal_code, country, email)
-		VALUES ($1, $2, '123 Test St', 'Test City', 'CA', '12345', 'US', 'example@example.com')`,
+		INSERT INTO addresses (id, user_id, line1, city, state, postal_code, country)
+		VALUES ($1, $2, '123 Test St', 'Test City', 'CA', '12345', 'US')`,
 		addressID, userID)
 	assert.NoError(t, err)
 
@@ -127,11 +127,41 @@ func TestCancelPendingOrders(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 10, inventory)
 
-	// Order items are removed so the inventory cannot be restored twice
+	// Canceled orders retain the original quantities and prices.
 	var itemCount int
 	err = dbPool.QueryRowContext(ctx, `SELECT COUNT(*) FROM order_items WHERE order_id = $1`, orderID).Scan(&itemCount)
 	assert.NoError(t, err)
-	assert.Zero(t, itemCount)
+	assert.Equal(t, 1, itemCount)
+	var quantity int
+	var unitPrice int64
+	require.NoError(t, dbPool.QueryRowContext(ctx,
+		`SELECT quantity, unit_price FROM order_items WHERE order_id = $1`, orderID).Scan(&quantity, &unitPrice))
+	assert.Equal(t, 7, quantity)
+	assert.Equal(t, int64(1000), unitPrice)
+
+	repo := NewOrderRepository(dbPool)
+	for _, status := range []types.OrderStatus{types.OrderCanceled, types.OrderRefunded, types.OrderCanceled} {
+		require.NoError(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &status}))
+		assert.Equal(t, 10, productInventory(t, productID))
+	}
+	// Exercise direct cancellation and refund as well as checkout replacement.
+	for _, status := range []types.OrderStatus{types.OrderCanceled, types.OrderRefunded} {
+		_, err = dbPool.ExecContext(ctx, `UPDATE orders SET status = 'paid' WHERE id = $1`, orderID)
+		require.NoError(t, err)
+		_, err = dbPool.ExecContext(ctx, `UPDATE products SET inventory = 3 WHERE id = $1`, productID)
+		require.NoError(t, err)
+		require.NoError(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &status}))
+		require.NoError(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &status}))
+		assert.Equal(t, 10, productInventory(t, productID))
+		fetched, err := repo.GetOrderByID(ctx, orderID)
+		require.NoError(t, err)
+		require.Len(t, fetched.Items, 1)
+		assert.Equal(t, 7, fetched.Items[0].Quantity)
+		assert.Equal(t, int64(1000), fetched.Items[0].UnitPrice)
+		var totalSold int
+		require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT total_sold FROM v_products WHERE id = $1`, productID).Scan(&totalSold))
+		assert.Zero(t, totalSold)
+	}
 }
 
 func TestCancelPendingOrders_NoPendingOrder(t *testing.T) {
@@ -307,8 +337,8 @@ func TestCreateOrder_InsufficientStock_ReleasesReservedInventory(t *testing.T) {
 		{outOfStock, 1},
 	} {
 		_, err := dbPool.ExecContext(ctx, `
-			INSERT INTO cart_items (user_id, product_id, quantity, unit_price)
-			VALUES ($1, $2, $3, 1000)`,
+			INSERT INTO cart_items (user_id, product_id, quantity)
+			VALUES ($1, $2, $3)`,
 			user.ID, it.productID, it.quantity)
 		assert.NoError(t, err)
 	}
@@ -555,25 +585,55 @@ func TestUpdateOrderRequested(t *testing.T) {
 			var quantity int
 			var unitPrice int64
 			require.NoError(t, dbPool.QueryRowContext(ctx, `
-				SELECT quantity, unit_price FROM requested_items WHERE order_id = $1 AND product_id = $2`,
+				SELECT quantity, unit_price FROM order_items WHERE order_id = $1 AND product_id = $2`,
 				orderID, productID).Scan(&quantity, &unitPrice))
 			assert.Equal(t, 2, quantity)
 			assert.Equal(t, int64(1000), unitPrice)
 			var count int
 			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT COUNT(*) FROM order_items WHERE order_id = $1`, orderID).Scan(&count))
-			assert.Zero(t, count)
+			assert.Equal(t, 1, count)
 			var status types.OrderStatus
 			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1`, orderID).Scan(&status))
 			assert.Equal(t, types.OrderRequested, status)
+
+			var totalSold int
+			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT total_sold FROM v_products WHERE id = $1`, productID).Scan(&totalSold))
+			assert.Zero(t, totalSold)
+
+			// Approval must fail without changing the order if stock is unavailable.
+			_, err = dbPool.ExecContext(ctx, `UPDATE products SET inventory = 1 WHERE id = $1`, productID)
+			require.NoError(t, err)
+			update.Status = utilities.Ptr(types.OrderPending)
+			var stockErr *types.InsufficientStockError
+			require.ErrorAs(t, repo.UpdateOrder(ctx, update), &stockErr)
+			assert.Equal(t, 1, productInventory(t, productID))
+			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1`, orderID).Scan(&status))
+			assert.Equal(t, types.OrderRequested, status)
+			_, err = dbPool.ExecContext(ctx, `UPDATE products SET inventory = 5 WHERE id = $1`, productID)
+			require.NoError(t, err)
+
+			// Approval reserves stock again; retries must not reserve it twice.
+			update.Status = utilities.Ptr(types.OrderPending)
+			require.NoError(t, repo.UpdateOrder(ctx, update))
+			require.NoError(t, repo.UpdateOrder(ctx, update))
+			assert.Equal(t, 3, productInventory(t, productID))
+			update.Status = utilities.Ptr(types.OrderRequested)
+			require.NoError(t, repo.UpdateOrder(ctx, update))
+			assert.Equal(t, 5, productInventory(t, productID))
 
 			// Canceling an approval request must not release stock again.
 			update.Status = utilities.Ptr(types.OrderCanceled)
 			require.NoError(t, repo.UpdateOrder(ctx, update))
 			assert.Equal(t, 5, productInventory(t, productID))
-			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT COUNT(*) FROM requested_items WHERE order_id = $1`, orderID).Scan(&count))
-			assert.Zero(t, count)
+			require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT COUNT(*) FROM order_items WHERE order_id = $1`, orderID).Scan(&count))
+			assert.Equal(t, 1, count)
 			require.NoError(t, repo.UpdateOrder(ctx, update))
 			assert.Equal(t, 5, productInventory(t, productID))
+			fetched, err := repo.GetOrderByID(ctx, orderID)
+			require.NoError(t, err)
+			require.Len(t, fetched.Items, 1)
+			assert.Equal(t, 2, fetched.Items[0].Quantity)
+			assert.Equal(t, int64(1000), fetched.Items[0].UnitPrice)
 		})
 	}
 }

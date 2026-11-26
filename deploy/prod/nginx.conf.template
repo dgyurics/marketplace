@@ -59,7 +59,7 @@ server {
    ssl_certificate         /etc/letsencrypt/live/shared/fullchain.pem;
    ssl_certificate_key     /etc/letsencrypt/live/shared/privkey.pem;
    ssl_protocols           TLSv1.2 TLSv1.3;
-   ssl_ciphers             ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384;
+   ssl_ciphers             ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384;
    ssl_prefer_server_ciphers off;
    ssl_session_cache       shared:SSL:10m;
    ssl_session_timeout     10m;
@@ -90,7 +90,7 @@ server {
 
    # API: users
    location ~ ^/api/users(/.*)?$ {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
@@ -104,7 +104,7 @@ server {
 
    # API: orders
    location ~ ^/api/orders(/.*)?$ {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
@@ -118,7 +118,7 @@ server {
 
    # API: stripe webhooks
    location /api/payment/events {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
@@ -132,7 +132,7 @@ server {
 
    # API: image uploads (larger body)
    location /api/images/products/ {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
@@ -146,7 +146,7 @@ server {
 
    # API: catch-all
    location /api/ {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
@@ -161,7 +161,7 @@ server {
 
    # Image proxy (imgproxy) with caching
    location /images/ {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;
@@ -188,7 +188,7 @@ server {
 
    # Frontend (web container)
    location / {
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-For   $remote_addr;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host              $host;
       proxy_set_header X-Real-IP         $remote_addr;

@@ -51,32 +51,34 @@ defineEmits<{
   letter-spacing: 0;
   text-transform: capitalize;
   padding: 14px 16px;
-  border-radius: 8px;
+  border-radius: var(--control-radius);
   cursor: pointer;
   transition: all 0.3s ease;
   background: transparent;
-  color: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: var(--muted-text-color);
+  border: 1px solid var(--input-border-color);
 }
 
 .method-btn:hover:not(:disabled) {
-  border-color: rgba(0, 0, 0, 0.4);
-  color: #0a0a0a;
+  border-color: var(--accent-color);
+  color: var(--text-color);
 }
 
 .method-btn--active {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--on-accent-color);
   border-color: var(--accent-color);
 }
 
 .method-btn--active:hover:not(:disabled) {
-  background: #bf3c32;
-  border-color: #bf3c32;
-  color: #fff;
+  background: var(--accent-hover-color);
+  border-color: var(--accent-hover-color);
+  color: var(--on-accent-color);
 }
 
 .method-btn:disabled {
-  opacity: 0.4;
+  background: var(--disabled-background);
+  color: var(--disabled-text-color);
+  border-color: var(--border-color);
 }
 </style>

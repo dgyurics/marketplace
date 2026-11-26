@@ -10,11 +10,11 @@ defineProps<{ message?: string }>()
 
 <style scoped>
 .banner {
-  background-color: #f0f0f0;
+  background-color: var(--subtle-background);
   width: 100%;
   z-index: 999;
   text-align: center;
-  color: #000;
+  color: var(--text-color);
   font-size: 12px;
   padding: 2px 0;
   /* Compensate for scrollbar */

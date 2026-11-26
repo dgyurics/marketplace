@@ -116,7 +116,7 @@ func (s *taxService) EstimateTax(ctx context.Context, shippingAddress types.Addr
 		if err != nil {
 			return 0, err
 		}
-		totalTax += int64(item.Quantity) * item.UnitPrice * int64(rate) / 10_000
+		totalTax += int64(item.Quantity) * *item.Product.Price * int64(rate) / 10_000
 	}
 	return totalTax, nil
 }

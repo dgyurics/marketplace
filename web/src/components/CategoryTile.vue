@@ -64,7 +64,7 @@ const handleClick = () => {
 .category-slug {
   font-size: 11px;
   font-weight: 700;
-  color: #222;
+  color: var(--text-color);
   margin: 5px 0;
   letter-spacing: 0.5px;
 }

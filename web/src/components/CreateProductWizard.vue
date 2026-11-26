@@ -339,7 +339,7 @@ onMounted(createDraft)
   padding: 4px 0;
   border: none;
   background: transparent;
-  color: #666;
+  color: var(--muted-text-color);
   font-size: 12px;
   line-height: 16px;
 }
@@ -350,12 +350,12 @@ onMounted(createDraft)
 
 .assistant-button:hover {
   background: transparent;
-  color: #222;
+  color: var(--text-color);
 }
 
 .assistant-button:disabled {
   background: transparent;
-  color: #aaa;
+  color: var(--disabled-text-color);
 }
 
 .assistant-icon {
@@ -376,8 +376,8 @@ onMounted(createDraft)
   width: 100%;
   box-sizing: border-box;
   padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 1px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--control-radius);
   font-family: inherit;
   font-size: 12px;
   line-height: 1.5;
@@ -385,7 +385,7 @@ onMounted(createDraft)
 }
 
 .assistant-input::placeholder {
-  color: #888;
+  color: var(--subtle-text-color);
 }
 
 .assistant-generate {
@@ -423,7 +423,7 @@ onMounted(createDraft)
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #f0f0f0;
+  background: var(--subtle-background);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -433,8 +433,8 @@ onMounted(createDraft)
 }
 
 .step.active .step-number {
-  background: #000;
-  color: #fff;
+  background: var(--accent-color);
+  color: var(--on-accent-color);
 }
 
 .step-label {
@@ -467,7 +467,7 @@ onMounted(createDraft)
 
 .step-description {
   margin: 0 0 20px 0;
-  color: #666;
+  color: var(--muted-text-color);
   font-size: 0.95rem;
 }
 
@@ -488,7 +488,7 @@ onMounted(createDraft)
   gap: 8px;
   cursor: pointer;
   font-size: 13px;
-  color: #666;
+  color: var(--muted-text-color);
   margin-bottom: 0;
   margin-top: 0;
   margin-left: 0;
@@ -498,7 +498,6 @@ onMounted(createDraft)
   cursor: pointer;
   width: 18px;
   height: 18px;
-  accent-color: #000;
 }
 
 .form-row-2col {
