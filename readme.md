@@ -20,8 +20,6 @@ A self-hosted e-commerce framework designed for local businesses and community c
 
 <br>
 
-*Optional image enhancement and product field suggestions are available through an external provider. Self-hosted background removal is also available with rembg.*
-
 ## Planned Enhancements
 
 * Cache-Control + ETags
