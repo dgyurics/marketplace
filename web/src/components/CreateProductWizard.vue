@@ -375,7 +375,7 @@ onMounted(createDraft)
 .assistant-context {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   margin-top: 6px;
 }
 
@@ -397,6 +397,7 @@ onMounted(createDraft)
 
 .assistant-generate {
   align-self: flex-start;
+  flex: none;
 }
 
 .wizard-header {
