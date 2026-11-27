@@ -4,7 +4,12 @@
       <form @submit.prevent="handleSubmit">
         <div class="form-row">
           <InputText v-model="editProduct.name" label="name" required />
-          <InputNumber v-model="displayPrice" label="Price" step="0.01" required />
+          <InputCurrency id="product-price" v-model="editProduct.price" label="Price" required />
+          <InputCurrency
+            id="product-member-price"
+            v-model="editProduct.member_price"
+            label="Member price"
+          />
           <InputNumber v-model="editProduct.inventory" label="inventory" required />
           <InputNumber v-model="editProduct.cart_limit" label="cart limit" />
           <InputNumber v-model="editProduct.sort_order" label="sort order" min="0" />
@@ -79,6 +84,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
+  InputCurrency,
   InputNumber,
   InputText,
   KeyValueEditor,
@@ -88,7 +94,6 @@ import {
 import ImageGallery from '@/components/ImageGallery.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import { getProductById, getCategories, updateProduct, removeProduct } from '@/services/api'
-import { toMinorUnits, toMajorUnits } from '@/utilities'
 
 const route = useRoute()
 const router = useRouter()
@@ -102,14 +107,10 @@ const categoryOptions = computed(() =>
   categories.value.map((category) => ({ value: category.slug, label: category.name }))
 )
 
-const displayPrice = computed({
-  get: () => (editProduct.value.price === '' ? '' : toMajorUnits(editProduct.value.price)),
-  set: (value) => (editProduct.value.price = value === '' ? '' : toMinorUnits(value)),
-})
-
 const editProduct = ref({
   name: '',
-  price: '',
+  price: null,
+  member_price: null,
   summary: '',
   description: '',
   tax_code: '',
@@ -132,6 +133,7 @@ const fetchProduct = async () => {
     editProduct.value = {
       name: data.name,
       price: data.price,
+      member_price: data.member_price ?? null,
       summary: data.summary ?? '',
       description: data.description ?? '',
       tax_code: data.tax_code ?? '',
@@ -171,6 +173,7 @@ const handleSubmit = async () => {
       id: product.value.id,
       name: editProduct.value.name,
       price: editProduct.value.price,
+      member_price: editProduct.value.member_price,
       summary: editProduct.value.summary,
       description: editProduct.value.description || undefined,
       tax_code: editProduct.value.tax_code || undefined,

@@ -39,6 +39,7 @@ export interface CreateProductRequest {
   name: string
   status?: ProductStatus
   price: number
+  member_price?: number
   details: Record<string, unknown>
   description: string
   tax_code?: string

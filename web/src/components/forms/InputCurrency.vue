@@ -22,8 +22,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { toMajorUnits, toMinorUnits } from '@/utilities/currency'
+
 const props = defineProps<{
-  modelValue: number | ''
+  modelValue: number | null
   id: string
   label: string
   required?: boolean
@@ -31,12 +33,13 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: number | '']
+  'update:modelValue': [value: number | null]
 }>()
 
 const value = computed({
-  get: () => props.modelValue,
-  set: (newValue) => emit('update:modelValue', newValue),
+  get: () => (props.modelValue === null ? '' : toMajorUnits(props.modelValue)),
+  set: (newValue: number | '') =>
+    emit('update:modelValue', newValue === '' ? null : toMinorUnits(newValue)),
 })
 </script>
 

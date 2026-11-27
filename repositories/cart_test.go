@@ -285,3 +285,24 @@ func TestCartProductImages(t *testing.T) {
 		require.Equal(t, expected[item.Product.ID], item.Product.Images)
 	}
 }
+
+func TestCartMemberPrice(t *testing.T) {
+	ctx := context.Background()
+	repo := NewCartRepository(dbPool)
+	user := createUniqueTestUser(t, NewUserRepository(dbPool))
+	t.Cleanup(func() {
+		_, err := dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID)
+		assert.NoError(t, err)
+	})
+	product := newProductFixture(t)
+	product.Inventory = 10
+	product.MemberPrice = utilities.Ptr(int64(0))
+	require.NoError(t, NewProductRepository(dbPool).CreateProduct(ctx, product))
+	require.NoError(t, repo.AddItem(ctx, user.ID, &types.CartItem{Product: *product, Quantity: 1}))
+	items, err := repo.GetItems(ctx, user.ID)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.NotNil(t, items[0].Product.MemberPrice)
+	assert.Equal(t, int64(0), *items[0].Product.MemberPrice)
+	assert.Equal(t, *product.Price, *items[0].Product.Price)
+}

@@ -13,8 +13,10 @@
 
       <form @submit.prevent="handleSubmit">
         <div class="form-group-flex">
-          <InputCurrency id="offer-price" v-model="displayOfferPrice" label="Your Offer" required />
-          <p class="help-text">Asking price: {{ displayPrice(product?.price || 0) }}</p>
+          <InputCurrency id="offer-price" v-model="offerPriceValue" label="Your Offer" required />
+          <p class="help-text">
+            Asking price: {{ displayPrice(product?.member_price ?? product?.price ?? 0) }}
+          </p>
         </div>
 
         <!-- Optional comment -->
@@ -40,29 +42,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { InputCurrency, InputTextArea } from '@/components/forms'
 import { createOffer, getProductById, getOffersByProductId } from '@/services/api'
 import type { Product } from '@/types'
-import { displayPrice, toMajorUnits, toMinorUnits } from '@/utilities/currency'
+import { displayPrice } from '@/utilities/currency'
 
 const route = useRoute()
 
 const product = ref<Product | null>(null)
 const comment = ref('')
-const offerPriceValue = ref<number | ''>('')
+const offerPriceValue = ref<number | null>(null)
 const success = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
 const hasPendingOffer = ref(false)
 const offersLoaded = ref(false)
-
-const displayOfferPrice = computed({
-  get: () => (offerPriceValue.value === '' ? '' : toMajorUnits(offerPriceValue.value)),
-  set: (value) => (offerPriceValue.value = value === '' ? '' : toMinorUnits(value)),
-})
 
 onMounted(async () => {
   try {
@@ -82,7 +79,7 @@ const handleSubmit = async () => {
 
   errorMessage.value = null
 
-  if (offerPriceValue.value === '' || offerPriceValue.value < 0) {
+  if (offerPriceValue.value === null || offerPriceValue.value < 0) {
     errorMessage.value = 'Invalid offer amount'
     return
   }

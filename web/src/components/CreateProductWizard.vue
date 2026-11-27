@@ -83,12 +83,20 @@
         <div class="form-row-2col">
           <InputCurrency
             id="new-product-price"
-            v-model="displayPrice"
+            v-model="newProduct.price"
             label="Price"
             label-position="inside"
             required
           />
           <InputNumber v-model="newProduct.inventory" label="Inventory" min="0" required />
+        </div>
+        <div class="form-group">
+          <InputCurrency
+            id="new-product-member-price"
+            v-model="newProduct.member_price"
+            label="Member price"
+            label-position="inside"
+          />
         </div>
         <div class="form-group">
           <InputText v-model="newProduct.summary" label="Summary" />
@@ -175,7 +183,6 @@ import ImageUploader from '@/components/ImageUploader.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import { createProduct, updateProduct, autofillProduct } from '@/services/api'
 import type { Category, Image } from '@/types'
-import { toMinorUnits, toMajorUnits } from '@/utilities'
 import { getAssistantOptions } from '@/utilities/config'
 
 const props = defineProps<{
@@ -199,7 +206,8 @@ const errorMessage = ref('')
 const detailsEditor = ref<{ hasErrors: () => boolean } | null>(null)
 const newProduct = ref({
   name: '',
-  price: '' as number | '',
+  price: null as number | null,
+  member_price: null as number | null,
   inventory: '' as number | '',
   summary: '',
   category: '',
@@ -212,10 +220,6 @@ const newProduct = ref({
   details: {} as Record<string, string>,
 })
 
-const displayPrice = computed({
-  get: () => (newProduct.value.price === '' ? '' : toMajorUnits(newProduct.value.price)),
-  set: (value) => (newProduct.value.price = value === '' ? '' : toMinorUnits(value)),
-})
 const categoryOptions = computed(() =>
   props.categories.map((category) => ({ value: category.slug, label: category.name }))
 )
@@ -273,7 +277,7 @@ const autoFill = async () => {
 const goToDetails = () => {
   if (
     !newProduct.value.name.trim() ||
-    newProduct.value.price === '' ||
+    newProduct.value.price === null ||
     newProduct.value.inventory === ''
   )
     return
@@ -291,7 +295,7 @@ const handleSubmit = async () => {
     return
   if (
     !newProduct.value.name.trim() ||
-    newProduct.value.price === '' ||
+    newProduct.value.price === null ||
     newProduct.value.inventory === ''
   )
     return
@@ -305,6 +309,9 @@ const handleSubmit = async () => {
       id: productId.value,
       name: newProduct.value.name.trim(),
       price: newProduct.value.price,
+      ...(newProduct.value.member_price !== null && {
+        member_price: newProduct.value.member_price,
+      }),
       inventory: Number(newProduct.value.inventory),
       summary: newProduct.value.summary,
       ...(newProduct.value.description && { description: newProduct.value.description }),
