@@ -15,7 +15,7 @@
 
         <StripeCheckout
           v-if="paymentMethod === 'stripe'"
-          :amount="cartStore.subtotal + taxAmount"
+          :amount="cartStore.subtotal + additionalTax"
         />
 
         <DeliveryCheckout v-else-if="paymentMethod === 'on_delivery'" />
@@ -24,7 +24,7 @@
 
         <p v-if="checkoutStore.paymentError" class="error">{{ checkoutStore.paymentError }}</p>
       </div>
-      <OrderSummary :tax-amount="taxAmount" />
+      <OrderSummary :tax-amount="taxAmount" :additional-tax="additionalTax" />
     </div>
   </div>
 </template>
@@ -51,6 +51,7 @@ const paymentMethod = ref<PaymentMethod | null>(null)
 const enabledMethods = ref<PaymentMethod[]>([])
 const isInitializing = ref(true)
 const taxAmount = ref(0)
+const additionalTax = ref(0)
 
 onMounted(async () => {
   try {
@@ -75,8 +76,9 @@ async function initializePayment() {
 
   // populate cart and get tax estimate
   await cartStore.fetchCart()
-  const { tax_amount } = await checkoutStore.estimateTax()
+  const { tax_amount, additional_tax } = await checkoutStore.estimateTax()
   taxAmount.value = tax_amount
+  additionalTax.value = additional_tax
 
   // server decides which payment methods are available
   const options = await getPaymentMethods()

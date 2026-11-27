@@ -54,7 +54,7 @@ func (h *TaxRoutes) EstimateTax(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.RespondWithJSON(w, http.StatusOK, types.TaxEstimateResponse{TaxAmount: taxEstimate})
+	u.RespondWithJSON(w, http.StatusOK, taxEstimate)
 }
 
 func (h *TaxRoutes) RegisterRoutes() {

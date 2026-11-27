@@ -50,7 +50,7 @@ export const useCheckoutStore = defineStore('checkout', {
       return savedAddress
     },
 
-    async estimateTax(): Promise<{ tax_amount: number }> {
+    async estimateTax(): Promise<{ tax_amount: number; additional_tax: number }> {
       return apiGetTaxEstimate(this.shippingAddress.country, this.shippingAddress.state)
     },
 

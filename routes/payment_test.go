@@ -50,8 +50,8 @@ func TestPaymentMethods(t *testing.T) {
 
 type calculateTaxStub struct{ services.TaxService }
 
-func (calculateTaxStub) CalculateTax(context.Context, string, types.Address, []types.OrderItem) (int64, error) {
-	return 0, nil
+func (calculateTaxStub) CalculateTax(context.Context, string, types.Address, []types.OrderItem) (types.TaxEstimateResponse, error) {
+	return types.TaxEstimateResponse{}, nil
 }
 
 func TestStripeCheckoutRejectsZeroTotal(t *testing.T) {

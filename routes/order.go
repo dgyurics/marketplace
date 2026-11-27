@@ -255,8 +255,8 @@ func (h *OrderRoutes) CheckoutWithStripe(w http.ResponseWriter, r *http.Request)
 	}
 
 	// update amounts + order
-	order.TaxAmount = u.Ptr(tax)
-	order.TotalAmount = u.Ptr(*order.Amount + tax + *order.ShippingAmount)
+	order.TaxAmount = u.Ptr(tax.TaxAmount)
+	order.TotalAmount = u.Ptr(*order.Amount + tax.AdditionalTax + *order.ShippingAmount)
 	if *order.TotalAmount <= 0 {
 		u.RespondWithError(w, r, http.StatusBadRequest, "stripe requires a positive order total")
 		return
