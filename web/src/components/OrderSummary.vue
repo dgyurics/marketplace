@@ -20,7 +20,7 @@
         <span>Subtotal</span><span>{{ formatPrice(subtotal) }}</span>
       </p>
       <p>
-        <span>Tax <span class="italic">(estimate)</span></span
+        <span>Tax <span class="italic">({{ additionalTax === 0 && taxAmount > 0 ? 'included, estimate' : 'estimate' }})</span></span
         ><span>{{ formatPrice(taxAmount) }}</span>
       </p>
       <p>
@@ -39,6 +39,7 @@ import { formatPrice } from '@/utilities'
 
 const props = defineProps<{
   taxAmount?: number
+  additionalTax?: number
 }>()
 
 const cartStore = useCartStore()
@@ -50,7 +51,8 @@ const subtotal = computed(() =>
 
 const taxAmount = computed(() => props.taxAmount || 0)
 
-const total = computed(() => subtotal.value + taxAmount.value)
+const additionalTax = computed(() => props.additionalTax ?? taxAmount.value)
+const total = computed(() => subtotal.value + additionalTax.value)
 </script>
 
 <style scoped>

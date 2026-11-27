@@ -313,15 +313,17 @@ func (r *orderRepository) GetOrders(ctx context.Context, page, limit int) ([]typ
 func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string) ([]types.OrderItem, error) {
 	query := `
 		SELECT
-			product_id,
-			name,
-			summary,
-			thumbnail,
-			alt_text,
-			quantity,
-			unit_price
-		FROM v_order_items
-		WHERE order_id = $1
+			vi.product_id,
+			vi.name,
+			vi.summary,
+			vi.thumbnail,
+			vi.alt_text,
+			vi.quantity,
+			vi.unit_price,
+			p.tax_code
+		FROM v_order_items vi
+		JOIN products p ON p.id = vi.product_id
+		WHERE vi.order_id = $1
 	`
 	rows, err := r.db.QueryContext(ctx, query, orderID)
 	if err != nil {
@@ -341,6 +343,7 @@ func (r *orderRepository) populateOrderItems(ctx context.Context, orderID string
 			&item.AltText,
 			&item.Quantity,
 			&item.UnitPrice,
+			&item.Product.TaxCode,
 		); err != nil {
 			return nil, err
 		}

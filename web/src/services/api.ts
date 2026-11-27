@@ -356,7 +356,7 @@ export const getOrderAdmin = async (orderId: string): Promise<Order> => {
 export const getTaxEstimate = async (
   country: string,
   state?: string
-): Promise<{ tax_amount: number }> => {
+): Promise<{ tax_amount: number; additional_tax: number }> => {
   const params = new URLSearchParams()
   params.append('country', country)
 

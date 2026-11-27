@@ -18,8 +18,8 @@ import (
 )
 
 type TaxService interface {
-	CalculateTax(ctx context.Context, refID string, shippingAddress types.Address, items []types.OrderItem) (int64, error)
-	EstimateTax(ctx context.Context, shippingAddress types.Address, items []types.CartItem) (int64, error)
+	CalculateTax(ctx context.Context, refID string, shippingAddress types.Address, items []types.OrderItem) (types.TaxEstimateResponse, error)
+	EstimateTax(ctx context.Context, shippingAddress types.Address, items []types.CartItem) (types.TaxEstimateResponse, error)
 }
 
 type taxService struct {
@@ -40,7 +40,7 @@ func NewTaxService(
 	}
 }
 
-func (s *taxService) CalculateTax(ctx context.Context, refID string, address types.Address, items []types.OrderItem) (int64, error) {
+func (s *taxService) CalculateTax(ctx context.Context, refID string, address types.Address, items []types.OrderItem) (types.TaxEstimateResponse, error) {
 	form := url.Values{}
 	form.Set("currency", utilities.Locale.Currency)
 
@@ -63,7 +63,7 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 
 	if len(items) == 0 {
 		slog.WarnContext(ctx, "CalculateTax called with no items", "refID", refID)
-		return 0, fmt.Errorf("no items provided for tax calculation")
+		return types.TaxEstimateResponse{}, fmt.Errorf("no items provided for tax calculation")
 	}
 
 	// Line Items
@@ -79,7 +79,7 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 	url := fmt.Sprintf("%s/tax/calculations", s.config.Stripe.BaseURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBufferString(form.Encode()))
 	if err != nil {
-		return 0, err
+		return types.TaxEstimateResponse{}, err
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.config.Stripe.SecretKey))
@@ -88,35 +88,44 @@ func (s *taxService) CalculateTax(ctx context.Context, refID string, address typ
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return 0, err
+		return types.TaxEstimateResponse{}, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		slog.InfoContext(ctx, "stripe tax calculation failed", "status_code", resp.StatusCode, "body", string(body))
-		return 0, types.ErrInvalidInput
+		return types.TaxEstimateResponse{}, types.ErrInvalidInput
 	}
 
 	var tax stripe.TaxCalculationResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tax); err != nil {
-		return 0, err
+		return types.TaxEstimateResponse{}, err
 	}
 
 	slog.Debug("Stripe Tax Calculation Response", "response", tax)
 
-	return tax.TaxAmountInclusive + tax.TaxAmountExclusive, nil
+	return types.TaxEstimateResponse{TaxAmount: tax.TaxAmountInclusive + tax.TaxAmountExclusive, AdditionalTax: tax.TaxAmountExclusive}, nil
 }
 
 // EstimateTax estimates the tax using a combination of country (required), state (optional), and tax code (optional).
-func (s *taxService) EstimateTax(ctx context.Context, shippingAddress types.Address, items []types.CartItem) (int64, error) {
+func (s *taxService) EstimateTax(ctx context.Context, shippingAddress types.Address, items []types.CartItem) (types.TaxEstimateResponse, error) {
 	var totalTax int64
 	for _, item := range items {
 		rate, err := s.repo.GetTaxRates(ctx, shippingAddress, item.Product.TaxCode)
 		if err != nil {
-			return 0, err
+			return types.TaxEstimateResponse{}, err
 		}
-		totalTax += int64(item.Quantity) * *item.Product.Price * int64(rate) / 10_000
+		amount := int64(item.Quantity) * *item.Product.Price
+		if s.config.Tax.Behavior == types.TaxInclusive {
+			totalTax += amount * int64(rate) / (10_000 + int64(rate))
+		} else {
+			totalTax += amount * int64(rate) / 10_000
+		}
 	}
-	return totalTax, nil
+	result := types.TaxEstimateResponse{TaxAmount: totalTax}
+	if s.config.Tax.Behavior != types.TaxInclusive {
+		result.AdditionalTax = totalTax
+	}
+	return result, nil
 }
