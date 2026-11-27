@@ -4,11 +4,18 @@
       <form @submit.prevent="handleSubmit">
         <div class="form-row">
           <InputText v-model="editProduct.name" label="name" required />
-          <InputCurrency id="product-price" v-model="editProduct.price" label="Price" required />
+          <InputCurrency
+            id="product-price"
+            v-model="editProduct.price"
+            label="Price"
+            label-position="inside"
+            required
+          />
           <InputCurrency
             id="product-member-price"
             v-model="editProduct.member_price"
             label="Member price"
+            label-position="inside"
           />
           <InputNumber v-model="editProduct.inventory" label="inventory" required />
           <InputNumber v-model="editProduct.cart_limit" label="cart limit" />
