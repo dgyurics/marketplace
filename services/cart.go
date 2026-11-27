@@ -27,6 +27,9 @@ func (s *cartService) AddItem(ctx context.Context, item *types.CartItem) error {
 	return s.cartRepo.AddItem(ctx, getUserID(ctx), item)
 }
 
+// GetItems retrieves the items in the user's cart
+// If the user has a minimum role of "member", a member price will be applied
+// if the product has a member price defined
 func (s *cartService) GetItems(ctx context.Context) ([]types.CartItem, error) {
 	userID := getUserID(ctx)
 	items, err := s.cartRepo.GetItems(ctx, userID)
