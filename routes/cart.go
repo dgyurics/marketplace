@@ -12,18 +12,15 @@ import (
 
 type CartRoutes struct {
 	router
-	cartService  services.CartService
-	orderService services.OrderService
+	cartService services.CartService
 }
 
 func NewCartRoutes(
 	cartService services.CartService,
-	orderService services.OrderService,
 	router router) *CartRoutes {
 	return &CartRoutes{
-		router:       router,
-		cartService:  cartService,
-		orderService: orderService,
+		router:      router,
+		cartService: cartService,
 	}
 }
 

@@ -81,7 +81,7 @@ func initializeServer(config types.Config, services servicesContainer) *http.Ser
 	routes.RegisterAllRoutes(
 		routes.NewAddressRoutes(services.Address, services.Shipping, baseRouter),
 		routes.NewShippingZoneRoutes(services.Shipping, baseRouter),
-		routes.NewCartRoutes(services.Cart, services.Order, baseRouter),
+		routes.NewCartRoutes(services.Cart, baseRouter),
 		routes.NewCategoryRoutes(services.Category, baseRouter),
 		routes.NewConversationRoutes(services.Conversation, baseRouter),
 		routes.NewHealthRoutes(baseRouter),

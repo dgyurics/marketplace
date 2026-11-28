@@ -42,11 +42,7 @@ const props = defineProps<{
 }>()
 
 const cartStore = useCartStore()
-const { items: cartItems } = storeToRefs(cartStore)
-
-const subtotal = computed(() =>
-  cartItems.value.reduce((total, item) => total + item.product.price * item.quantity, 0)
-)
+const { items: cartItems, subtotal } = storeToRefs(cartStore)
 
 const taxAmount = computed(() => props.taxAmount || 0)
 
