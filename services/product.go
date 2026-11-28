@@ -25,10 +25,6 @@ func NewProductService(repo repositories.ProductRepository) ProductService {
 }
 
 func (s *productService) CreateProduct(ctx context.Context, product *types.Product) error {
-	if product.BorrowOnly {
-		product.Price = utilities.Ptr(int64(0))
-		product.MemberPrice = nil
-	}
 	productID, err := utilities.GenerateIDString()
 	if err != nil {
 		return err
@@ -50,9 +46,5 @@ func (s *productService) RemoveProduct(ctx context.Context, id string) error {
 }
 
 func (s *productService) UpdateProduct(ctx context.Context, product types.Product) error {
-	if product.BorrowOnly {
-		product.Price = utilities.Ptr(int64(0))
-		product.MemberPrice = nil
-	}
 	return s.repo.UpdateProduct(ctx, product)
 }
