@@ -35,7 +35,8 @@ func (r *cartRepository) GetItems(ctx context.Context, userID string) ([]types.C
 			pv.summary
 		FROM cart_items ci
 		JOIN v_products pv ON ci.product_id = pv.id
-		WHERE ci.user_id = $1`
+		JOIN users u ON u.id = ci.user_id
+		WHERE ci.user_id = $1 AND (NOT pv.members_only OR u.role IN ('member', 'staff', 'admin'))`
 
 	rows, err := r.db.QueryContext(ctx, itemsQuery, userID)
 	if err != nil {
@@ -96,8 +97,12 @@ func (r *cartRepository) AddItem(ctx context.Context, userID string, item *types
 	// Check inventory availability and cart limit
 	var availableQuantity int
 	var cartLimit *int
-	if err := tx.QueryRowContext(ctx, "SELECT inventory, cart_limit FROM products WHERE id = $1 FOR UPDATE", item.Product.ID).Scan(&availableQuantity, &cartLimit); err != nil {
+	var allowed bool
+	if err := tx.QueryRowContext(ctx, "SELECT inventory, cart_limit, (NOT members_only OR EXISTS (SELECT 1 FROM users WHERE id = $2 AND role IN ('member', 'staff', 'admin'))) FROM products WHERE id = $1 FOR UPDATE", item.Product.ID, userID).Scan(&availableQuantity, &cartLimit, &allowed); err != nil {
 		return err
+	}
+	if !allowed {
+		return types.ErrConstraintViolation
 	}
 
 	// If out of stock, return an error

@@ -65,6 +65,28 @@ func TestCreateProduct(t *testing.T) {
 	assert.Equal(t, product.Category.ID, saved.Category.ID)
 }
 
+func TestMembersOnlyProduct(t *testing.T) {
+	ctx := context.Background()
+	repo := NewProductRepository(dbPool)
+	product := newProductFixture(t)
+	product.MembersOnly = true
+	require.NoError(t, repo.CreateProduct(ctx, product))
+
+	saved, err := repo.GetProductByID(ctx, product.ID)
+	require.NoError(t, err)
+	assert.True(t, saved.MembersOnly)
+	for _, visible := range []bool{false, true} {
+		products, err := repo.GetProducts(ctx, types.ProductFilter{IncludeMembersOnly: visible, Categories: []string{product.Category.Slug}, Page: 1, Limit: 10})
+		require.NoError(t, err)
+		assert.Equal(t, visible, len(products) == 1)
+	}
+	saved.MembersOnly = false
+	require.NoError(t, repo.UpdateProduct(ctx, saved))
+	saved, err = repo.GetProductByID(ctx, product.ID)
+	require.NoError(t, err)
+	assert.False(t, saved.MembersOnly)
+}
+
 func TestCreateProductDefaultsStatus(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	product := newProductFixture(t)

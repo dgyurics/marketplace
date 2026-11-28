@@ -15,6 +15,7 @@ export interface Product {
   inventory: number
   category?: Category
   featured: boolean
+  members_only: boolean
   negotiable: boolean
   sort_order?: number
   tax_code?: string
