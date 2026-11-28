@@ -56,6 +56,7 @@ import { useRouter } from 'vue-router'
 import { InputText } from '@/components/forms'
 import { updatePassword, updateEmail, setPassword } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
+import { isValidPassword } from '@/utilities/auth'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -68,10 +69,6 @@ const errorMessage = ref<string | null>(null)
 const userEmail = computed(() => authStore.user.email || 'Not set')
 const userRole = computed(() => authStore.user.role || 'guest')
 const isAdmin = computed(() => authStore.hasMinimumRole('admin'))
-
-const isValidPassword = (password: string) => {
-  return password.length >= 3 && password.length <= 50
-}
 
 const handleEmailUpdate = async () => {
   authStore.setTokens(await updateEmail(editableEmail.value))

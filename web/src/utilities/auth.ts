@@ -43,3 +43,7 @@ export function isTokenExpired(jwt: JwtUser, buffer: number = 60): boolean {
   const now = Math.floor(Date.now() / 1000)
   return jwt.exp - now < buffer
 }
+
+export function isValidPassword(password: string): boolean {
+  return password.length >= 3 && password.length <= 50
+}

@@ -21,17 +21,13 @@ import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 import { passwordUpdate } from '@/services/api'
+import { isValidPassword } from '@/utilities/auth'
 
 const route = useRoute()
 const router = useRouter()
 
 const password = ref('')
 const errorMessage = ref<string | null>(null)
-
-// TODO move to util; duplicated logic
-const isValidPassword = (password: string) => {
-  return password.length >= 3 && password.length <= 50
-}
 
 const handleSubmit = async () => {
   errorMessage.value = null
@@ -46,13 +42,7 @@ const handleSubmit = async () => {
     const email = route.params['email'] as string
     await passwordUpdate(email, password.value, resetCode)
     router.push('/auth')
-  } catch (error: any) {
-    console.dir(error)
-    // const status = error.response?.status
-    // if (status === 400) {
-    //   errorMessage.value = 'Invalid email or registration code'
-    //   return
-    // }
+  } catch {
     errorMessage.value = 'Something went wrong'
   }
 }

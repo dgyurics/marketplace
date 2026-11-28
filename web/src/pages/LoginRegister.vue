@@ -48,6 +48,7 @@ import { login as apiLogin, register as apiRegister } from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
 import { useInboxStore } from '@/store/inbox'
+import { isValidPassword } from '@/utilities/auth'
 
 const authStore = useAuthStore()
 
@@ -58,10 +59,6 @@ const errorMessage = ref<string | null>(null)
 const isValidEmail = (email: string) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
-}
-
-const isValidPassword = (password: string) => {
-  return password.length >= 3 && password.length <= 50
 }
 
 const router = useRouter()
