@@ -65,6 +65,26 @@ func TestCreateProduct(t *testing.T) {
 	assert.Equal(t, product.Category.ID, saved.Category.ID)
 }
 
+func TestBorrowOnlyProduct(t *testing.T) {
+	ctx := context.Background()
+	repo := NewProductRepository(dbPool)
+	product := newProductFixture(t)
+	product.BorrowOnly = true
+	require.NoError(t, repo.CreateProduct(ctx, product))
+	saved, err := repo.GetProductByID(ctx, product.ID)
+	require.NoError(t, err)
+	require.True(t, saved.BorrowOnly)
+	products, err := repo.GetProducts(ctx, types.ProductFilter{Categories: []string{product.Category.Slug}, Page: 1, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, products, 1)
+	require.True(t, products[0].BorrowOnly)
+	saved.BorrowOnly = false
+	require.NoError(t, repo.UpdateProduct(ctx, saved))
+	saved, err = repo.GetProductByID(ctx, product.ID)
+	require.NoError(t, err)
+	require.False(t, saved.BorrowOnly)
+}
+
 func TestCreateProductDefaultsStatus(t *testing.T) {
 	repo := NewProductRepository(dbPool)
 	product := newProductFixture(t)

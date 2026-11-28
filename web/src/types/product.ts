@@ -8,6 +8,7 @@ export interface Product {
   status?: ProductStatus
   price: number
   member_price?: number
+  borrow_only?: boolean
   summary?: string
   description?: string
   details: Record<string, unknown>

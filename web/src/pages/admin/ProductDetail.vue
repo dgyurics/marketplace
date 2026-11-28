@@ -38,6 +38,10 @@
             <input v-model="editProduct.negotiable" type="checkbox" />
             <span>Negotiable</span>
           </label>
+          <label class="checkbox-label">
+            <input v-model="editProduct.borrow_only" type="checkbox" />
+            <span>Borrow</span>
+          </label>
         </div>
 
         <!-- Details Section -->
@@ -118,6 +122,7 @@ const editProduct = ref({
   name: '',
   price: null,
   member_price: null,
+  borrow_only: false,
   summary: '',
   description: '',
   tax_code: '',
@@ -141,6 +146,7 @@ const fetchProduct = async () => {
       name: data.name,
       price: data.price,
       member_price: data.member_price ?? null,
+      borrow_only: data.borrow_only ?? false,
       summary: data.summary ?? '',
       description: data.description ?? '',
       tax_code: data.tax_code ?? '',
@@ -181,6 +187,7 @@ const handleSubmit = async () => {
       name: editProduct.value.name,
       price: editProduct.value.price,
       member_price: editProduct.value.member_price,
+      borrow_only: editProduct.value.borrow_only,
       summary: editProduct.value.summary,
       description: editProduct.value.description || undefined,
       tax_code: editProduct.value.tax_code || undefined,

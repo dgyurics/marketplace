@@ -114,6 +114,10 @@
             <input v-model="newProduct.negotiable" type="checkbox" />
             <span>Negotiable</span>
           </label>
+          <label class="checkbox-label">
+            <input v-model="newProduct.borrow_only" type="checkbox" />
+            <span>Borrow</span>
+          </label>
         </div>
         <div class="form-actions">
           <button type="button" class="btn-primary btn-outline" @click="currentStep = 1">
@@ -208,6 +212,7 @@ const newProduct = ref({
   name: '',
   price: null as number | null,
   member_price: null as number | null,
+  borrow_only: false,
   inventory: '' as number | '',
   summary: '',
   category: '',
@@ -312,6 +317,7 @@ const handleSubmit = async () => {
       ...(newProduct.value.member_price !== null && {
         member_price: newProduct.value.member_price,
       }),
+      borrow_only: newProduct.value.borrow_only,
       inventory: Number(newProduct.value.inventory),
       summary: newProduct.value.summary,
       ...(newProduct.value.description && { description: newProduct.value.description }),

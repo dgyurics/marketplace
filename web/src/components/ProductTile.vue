@@ -12,8 +12,9 @@
     <div class="product-info">
       <h3 class="product-title">{{ product.name }}</h3>
       <p v-if="product.summary" class="product-summary">{{ product.summary }}</p>
-      <p class="product-price">{{ displayPrice(product.price) }}</p>
-      <p v-if="product.member_price != null" class="member-price">
+      <p v-if="product.borrow_only" class="member-price">free <span>to borrow</span></p>
+      <p v-else class="product-price">{{ displayPrice(product.price) }}</p>
+      <p v-if="!product.borrow_only && product.member_price != null" class="member-price">
         {{ displayPrice(product.member_price) }} <span>for members</span>
       </p>
     </div>
