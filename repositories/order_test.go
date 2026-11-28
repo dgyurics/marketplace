@@ -682,11 +682,19 @@ func TestStripeOrderTransitions(t *testing.T) {
 	stripe, paidPayment := types.PaymentMethodStripe, types.PaymentStatusPaid
 	require.NoError(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &pending, PaymentMethod: &stripe}))
 	require.ErrorIs(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &pending, PaymentMethod: &stripe}), types.ErrConstraintViolation)
-	require.NoError(t, repo.SetPaymentReference(ctx, orderID, "pi_test"))
-	require.ErrorIs(t, repo.SetPaymentReference(ctx, orderID, "pi_other"), types.ErrConstraintViolation)
-	require.ErrorIs(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &canceled}), types.ErrConstraintViolation)
-	wrong := "pi_other"
-	require.ErrorIs(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &paid, PaymentStatus: &paidPayment, PaymentReference: &wrong}), types.ErrConstraintViolation)
 	reference := "pi_test"
+	wrong := "pi_other"
+	require.NoError(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, PaymentReference: &reference}))
+	require.ErrorIs(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, PaymentReference: &wrong}), types.ErrConstraintViolation)
+	require.ErrorIs(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &canceled}), types.ErrConstraintViolation)
+	require.ErrorIs(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &paid, PaymentStatus: &paidPayment, PaymentReference: &wrong}), types.ErrConstraintViolation)
 	require.NoError(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &paid, PaymentMethod: &stripe, PaymentStatus: &paidPayment, PaymentReference: &reference}))
+
+	// A successful webhook can record a missing reference and mark payment in one update.
+	_, err = dbPool.ExecContext(ctx, `UPDATE orders SET status = 'pending', payment_status = 'unpaid', payment_reference = NULL WHERE id = $1`, orderID)
+	require.NoError(t, err)
+	require.NoError(t, repo.UpdateOrder(ctx, &types.Order{ID: orderID, Status: &paid, PaymentMethod: &stripe, PaymentStatus: &paidPayment, PaymentReference: &reference}))
+	var storedReference string
+	require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT payment_reference FROM orders WHERE id = $1`, orderID).Scan(&storedReference))
+	require.Equal(t, reference, storedReference)
 }

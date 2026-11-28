@@ -242,7 +242,7 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 	if pi.ID == "" {
 		return pi, fmt.Errorf("payment intent missing ID")
 	}
-	if err := s.orderRepo.SetPaymentReference(ctx, refID, pi.ID); err != nil {
+	if err := s.orderRepo.UpdateOrder(ctx, &types.Order{ID: refID, PaymentReference: &pi.ID}); err != nil {
 		return pi, err
 	}
 	return pi, nil
@@ -340,7 +340,7 @@ func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, pi *str
 		return nil
 	}
 
-	return s.orderRepo.SetPaymentReference(ctx, order.ID, pi.ID)
+	return s.orderRepo.UpdateOrder(ctx, &types.Order{ID: order.ID, PaymentReference: &pi.ID})
 }
 
 // handlePaymentIntentSucceeded processes the PaymentIntentSucceeded event.
@@ -392,10 +392,6 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 	if !strings.EqualFold(utilities.Locale.Currency, pi.Currency) {
 		slog.WarnContext(ctx, "payment_intent.succeeded currency mismatch", "order_id", order.ID, "expected_currency", utilities.Locale.Currency, "actual_currency", pi.Currency)
 		return nil
-	}
-
-	if err := s.orderRepo.SetPaymentReference(ctx, order.ID, pi.ID); err != nil {
-		return err
 	}
 
 	// mark order as paid

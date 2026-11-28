@@ -12,7 +12,6 @@ import (
 
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, order *types.Order) error
-	SetPaymentReference(ctx context.Context, orderID, reference string) error
 	UpdateOrder(ctx context.Context, order *types.Order) error
 	GetOrderByIDAndUser(ctx context.Context, orderID, userID string) (types.Order, error)
 	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
@@ -539,7 +538,10 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	}
 
 	paymentPending := previousStatus == types.OrderPending && previousMethod.String == string(types.PaymentMethodStripe)
-	paymentConfirmed := previousPaymentStatus == types.PaymentStatusUnpaid && order.Status != nil && *order.Status == types.OrderPaid && order.PaymentReference != nil && paymentReference.Valid && *order.PaymentReference == paymentReference.String
+	if order.PaymentReference != nil && (!paymentPending || *order.PaymentReference == "" || (paymentReference.Valid && paymentReference.String != *order.PaymentReference)) {
+		return types.ErrConstraintViolation
+	}
+	paymentConfirmed := previousPaymentStatus == types.PaymentStatusUnpaid && order.Status != nil && *order.Status == types.OrderPaid && order.PaymentReference != nil && (!paymentReference.Valid || *order.PaymentReference == paymentReference.String)
 	if paymentPending && order.Status != nil && *order.Status != types.OrderPending && !paymentConfirmed {
 		return types.ErrConstraintViolation
 	}
@@ -559,8 +561,9 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 			tax_amount = COALESCE($5, tax_amount),
 			shipping_amount = COALESCE($6, shipping_amount),
 			total_amount = COALESCE($7, total_amount),
+			payment_reference = COALESCE($8, payment_reference),
 			updated_at = NOW()
-		WHERE id = $8
+		WHERE id = $9
 		RETURNING user_id
 	`
 	err = tx.QueryRowContext(
@@ -573,6 +576,7 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 		order.TaxAmount,
 		order.ShippingAmount,
 		order.TotalAmount,
+		order.PaymentReference,
 		order.ID,
 	).Scan(&order.UserID)
 	if err == sql.ErrNoRows {
@@ -624,19 +628,5 @@ func reclaimOrderItems(ctx context.Context, tx *sql.Tx, orderID string, previous
 		SET inventory = inventory + oi.quantity, updated_at = NOW()
 		FROM order_items oi
 		WHERE products.id = oi.product_id AND oi.order_id = $1`, orderID)
-	return err
-}
-
-// SetPaymentReference records the provider ID before it is returned to the client.
-func (r *orderRepository) SetPaymentReference(ctx context.Context, orderID, reference string) error {
-	var id string
-	err := r.db.QueryRowContext(ctx, `
-		UPDATE orders SET payment_reference = $1
-		WHERE id = $2 AND status = 'pending' AND payment_method = 'stripe'
-			AND (payment_reference IS NULL OR payment_reference = $1)
-		RETURNING id`, reference, orderID).Scan(&id)
-	if err == sql.ErrNoRows {
-		return types.ErrConstraintViolation
-	}
 	return err
 }
