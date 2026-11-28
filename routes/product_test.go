@@ -65,6 +65,33 @@ func TestProductMemberPriceVisibility(t *testing.T) {
 	}
 }
 
+func TestMembersOnlyProductVisibility(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		user   *types.User
+		status int
+	}{
+		{"anonymous", nil, http.StatusNotFound},
+		{"user", &types.User{Role: types.RoleUser}, http.StatusNotFound},
+		{"member", &types.User{Role: types.RoleMember}, http.StatusOK},
+		{"admin", &types.User{Role: types.RoleAdmin}, http.StatusOK},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			service := new(MockProductService)
+			service.On("GetProductByID", mock.Anything, "1").Return(types.Product{ID: "1", MembersOnly: true}, nil)
+			h := &ProductRoutes{productService: service}
+			req := httptest.NewRequest(http.MethodGet, "/products/1", nil)
+			req.SetPathValue("id", "1")
+			if tc.user != nil {
+				req = req.WithContext(context.WithValue(req.Context(), services.UserKey, tc.user))
+			}
+			rr := httptest.NewRecorder()
+			h.GetProduct(rr, req)
+			require.Equal(t, tc.status, rr.Code)
+		})
+	}
+}
+
 func (d dummyAuth) OptionalAuth(next http.HandlerFunc) http.HandlerFunc {
 	return next
 }

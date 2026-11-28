@@ -76,6 +76,30 @@ func TestGetCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on user deletion")
 }
 
+func TestMembersOnlyCart(t *testing.T) {
+	ctx := context.Background()
+	user := createUniqueTestUser(t, NewUserRepository(dbPool))
+	product := newProductFixture(t)
+	t.Cleanup(func() { _, _ = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID) })
+	product.Inventory = 10
+	product.MembersOnly = true
+	require.NoError(t, NewProductRepository(dbPool).CreateProduct(ctx, product))
+	repo := NewCartRepository(dbPool)
+	item := &types.CartItem{Product: *product, Quantity: 1}
+	require.ErrorIs(t, repo.AddItem(ctx, user.ID, item), types.ErrConstraintViolation)
+	_, err := dbPool.ExecContext(ctx, "UPDATE users SET role = 'member' WHERE id = $1", user.ID)
+	require.NoError(t, err)
+	require.NoError(t, repo.AddItem(ctx, user.ID, item))
+	items, err := repo.GetItems(ctx, user.ID)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	_, err = dbPool.ExecContext(ctx, "UPDATE users SET role = 'user' WHERE id = $1", user.ID)
+	require.NoError(t, err)
+	items, err = repo.GetItems(ctx, user.ID)
+	require.NoError(t, err)
+	require.Empty(t, items)
+}
+
 func TestAddItemToCart(t *testing.T) {
 	repo := NewCartRepository(dbPool)
 	userRepo := NewUserRepository(dbPool)

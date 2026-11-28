@@ -107,6 +107,10 @@
 
         <div class="checkbox-group">
           <label class="checkbox-label">
+            <input v-model="newProduct.members_only" type="checkbox" />
+            <span>Members only</span>
+          </label>
+          <label class="checkbox-label">
             <input v-model="newProduct.featured" type="checkbox" />
             <span>Featured</span>
           </label>
@@ -216,6 +220,7 @@ const newProduct = ref({
   sort_order: '' as number | '',
   tax_code: '',
   featured: true,
+  members_only: false,
   negotiable: false,
   details: {} as Record<string, string>,
 })
@@ -322,6 +327,7 @@ const handleSubmit = async () => {
       }),
       sort_order: Number(newProduct.value.sort_order || 0),
       featured: newProduct.value.featured,
+      members_only: newProduct.value.members_only,
       negotiable: newProduct.value.negotiable,
       ...(category && { category }),
       status: 'published',

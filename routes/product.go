@@ -50,13 +50,15 @@ func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 	sortBy := types.ParseSortBy(r.URL.Query().Get("sort_by"))
 	categories := r.URL.Query()["category"]
 	featured := r.URL.Query().Get("featured") == "true"
+	user, _ := r.Context().Value(services.UserKey).(*types.User)
 	filters := types.ProductFilter{
-		Page:       params.Page,
-		Limit:      params.Limit,
-		InStock:    inStock,
-		Featured:   featured,
-		SortBy:     sortBy,
-		Categories: categories,
+		IncludeMembersOnly: user != nil && user.HasMinimumRole(types.RoleMember),
+		Page:               params.Page,
+		Limit:              params.Limit,
+		InStock:            inStock,
+		Featured:           featured,
+		SortBy:             sortBy,
+		Categories:         categories,
 	}
 
 	products, err := h.productService.GetProducts(r.Context(), filters)
@@ -65,7 +67,6 @@ func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, _ := r.Context().Value(services.UserKey).(*types.User)
 	for i := range products {
 		products[i].HideMemberPrice(user)
 	}
@@ -84,6 +85,10 @@ func (h *ProductRoutes) GetProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, _ := r.Context().Value(services.UserKey).(*types.User)
+	if product.MembersOnly && (user == nil || !user.HasMinimumRole(types.RoleMember)) {
+		u.RespondWithError(w, r, http.StatusNotFound, "product not found")
+		return
+	}
 	product.HideMemberPrice(user)
 	u.RespondWithJSON(w, http.StatusOK, product)
 }

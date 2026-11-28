@@ -96,6 +96,7 @@ const product = reactive<Product>({
   inventory: 0,
   cart_limit: 0,
   featured: false,
+  members_only: false,
   negotiable: false,
 })
 
