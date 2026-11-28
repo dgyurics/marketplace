@@ -2,7 +2,7 @@
   <div class="product-action-buttons">
     <div class="top-row">
       <button
-        v-if="product.negotiable && !product.borrow_only && isMember"
+        v-if="product.negotiable && isMember"
         class="btn-lg"
         :disabled="hasPendingOffer || product.inventory < 1"
         :tabindex="0"
@@ -27,7 +27,7 @@
       :tabindex="0"
       @click="handleBuyNow"
     >
-      {{ product.borrow_only ? 'Borrow Now' : 'Buy Now' }}
+      Buy Now
     </button>
     <p v-if="showLowStockWarning" class="low-stock-warning">
       Only {{ product.inventory }} left in stock
