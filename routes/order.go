@@ -268,7 +268,7 @@ func (h *OrderRoutes) CheckoutWithStripe(w http.ResponseWriter, r *http.Request)
 	order.PaymentMethod = u.Ptr(types.PaymentMethodStripe)
 	order.Status = u.Ptr(types.OrderPending)
 
-	err = h.paymentService.BeginStripePayment(r.Context(), &order)
+	err = h.orderService.UpdateOrder(r.Context(), &order)
 	if errors.Is(err, types.ErrConstraintViolation) {
 		u.RespondWithError(w, r, http.StatusConflict, "order is not open")
 		return

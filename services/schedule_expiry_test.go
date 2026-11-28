@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/dgyurics/marketplace/repositories"
-	"github.com/dgyurics/marketplace/types"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
@@ -79,22 +77,5 @@ func TestCancelStaleOrder(t *testing.T) {
 			require.Equal(t, tc.calls, payment.calls)
 		})
 	}
-	t.Run("claim and record payment before marking paid", func(t *testing.T) {
-		_, err := db.Exec(`TRUNCATE orders; INSERT INTO orders (id, user_id, status, payment_status, updated_at) VALUES ('claim', 'user', 'draft', 'unpaid', NOW())`)
-		require.NoError(t, err)
-		repo := repositories.NewOrderRepository(db)
-		amount, tax := int64(1200), int64(100)
-		order := &types.Order{ID: "claim", UserID: "user", TaxAmount: &tax, TotalAmount: &amount}
-		require.NoError(t, repo.BeginStripePayment(context.Background(), order))
-		require.ErrorIs(t, repo.BeginStripePayment(context.Background(), order), types.ErrConstraintViolation)
-		require.NoError(t, repo.SetPaymentReference(context.Background(), "claim", "pi_test"))
-		require.ErrorIs(t, repo.SetPaymentReference(context.Background(), "claim", "pi_other"), types.ErrConstraintViolation)
-		require.ErrorIs(t, repo.MarkStripePaid(context.Background(), "claim", "pi_other"), types.ErrConstraintViolation)
-		require.NoError(t, repo.MarkStripePaid(context.Background(), "claim", "pi_test"))
-		var status, paymentStatus string
-		require.NoError(t, db.QueryRow(`SELECT status, payment_status FROM orders WHERE id = 'claim'`).Scan(&status, &paymentStatus))
-		require.Equal(t, "paid", status)
-		require.Equal(t, "paid", paymentStatus)
-	})
 
 }

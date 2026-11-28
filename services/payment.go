@@ -30,7 +30,6 @@ type PaymentService interface {
 	SupportedEvent(ctx context.Context, event stripe.Event) bool
 	SignatureVerifier(payload []byte, sigHeader string) error
 	CreatePaymentIntent(ctx context.Context, refID string, amount int64) (stripe.PaymentIntent, error)
-	BeginStripePayment(ctx context.Context, order *types.Order) error
 	CancelPaymentIntent(ctx context.Context, reference string) error
 }
 
@@ -249,10 +248,6 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 	return pi, nil
 }
 
-func (s *paymentService) BeginStripePayment(ctx context.Context, order *types.Order) error {
-	return s.orderRepo.BeginStripePayment(ctx, order)
-}
-
 // CancelPaymentIntent confirms cancellation, including after an interrupted prior attempt.
 func (s *paymentService) CancelPaymentIntent(ctx context.Context, reference string) error {
 	endpoint, err := url.JoinPath(s.config.Stripe.BaseURL, "payment_intents", reference)
@@ -407,7 +402,8 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 	*order.Status = types.OrderPaid
 	*order.PaymentStatus = types.PaymentStatusPaid
 
-	if err = s.orderRepo.MarkStripePaid(ctx, order.ID, pi.ID); err != nil {
+	order.PaymentReference = &pi.ID
+	if err = s.orderRepo.UpdateOrder(ctx, &order); err != nil {
 		return fmt.Errorf("failed to mark order as paid: order_id=%s, error=%w", order.ID, err)
 	}
 

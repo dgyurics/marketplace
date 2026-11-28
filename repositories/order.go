@@ -12,9 +12,7 @@ import (
 
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, order *types.Order) error
-	BeginStripePayment(ctx context.Context, order *types.Order) error
 	SetPaymentReference(ctx context.Context, orderID, reference string) error
-	MarkStripePaid(ctx context.Context, orderID, reference string) error
 	UpdateOrder(ctx context.Context, order *types.Order) error
 	GetOrderByIDAndUser(ctx context.Context, orderID, userID string) (types.Order, error)
 	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
@@ -530,8 +528,9 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	defer tx.Rollback()
 
 	var previousStatus types.OrderStatus
-	var previousMethod sql.NullString
-	err = tx.QueryRowContext(ctx, `SELECT status, payment_method FROM orders WHERE id = $1 FOR UPDATE`, order.ID).Scan(&previousStatus, &previousMethod)
+	var previousMethod, paymentReference sql.NullString
+	var previousPaymentStatus types.PaymentStatus
+	err = tx.QueryRowContext(ctx, `SELECT status, payment_method, payment_reference, payment_status FROM orders WHERE id = $1 FOR UPDATE`, order.ID).Scan(&previousStatus, &previousMethod, &paymentReference, &previousPaymentStatus)
 	if err == sql.ErrNoRows {
 		return types.ErrNotFound
 	}
@@ -539,7 +538,12 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 		return err
 	}
 
-	if previousStatus == types.OrderPending && previousMethod.String == string(types.PaymentMethodStripe) && order.Status != nil && *order.Status != types.OrderPending {
+	paymentPending := previousStatus == types.OrderPending && previousMethod.String == string(types.PaymentMethodStripe)
+	paymentConfirmed := previousPaymentStatus == types.PaymentStatusUnpaid && order.Status != nil && *order.Status == types.OrderPaid && order.PaymentReference != nil && paymentReference.Valid && *order.PaymentReference == paymentReference.String
+	if paymentPending && order.Status != nil && *order.Status != types.OrderPending && !paymentConfirmed {
+		return types.ErrConstraintViolation
+	}
+	if order.PaymentMethod != nil && *order.PaymentMethod == types.PaymentMethodStripe && order.Status != nil && *order.Status == types.OrderPending && previousStatus != types.OrderDraft {
 		return types.ErrConstraintViolation
 	}
 	if order.PaymentMethod != nil && *order.PaymentMethod == types.PaymentMethodOnDelivery && previousMethod.String != string(types.PaymentMethodOnDelivery) && previousStatus != types.OrderDraft {
@@ -623,50 +627,16 @@ func reclaimOrderItems(ctx context.Context, tx *sql.Tx, orderID string, previous
 	return err
 }
 
-// BeginStripePayment claims a draft before creating its external payment.
-func (r *orderRepository) BeginStripePayment(ctx context.Context, order *types.Order) error {
-	result, err := r.db.ExecContext(ctx, `UPDATE orders SET status = 'pending', payment_method = 'stripe', tax_amount = $1, total_amount = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4 AND status = 'draft'`, order.TaxAmount, order.TotalAmount, order.ID, order.UserID)
-	if err != nil {
-		return err
-	}
-	n, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if n == 0 {
-		return types.ErrConstraintViolation
-	}
-	return nil
-}
-
 // SetPaymentReference records the provider ID before it is returned to the client.
 func (r *orderRepository) SetPaymentReference(ctx context.Context, orderID, reference string) error {
-	result, err := r.db.ExecContext(ctx, `UPDATE orders SET payment_reference = $1 WHERE id = $2 AND status = 'pending' AND payment_method = 'stripe' AND (payment_reference IS NULL OR payment_reference = $1)`, reference, orderID)
-	if err != nil {
-		return err
-	}
-	n, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if n == 0 {
+	var id string
+	err := r.db.QueryRowContext(ctx, `
+		UPDATE orders SET payment_reference = $1
+		WHERE id = $2 AND status = 'pending' AND payment_method = 'stripe'
+			AND (payment_reference IS NULL OR payment_reference = $1)
+		RETURNING id`, reference, orderID).Scan(&id)
+	if err == sql.ErrNoRows {
 		return types.ErrConstraintViolation
 	}
-	return nil
-}
-
-// MarkStripePaid accepts payment only while its reservation is still held.
-func (r *orderRepository) MarkStripePaid(ctx context.Context, orderID, reference string) error {
-	result, err := r.db.ExecContext(ctx, `UPDATE orders SET status = 'paid', payment_status = 'paid', updated_at = NOW() WHERE id = $1 AND status = 'pending' AND payment_method = 'stripe' AND payment_status = 'unpaid' AND payment_reference = $2`, orderID, reference)
-	if err != nil {
-		return err
-	}
-	count, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if count == 0 {
-		return types.ErrConstraintViolation
-	}
-	return nil
+	return err
 }
