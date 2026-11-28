@@ -47,10 +47,12 @@ import { useRoute } from 'vue-router'
 
 import { InputCurrency, InputTextArea } from '@/components/forms'
 import { createOffer, getProductById, getOffersByProductId } from '@/services/api'
+import { useInboxStore } from '@/store/inbox'
 import type { Product } from '@/types'
 import { displayPrice } from '@/utilities/currency'
 
 const route = useRoute()
+const inboxStore = useInboxStore()
 
 const product = ref<Product | null>(null)
 const comment = ref('')
@@ -91,6 +93,7 @@ const handleSubmit = async () => {
 
     await createOffer(productId, finalOfferPrice, comment.value.trim())
     success.value = true
+    await inboxStore.fetchConversations()
   } catch (error: any) {
     const status = error.response?.status
     if (status === 404) {

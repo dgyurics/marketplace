@@ -14,15 +14,11 @@
       <div class="info-section">
         <div class="info-row">
           <label>Product:</label>
-          <span>{{ offer.product.id }}</span>
+          <span>{{ offer.product.name }}</span>
         </div>
         <div class="info-row">
           <label>Amount:</label>
           <span>{{ formatPrice(offer.amount) }}</span>
-        </div>
-        <div class="info-row">
-          <label>Status:</label>
-          <span>{{ offer.status }}</span>
         </div>
         <div v-if="offer.comment" class="info-row">
           <label>Comment:</label>
@@ -70,75 +66,76 @@ onMounted(() => {
 
 <style scoped>
 .detail-container {
-  max-width: 800px;
-  margin: auto;
-  padding: 20px;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 36px 32px 64px;
 }
-
 .header {
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  border-radius: var(--panel-radius);
+  background: var(--highlight-background);
 }
-
 .header h1 {
-  margin: 0 0 10px 0;
-  font-size: 24px;
-  color: var(--text-color);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.7px;
+  margin-bottom: 14px;
 }
-
 .meta {
   display: flex;
   align-items: center;
-  gap: 20px;
+  flex-wrap: wrap;
+  gap: 12px 20px;
 }
-
 .id {
   font-family: 'Roboto Mono', monospace;
-  font-size: 14px;
-  color: var(--muted-text-color);
-}
-
-.status {
-  padding: 4px 12px;
-  border-radius: var(--control-radius);
-  border-width: 1px;
-  border-style: solid;
   font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
+  color: var(--highlight-text-color);
+  overflow-wrap: anywhere;
 }
-
 .info-section {
-  margin-bottom: 30px;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--panel-radius);
 }
-
 .info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--subtle-border-color);
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 16px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
-
+.info-row + .info-row {
+  margin-top: 16px;
+}
 .info-row label {
-  font-weight: 600;
-  color: var(--text-color);
-  min-width: 150px;
-}
-
-.info-row span {
   color: var(--muted-text-color);
-  flex: 1;
-  text-align: right;
 }
-
 .pickup-notes {
   white-space: pre-wrap;
-  word-break: break-word;
 }
-
-.mt-30 {
-  margin-top: 30px;
+.status {
+  padding: 4px 10px;
+  border: 1px solid var(--highlight-border-color);
+  border-radius: 6px;
+  background: var(--surface-background);
+  color: var(--highlight-text-color);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+@media (max-width: 600px) {
+  .detail-container {
+    padding: 24px 16px 40px;
+  }
+  .header,
+  .info-section {
+    padding: 20px;
+  }
+  .header h1 {
+    font-size: 23px;
+  }
 }
 </style>
