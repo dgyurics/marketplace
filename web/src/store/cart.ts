@@ -40,10 +40,10 @@ export const useCartStore = defineStore('cart', {
       }
     },
 
-    async addToCart(productId: string, quantity: number) {
+    async addToCart(productId: string) {
       try {
         // TODO: re-design cart endpoints to return the updated cart
-        await apiAddItemToCart(productId, quantity)
+        await apiAddItemToCart(productId)
         await this.fetchCart() // Refresh cart after adding item
       } catch (err) {
         console.error('Error adding item to cart:', err)

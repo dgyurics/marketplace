@@ -83,7 +83,7 @@ const handleAddToCart = async () => {
       setTokens(authTokens)
     }
 
-    await cartStore.addToCart(props.product.id, 1)
+    await cartStore.addToCart(props.product.id)
     justAdded.value = true
     setTimeout(() => (justAdded.value = false), 1000)
   } catch (error: unknown) {
@@ -103,7 +103,7 @@ const handleBuyNow = async () => {
       setTokens(authTokens)
     }
     await cartStore.clearCart()
-    await cartStore.addToCart(props.product.id, 1)
+    await cartStore.addToCart(props.product.id)
     router.push('/checkout/shipping')
   } catch (error: unknown) {
     const err = error as { response?: { status?: number } }

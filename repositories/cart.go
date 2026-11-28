@@ -9,7 +9,7 @@ import (
 )
 
 type CartRepository interface {
-	AddItem(ctx context.Context, userID string, item *types.CartItem) error
+	AddItem(ctx context.Context, userID, productID string) error
 	GetItems(ctx context.Context, userID string) ([]types.CartItem, error)
 	RemoveItem(ctx context.Context, userID, productID string) error
 	RemoveItems(ctx context.Context, userID string) error
@@ -78,7 +78,7 @@ func (r *cartRepository) GetItems(ctx context.Context, userID string) ([]types.C
 	return items, nil
 }
 
-func (r *cartRepository) AddItem(ctx context.Context, userID string, item *types.CartItem) error {
+func (r *cartRepository) AddItem(ctx context.Context, userID, productID string) error {
 	// Begin a transaction
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -86,39 +86,37 @@ func (r *cartRepository) AddItem(ctx context.Context, userID string, item *types
 	}
 	defer tx.Rollback()
 
-	// Fetch the current quantity in the cart
+	// Lock the product before reading the cart so concurrent additions are serialized.
+	var availableQuantity int
+	var cartLimit *int
+	if err := tx.QueryRowContext(ctx, "SELECT inventory, cart_limit FROM products WHERE id = $1 FOR UPDATE", productID).Scan(&availableQuantity, &cartLimit); err != nil {
+		return err
+	}
 	var existingQuantity int
-	err = tx.QueryRowContext(ctx, "SELECT quantity FROM cart_items WHERE user_id = $1 AND product_id = $2", userID, item.Product.ID).Scan(&existingQuantity)
+	err = tx.QueryRowContext(ctx, "SELECT quantity FROM cart_items WHERE user_id = $1 AND product_id = $2", userID, productID).Scan(&existingQuantity)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
 
-	// Check inventory availability and cart limit
-	var availableQuantity int
-	var cartLimit *int
-	if err := tx.QueryRowContext(ctx, "SELECT inventory, cart_limit FROM products WHERE id = $1 FOR UPDATE", item.Product.ID).Scan(&availableQuantity, &cartLimit); err != nil {
-		return err
-	}
-
 	// If out of stock, return an error
-	if availableQuantity <= existingQuantity {
-		slog.Info("Product out of stock", "product_id", item.Product.ID)
+	if existingQuantity >= availableQuantity {
+		slog.Info("Product out of stock", "product_id", productID)
 		return types.ErrConstraintViolation
 	}
 
 	// If cart limit reached, return an error
-	if cartLimit != nil && *cartLimit == existingQuantity {
-		slog.Info("Cart limit exceeded", "product_id", item.Product.ID, "cart_limit", cartLimit)
+	if cartLimit != nil && existingQuantity >= *cartLimit {
+		slog.Info("Cart limit exceeded", "product_id", productID, "cart_limit", cartLimit)
 		return types.ErrConstraintViolation
 	}
 
 	query := `
 		INSERT INTO cart_items (user_id, product_id, quantity)
-		VALUES ($1, $2, $3)
+		VALUES ($1, $2, 1)
 		ON CONFLICT (user_id, product_id) DO UPDATE
 		SET quantity = cart_items.quantity + 1,
 				updated_at = NOW()`
-	_, err = tx.ExecContext(ctx, query, userID, item.Product.ID, item.Quantity)
+	_, err = tx.ExecContext(ctx, query, userID, productID)
 	if err != nil {
 		return err
 	}

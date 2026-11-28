@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	mathrand "math/rand"
+	"sync"
 	"testing"
 
 	"github.com/dgyurics/marketplace/types"
@@ -76,6 +77,72 @@ func TestGetCart(t *testing.T) {
 	assert.NoError(t, err, "Expected no error on user deletion")
 }
 
+func TestAddCartQuantities(t *testing.T) {
+	ctx := context.Background()
+	user := createUniqueTestUser(t, NewUserRepository(dbPool))
+	product := newProductFixture(t)
+	t.Cleanup(func() { _, _ = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID) })
+	product.Inventory = 3
+	product.CartLimit = utilities.Ptr(2)
+	require.NoError(t, NewProductRepository(dbPool).CreateProduct(ctx, product))
+	repo := NewCartRepository(dbPool)
+	add := func() error {
+		return repo.AddItem(ctx, user.ID, product.ID)
+	}
+	require.NoError(t, add())
+	require.NoError(t, add())
+	require.ErrorIs(t, add(), types.ErrConstraintViolation)
+	items, err := repo.GetItems(ctx, user.ID)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.Equal(t, 2, items[0].Quantity)
+
+	_, err = dbPool.ExecContext(ctx, "UPDATE products SET cart_limit = NULL, inventory = 3 WHERE id = $1", product.ID)
+	require.NoError(t, err)
+	require.NoError(t, add())
+	require.ErrorIs(t, add(), types.ErrConstraintViolation)
+}
+
+func TestConcurrentCartAdditionsRespectLimit(t *testing.T) {
+	ctx := context.Background()
+	user := createUniqueTestUser(t, NewUserRepository(dbPool))
+	product := newProductFixture(t)
+	t.Cleanup(func() { _, _ = dbPool.ExecContext(ctx, "DELETE FROM users WHERE id = $1", user.ID) })
+	product.Inventory = 10
+	product.CartLimit = utilities.Ptr(1)
+	require.NoError(t, NewProductRepository(dbPool).CreateProduct(ctx, product))
+	repo := NewCartRepository(dbPool)
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	var wg sync.WaitGroup
+	for range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			errs <- repo.AddItem(ctx, user.ID, product.ID)
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+	var succeeded, rejected int
+	for err := range errs {
+		if err == nil {
+			succeeded++
+		} else {
+			require.ErrorIs(t, err, types.ErrConstraintViolation)
+			rejected++
+		}
+	}
+	require.Equal(t, 1, succeeded)
+	require.Equal(t, 1, rejected)
+	items, err := repo.GetItems(ctx, user.ID)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.Equal(t, 1, items[0].Quantity)
+}
+
 func TestAddItemToCart(t *testing.T) {
 	repo := NewCartRepository(dbPool)
 	userRepo := NewUserRepository(dbPool)
@@ -102,7 +169,7 @@ func TestAddItemToCart(t *testing.T) {
 		Product:  product,
 		Quantity: 1,
 	}
-	err = repo.AddItem(ctx, user.ID, item)
+	err = repo.AddItem(ctx, user.ID, item.Product.ID)
 	assert.NoError(t, err, "Expected no error on adding item to cart")
 
 	// Step 4: Validate that the item was added
@@ -162,7 +229,7 @@ func TestRemoveItem(t *testing.T) {
 		Product:  product,
 		Quantity: 1,
 	}
-	err = repo.AddItem(ctx, user.ID, item)
+	err = repo.AddItem(ctx, user.ID, item.Product.ID)
 	assert.NoError(t, err, "Expected no error on adding item to cart")
 
 	// Step 4: Remove the item from the cart
@@ -223,7 +290,7 @@ func TestGetCartWithImages(t *testing.T) {
 		Product:  product,
 		Quantity: 1,
 	}
-	err = repo.AddItem(ctx, user.ID, item)
+	err = repo.AddItem(ctx, user.ID, item.Product.ID)
 	assert.NoError(t, err, "Expected no error on adding item to cart")
 
 	// Step 5: Retrieve the cart and verify images
@@ -275,7 +342,7 @@ func TestCartProductImages(t *testing.T) {
 	}
 	expected[products[2].ID] = []types.Image{}
 	for _, product := range products {
-		require.NoError(t, repo.AddItem(ctx, user.ID, &types.CartItem{Product: *product, Quantity: 1}))
+		require.NoError(t, repo.AddItem(ctx, user.ID, product.ID))
 	}
 	items, err := repo.GetItems(ctx, user.ID)
 	require.NoError(t, err)
@@ -298,7 +365,7 @@ func TestCartMemberPrice(t *testing.T) {
 	product.Inventory = 10
 	product.MemberPrice = utilities.Ptr(int64(0))
 	require.NoError(t, NewProductRepository(dbPool).CreateProduct(ctx, product))
-	require.NoError(t, repo.AddItem(ctx, user.ID, &types.CartItem{Product: *product, Quantity: 1}))
+	require.NoError(t, repo.AddItem(ctx, user.ID, product.ID))
 	items, err := repo.GetItems(ctx, user.ID)
 	require.NoError(t, err)
 	require.Len(t, items, 1)

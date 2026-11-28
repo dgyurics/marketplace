@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -25,20 +24,7 @@ func NewCartRoutes(
 }
 
 func (h *CartRoutes) AddItem(w http.ResponseWriter, r *http.Request) {
-	var item types.CartItem
-	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		u.RespondWithError(w, r, http.StatusBadRequest, "error decoding request payload")
-		return
-	}
-
-	if item.Quantity <= 0 {
-		u.RespondWithError(w, r, http.StatusBadRequest, "item quantity must be greater than 0")
-		return
-	}
-
-	// Attempt to add item to cart
-	item.Product.ID = r.PathValue("id")
-	err := h.cartService.AddItem(r.Context(), &item)
+	err := h.cartService.AddItem(r.Context(), r.PathValue("id"))
 
 	// Error handling
 	if errors.Is(err, types.ErrConstraintViolation) {

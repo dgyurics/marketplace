@@ -8,7 +8,7 @@ import (
 )
 
 type CartService interface {
-	AddItem(ctx context.Context, item *types.CartItem) error
+	AddItem(ctx context.Context, productID string) error
 	GetItems(ctx context.Context) ([]types.CartItem, error)
 	RemoveItem(ctx context.Context, productID string) error
 	RemoveItems(ctx context.Context) error
@@ -23,8 +23,8 @@ func NewCartService(cartRepo repositories.CartRepository, userRepo repositories.
 	return &cartService{cartRepo: cartRepo, userRepo: userRepo}
 }
 
-func (s *cartService) AddItem(ctx context.Context, item *types.CartItem) error {
-	return s.cartRepo.AddItem(ctx, getUserID(ctx), item)
+func (s *cartService) AddItem(ctx context.Context, productID string) error {
+	return s.cartRepo.AddItem(ctx, getUserID(ctx), productID)
 }
 
 // GetItems retrieves the items in the user's cart
