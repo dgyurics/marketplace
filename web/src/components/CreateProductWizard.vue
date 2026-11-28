@@ -82,6 +82,7 @@
         </div>
         <div class="form-row-2col">
           <InputCurrency
+            v-if="!newProduct.borrow_only"
             id="new-product-price"
             v-model="newProduct.price"
             label="Price"
@@ -90,7 +91,7 @@
           />
           <InputNumber v-model="newProduct.inventory" label="Inventory" min="0" required />
         </div>
-        <div class="form-group">
+        <div v-if="!newProduct.borrow_only" class="form-group">
           <InputCurrency
             id="new-product-member-price"
             v-model="newProduct.member_price"
@@ -113,6 +114,10 @@
           <label class="checkbox-label">
             <input v-model="newProduct.negotiable" type="checkbox" />
             <span>Negotiable</span>
+          </label>
+          <label class="checkbox-label">
+            <input v-model="newProduct.borrow_only" type="checkbox" />
+            <span>Borrowing only</span>
           </label>
         </div>
         <div class="form-actions">
@@ -216,6 +221,7 @@ const newProduct = ref({
   sort_order: '' as number | '',
   tax_code: '',
   featured: true,
+  borrow_only: false,
   negotiable: false,
   details: {} as Record<string, string>,
 })
@@ -277,7 +283,7 @@ const autoFill = async () => {
 const goToDetails = () => {
   if (
     !newProduct.value.name.trim() ||
-    newProduct.value.price === null ||
+    (!newProduct.value.borrow_only && newProduct.value.price === null) ||
     newProduct.value.inventory === ''
   )
     return
@@ -295,7 +301,7 @@ const handleSubmit = async () => {
     return
   if (
     !newProduct.value.name.trim() ||
-    newProduct.value.price === null ||
+    (!newProduct.value.borrow_only && newProduct.value.price === null) ||
     newProduct.value.inventory === ''
   )
     return
@@ -308,10 +314,11 @@ const handleSubmit = async () => {
     await updateProduct({
       id: productId.value,
       name: newProduct.value.name.trim(),
-      price: newProduct.value.price,
-      ...(newProduct.value.member_price !== null && {
-        member_price: newProduct.value.member_price,
-      }),
+      price: newProduct.value.borrow_only ? 0 : (newProduct.value.price ?? 0),
+      ...(!newProduct.value.borrow_only &&
+        newProduct.value.member_price !== null && {
+          member_price: newProduct.value.member_price,
+        }),
       inventory: Number(newProduct.value.inventory),
       summary: newProduct.value.summary,
       ...(newProduct.value.description && { description: newProduct.value.description }),
@@ -322,6 +329,7 @@ const handleSubmit = async () => {
       }),
       sort_order: Number(newProduct.value.sort_order || 0),
       featured: newProduct.value.featured,
+      borrow_only: newProduct.value.borrow_only,
       negotiable: newProduct.value.negotiable,
       ...(category && { category }),
       status: 'published',

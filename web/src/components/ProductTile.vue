@@ -12,8 +12,12 @@
     <div class="product-info">
       <h3 class="product-title">{{ product.name }}</h3>
       <p v-if="product.summary" class="product-summary">{{ product.summary }}</p>
-      <p class="product-price">{{ displayPrice(product.price) }}</p>
-      <p v-if="product.member_price != null" class="member-price">
+      <p v-if="product.borrow_only" class="borrow-label">
+        <HandRaisedIcon aria-hidden="true" />
+        free to borrow
+      </p>
+      <p v-else class="product-price">{{ displayPrice(product.price) }}</p>
+      <p v-if="!product.borrow_only && product.member_price != null" class="member-price">
         {{ displayPrice(product.member_price) }} <span>for members</span>
       </p>
     </div>
@@ -21,6 +25,7 @@
 </template>
 
 <script setup lang="ts">
+import { HandRaisedIcon } from '@heroicons/vue/24/outline'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -58,6 +63,19 @@ const imgURL = computed(() => props.product.images.find((img) => img.type === 'h
   background: var(--image-background);
   border-radius: 10px;
   overflow: hidden;
+}
+.borrow-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--accent-text-color);
+  font-size: 14px;
+  font-weight: 600;
+}
+.borrow-label svg {
+  width: 16px;
+  height: 16px;
 }
 .product-image {
   width: 100%;

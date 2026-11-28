@@ -5,6 +5,7 @@
         <div class="form-row">
           <InputText v-model="editProduct.name" label="name" required />
           <InputCurrency
+            v-if="!editProduct.borrow_only"
             id="product-price"
             v-model="editProduct.price"
             label="Price"
@@ -12,6 +13,7 @@
             required
           />
           <InputCurrency
+            v-if="!editProduct.borrow_only"
             id="product-member-price"
             v-model="editProduct.member_price"
             label="Member price"
@@ -37,6 +39,10 @@
           <label class="checkbox-label">
             <input v-model="editProduct.negotiable" type="checkbox" />
             <span>Negotiable</span>
+          </label>
+          <label class="checkbox-label">
+            <input v-model="editProduct.borrow_only" type="checkbox" />
+            <span>Borrowing only</span>
           </label>
         </div>
 
@@ -126,6 +132,7 @@ const editProduct = ref({
   inventory: '',
   cart_limit: '',
   featured: false,
+  borrow_only: false,
   negotiable: false,
   sort_order: 0,
 })
@@ -149,6 +156,7 @@ const fetchProduct = async () => {
       inventory: data.inventory,
       cart_limit: data.cart_limit,
       featured: data.featured ?? false,
+      borrow_only: data.borrow_only ?? false,
       negotiable: data.negotiable ?? false,
       sort_order: data.sort_order ?? 0,
     }
@@ -179,8 +187,8 @@ const handleSubmit = async () => {
     const _updateData = {
       id: product.value.id,
       name: editProduct.value.name,
-      price: editProduct.value.price,
-      member_price: editProduct.value.member_price,
+      price: editProduct.value.borrow_only ? 0 : editProduct.value.price,
+      member_price: editProduct.value.borrow_only ? null : editProduct.value.member_price,
       summary: editProduct.value.summary,
       description: editProduct.value.description || undefined,
       tax_code: editProduct.value.tax_code || undefined,
@@ -188,6 +196,7 @@ const handleSubmit = async () => {
       inventory: editProduct.value.inventory,
       cart_limit: editProduct.value.cart_limit || undefined,
       featured: editProduct.value.featured,
+      borrow_only: editProduct.value.borrow_only,
       negotiable: editProduct.value.negotiable,
       sort_order: editProduct.value.sort_order,
       // Include category if one is selected

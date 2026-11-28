@@ -1,0 +1,1 @@
+ALTER TABLE products ADD COLUMN borrow_only BOOLEAN NOT NULL DEFAULT false;

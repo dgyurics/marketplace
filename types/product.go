@@ -28,6 +28,7 @@ type Product struct {
 	TaxCode     *string         `json:"tax_code,omitempty"`
 	Inventory   int             `json:"inventory"`
 	Featured    bool            `json:"featured"`
+	BorrowOnly  bool            `json:"borrow_only"`
 	SortOrder   int             `json:"sort_order"`
 	Negotiable  bool            `json:"negotiable"`
 	CartLimit   *int            `json:"cart_limit,omitempty"`

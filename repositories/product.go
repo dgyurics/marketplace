@@ -39,8 +39,8 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		product.Details = json.RawMessage(`{}`)
 	}
 	query := `
-		INSERT INTO products (id, name, price, member_price, summary, description, details, tax_code, inventory, cart_limit, featured, negotiable, category_id, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		INSERT INTO products (id, name, price, member_price, summary, description, details, tax_code, inventory, cart_limit, featured, negotiable, category_id, status, borrow_only)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 	`
 	_, err := r.db.ExecContext(ctx,
 		query,
@@ -58,6 +58,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		product.Negotiable,
 		categoryID,
 		product.Status,
+		product.BorrowOnly,
 	)
 	return err
 }
@@ -86,6 +87,7 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 			&product.Featured,
 			&product.Negotiable,
 			&product.Status,
+			&product.BorrowOnly,
 		); err != nil {
 			return nil, err
 		}
@@ -116,8 +118,9 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 	var queryBuilder strings.Builder
 	if len(filter.Categories) == 0 {
 		queryBuilder.WriteString(`
-			SELECT p.id, p.name, p.price, p.member_price, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status
+			SELECT p.id, p.name, p.price, p.member_price, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status, base.borrow_only
 			FROM v_products p
+			JOIN products base ON base.id = p.id
 			WHERE p.status = 'published'
 		`)
 	} else {
@@ -133,8 +136,9 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 				SELECT c.id FROM categories c
 				JOIN category_tree ct ON c.parent_id = ct.id
 			)
-			SELECT p.id, p.name, p.price, p.member_price, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status
+			SELECT p.id, p.name, p.price, p.member_price, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status, base.borrow_only
 			FROM v_products p
+			JOIN products base ON base.id = p.id
 			JOIN category_tree ct ON ct.id = p.category_id
 			WHERE p.status = 'published'
 		`, strings.Join(placeholders, ", ")))
@@ -176,12 +180,14 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		p.sort_order,
 		p.negotiable,
 		p.status,
+		base.borrow_only,
 		c.id,
 		c.name,
 		c.slug,
 		c.description,
 		c.parent_id
 	FROM v_products p
+	JOIN products base ON base.id = p.id
 	LEFT JOIN categories c ON p.category_id = c.id
 	WHERE p.id = $1;
 	`
@@ -203,6 +209,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		&product.SortOrder,
 		&product.Negotiable,
 		&product.Status,
+		&product.BorrowOnly,
 		&categoryID,
 		&categoryName,
 		&categorySlug,
@@ -258,6 +265,7 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 		negotiable = $12,
 		status = COALESCE($13, status),
 		member_price = $15,
+		borrow_only = $16,
 		updated_at = NOW()
 		WHERE id = $14
 	`
@@ -277,6 +285,7 @@ func (r *productRepository) UpdateProduct(ctx context.Context, product types.Pro
 		product.Status,
 		product.ID,
 		product.MemberPrice,
+		product.BorrowOnly,
 	)
 	if err != nil {
 		return err
