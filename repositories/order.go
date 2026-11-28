@@ -529,7 +529,10 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	var previousStatus types.OrderStatus
 	var previousMethod, paymentReference sql.NullString
 	var previousPaymentStatus types.PaymentStatus
-	err = tx.QueryRowContext(ctx, `SELECT status, payment_method, payment_reference, payment_status FROM orders WHERE id = $1 FOR UPDATE`, order.ID).Scan(&previousStatus, &previousMethod, &paymentReference, &previousPaymentStatus)
+	err = tx.QueryRowContext(ctx, `
+		SELECT status, payment_method, payment_reference, payment_status
+		FROM orders WHERE id = $1 FOR UPDATE`, order.ID).
+		Scan(&previousStatus, &previousMethod, &paymentReference, &previousPaymentStatus)
 	if err == sql.ErrNoRows {
 		return types.ErrNotFound
 	}
@@ -538,17 +541,21 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	}
 
 	paymentPending := previousStatus == types.OrderPending && previousMethod.String == string(types.PaymentMethodStripe)
-	if order.PaymentReference != nil && (!paymentPending || *order.PaymentReference == "" || (paymentReference.Valid && paymentReference.String != *order.PaymentReference)) {
+	if order.PaymentReference != nil &&
+		(!paymentPending || *order.PaymentReference == "" || (paymentReference.Valid && paymentReference.String != *order.PaymentReference)) {
 		return types.ErrConstraintViolation
 	}
-	paymentConfirmed := previousPaymentStatus == types.PaymentStatusUnpaid && order.Status != nil && *order.Status == types.OrderPaid && order.PaymentReference != nil && (!paymentReference.Valid || *order.PaymentReference == paymentReference.String)
+	paymentConfirmed := previousPaymentStatus == types.PaymentStatusUnpaid &&
+		order.Status != nil && *order.Status == types.OrderPaid && order.PaymentReference != nil
 	if paymentPending && order.Status != nil && *order.Status != types.OrderPending && !paymentConfirmed {
 		return types.ErrConstraintViolation
 	}
-	if order.PaymentMethod != nil && *order.PaymentMethod == types.PaymentMethodStripe && order.Status != nil && *order.Status == types.OrderPending && previousStatus != types.OrderDraft {
+	if order.PaymentMethod != nil && *order.PaymentMethod == types.PaymentMethodStripe &&
+		order.Status != nil && *order.Status == types.OrderPending && previousStatus != types.OrderDraft {
 		return types.ErrConstraintViolation
 	}
-	if order.PaymentMethod != nil && *order.PaymentMethod == types.PaymentMethodOnDelivery && previousMethod.String != string(types.PaymentMethodOnDelivery) && previousStatus != types.OrderDraft {
+	if order.PaymentMethod != nil && string(*order.PaymentMethod) != previousMethod.String &&
+		previousStatus != types.OrderDraft {
 		return types.ErrConstraintViolation
 	}
 

@@ -5,14 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dgyurics/marketplace/repositories"
 	"github.com/dgyurics/marketplace/types"
 	"github.com/stretchr/testify/mock"
 )
 
 // mockOrderRepo implements the OrderRepository interface for testing
 type mockOrderRepo struct {
-	repositories.OrderRepository
 	mock.Mock
 }
 

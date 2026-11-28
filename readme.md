@@ -35,8 +35,6 @@ A self-hosted e-commerce framework designed for local businesses and community c
 
 See [Getting Started](deploy/local/readme.md) for setup instructions.
 
-Keep control flow simple: avoid unnecessary conditionals, especially nested `if` blocks, and use clear guard clauses when checks are needed.
-
 ## Production Deployment
 
 Coming soon
