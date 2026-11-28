@@ -78,17 +78,14 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	return tx.Commit()
 }
 
-// cancelPendingOrders cancels the user's outstanding unpaid order, if any, and
+// cancelPendingOrders cancels the user's outstanding draft, if any, and
 // returns its reserved inventory to stock.
 func cancelPendingOrders(ctx context.Context, tx *sql.Tx, userID string) error {
 	_, err := tx.ExecContext(ctx, `
 		WITH canceled AS (
 			UPDATE orders SET status = 'canceled', updated_at = NOW()
 			WHERE
-				user_id = $1 AND (
-					status = 'draft' OR
-					(status = 'pending' AND payment_method = 'stripe')
-				)
+				user_id = $1 AND status = 'draft'
 			RETURNING id
 		), restored AS (
 			SELECT product_id, SUM(quantity) AS quantity
@@ -530,12 +527,36 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	defer tx.Rollback()
 
 	var previousStatus types.OrderStatus
-	err = tx.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1 FOR UPDATE`, order.ID).Scan(&previousStatus)
+	var previousMethod, paymentReference sql.NullString
+	var previousPaymentStatus types.PaymentStatus
+	err = tx.QueryRowContext(ctx, `
+		SELECT status, payment_method, payment_reference, payment_status
+		FROM orders WHERE id = $1 FOR UPDATE`, order.ID).
+		Scan(&previousStatus, &previousMethod, &paymentReference, &previousPaymentStatus)
 	if err == sql.ErrNoRows {
 		return types.ErrNotFound
 	}
 	if err != nil {
 		return err
+	}
+
+	paymentPending := previousStatus == types.OrderPending && previousMethod.String == string(types.PaymentMethodStripe)
+	if order.PaymentReference != nil &&
+		(!paymentPending || *order.PaymentReference == "" || (paymentReference.Valid && paymentReference.String != *order.PaymentReference)) {
+		return types.ErrConstraintViolation
+	}
+	paymentConfirmed := previousPaymentStatus == types.PaymentStatusUnpaid &&
+		order.Status != nil && *order.Status == types.OrderPaid && order.PaymentReference != nil
+	if paymentPending && order.Status != nil && *order.Status != types.OrderPending && !paymentConfirmed {
+		return types.ErrConstraintViolation
+	}
+	if order.PaymentMethod != nil && *order.PaymentMethod == types.PaymentMethodStripe &&
+		order.Status != nil && *order.Status == types.OrderPending && previousStatus != types.OrderDraft {
+		return types.ErrConstraintViolation
+	}
+	if order.PaymentMethod != nil && string(*order.PaymentMethod) != previousMethod.String &&
+		previousStatus != types.OrderDraft {
+		return types.ErrConstraintViolation
 	}
 
 	query := `
@@ -547,8 +568,9 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 			tax_amount = COALESCE($5, tax_amount),
 			shipping_amount = COALESCE($6, shipping_amount),
 			total_amount = COALESCE($7, total_amount),
+			payment_reference = COALESCE($8, payment_reference),
 			updated_at = NOW()
-		WHERE id = $8
+		WHERE id = $9
 		RETURNING user_id
 	`
 	err = tx.QueryRowContext(
@@ -561,6 +583,7 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 		order.TaxAmount,
 		order.ShippingAmount,
 		order.TotalAmount,
+		order.PaymentReference,
 		order.ID,
 	).Scan(&order.UserID)
 	if err == sql.ErrNoRows {

@@ -112,6 +112,10 @@ func (h *OrderRoutes) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := h.orderService.UpdateOrder(r.Context(), &order)
+	if errors.Is(err, types.ErrConstraintViolation) {
+		u.RespondWithError(w, r, http.StatusConflict, "order status cannot be changed")
+		return
+	}
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -265,6 +269,10 @@ func (h *OrderRoutes) CheckoutWithStripe(w http.ResponseWriter, r *http.Request)
 	order.Status = u.Ptr(types.OrderPending)
 
 	err = h.orderService.UpdateOrder(r.Context(), &order)
+	if errors.Is(err, types.ErrConstraintViolation) {
+		u.RespondWithError(w, r, http.StatusConflict, "order is not open")
+		return
+	}
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return
@@ -326,6 +334,10 @@ func (h *OrderRoutes) CheckoutOnDelivery(w http.ResponseWriter, r *http.Request)
 	}
 
 	err = h.orderService.UpdateOrder(r.Context(), &order)
+	if errors.Is(err, types.ErrConstraintViolation) {
+		u.RespondWithError(w, r, http.StatusConflict, "order is not open")
+		return
+	}
 	if errors.Is(err, types.ErrNotFound) {
 		u.RespondWithError(w, r, http.StatusNotFound, err.Error())
 		return

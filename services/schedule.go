@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -10,7 +11,8 @@ import (
 )
 
 type scheduleService struct {
-	db *sql.DB
+	db      *sql.DB
+	payment PaymentService
 }
 
 // ScheduleService is responsible for running tasks at intervals
@@ -18,9 +20,10 @@ type ScheduleService interface {
 	Start(ctx context.Context)
 }
 
-func NewScheduleService(db *sql.DB) ScheduleService {
+func NewScheduleService(db *sql.DB, payment PaymentService) ScheduleService {
 	return &scheduleService{
-		db: db,
+		db:      db,
+		payment: payment,
 	}
 }
 
@@ -38,9 +41,7 @@ func (s *scheduleService) Start(ctx context.Context) {
 			return
 		case <-ticker.C:
 			if s.shouldRunJob(ctx, types.StaleOrders, 15*time.Minute) {
-				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
-				s.removeStaleOrders(ctxTimeout)
-				cancel()
+				s.removeStaleOrders(ctx)
 			}
 			if s.shouldRunJob(ctx, types.StaleRequestedOrders, 24*time.Hour) {
 				ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
@@ -88,34 +89,77 @@ func (s *scheduleService) Start(ctx context.Context) {
 
 // Users have 15 minutes to fill out payment information upon reaching the payments page
 func (s *scheduleService) removeStaleOrders(ctx context.Context) {
-	_, err := s.db.ExecContext(ctx, `
-		WITH canceled_orders AS (
-			UPDATE orders
-			SET status = 'canceled', updated_at = NOW()
-			WHERE
-				updated_at < NOW() - INTERVAL '15 minutes' AND (
-					status = 'draft' OR
-					(status = 'pending' AND payment_method = 'stripe')
-				)
-			RETURNING id
-		),
-		items AS (
-			SELECT oi.product_id, oi.quantity
-			FROM order_items oi
-			JOIN canceled_orders co ON oi.order_id = co.id
-		),
-		restock_totals AS (
-			SELECT product_id, SUM(quantity) AS quantity
-			FROM items
-			GROUP BY product_id
-		)
-		UPDATE products
-		SET inventory = inventory + rt.quantity, updated_at = NOW()
-		FROM restock_totals rt
-		WHERE products.id = rt.product_id`)
+	rows, err := s.db.QueryContext(ctx, `SELECT id FROM orders WHERE updated_at < NOW() - INTERVAL '15 minutes' AND (status = 'draft' OR (status = 'pending' AND payment_method = 'stripe'))`)
 	if err != nil {
-		slog.ErrorContext(ctx, "Error canceling stale orders", "error", err)
+		slog.ErrorContext(ctx, "Error finding stale orders", "error", err)
+		return
 	}
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			slog.ErrorContext(ctx, "Error reading stale order", "error", err)
+			return
+		}
+		ids = append(ids, id)
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		slog.ErrorContext(ctx, "Error reading stale orders", "error", err)
+		return
+	}
+	for _, id := range ids {
+		if ctx.Err() != nil {
+			return
+		}
+		orderCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		err := s.cancelStaleOrder(orderCtx, id)
+		cancel()
+		if err != nil {
+			slog.ErrorContext(ctx, "Could not cancel stale order; inventory remains reserved", "order_id", id, "error", err)
+		}
+	}
+}
+
+func (s *scheduleService) cancelStaleOrder(ctx context.Context, id string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var status string
+	var reference sql.NullString
+	err = tx.QueryRowContext(ctx, `SELECT status, payment_reference FROM orders WHERE id = $1 AND updated_at < NOW() - INTERVAL '15 minutes' AND (status = 'draft' OR (status = 'pending' AND payment_method = 'stripe')) FOR UPDATE`, id).Scan(&status, &reference)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if err := s.cancelExpiredPayment(ctx, status, reference); err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, `WITH canceled AS (
+  UPDATE orders SET status = 'canceled', updated_at = NOW() WHERE id = $1 RETURNING id
+ ), items AS (
+  SELECT product_id, SUM(quantity) AS quantity FROM order_items WHERE order_id IN (SELECT id FROM canceled) GROUP BY product_id
+ ) UPDATE products SET inventory = inventory + items.quantity, updated_at = NOW() FROM items WHERE products.id = items.product_id`, id)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *scheduleService) cancelExpiredPayment(ctx context.Context, status string, reference sql.NullString) error {
+	if status != "pending" {
+		return nil
+	}
+	if !reference.Valid || reference.String == "" {
+		return fmt.Errorf("payment reference missing; manual reconciliation required")
+	}
+	return s.payment.CancelPaymentIntent(ctx, reference.String)
 }
 
 // Requested orders expire after seven days without an update. Their stock is already released.
