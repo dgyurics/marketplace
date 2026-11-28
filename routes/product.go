@@ -65,6 +65,10 @@ func (h *ProductRoutes) GetProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, _ := r.Context().Value(services.UserKey).(*types.User)
+	for i := range products {
+		products[i].HideMemberPrice(user)
+	}
 	u.RespondWithJSON(w, http.StatusOK, products)
 }
 
@@ -79,6 +83,8 @@ func (h *ProductRoutes) GetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, _ := r.Context().Value(services.UserKey).(*types.User)
+	product.HideMemberPrice(user)
 	u.RespondWithJSON(w, http.StatusOK, product)
 }
 
@@ -136,8 +142,8 @@ func (h *ProductRoutes) AutofillProduct(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *ProductRoutes) RegisterRoutes() {
-	h.mux.HandleFunc("GET /products", h.GetProducts)
-	h.mux.HandleFunc("GET /products/{id}", h.GetProduct)
+	h.mux.HandleFunc("GET /products", h.authMiddleware.OptionalAuth(h.GetProducts))
+	h.mux.HandleFunc("GET /products/{id}", h.authMiddleware.OptionalAuth(h.GetProduct))
 	h.mux.Handle("POST /products/{id}/autofill", h.secure(types.RoleAdmin)(h.AutofillProduct))
 	h.mux.Handle("POST /products", h.secure(types.RoleAdmin)(h.CreateProduct))
 	h.mux.Handle("PUT /products", h.secure(types.RoleAdmin)(h.UpdateProduct))

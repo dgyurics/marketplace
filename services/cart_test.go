@@ -45,12 +45,18 @@ func TestCartMemberPricing(t *testing.T) {
 				expected = *memberPrice
 			}
 			require.Equal(t, expected, *items[0].Product.Price)
+			if userRepo.user.HasMinimumRole(types.RoleMember) {
+				require.Equal(t, memberPrice, items[0].Product.MemberPrice)
+			} else {
+				require.Nil(t, items[0].Product.MemberPrice)
+			}
 
 			// A changed database role takes effect even if the token still says member.
 			userRepo.user.Role = types.RoleUser
 			items, err = cart.GetItems(ctx)
 			require.NoError(t, err)
 			require.Equal(t, int64(1000), *items[0].Product.Price)
+			require.Nil(t, items[0].Product.MemberPrice)
 		}
 	}
 }

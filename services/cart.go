@@ -40,11 +40,10 @@ func (s *cartService) GetItems(ctx context.Context) ([]types.CartItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	if user.HasMinimumRole(types.RoleMember) {
-		for i := range items {
-			if items[i].Product.MemberPrice != nil {
-				items[i].Product.Price = items[i].Product.MemberPrice
-			}
+	for i := range items {
+		items[i].Product.HideMemberPrice(user)
+		if items[i].Product.MemberPrice != nil {
+			items[i].Product.Price = items[i].Product.MemberPrice
 		}
 	}
 	return items, nil

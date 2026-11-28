@@ -18,7 +18,7 @@ type Product struct {
 	ID          string          `json:"id"`
 	Name        string          `json:"name"`
 	Price       *int64          `json:"price"`
-	MemberPrice *int64          `json:"member_price"`
+	MemberPrice *int64          `json:"member_price,omitempty"`
 	Status      *ProductStatus  `json:"status"`
 	Details     json.RawMessage `json:"details"`
 	Summary     *string         `json:"summary,omitempty"`
@@ -33,6 +33,12 @@ type Product struct {
 	CartLimit   *int            `json:"cart_limit,omitempty"`
 	CreatedAt   time.Time       `json:"created_at"`
 	UpdatedAt   time.Time       `json:"updated_at"`
+}
+
+func (p *Product) HideMemberPrice(user *User) {
+	if user == nil || !user.HasMinimumRole(RoleMember) {
+		p.MemberPrice = nil
+	}
 }
 
 type ImageType string
