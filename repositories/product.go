@@ -118,9 +118,8 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 	var queryBuilder strings.Builder
 	if len(filter.Categories) == 0 {
 		queryBuilder.WriteString(`
-			SELECT p.id, p.name, p.price, p.member_price, base.borrow_only, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status
+			SELECT p.id, p.name, p.price, p.member_price, p.borrow_only, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status
 			FROM v_products p
-			JOIN products base ON base.id = p.id
 			WHERE p.status = 'published'
 		`)
 	} else {
@@ -136,9 +135,8 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 				SELECT c.id FROM categories c
 				JOIN category_tree ct ON c.parent_id = ct.id
 			)
-			SELECT p.id, p.name, p.price, p.member_price, base.borrow_only, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status
+			SELECT p.id, p.name, p.price, p.member_price, p.borrow_only, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status
 			FROM v_products p
-			JOIN products base ON base.id = p.id
 			JOIN category_tree ct ON ct.id = p.category_id
 			WHERE p.status = 'published'
 		`, strings.Join(placeholders, ", ")))
@@ -171,7 +169,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		p.name,
 		p.price,
 		p.member_price,
-		base.borrow_only,
+		p.borrow_only,
 		p.summary,
 		p.description,
 		p.details,
@@ -187,7 +185,6 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		c.description,
 		c.parent_id
 	FROM v_products p
-	JOIN products base ON base.id = p.id
 	LEFT JOIN categories c ON p.category_id = c.id
 	WHERE p.id = $1;
 	`
