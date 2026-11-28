@@ -12,6 +12,9 @@ import (
 
 type OrderRepository interface {
 	CreateOrder(ctx context.Context, order *types.Order) error
+	BeginStripePayment(ctx context.Context, order *types.Order) error
+	SetPaymentReference(ctx context.Context, orderID, reference string) error
+	MarkStripePaid(ctx context.Context, orderID, reference string) error
 	UpdateOrder(ctx context.Context, order *types.Order) error
 	GetOrderByIDAndUser(ctx context.Context, orderID, userID string) (types.Order, error)
 	GetOrderByID(ctx context.Context, orderID string) (types.Order, error)
@@ -78,17 +81,14 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *types.Order) e
 	return tx.Commit()
 }
 
-// cancelPendingOrders cancels the user's outstanding unpaid order, if any, and
+// cancelPendingOrders cancels the user's outstanding draft, if any, and
 // returns its reserved inventory to stock.
 func cancelPendingOrders(ctx context.Context, tx *sql.Tx, userID string) error {
 	_, err := tx.ExecContext(ctx, `
 		WITH canceled AS (
 			UPDATE orders SET status = 'canceled', updated_at = NOW()
 			WHERE
-				user_id = $1 AND (
-					status = 'draft' OR
-					(status = 'pending' AND payment_method = 'stripe')
-				)
+				user_id = $1 AND status = 'draft'
 			RETURNING id
 		), restored AS (
 			SELECT product_id, SUM(quantity) AS quantity
@@ -530,12 +530,20 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *types.Order) e
 	defer tx.Rollback()
 
 	var previousStatus types.OrderStatus
-	err = tx.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1 FOR UPDATE`, order.ID).Scan(&previousStatus)
+	var previousMethod sql.NullString
+	err = tx.QueryRowContext(ctx, `SELECT status, payment_method FROM orders WHERE id = $1 FOR UPDATE`, order.ID).Scan(&previousStatus, &previousMethod)
 	if err == sql.ErrNoRows {
 		return types.ErrNotFound
 	}
 	if err != nil {
 		return err
+	}
+
+	if previousStatus == types.OrderPending && previousMethod.String == string(types.PaymentMethodStripe) && order.Status != nil && *order.Status != types.OrderPending {
+		return types.ErrConstraintViolation
+	}
+	if order.PaymentMethod != nil && *order.PaymentMethod == types.PaymentMethodOnDelivery && previousMethod.String != string(types.PaymentMethodOnDelivery) && previousStatus != types.OrderDraft {
+		return types.ErrConstraintViolation
 	}
 
 	query := `
@@ -613,4 +621,52 @@ func reclaimOrderItems(ctx context.Context, tx *sql.Tx, orderID string, previous
 		FROM order_items oi
 		WHERE products.id = oi.product_id AND oi.order_id = $1`, orderID)
 	return err
+}
+
+// BeginStripePayment claims a draft before creating its external payment.
+func (r *orderRepository) BeginStripePayment(ctx context.Context, order *types.Order) error {
+	result, err := r.db.ExecContext(ctx, `UPDATE orders SET status = 'pending', payment_method = 'stripe', tax_amount = $1, total_amount = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4 AND status = 'draft'`, order.TaxAmount, order.TotalAmount, order.ID, order.UserID)
+	if err != nil {
+		return err
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return types.ErrConstraintViolation
+	}
+	return nil
+}
+
+// SetPaymentReference records the provider ID before it is returned to the client.
+func (r *orderRepository) SetPaymentReference(ctx context.Context, orderID, reference string) error {
+	result, err := r.db.ExecContext(ctx, `UPDATE orders SET payment_reference = $1 WHERE id = $2 AND status = 'pending' AND payment_method = 'stripe' AND (payment_reference IS NULL OR payment_reference = $1)`, reference, orderID)
+	if err != nil {
+		return err
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return types.ErrConstraintViolation
+	}
+	return nil
+}
+
+// MarkStripePaid accepts payment only while its reservation is still held.
+func (r *orderRepository) MarkStripePaid(ctx context.Context, orderID, reference string) error {
+	result, err := r.db.ExecContext(ctx, `UPDATE orders SET status = 'paid', payment_status = 'paid', updated_at = NOW() WHERE id = $1 AND status = 'pending' AND payment_method = 'stripe' AND payment_status = 'unpaid' AND payment_reference = $2`, orderID, reference)
+	if err != nil {
+		return err
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return types.ErrConstraintViolation
+	}
+	return nil
 }

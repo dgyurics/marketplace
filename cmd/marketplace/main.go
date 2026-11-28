@@ -137,7 +137,6 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 
 	// create services
 	templateService := services.NewTemplateService()
-	scheduleService := services.NewScheduleService(db)
 	conversationService := services.NewConversationService(conversationRepository)
 	emailService := services.NewEmailService(config.Email)
 	notificationService := services.NewNotificationService(emailService, templateService, conversationService, config.BaseURL)
@@ -148,6 +147,7 @@ func initializeServices(db *sql.DB, config types.Config) servicesContainer {
 	productService := services.NewProductService(productRepository)
 	cartService := services.NewCartService(cartRepository, userRepository)
 	paymentService := services.NewPaymentService(httpClient, config.Payment, notificationService, userService, orderRepository, cartRepository)
+	scheduleService := services.NewScheduleService(db, paymentService)
 	orderService := services.NewOrderService(httpClient, orderRepository, cartRepository, paymentService)
 	imageService := services.NewImageService(imageRepository, config.Image)
 	imageTransformService := services.NewImageTransformService(httpClient, config.ImageTransform)

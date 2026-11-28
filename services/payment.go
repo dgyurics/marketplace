@@ -30,6 +30,8 @@ type PaymentService interface {
 	SupportedEvent(ctx context.Context, event stripe.Event) bool
 	SignatureVerifier(payload []byte, sigHeader string) error
 	CreatePaymentIntent(ctx context.Context, refID string, amount int64) (stripe.PaymentIntent, error)
+	BeginStripePayment(ctx context.Context, order *types.Order) error
+	CancelPaymentIntent(ctx context.Context, reference string) error
 }
 
 type paymentService struct {
@@ -238,7 +240,62 @@ func (s *paymentService) CreatePaymentIntent(ctx context.Context, refID string, 
 		return pi, fmt.Errorf("failed to decode response: %w", err)
 	}
 
+	if pi.ID == "" {
+		return pi, fmt.Errorf("payment intent missing ID")
+	}
+	if err := s.orderRepo.SetPaymentReference(ctx, refID, pi.ID); err != nil {
+		return pi, err
+	}
 	return pi, nil
+}
+
+func (s *paymentService) BeginStripePayment(ctx context.Context, order *types.Order) error {
+	return s.orderRepo.BeginStripePayment(ctx, order)
+}
+
+// CancelPaymentIntent confirms cancellation, including after an interrupted prior attempt.
+func (s *paymentService) CancelPaymentIntent(ctx context.Context, reference string) error {
+	endpoint, err := url.JoinPath(s.config.Stripe.BaseURL, "payment_intents", reference)
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint+"/cancel", nil)
+	if err != nil {
+		return err
+	}
+	request.SetBasicAuth(s.config.Stripe.SecretKey, "")
+	request.Header.Set("Stripe-Version", s.config.Stripe.Version)
+	response, err := s.client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	if response.StatusCode == http.StatusOK {
+		return nil
+	}
+	// A previous cancellation may have succeeded even if the response was lost.
+	check, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return err
+	}
+	check.SetBasicAuth(s.config.Stripe.SecretKey, "")
+	check.Header.Set("Stripe-Version", s.config.Stripe.Version)
+	current, err := s.client.Do(check)
+	if err != nil {
+		return err
+	}
+	defer current.Body.Close()
+	if current.StatusCode != http.StatusOK {
+		return fmt.Errorf("retrieve payment: %s", current.Status)
+	}
+	var intent stripe.PaymentIntent
+	if err := json.NewDecoder(current.Body).Decode(&intent); err != nil {
+		return err
+	}
+	if intent.Status != "canceled" {
+		return fmt.Errorf("payment %s is %s", reference, intent.Status)
+	}
+	return nil
 }
 
 // handlePaymentIntentCreated processes the PaymentIntentCreated event.
@@ -288,7 +345,7 @@ func (s *paymentService) handlePaymentIntentCreated(ctx context.Context, pi *str
 		return nil
 	}
 
-	return nil
+	return s.orderRepo.SetPaymentReference(ctx, order.ID, pi.ID)
 }
 
 // handlePaymentIntentSucceeded processes the PaymentIntentSucceeded event.
@@ -342,11 +399,15 @@ func (s *paymentService) handlePaymentIntentSucceeded(ctx context.Context, pi *s
 		return nil
 	}
 
+	if err := s.orderRepo.SetPaymentReference(ctx, order.ID, pi.ID); err != nil {
+		return err
+	}
+
 	// mark order as paid
 	*order.Status = types.OrderPaid
 	*order.PaymentStatus = types.PaymentStatusPaid
 
-	if err = s.orderRepo.UpdateOrder(ctx, &order); err != nil {
+	if err = s.orderRepo.MarkStripePaid(ctx, order.ID, pi.ID); err != nil {
 		return fmt.Errorf("failed to mark order as paid: order_id=%s, error=%w", order.ID, err)
 	}
 

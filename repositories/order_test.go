@@ -98,7 +98,7 @@ func TestCancelPendingOrders(t *testing.T) {
 
 	_, err = dbPool.ExecContext(ctx, `
 		INSERT INTO orders (id, user_id, address_id, status, payment_method, payment_status)
-		VALUES ($1, $2, $3, 'pending', 'stripe', 'unpaid')`,
+		VALUES ($1, $2, $3, 'draft', NULL, 'unpaid')`,
 		orderID, user.ID, addressID)
 	assert.NoError(t, err)
 
@@ -636,4 +636,31 @@ func TestUpdateOrderRequested(t *testing.T) {
 			assert.Equal(t, int64(1000), fetched.Items[0].UnitPrice)
 		})
 	}
+}
+
+// Pending external payments must not be canceled by a new checkout.
+func TestCancelPendingOrdersKeepsStripeReservation(t *testing.T) {
+	ctx := context.Background()
+	user := createUniqueTestUser(t, NewUserRepository(dbPool))
+	addressID := createTestAddress(t, dbPool, user.ID)
+	productID := createTestProduct(t, 3)
+	orderID := utilities.MustGenerateIDString()
+	t.Cleanup(func() {
+		dbPool.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, orderID)
+		dbPool.ExecContext(ctx, `DELETE FROM addresses WHERE id = $1`, addressID)
+		dbPool.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, user.ID)
+	})
+	_, err := dbPool.ExecContext(ctx, `INSERT INTO orders (id, user_id, address_id, status, payment_method, payment_status) VALUES ($1, $2, $3, 'pending', 'stripe', 'unpaid')`, orderID, user.ID, addressID)
+	require.NoError(t, err)
+	_, err = dbPool.ExecContext(ctx, `INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES ($1, $2, 2, 1000)`, orderID, productID)
+	require.NoError(t, err)
+	tx, err := dbPool.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer tx.Rollback()
+	require.NoError(t, cancelPendingOrders(ctx, tx, user.ID))
+	require.NoError(t, tx.Commit())
+	var status string
+	require.NoError(t, dbPool.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1`, orderID).Scan(&status))
+	require.Equal(t, "pending", status)
+	require.Equal(t, 3, productInventory(t, productID))
 }
