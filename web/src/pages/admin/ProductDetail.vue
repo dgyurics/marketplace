@@ -5,7 +5,6 @@
         <div class="form-row">
           <InputText v-model="editProduct.name" label="name" required />
           <InputCurrency
-            v-if="!editProduct.borrow_only"
             id="product-price"
             v-model="editProduct.price"
             label="Price"
@@ -13,7 +12,6 @@
             required
           />
           <InputCurrency
-            v-if="!editProduct.borrow_only"
             id="product-member-price"
             v-model="editProduct.member_price"
             label="Member price"
@@ -187,8 +185,8 @@ const handleSubmit = async () => {
     const _updateData = {
       id: product.value.id,
       name: editProduct.value.name,
-      price: editProduct.value.borrow_only ? 0 : editProduct.value.price,
-      member_price: editProduct.value.borrow_only ? null : editProduct.value.member_price,
+      price: editProduct.value.price,
+      member_price: editProduct.value.member_price,
       borrow_only: editProduct.value.borrow_only,
       summary: editProduct.value.summary,
       description: editProduct.value.description || undefined,

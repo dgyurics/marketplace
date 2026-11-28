@@ -82,7 +82,6 @@
         </div>
         <div class="form-row-2col">
           <InputCurrency
-            v-if="!newProduct.borrow_only"
             id="new-product-price"
             v-model="newProduct.price"
             label="Price"
@@ -91,7 +90,7 @@
           />
           <InputNumber v-model="newProduct.inventory" label="Inventory" min="0" required />
         </div>
-        <div v-if="!newProduct.borrow_only" class="form-group">
+        <div class="form-group">
           <InputCurrency
             id="new-product-member-price"
             v-model="newProduct.member_price"
@@ -283,7 +282,7 @@ const autoFill = async () => {
 const goToDetails = () => {
   if (
     !newProduct.value.name.trim() ||
-    (!newProduct.value.borrow_only && newProduct.value.price === null) ||
+    newProduct.value.price === null ||
     newProduct.value.inventory === ''
   )
     return
@@ -301,7 +300,7 @@ const handleSubmit = async () => {
     return
   if (
     !newProduct.value.name.trim() ||
-    (!newProduct.value.borrow_only && newProduct.value.price === null) ||
+    newProduct.value.price === null ||
     newProduct.value.inventory === ''
   )
     return
@@ -314,11 +313,10 @@ const handleSubmit = async () => {
     await updateProduct({
       id: productId.value,
       name: newProduct.value.name.trim(),
-      price: newProduct.value.borrow_only ? 0 : (newProduct.value.price ?? 0),
-      ...(!newProduct.value.borrow_only &&
-        newProduct.value.member_price !== null && {
-          member_price: newProduct.value.member_price,
-        }),
+      price: newProduct.value.price,
+      ...(newProduct.value.member_price !== null && {
+        member_price: newProduct.value.member_price,
+      }),
       borrow_only: newProduct.value.borrow_only,
       inventory: Number(newProduct.value.inventory),
       summary: newProduct.value.summary,
