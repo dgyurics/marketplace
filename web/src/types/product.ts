@@ -8,6 +8,7 @@ export interface Product {
   status?: ProductStatus
   price: number
   member_price?: number
+  borrow_only?: boolean
   summary?: string
   description?: string
   details: Record<string, unknown>
@@ -15,7 +16,6 @@ export interface Product {
   inventory: number
   category?: Category
   featured: boolean
-  borrow_only?: boolean
   negotiable: boolean
   sort_order?: number
   tax_code?: string

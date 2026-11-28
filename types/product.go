@@ -19,6 +19,7 @@ type Product struct {
 	Name        string          `json:"name"`
 	Price       *int64          `json:"price"`
 	MemberPrice *int64          `json:"member_price,omitempty"`
+	BorrowOnly  bool            `json:"borrow_only"`
 	Status      *ProductStatus  `json:"status"`
 	Details     json.RawMessage `json:"details"`
 	Summary     *string         `json:"summary,omitempty"`
@@ -28,7 +29,6 @@ type Product struct {
 	TaxCode     *string         `json:"tax_code,omitempty"`
 	Inventory   int             `json:"inventory"`
 	Featured    bool            `json:"featured"`
-	BorrowOnly  bool            `json:"borrow_only"`
 	SortOrder   int             `json:"sort_order"`
 	Negotiable  bool            `json:"negotiable"`
 	CartLimit   *int            `json:"cart_limit,omitempty"`

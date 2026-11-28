@@ -39,7 +39,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		product.Details = json.RawMessage(`{}`)
 	}
 	query := `
-		INSERT INTO products (id, name, price, member_price, summary, description, details, tax_code, inventory, cart_limit, featured, negotiable, category_id, status, borrow_only)
+		INSERT INTO products (id, name, price, member_price, borrow_only, summary, description, details, tax_code, inventory, cart_limit, featured, negotiable, category_id, status)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 	`
 	_, err := r.db.ExecContext(ctx,
@@ -48,6 +48,7 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		product.Name,
 		product.Price,
 		product.MemberPrice,
+		product.BorrowOnly,
 		product.Summary,
 		product.Description,
 		product.Details,
@@ -58,7 +59,6 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *types.Pr
 		product.Negotiable,
 		categoryID,
 		product.Status,
-		product.BorrowOnly,
 	)
 	return err
 }
@@ -81,13 +81,13 @@ func (r *productRepository) GetProducts(ctx context.Context, filter types.Produc
 			&product.Name,
 			&product.Price,
 			&product.MemberPrice,
+			&product.BorrowOnly,
 			&product.TaxCode,
 			&product.Summary,
 			&product.Details,
 			&product.Featured,
 			&product.Negotiable,
 			&product.Status,
-			&product.BorrowOnly,
 		); err != nil {
 			return nil, err
 		}
@@ -118,7 +118,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 	var queryBuilder strings.Builder
 	if len(filter.Categories) == 0 {
 		queryBuilder.WriteString(`
-			SELECT p.id, p.name, p.price, p.member_price, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status, base.borrow_only
+			SELECT p.id, p.name, p.price, p.member_price, base.borrow_only, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status
 			FROM v_products p
 			JOIN products base ON base.id = p.id
 			WHERE p.status = 'published'
@@ -136,7 +136,7 @@ func generateGetProductsQuery(filter types.ProductFilter) (string, []interface{}
 				SELECT c.id FROM categories c
 				JOIN category_tree ct ON c.parent_id = ct.id
 			)
-			SELECT p.id, p.name, p.price, p.member_price, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status, base.borrow_only
+			SELECT p.id, p.name, p.price, p.member_price, base.borrow_only, p.tax_code, p.summary, p.details, p.featured, p.negotiable, p.status
 			FROM v_products p
 			JOIN products base ON base.id = p.id
 			JOIN category_tree ct ON ct.id = p.category_id
@@ -171,6 +171,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		p.name,
 		p.price,
 		p.member_price,
+		base.borrow_only,
 		p.summary,
 		p.description,
 		p.details,
@@ -180,7 +181,6 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		p.sort_order,
 		p.negotiable,
 		p.status,
-		base.borrow_only,
 		c.id,
 		c.name,
 		c.slug,
@@ -200,6 +200,7 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		&product.Name,
 		&product.Price,
 		&product.MemberPrice,
+		&product.BorrowOnly,
 		&product.Summary,
 		&product.Description,
 		&product.Details,
@@ -209,7 +210,6 @@ func (r *productRepository) GetProductByID(ctx context.Context, id string) (type
 		&product.SortOrder,
 		&product.Negotiable,
 		&product.Status,
-		&product.BorrowOnly,
 		&categoryID,
 		&categoryName,
 		&categorySlug,

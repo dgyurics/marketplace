@@ -213,6 +213,7 @@ const newProduct = ref({
   name: '',
   price: null as number | null,
   member_price: null as number | null,
+  borrow_only: false,
   inventory: '' as number | '',
   summary: '',
   category: '',
@@ -221,7 +222,6 @@ const newProduct = ref({
   sort_order: '' as number | '',
   tax_code: '',
   featured: true,
-  borrow_only: false,
   negotiable: false,
   details: {} as Record<string, string>,
 })
@@ -319,6 +319,7 @@ const handleSubmit = async () => {
         newProduct.value.member_price !== null && {
           member_price: newProduct.value.member_price,
         }),
+      borrow_only: newProduct.value.borrow_only,
       inventory: Number(newProduct.value.inventory),
       summary: newProduct.value.summary,
       ...(newProduct.value.description && { description: newProduct.value.description }),
@@ -329,7 +330,6 @@ const handleSubmit = async () => {
       }),
       sort_order: Number(newProduct.value.sort_order || 0),
       featured: newProduct.value.featured,
-      borrow_only: newProduct.value.borrow_only,
       negotiable: newProduct.value.negotiable,
       ...(category && { category }),
       status: 'published',
