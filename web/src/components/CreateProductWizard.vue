@@ -117,7 +117,7 @@
           </label>
           <label class="checkbox-label">
             <input v-model="newProduct.borrow_only" type="checkbox" />
-            <span>Borrowing only</span>
+            <span>Borrow</span>
           </label>
         </div>
         <div class="form-actions">

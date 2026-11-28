@@ -42,7 +42,7 @@
           </label>
           <label class="checkbox-label">
             <input v-model="editProduct.borrow_only" type="checkbox" />
-            <span>Borrowing only</span>
+            <span>Borrow</span>
           </label>
         </div>
 
